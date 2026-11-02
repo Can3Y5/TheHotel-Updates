@@ -185,6 +185,19 @@
   #btn-toggle-sfx { background: #ffe699; }
   #btn-toggle-bgm { background: #c7d9fa; }
   #btn-how-to { background: #f2e6ff; font-size: clamp(11.5px, 3vw, 14px); padding: 9px; }
+  #btn-reset-save { background: #ffd6d6; font-size: clamp(10.5px, 2.7vw, 13px); padding: 8px; }
+  .hotel-name-row {
+    width: 100%; display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.95); border: 2px solid #1f1f26; border-radius: 8px; padding: 6px 10px;
+  }
+  .hotel-name-row label {
+    font-size: clamp(11px, 2.8vw, 13.5px); font-weight: 800; color: #1f1f26; white-space: nowrap;
+  }
+  #hotel-name-input {
+    flex: 1; min-width: 0; border: 2px solid #1f1f26; border-radius: 6px; padding: 6px 8px;
+    font-size: clamp(12px, 3.2vw, 15px); font-weight: 800; color: #1f3373; background: #fffdf5;
+    user-select: text; -webkit-user-select: text;
+  }
   #how-to-box {
     display: none; width: 100%; background: rgba(255,255,255,0.95); border: 2px solid #1f1f26;
     border-radius: 8px; padding: 10px; font-size: clamp(10.5px, 2.6vw, 12.5px); color: #1f1f26;
@@ -332,17 +345,23 @@ v1.2.0</button>
     </div>
 
     <div class="menu-btns">
+      <div class="hotel-name-row">
+        <label for="hotel-name-input">🏨 Otel İsmi:</label>
+        <input id="hotel-name-input" type="text" maxlength="16" value="OTEL" placeholder="Otelinizin İsmi..." />
+      </div>
       <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
       <div class="menu-row-2">
         <button id="btn-toggle-sfx" class="m-btn">🔊 Ses: AÇIK</button>
         <button id="btn-toggle-bgm" class="m-btn">🎵 Müzik: AÇIK</button>
       </div>
-      <button id="btn-how-to" class="m-btn">❓ Nasıl Oynanır?</button>
-      <div id="how-to-box">• Önce boş bir alana tıklayıp "Oda kur" ve "Kapı al" yap, ardından sağ üstten Oteli AÇ.
-• Gelen müşterilerle pazarlık yap veya teklifini kabul edip boş odaya yerleştir.
-• Müşterilerin istediği eşyaları (Yatak, TV, Klima, Ampul vb.), Tuvalet ve Park alanını kurarak yüksek yıldız ve itibar kazan.
-• Kışın odaları ısıtmak için Doğalgaz kazan dairesi veya Klima kur; gaz kaçağı ve yangınlara dikkat et!
-• Dışarıdaki kirlere dokunarak temizle: her 2 kirde +1 Alet kazanırsın.</div>
+      <div class="menu-row-2">
+        <button id="btn-how-to" class="m-btn">❓ Nasıl Oynanır?</button>
+        <button id="btn-reset-save" class="m-btn">🗑️ Sıfırdan Başla</button>
+      </div>
+      <div id="how-to-box">• Başlangıçta önce boş alana tıklayıp 1. Odayı kur (100 TL) ve Kapısını al (50 TL); ardından sağ üstten Oteli AÇ.
+• Gelen müşterilerin konuşmalarına dikkat et! Aralarında Hırsız (kameradan çekinir) veya gece gelen Vampir (ışığı sevmez, gece diğer müşterilere saldırabilir) olabilir!
+• Depremzedeleri ücretsiz misafir etmek +20 İtibar, normal ücretsiz misafirler ise +10 İtibar kazandırır.
+• Oda bakımları Para + 1 Alet ile yapılır; temizlikçiler de bakım yaparken 1 Alet kullanır. Dışarıdaki kirleri temizleyerek veya Personel menüsünden Alet edinebilirsin.</div>
     </div>
 
     <div class="menu-footer">TheHotel Game • Otomatik Güncelleme Destekli</div>
@@ -419,6 +438,23 @@ const NeedyStories = [
   "Param yok... Evimde elektrik kesildi, sular da yok. Depremzedeyim, kalabilir miyim?",
   "Evimiz zarar gördü, ne elektrik ne su var. Depremzedeyim, bir süre kalabilir miyim?",
   "Deprem oldu, evim yaşanmaz halde. Param yok, bedavaya kalabilir miyim?"
+];
+const FreebieStories = [
+  "Öğrenciyim, harçlığım bitti... Bu gece ücretsiz misafir eder misiniz?",
+  "Gezginim, cüzdanımı düşürdüm. Bedavaya kalabilir miyim?",
+  "Param çıkışmıyor, sadece başımı sokacak ücretsiz bir oda rica ediyorum."
+];
+const ThiefHints = [
+  "Odalarda güvenlik kamerası yoktur umarım, özel hayatıma düşkünüm...",
+  "Gece koridorlar ıssız oluyor mu? Ben erkenden sessizce sıvışırım.",
+  "Otelin kasası ve değerli eşyalar ne tarafta acaba? Meraktan sordum.",
+  "Kamerasız, gözden uzak bir oda verirseniz memnun olurum."
+];
+const VampireHints = [
+  "Sadece gece dinleneceğim, güneş ışığı gözümü çok rahatsız ediyor...",
+  "Yemeklerde sarımsak kullanmıyorsunuzdur umarım, alerjim var.",
+  "Gece geç saatte geldim, gündüzleri dışarı çıkmaktan pek hoşlanmam.",
+  "Odam loş ve sessiz olsun lütfen, parlak ampulleri sevmem."
 ];
 const ThreatStories = [
   "Hey, beni bedavaya al yoksa oteline zarar veririm!",
@@ -632,8 +668,10 @@ for (let f = 0; f < FloorCount; f++) {
   floors.push(fl);
 }
 
+let hotelName = "OTEL";
 let sel = "Slot", selSlot = floors[0].slots[0], selFloor = null;
-let money = StartMoney, tools = 0, day = 1, roomCounter = 0, builtRooms = 0, cleanCount = 0, todayServed = 0;
+let money = StartMoney, tools = 1, day = 1, roomCounter = 0, builtRooms = 0, cleanCount = 0, todayServed = 0;
+let guestsSinceNeedy = 6, saveTimer = 0;
 let reputation = 0, ratingSum = 0, ratingCount = 0;
 let isOpen = false, isNight = false, gasOn = true, gasLeak = false, gasLeakLeft = 0;
 let lastSeason = -1;
@@ -787,7 +825,7 @@ function onDawn() {
   for (const g of guests) if (g.state === "Sleeping" || g.state === "ToBed") wakeUp(g);
 }
 function goToBed(g) {
-  if (!g.room) return;
+  if (!g.room || g.role === "Vampire") return;
   g.state = "ToBed";
   const p = g.pawn;
   p.wander = false;
@@ -911,7 +949,7 @@ function syncFront() {
 
 function setBubbleText(g, index) {
   if (index !== 0) { g.bubbleLines = [g.name, g.chinese ? "排队" : "sırada"]; return; }
-  if (g.type === "Needy") g.bubbleLines = [g.name, "Bedava?"];
+  if (g.type === "Needy" || g.type === "Freebie") g.bubbleLines = [g.name, "Bedava?"];
   else if (g.type === "Threat") g.bubbleLines = [g.name, "!!!"];
   else if (g.chinese) g.bubbleLines = [g.name, g.offer + " 元"];
   else g.bubbleLines = [g.name, g.offer + " TL"];
@@ -920,46 +958,85 @@ function setBubbleText(g, index) {
 function spawnGuest() {
   resetSpawn();
   if (queue.length >= MaxQueue || freeRoomCount() <= queue.length) return;
+  guestsSinceNeedy++;
   const roll = Math.random();
+  let gType = "Normal";
+  if (guestsSinceNeedy >= 15) {
+    gType = "Needy";
+    guestsSinceNeedy = 0;
+  } else if (roll < ChanceThreat) {
+    gType = "Threat";
+  } else if (roll < ChanceThreat + 0.08) {
+    gType = "Freebie";
+  }
+
   const g = {
-    type: roll < ChanceThreat ? "Threat" : roll < ChanceThreat + ChanceNeedy ? "Needy" : "Normal",
+    type: gType, role: "None", hint: "",
     chinese: false, wantsToilet: false, expired: false, kids: 0, overstay: 0,
     budget: 0, offer: 0, days: rndInt(1, 5), daysLeft: 0, price: 0, attempts: 0,
     wants: new Array(ItemCount).fill(false), patience: 0, maxPatience: 0,
     atSpot: false, arrivedOnce: false, state: "Queued",
     room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
     gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
+    crimeTimer: rnd(10, 18), crimeDone: false,
     parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
     hasBubble: true, bubbleLines: ["", ""]
   };
   g.chinese = g.type === "Normal" && Math.random() < ChanceChinese;
   g.name = g.chinese ? pick(CnNames) : pick(FirstNames) + " " + pick(LastNames);
-  g.kids = (g.type !== "Threat" && Math.random() < ChanceFamily) ? rndInt(1, 3) : 0;
+
+  // Gizli Roller: Gece Vampir (%28), Gündüz/Gece Hırsız (%14)
+  if (g.type === "Normal" && !g.chinese) {
+    const nightNow = isNight || brightness() < 0.45;
+    if (nightNow && Math.random() < 0.28) {
+      g.role = "Vampire";
+      g.hint = pick(VampireHints);
+    } else if (Math.random() < 0.14) {
+      g.role = "Thief";
+      g.hint = pick(ThiefHints);
+    }
+  }
+
+  g.kids = (g.type !== "Threat" && g.role === "None" && Math.random() < ChanceFamily) ? rndInt(1, 3) : 0;
 
   let wantCount = 0;
   if (g.type === "Normal") {
     let b = rndInt(40, 141) * (1 + stars() * 0.25);
     if (g.chinese) b *= 1.4;
     if (g.kids > 0) b *= 1.2;
+    if (g.role === "Vampire") b *= 1.25;
     g.budget = Math.round(b);
     g.offer = Math.min(g.budget, round5(g.budget * rnd(0.55, 0.85)));
     wantCount = rndInt(1, stars() > 0 ? 5 : 4);
   } else {
-    wantCount = g.type === "Needy" ? rndInt(0, 2) : 0;
-    g.story = g.type === "Needy" ? pick(NeedyStories) : pick(ThreatStories);
+    wantCount = (g.type === "Needy" || g.type === "Freebie") ? rndInt(0, 2) : 0;
+    g.story = g.type === "Needy" ? pick(NeedyStories) : g.type === "Freebie" ? pick(FreebieStories) : pick(ThreatStories);
   }
   if (g.type !== "Threat") g.wants[IYatak] = true; // herkes yatak ister
-  let c = 0;
-  while (c < wantCount) {
+  let c = 0, tries = 0;
+  while (c < wantCount && tries < 25) {
+    tries++;
     const k = rndInt(0, ItemCount);
     if (k === IBebek || g.wants[k]) continue;
+    if (g.role === "Thief" && k === IKamera) continue;
+    if (g.role === "Vampire" && k === IAmpul) continue;
     g.wants[k] = true; c++;
   }
+  if (g.role === "Thief") g.wants[IKamera] = false;
+  if (g.role === "Vampire") g.wants[IAmpul] = false;
   if (g.kids > 0) g.wants[IBebek] = true;
   g.wantsToilet = g.type !== "Threat" && Math.random() < 0.5;
   g.maxPatience = 25 * (hasReception() ? 1.5 : 1);
   g.patience = g.maxPatience;
-  g.pawn = makeRandomPawn({ x: -520, y: floors[0].WalkY });
+
+  if (g.role === "Vampire") {
+    g.pawn = makePawn({ x: -520, y: floors[0].WalkY }, "#f0ebf5", "#17131c", "#3d1424");
+  } else if (g.role === "Thief") {
+    g.pawn = makePawn({ x: -520, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#282c37");
+    g.pawn.isThief = true;
+  } else {
+    g.pawn = makeRandomPawn({ x: -520, y: floors[0].WalkY });
+  }
   for (let k = 0; k < g.kids; k++) {
     const kid = makeRandomPawn({ x: g.pawn.pos.x - 60 * (k + 1), y: floors[0].WalkY });
     kid.scale = 0.68; kid.follow = g.pawn; kid.followOffset = 48 * (k + 1);
@@ -977,7 +1054,8 @@ function onQueueArrive(g) {
     g.arrivedOnce = true;
     play("bell");
     if (g.type === "Normal") log(g.name + " geldi, oda istiyor (" + g.offer + " TL öneriyor).");
-    else if (g.type === "Needy") log(g.name + " geldi: bedavaya kalmak istiyor.");
+    else if (g.type === "Needy") log(g.name + " (Depremzede) geldi: ücretsiz oda rica ediyor (+20 İtibar).");
+    else if (g.type === "Freebie") log(g.name + " geldi: ücretsiz kalmak istiyor (+10 İtibar).");
     else { log(g.name + " geldi ve tehdit ediyor!"); play("alarm"); }
   }
   syncFront();
@@ -1036,7 +1114,7 @@ function onOffer() {
   if (!g || pending) return;
   if (curPrice <= g.budget) { acceptGuest(g, curPrice); return; }
   g.attempts++;
-  if (g.type === "Needy") {
+  if (g.type === "Needy" || g.type === "Freebie") {
     play("reject");
     if (g.attempts >= 3) { dismissFront(g, g.name + ': "Param yok, gerçekten... Gidiyorum."'); return; }
     curPrice = 0;
@@ -1084,17 +1162,30 @@ function placeGuest() {
   addPath(g.pawn, floorOf(g.pawn.pos.y), room.floor.idx, room.X0 + SlotW * 0.5);
   g.pawn.onArrive = () => onGuestInRoom(g);
   play("place");
-  log(g.name + " " + room.roomNo + ". odaya gidiyor (" + g.days + " gün, günlük " + g.price + " TL).");
+
+  if (g.type === "Needy") {
+    reputation += 20;
+    floatText(room.X0 + SlotW * 0.5, room.floor.BaseY + FloorH * 0.65, "+20 İtibar (Depremzede)", "#1a8c26");
+    log(g.name + " (Depremzede) " + room.roomNo + ". odaya yerleştirildi! (+20 İtibar)");
+  } else if (g.type === "Freebie") {
+    reputation += 10;
+    floatText(room.X0 + SlotW * 0.5, room.floor.BaseY + FloorH * 0.65, "+10 İtibar (Misafir)", "#1a8c26");
+    log(g.name + " ücretsiz misafir olarak " + room.roomNo + ". odaya alındı! (+10 İtibar)");
+  } else {
+    log(g.name + " " + room.roomNo + ". odaya gidiyor (" + g.days + " gün, günlük " + g.price + " TL).");
+  }
+
   todayServed++;
   if (todayServed >= 10) unlock(1);
   reflowQueue();
   refresh();
+  saveGame();
 }
 
 function onGuestInRoom(g) {
   if (g.state !== "ToRoom" || !g.room) return;
   g.state = "InRoom";
-  if (isNight) { goToBed(g); return; }
+  if (isNight && g.role !== "Vampire") { goToBed(g); return; }
   startWander(g);
 }
 
@@ -1107,16 +1198,148 @@ function onReject() {
 }
 
 function threatDamage(g) {
+  const idx = queue.indexOf(g);
+  if (idx >= 0) queue.splice(idx, 1);
+  if (pending === g) pending = null;
+  reflowQueue();
+
   const cand = allSlots.filter(s => s.floor.state === "Built" && (s.type === "Room" || s.type === "Toilet"));
-  for (let n = 0; n < 2 && cand.length > 0; n++) {
-    const idx = rndInt(0, cand.length);
-    const s = cand.splice(idx, 1)[0];
-    const dmg = (s.type === "Room" && s.items[IKamera]) ? 20 : 40;
-    s.maintenance = Math.max(0, s.maintenance - dmg);
-    floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.6, "Zarar!", "#cc1a1a");
+  if (cand.length === 0) {
+    play("alarm");
+    startLeaving(g);
+    refresh();
+    return;
   }
+  const targetSlot = pick(cand);
+  g.state = "Attacking";
+  g.hasBubble = true;
+  g.bubbleLines = [g.name, "Kırıp dökeceğim!"];
   play("alarm");
-  dismissFront(g, g.name + " öfkeyle çıktı ve otele zarar verdi!");
+  const targetName = targetSlot.type === "Room" ? (targetSlot.roomNo + ". odaya") : "tuvalete";
+  log("⚠️ " + g.name + " öfkelendi! Zarar vermek için " + targetName + " gidiyor!");
+  const p = g.pawn;
+  p.wander = false;
+  p.speed = WalkSpeed * 1.2;
+  p.path = [];
+  addPath(p, floorOf(p.pos.y), targetSlot.floor.idx, targetSlot.X0 + SlotW * 0.5);
+  p.onArrive = () => {
+    if (g.state !== "Attacking") return;
+    g.state = "AttackingWait";
+    g.exLeft = 1.6;
+    p.exercise = true;
+    play("alarm");
+    play("build");
+    const dmg = (targetSlot.type === "Room" && targetSlot.items[IKamera]) ? 25 : 55;
+    targetSlot.maintenance = Math.max(0, targetSlot.maintenance - dmg);
+    floatText(targetSlot.X0 + SlotW * 0.5, targetSlot.floor.BaseY + FloorH * 0.65, "💥 ZARAR VERDİ! (-%" + dmg + ")", "#cc1a1a");
+    log("💥 " + g.name + " " + targetName + " zarar verdi ve otelden çıkıyor!");
+    refresh();
+    saveGame();
+  };
+  refresh();
+}
+
+function triggerThiefAction(g) {
+  const s = g.room;
+  if (!s) return;
+  if (s.items[IKamera]) {
+    play("done");
+    money += 100;
+    reputation += 15;
+    floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🚓 Hırsız Yakalandı! +100 TL", "#1a8c26");
+    log("🚓 " + s.roomNo + ". odadaki " + g.name + " hırsızlık yaparken Güvenlik Kamerasına yakalandı! (+100 TL, +15 İtibar)");
+    s.guest = null; g.room = null;
+    startLeaving(g);
+  } else {
+    play("alarm");
+    const stolen = Math.min(money, rndInt(80, 160));
+    money = Math.max(0, money - stolen);
+    let itemMsg = "";
+    if (s.items[ITv]) { s.items[ITv] = false; itemMsg = " ve TV'yi"; }
+    else if (s.items[IBuz]) { s.items[IBuz] = false; itemMsg = " ve Buzdolabını"; }
+    floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🕵️ HIRSIZ! -" + stolen + " TL", "#cc1a1a");
+    log("🕵️ HIRSIZ! " + g.name + " gece " + stolen + " TL" + itemMsg + " çalıp kaçtı! (Kamera olsaydı yakalanırdı)");
+    s.guest = null; g.room = null;
+    g.pawn.speed = WalkSpeed * 1.45;
+    startLeaving(g);
+  }
+  refresh();
+  saveGame();
+}
+
+function triggerVampireHunt(g) {
+  const s = g.room;
+  if (!s) return;
+  const victims = allSlots.filter(sl => sl.type === "Room" && sl !== s && sl.guest && sl.guest.role !== "Vampire" && sl.guest.state !== "Leaving");
+  if (victims.length === 0) {
+    g.crimeTimer = 8;
+    return;
+  }
+  const vSlot = pick(victims);
+  g.crimeDone = true;
+  g.state = "VampireHunt";
+  const p = g.pawn;
+  p.sleeping = false;
+  p.wander = false;
+  p.speed = WalkSpeed * 1.15;
+  p.path = [];
+  addPath(p, floorOf(p.pos.y), vSlot.floor.idx, vSlot.X0 + SlotW * 0.5);
+  log("🌙 Gece koridorda gizemli ayak sesleri duyuluyor...");
+  p.onArrive = () => {
+    if (g.state !== "VampireHunt" || !g.room) return;
+    const victim = vSlot.guest;
+    if (!victim || victim.state === "Leaving") {
+      returnToRoom(g);
+      return;
+    }
+    if (vSlot.items[IKamera] && vSlot.items[IAmpul]) {
+      play("done");
+      reputation += 15;
+      floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🧛 Vampir Kaçtı! +15 İtibar", "#1a8c26");
+      log("🧛 Vampir " + g.name + ", " + vSlot.roomNo + ". odaya saldırdı ama Kamera ve Ampul ışığı sayesinde panikleyip otelden kaçtı!");
+      if (g.room) g.room.guest = null;
+      g.room = null;
+      startLeaving(g);
+    } else {
+      play("alarm");
+      reputation = Math.max(0, reputation - 35);
+      vSlot.maintenance = Math.max(0, vSlot.maintenance - 50);
+      floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🧛 ÇIĞLIK! Müşteri Öldürüldü!", "#cc1a1a");
+      log("😱 KORKUNÇ OLAY! " + vSlot.roomNo + ". odadaki " + victim.name + " gece Vampir tarafından öldürüldü! (-35 İtibar)");
+      destroyPawn(victim.pawn);
+      for (const kp of victim.kidPawns) destroyPawn(kp);
+      const vi = guests.indexOf(victim);
+      if (vi >= 0) guests.splice(vi, 1);
+      vSlot.guest = null;
+      victim.room = null;
+      returnToRoom(g);
+    }
+    refresh();
+    saveGame();
+  };
+}
+
+function evictGuest(g) {
+  if (!g || !g.room || g.state === "Leaving") return;
+  const s = g.room;
+  s.guest = null;
+  g.room = null;
+  if (g.role === "Thief" || g.role === "Vampire") {
+    const roleTr = g.role === "Vampire" ? "VAMPİR" : "HIRSIZ";
+    reputation += 15;
+    money += 50;
+    play("done");
+    floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "🎯 " + roleTr + " Kovuldu! +15 İtibar", "#1a8c26");
+    log("🎯 Bravo! Kovduğun " + g.name + " gizli bir " + roleTr + " çıktı! (+50 TL ödül, +15 İtibar)");
+  } else {
+    reputation = Math.max(0, reputation - 10);
+    play("reject");
+    floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "-10 İtibar (Kovuldu)", "#bf2626");
+    log(g.name + " süresi dolmadan odadan çıkarıldı (-10 İtibar).");
+  }
+  startLeaving(g);
+  refresh();
+  saveGame();
 }
 
 // Süresi dolan müşteri
@@ -1130,6 +1353,7 @@ function sendOff(g) {
   if (!g || !g.room || g.state === "Leaving") return;
   checkout(g.room);
   refresh();
+  saveGame();
 }
 
 function tryGoGym(g) {
@@ -1373,6 +1597,14 @@ function updateCleaners(dt) {
       if (c.idleTimer > 0) continue;
       const t = pickCleanTarget();
       if (!t) { c.idleTimer = 2; continue; }
+      if (tools < 1) {
+        c.idleTimer = 3.5;
+        floatText(p.pos.x, p.pos.y + 125, "Alet yok!", "#cc2929");
+        continue;
+      }
+      tools--;
+      floatText(p.pos.x, p.pos.y + 125, "-1 Alet (Temizlik)", "#2666cc");
+      refreshHud();
       c.target = t; c.state = 1; p.path = [];
       addPath(p, floorOf(p.pos.y), t.floor.idx, t.X0 + SlotW * 0.5 + rnd(-50, 50));
       p.onArrive = () => {
@@ -1385,17 +1617,30 @@ function updateCleaners(dt) {
       if (c.cleanLeft <= 0) {
         p.exercise = false; c.state = 0; c.idleTimer = 1.5; c.target = null;
         if (sel === "Slot") refreshPanel();
+        saveGame();
       }
     }
   }
 }
 
 function hireCleaner() {
+  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
   if (cleaners.length >= MaxCleaners || !pay(CleanerHire)) return;
   const p = makePawn({ x: ElevW + 40, y: floors[0].WalkY }, pick(Skins), "#f2f2f2", "#3373cc");
   p.speed = 70;
   cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
-  play("build"); log("Temizlikçi işe alındı.");
+  play("build"); log("Temizlikçi işe alındı (Bakım yaparken 1 Alet kullanır).");
+  saveGame();
+}
+
+function buyTool() {
+  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
+  if (!pay(25)) return;
+  tools++;
+  play("coin");
+  log("+1 Alet satın alındı (25 TL).");
+  refresh();
+  saveGame();
 }
 
 function fireCleaner() {
@@ -1403,6 +1648,7 @@ function fireCleaner() {
   const c = cleaners.pop();
   destroyPawn(c.pawn);
   log("Temizlikçi işten çıkarıldı.");
+  saveGame();
 }
 
 function newDay() {
@@ -1463,6 +1709,23 @@ function newDay() {
 
 function checkout(s) {
   const g = s.guest;
+  if (g.type === "Freebie") {
+    log(g.name + " (Ücretsiz Misafir) teşekkür ederek ayrıldı (Toplam +10 İtibar).");
+    floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "Teşekkürler!", "#1a8c26");
+    s.guest = null; g.room = null;
+    startLeaving(g);
+    saveGame();
+    return;
+  }
+  if (g.type === "Needy") {
+    log(g.name + " (Depremzede) dualarla ayrıldı: \"Allah razı olsun!\"");
+    floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "Çok teşekkürler!", "#1a8c26");
+    s.guest = null; g.room = null;
+    startLeaving(g);
+    saveGame();
+    return;
+  }
+
   let r = 5;
   const reasons = [];
   for (let k = 0; k < ItemCount; k++) {
@@ -1496,6 +1759,7 @@ function checkout(s) {
 
   s.guest = null; g.room = null;
   startLeaving(g);
+  saveGame();
 }
 
 function pay(cost) {
@@ -1506,20 +1770,24 @@ function pay(cost) {
 
 function doMaint(s) {
   if (s.maintenance >= 99.5) return false;
-  if (tools >= 1) {
-    tools--;
-    s.maintenance = 100;
-    play("clean");
-    log("Bakım yapıldı (1 alet).");
-    return true;
+  const cost = maintCost(s);
+  if (tools < 1) {
+    play("reject");
+    log("Bakım için " + cost + " TL + 1 Alet gerekli! (Personel'den Alet al veya dış kirleri temizle)");
+    return false;
   }
-  if (pay(maintCost(s))) {
-    s.maintenance = 100;
-    play("clean");
-    log("Bakım yapıldı.");
-    return true;
+  if (money < cost) {
+    play("reject");
+    log("Bakım için " + cost + " TL + 1 Alet gerekli! Para yetmiyor.");
+    return false;
   }
-  return false;
+  money -= cost;
+  tools--;
+  s.maintenance = 100;
+  play("clean");
+  log("Bakım yapıldı (-" + cost + " TL ve -1 Alet).");
+  saveGame();
+  return true;
 }
 
 function tryBuildFloor(fl) {
@@ -1550,62 +1818,105 @@ function finishFloor(fl) {
 }
 
 function plantTree() {
+  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı kur ve kapısını al!"); return; }
   for (let i = 0; i < treePlanted.length; i++) {
     if (treePlanted[i]) continue;
     if (!pay(TreeCost)) return;
-    treePlanted[i] = true; play("build"); log("Ağaç dikildi."); return;
+    treePlanted[i] = true; play("build"); log("Ağaç dikildi."); saveGame(); return;
   }
   log("Bahçede boş yer kalmadı.");
 }
 
+function checkStartupSoftlock() {
+  if (!hasReadyRoom()) {
+    const hasAnyRoom = allSlots.some(s => s.type === "Room" && s.floor.state === "Built");
+    const needed = hasAnyRoom ? CostDoor : (roomCost() + CostDoor);
+    if (money < needed) {
+      money = needed;
+      log("💡 Başlangıç Desteği: İlk odanı ve kapını kurabilmen için bütçen " + needed + " TL'ye tamamlandı.");
+    }
+  }
+}
+
 function onAction(i) {
+  checkStartupSoftlock();
   if (i === ActCount - 1) {
     const c2 = selSlot;
-    if (sel === "Slot" && c2 && c2.onFire) { extinguish(c2); refresh(); return; }
+    if (sel === "Slot" && c2 && c2.onFire) { extinguish(c2); refresh(); saveGame(); return; }
     if (sel === "Slot" && c2 && c2.guest && c2.guest.expired && c2.guest.room === c2) { sendOff(c2.guest); return; }
     if (pending) { placeGuest(); return; }
+    if (sel === "Slot" && c2 && c2.guest && c2.guest.room === c2) { evictGuest(c2.guest); return; }
   }
   if (sel === "Staff") {
-    if (i === 0) hireCleaner(); else if (i === 1) fireCleaner();
+    if (i === 0) hireCleaner();
+    else if (i === 1) fireCleaner();
+    else if (i === 2) buyTool();
     refresh(); return;
   }
   if (sel === "Garden") { if (i === 0) plantTree(); refresh(); return; }
-  if (sel === "Park") { if (i === 0) tryBuildPark(); refresh(); return; }
-  if (sel === "Floor") { if (i === 0 && selFloor) tryBuildFloor(selFloor); refresh(); return; }
+  if (sel === "Park") {
+    if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı kur ve kapısını al!"); return; }
+    if (i === 0) tryBuildPark();
+    refresh(); saveGame(); return;
+  }
+  if (sel === "Floor") { if (i === 0 && selFloor) tryBuildFloor(selFloor); refresh(); saveGame(); return; }
   if (sel === "Ach") return;
   const s = selSlot;
   if (!s) return;
   if (s.type === "Empty") {
-    if (i === 0 && pay(roomCost())) {
-      s.type = "Room"; s.roomNo = ++roomCounter; builtRooms++;
-      play("build"); log(s.roomNo + ". oda kuruldu. Kapıyı almayı unutma.");
-    } else if (i === 1 && pay(gymCost())) {
-      s.type = "Gym"; s.gymLevel = 1; builtRooms++;
-      play("build"); log("Spor odası kuruldu (seviye 1).");
-    } else if (i === 2 && pay(toiletCost())) {
-      s.type = "Toilet"; s.maintenance = 100; builtRooms++;
-      play("build"); log("Tuvalet kuruldu.");
-    } else if (i === 3 && s.floor.idx === 0 && pay(CostReception)) {
-      s.type = "Reception"; play("build"); log("Resepsiyon kuruldu."); reflowQueue();
-    } else if (i === 4 && !gasSlot() && pay(gasCost())) {
-      s.type = "Gas"; s.maintenance = 100; builtRooms++;
-      play("build"); log("Doğalgaz kazan dairesi kuruldu. Kışın odaları ısıtır.");
+    const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
+    if (i === 0) {
+      if (!hasReadyRoom() && anyRoomBuilt) {
+        play("reject");
+        log("Önce kurduğun ilk odanın kapısını al (50 TL)!");
+        refresh(); return;
+      }
+      if (pay(roomCost())) {
+        s.type = "Room"; s.roomNo = ++roomCounter; builtRooms++;
+        play("build"); log(s.roomNo + ". oda kuruldu. Şimdi kapısını al (50 TL)!");
+        saveGame();
+      }
+    } else {
+      if (!hasReadyRoom()) {
+        play("reject");
+        log("Oyunun bozulmaması için önce 1. Odayı kurup Kapısını almalısın!");
+        refresh(); return;
+      }
+      if (i === 1 && pay(gymCost())) {
+        s.type = "Gym"; s.gymLevel = 1; builtRooms++;
+        play("build"); log("Spor odası kuruldu (seviye 1)."); saveGame();
+      } else if (i === 2 && pay(toiletCost())) {
+        s.type = "Toilet"; s.maintenance = 100; builtRooms++;
+        play("build"); log("Tuvalet kuruldu."); saveGame();
+      } else if (i === 3 && s.floor.idx === 0 && pay(CostReception)) {
+        s.type = "Reception"; play("build"); log("Resepsiyon kuruldu."); reflowQueue(); saveGame();
+      } else if (i === 4 && !gasSlot() && pay(gasCost())) {
+        s.type = "Gas"; s.maintenance = 100; builtRooms++;
+        play("build"); log("Doğalgaz kazan dairesi kuruldu. Kışın odaları ısıtır."); saveGame();
+      }
     }
   } else if (s.type === "Gas") {
-    if (i === 0) toggleGas();
+    if (i === 0) { toggleGas(); saveGame(); }
     else if (i === 1) doMaint(s);
   } else if (s.type === "Gym") {
     if (i === 0 && s.gymLevel < 3 && pay(gymUpgradeCost(s.gymLevel))) {
-      s.gymLevel++; play("build"); log("Spor odası seviye " + s.gymLevel + " oldu (" + s.gymLevel + " kişi).");
+      s.gymLevel++; play("build"); log("Spor odası seviye " + s.gymLevel + " oldu (" + s.gymLevel + " kişi)."); saveGame();
     }
   } else if (s.type === "Toilet") {
     if (i === 0) doMaint(s);
   } else if (s.type === "Room") {
     if (i === 0 && !s.hasDoor && pay(CostDoor)) {
-      s.hasDoor = true; play("build"); log(s.roomNo + ". oda için kapı alındı.");
+      s.hasDoor = true; play("build"); log(s.roomNo + ". oda için kapı alındı! Artık sağ üstten Oteli Açabilirsin."); saveGame();
     } else if (i >= 1 && i <= ItemCount) {
+      if (!hasReadyRoom()) {
+        play("reject");
+        log("Eşya almadan önce odanın kapısını almalısın (50 TL)!");
+        refresh(); return;
+      }
       const k = i - 1;
-      if (!s.items[k] && pay(ItemCosts[k])) { s.items[k] = true; play("build"); log(s.roomNo + ". oda: " + ItemNames[k] + " eklendi."); }
+      if (!s.items[k] && pay(ItemCosts[k])) {
+        s.items[k] = true; play("build"); log(s.roomNo + ". oda: " + ItemNames[k] + " eklendi."); saveGame();
+      }
     } else if (i === ItemCount + 1) {
       doMaint(s);
     }
@@ -1707,11 +2018,20 @@ function renderGuestBook() {
       const meta = document.createElement("div");
       meta.className = "gb-meta";
       const stayTxt = g.expired ? "⚠️ Süresi doldu! (Çıkış bekliyor)" : ("⏳ Kalan: " + g.daysLeft + " gün");
-      const priceTxt = g.price > 0 ? ("💰 " + g.price + " TL/gün") : "💛 Ücretsiz Misafir";
+      const priceTxt = g.price > 0 ? ("💰 " + g.price + " TL/gün") : (g.type === "Needy" ? "💚 Depremzede (+20 İtibar)" : "💛 Ücretsiz Misafir (+10 İtibar)");
       const maintTxt = "🧹 Oda Bakımı: %" + Math.round(s.maintenance);
       meta.textContent = stayTxt + "  •  " + priceTxt + "  •  " + maintTxt;
       if (g.expired) meta.style.color = "#cc2929";
       card.appendChild(meta);
+
+      if (g.hint || g.story) {
+        const hintEl = document.createElement("div");
+        hintEl.className = "gb-meta";
+        hintEl.style.color = "#7a3b1e";
+        hintEl.style.fontStyle = "italic";
+        hintEl.textContent = '💬 "' + (g.hint || g.story) + '"';
+        card.appendChild(hintEl);
+      }
 
       const wantsWrap = document.createElement("div");
       wantsWrap.className = "gb-wants-wrap";
@@ -1785,6 +2105,16 @@ function renderGuestBook() {
           renderGuestBook();
         };
         actRow.appendChild(btnSend);
+      } else {
+        const btnEvict = document.createElement("button");
+        btnEvict.className = "gb-act-btn warn";
+        btnEvict.style.background = "#ffd6d6";
+        btnEvict.textContent = "🚪 Odadan Çıkar";
+        btnEvict.onclick = () => {
+          evictGuest(g);
+          renderGuestBook();
+        };
+        actRow.appendChild(btnEvict);
       }
       card.appendChild(actRow);
       gbContent.appendChild(card);
@@ -1825,11 +2155,21 @@ function renderGuestBook() {
 
       const meta = document.createElement("div");
       meta.className = "gb-meta";
-      const offerDesc = g.type === "Needy" ? "Depremzede (Ücretsiz oda istiyor)" :
+      const offerDesc = g.type === "Needy" ? "Depremzede (+20 İtibar - Ücretsiz)" :
+                        g.type === "Freebie" ? "Ücretsiz Misafir (+10 İtibar - Ücretsiz)" :
                         g.type === "Threat" ? "Tehdit ediyor (Ücretsiz istiyor)" :
                         ("💰 Teklifi: " + g.offer + " TL/gün");
       meta.textContent = "📅 " + g.days + " gün kalacak  •  " + offerDesc + "  •  ⏳ Sabır: " + Math.ceil(g.patience) + " sn";
       card.appendChild(meta);
+
+      if (g.hint || g.story) {
+        const hintEl = document.createElement("div");
+        hintEl.className = "gb-meta";
+        hintEl.style.color = "#7a3b1e";
+        hintEl.style.fontStyle = "italic";
+        hintEl.textContent = '💬 "' + (g.hint || g.story) + '"';
+        card.appendChild(hintEl);
+      }
 
       const wantsWrap = document.createElement("div");
       wantsWrap.className = "gb-wants-wrap";
@@ -1867,11 +2207,13 @@ function setAct(i, t, show, on) {
 function refreshPanel() {
   for (let i = 0; i < ActCount; i++) setAct(i, "", false, true);
   actBtns[ActCount - 1].style.background = "#99e6a6";
+  const readyOnce = hasReadyRoom();
 
   if (sel === "Staff") {
-    infoText.textContent = "Personel\nTemizlikçi: " + cleaners.length + "/" + MaxCleaners + "   Maaş: " + CleanerWage + " TL/gün\nOdadan odaya gezip bakım yapar.";
-    setAct(0, "Temizlikçi al\n" + CleanerHire + " TL", true, cleaners.length < MaxCleaners);
+    infoText.textContent = "Personel & Alet\nTemizlikçi: " + cleaners.length + "/" + MaxCleaners + " (Maaş: " + CleanerWage + " TL/gün)\nTemizlikçiler bakım yaparken 1 Alet harcar.";
+    setAct(0, "Temizlikçi al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < MaxCleaners);
     setAct(1, "Temizlikçi çıkar", true, cleaners.length > 0);
+    setAct(2, "Alet satın al\n25 TL (+1)", true, readyOnce && money >= 25);
   } else if (sel === "Ach") {
     let t = "Başarılar";
     for (const a of achs) t += "\n" + (a.done ? "[X] " : "[ ] ") + a.title + " (+" + a.reward + " TL)";
@@ -1880,11 +2222,11 @@ function refreshPanel() {
   } else if (sel === "Garden") {
     const n = treePlanted.filter(Boolean).length;
     infoText.textContent = "Bahçe\nAğaç: " + n + "/" + treePlanted.length + "\nBinanın dışına ağaç dikebilirsin.\nDışarıdaki kirlere dokunup temizle: 2 kirde 1 alet.";
-    setAct(0, "Ağaç dik\n" + TreeCost + " TL", true, n < treePlanted.length);
+    setAct(0, "Ağaç dik\n" + TreeCost + " TL", true, readyOnce && n < treePlanted.length);
   } else if (sel === "Park") {
     if (parkState === "Locked") {
       infoText.textContent = "Park alanı\nÇocuklu müşteriler için.\nBedel: " + ParkCost + " TL   Süre: " + Math.round(ParkSec) + " sn";
-      setAct(0, "İnşa et\n" + ParkCost + " TL", true, true);
+      setAct(0, "İnşa et\n" + ParkCost + " TL", true, readyOnce);
     } else if (parkState === "Building") infoText.textContent = "Park alanı inşaatta\nKalan: " + Math.ceil(parkLeft) + " sn";
     else infoText.textContent = "Park alanı hazır.\nÇocuklar burada oynar, ebeveynler park isteğinden memnun kalır.";
   } else if (sel === "Floor" && selFloor) {
@@ -1898,14 +2240,22 @@ function refreshPanel() {
     else infoText.textContent = n + ". kat hazır.";
   } else if (selSlot) {
     const cur = selSlot;
-    const maintLabel = tools >= 1 ? "Bakım yap\n1 alet" : "Bakım yap\n" + maintCost(cur) + " TL";
+    const mCost = maintCost(cur);
+    const maintLabel = "Bakım yap\n" + mCost + " TL + 1 Alet";
     if (cur.type === "Empty") {
-      infoText.textContent = "Boş alan\nOda, spor odası, tuvalet, doğalgaz" + (cur.floor.idx === 0 ? " veya resepsiyon" : "") + " kurabilirsin.";
-      setAct(0, "Oda kur\n" + roomCost() + " TL", true, true);
-      setAct(1, "Spor odası\n" + gymCost() + " TL", true, true);
-      setAct(2, "Tuvalet\n" + toiletCost() + " TL", true, true);
-      if (cur.floor.idx === 0) setAct(3, "Resepsiyon\n" + CostReception + " TL", true, true);
-      setAct(4, "Doğalgaz\n" + gasCost() + " TL", true, !gasSlot());
+      const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
+      if (!readyOnce) {
+        infoText.textContent = anyRoomBuilt
+          ? "⚠️ Başlangıç Adımı 2/2: Önce kurduğun ilk odaya tıklayıp Kapı al (50 TL)!"
+          : "⚠️ Başlangıç Adımı 1/2: Oyuna başlamak için önce ilk odanı kur (100 TL)!";
+      } else {
+        infoText.textContent = "Boş alan\nOda, spor odası, tuvalet, doğalgaz" + (cur.floor.idx === 0 ? " veya resepsiyon" : "") + " kurabilirsin.";
+      }
+      setAct(0, "Oda kur\n" + roomCost() + " TL", true, readyOnce || !anyRoomBuilt);
+      setAct(1, "Spor odası\n" + gymCost() + " TL", true, readyOnce);
+      setAct(2, "Tuvalet\n" + toiletCost() + " TL", true, readyOnce);
+      if (cur.floor.idx === 0) setAct(3, "Resepsiyon\n" + CostReception + " TL", true, readyOnce);
+      setAct(4, "Doğalgaz\n" + gasCost() + " TL", true, readyOnce && !gasSlot());
     } else if (cur.type === "Reception") {
       infoText.textContent = "Resepsiyon\nMüşterilerin sabrını %50 artırır.";
     } else if (cur.type === "Gas") {
@@ -1931,17 +2281,18 @@ function refreshPanel() {
         match = "\nUyum: " + ok + "/" + tot + " istek";
       }
       let pre = "";
-      if (cur.onFire) pre = "YANGIN! " + Math.ceil(cur.fireLeft) + " sn içinde söndür!\n";
+      if (!cur.hasDoor) pre = "⚠️ Odayı kullanabilmek için önce Kapı al (50 TL)!\n";
+      else if (cur.onFire) pre = "YANGIN! " + Math.ceil(cur.fireLeft) + " sn içinde söndür!\n";
       else if (cur.guest && cur.guest.expired) pre = cur.guest.name + " süresi doldu: sağ alttan gönder.\n";
       infoText.textContent = pre + cur.roomNo + ". oda   Kapı: " + (cur.hasDoor ? "var" : "yok") + "   Bakım: %" + Math.round(cur.maintenance) + "\nEşyalar: " + items + match;
       setAct(0, cur.hasDoor ? "Kapı var" : ("Kapı al\n" + CostDoor + " TL"), true, !cur.hasDoor);
       for (let k = 0; k < ItemCount; k++)
-        setAct(k + 1, cur.items[k] ? (ItemNames[k] + " var") : (ItemNames[k] + "\n" + ItemCosts[k] + " TL"), true, !cur.items[k]);
+        setAct(k + 1, cur.items[k] ? (ItemNames[k] + " var") : (ItemNames[k] + "\n" + ItemCosts[k] + " TL"), true, readyOnce && !cur.items[k]);
       setAct(ItemCount + 1, maintLabel, true, cur.maintenance < 99.5);
     }
   } else infoText.textContent = "";
 
-  // Sağ alttaki bağlamsal düğme: söndür / gönder / yerleştir
+  // Sağ alttaki bağlamsal düğme: söndür / gönder / yerleştir / kov
   let shown = false;
   if (sel === "Slot" && selSlot) {
     const c2 = selSlot;
@@ -1958,6 +2309,11 @@ function refreshPanel() {
   if (!shown && pending) {
     const ok = sel === "Slot" && selSlot && selSlot.Ready && !selSlot.guest && !selSlot.onFire;
     setAct(ActCount - 1, "Yerleştir\n" + pending.name, true, ok);
+    shown = true;
+  }
+  if (!shown && sel === "Slot" && selSlot && selSlot.guest && !selSlot.guest.expired && selSlot.guest.room === selSlot) {
+    setAct(ActCount - 1, "Odadan Çıkar\n" + selSlot.guest.name, true, true);
+    actBtns[ActCount - 1].style.background = "#ffd6d6";
   }
 }
 
@@ -1976,17 +2332,20 @@ function refreshGuest() {
     const more = queue.length > 1 ? "   Sırada: " + (queue.length - 1) : "";
     const status = "Sabır: " + Math.ceil(g.patience) + " sn   Hak: " + (3 - g.attempts) + more;
     const kidTr = g.kids > 0 ? " - " + g.kids + " çocuklu" : "";
+    const hintLine = g.hint ? ('\n💬 "' + g.hint + '"') : "";
     if (pending === g) {
       guestText.textContent = g.name + " " + pendingPrice + " TL'ye anlaştı.\nOda seç: yeşil çerçeveli boş odaya dokun,\nsonra Yerleştir'e bas. (" + wantList(g, false) + ")";
     } else if (g.type === "Needy") {
-      guestText.textContent = g.name + " - " + g.days + " gün" + kidTr + '\n"' + g.story + '"\nİstekleri: ' + wantList(g, false) + "   " + status;
+      guestText.textContent = g.name + " (Depremzede +20 İtibar) - " + g.days + " gün" + kidTr + '\n"' + g.story + '"\nİstekleri: ' + wantList(g, false) + "   " + status;
+    } else if (g.type === "Freebie") {
+      guestText.textContent = g.name + " (Ücretsiz +10 İtibar) - " + g.days + " gün" + kidTr + '\n"' + g.story + '"\nİstekleri: ' + wantList(g, false) + "   " + status;
     } else if (g.type === "Threat") {
-      guestText.textContent = g.name + " - " + g.days + ' gün\n"' + g.story + '"\nBedava istiyor, reddedersen zarar verebilir.   ' + status;
+      guestText.textContent = g.name + " - " + g.days + ' gün\n"' + g.story + '"\nBedava istiyor, reddedersen odaya gidip zarar verir!   ' + status;
     } else if (g.chinese) {
       guestText.textContent = g.name + "  " + g.days + "天" + (g.kids > 0 ? "（带孩子 " + g.kids + "）" : "") + "  出价 " + g.offer + " 元\n我需要：" + wantList(g, true) +
         "\n(Çince: " + g.days + " gün, " + g.offer + " TL" + kidTr + "; istek: " + wantList(g, false) + ")   " + status;
     } else {
-      guestText.textContent = g.name + " - " + g.days + " gün" + kidTr + " - " + g.offer + " TL öneriyor\nİstekleri: " + wantList(g, false) + "\n" + status;
+      guestText.textContent = g.name + " - " + g.days + " gün" + kidTr + " - " + g.offer + " TL öneriyor\nİstekleri: " + wantList(g, false) + hintLine + "\n" + status;
     }
     if (pending) offerBtn.textContent = "Bekliyor";
     else if (g.type !== "Normal") offerBtn.textContent = curPrice <= 0 ? "Bedava al" : "Teklif ver";
@@ -1994,7 +2353,7 @@ function refreshGuest() {
   } else {
     offerBtn.textContent = "Teklif ver";
     if (queue.length > 0) guestText.textContent = queue[0].name + " otele yaklaşıyor...";
-    else if (!isOpen) guestText.textContent = "Otel kapalı, müşteri gelmez.";
+    else if (!isOpen) guestText.textContent = hasReadyRoom() ? "Otel kapalı, müşteri gelmez. (Sağ üstten AÇ)" : "Önce 1. Odayı kurup Kapısını al, sonra Oteli AÇ.";
     else guestText.textContent = "Müşteri bekleniyor...";
   }
 }
@@ -2078,6 +2437,23 @@ function handleWorldTap(clientX, clientY) {
       cleanDirt(d);
       return;
     }
+  }
+
+  // Çatıdaki Otel Tabelasına tıklama (isim değiştirme)
+  let topBuilt = 0;
+  for (let f = 0; f < FloorCount; f++) if (floors[f].state !== "Locked") topBuilt = floors[f].idx;
+  const roofSignY = (topBuilt + 1) * FloorH + 18;
+  const signW = Math.max(140, (hotelName || "OTEL").length * 22 + 36);
+  if (wx >= 16 && wx <= 16 + signW && wy >= roofSignY && wy <= roofSignY + 48) {
+    const newName = prompt("Otelin yeni ismini girin:", hotelName || "OTEL");
+    if (newName !== null && newName.trim().length > 0) {
+      hotelName = newName.trim().slice(0, 18).toUpperCase();
+      const inp = document.getElementById("hotel-name-input");
+      if (inp) inp.value = hotelName;
+      log("🏨 Otelin adı '" + hotelName + "' olarak değiştirildi!");
+      saveGame();
+    }
+    return;
   }
 
   // Bahçe tabelası
@@ -2285,8 +2661,10 @@ function drawWorld() {
   // Çatı ve Yıldızlar
   const roofY = (top + 1) * FloorH;
   rRect(-14, roofY, TotalW + 28, 18, "#8c3333", Pencil, 3);
-  rRect(16, roofY + 18, 140, 46, "#1f3373", Pencil, 2.5);
-  rText("OTEL", 16, roofY + 18, 140, 46, 30, "#ffffff");
+  const hNameStr = (hotelName || "OTEL").toUpperCase();
+  const signW = Math.max(140, hNameStr.length * 22 + 36);
+  rRect(16, roofY + 18, signW, 46, "#1f3373", Pencil, 2.5);
+  rText(hNameStr, 16, roofY + 18, signW, 46, hNameStr.length > 10 ? 24 : 30, "#ffffff");
 
   for (let i = 0; i < 3; i++) {
     const sx = ElevW + i * SlotW + SlotW * 0.5;
@@ -2579,6 +2957,11 @@ function drawPawn(p) {
   rCircle(0, 78, 25, 25, p.skin, Pencil, 2.5);
   rCircle(-10, 78, 3, 4, Pencil, null);
   rCircle(10, 78, 3, 4, Pencil, null);
+  if (p.isThief) {
+    rRect(-18, 74, 14, 8, "#111116", Pencil, 1.5);
+    rRect(4, 74, 14, 8, "#111116", Pencil, 1.5);
+    rRect(-4, 77, 8, 2.5, "#111116", null);
+  }
   rCircle(0, 97, 26, 12, p.hair, Pencil, 2);
 
   ctx.restore();
@@ -2806,12 +3189,22 @@ function loop(now) {
         g.parkTimer -= dt;
         if (g.parkTimer <= 0) { g.parkTimer = rnd(15, 30); sendKidsToPark(g); }
       }
+      if (g.state === "InRoom" && g.role === "Vampire" && isNight && !g.crimeDone) {
+        g.crimeTimer -= dt;
+        if (g.crimeTimer <= 0) triggerVampireHunt(g);
+      }
     } else if (g.state === "Exercising") {
       g.exLeft -= dt;
       if (g.exLeft <= 0) endExercise(g);
     } else if (g.state === "UsingToilet") {
       g.exLeft -= dt;
       if (g.exLeft <= 0) endToilet(g);
+    } else if (g.state === "AttackingWait") {
+      g.exLeft -= dt;
+      if (g.exLeft <= 0) {
+        g.pawn.exercise = false;
+        startLeaving(g);
+      }
     } else if (g.state === "Sleeping") {
       g.zTimer -= dt;
       if (g.zTimer <= 0) {
@@ -2820,6 +3213,13 @@ function loop(now) {
       }
     } else if (g.state === "Fleeing") {
       if (!g.room || !g.room.onFire) returnToRoom(g);
+    }
+    if (g.role === "Thief" && !g.crimeDone && isNight && (g.state === "InRoom" || g.state === "Sleeping")) {
+      g.crimeTimer -= dt;
+      if (g.crimeTimer <= 0) {
+        g.crimeDone = true;
+        triggerThiefAction(g);
+      }
     }
     if (g.kidsAtPark) {
       g.parkLeft -= dt;
@@ -2916,6 +3316,12 @@ function loop(now) {
     if (achTimer <= 0) achPopup.style.display = "none";
   }
 
+  saveTimer += dt;
+  if (saveTimer >= 6) {
+    saveTimer = 0;
+    saveGame();
+  }
+
   uiTimer += dt;
   if (uiTimer > 0.2) {
     uiTimer = 0;
@@ -2935,16 +3341,241 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+// ===== KALICI KAYIT SİSTEMİ (GÜNCELLEMELERDE DE KORUNUR) =====
+const SAVE_KEY = "thehotel_save_v1";
+
+function saveGame() {
+  try {
+    const data = {
+      v: 1,
+      hotelName: hotelName || "OTEL",
+      money,
+      reputation,
+      tools,
+      dayCount,
+      dayTimer,
+      isOpen,
+      gasOn,
+      gasLeak,
+      gasLeakLeft,
+      parkState,
+      parkLeft,
+      treePlanted: treePlanted.slice(),
+      achUnlocked: achUnlocked.slice(),
+      todayServed,
+      guestsSinceNeedy,
+      cleanerCount: cleaners.length,
+      floors: floors.map(fl => ({
+        state: fl.state,
+        buildLeft: fl.buildLeft,
+        buildTotal: fl.buildTotal,
+        slots: fl.slots.map(s => ({
+          type: s.type,
+          roomNo: s.roomNo,
+          hasDoor: s.hasDoor,
+          items: s.items.slice(),
+          maintenance: s.maintenance,
+          wall: s.wall,
+          picColor: s.picColor,
+          gymLevel: s.gymLevel,
+          onFire: s.onFire,
+          fireLeft: s.fireLeft,
+          guest: (s.guest && s.guest.state !== "Leaving") ? {
+            name: s.guest.name,
+            type: s.guest.type,
+            role: s.guest.role || "None",
+            hint: s.guest.hint || "",
+            chinese: !!s.guest.chinese,
+            wantsToilet: !!s.guest.wantsToilet,
+            expired: !!s.guest.expired,
+            kids: s.guest.kids || 0,
+            overstay: s.guest.overstay || 0,
+            budget: s.guest.budget || 0,
+            offer: s.guest.offer || 0,
+            days: s.guest.days || 1,
+            daysLeft: s.guest.daysLeft || 1,
+            price: s.guest.price || 0,
+            wants: (s.guest.wants || []).slice(),
+            crimeDone: !!s.guest.crimeDone
+          } : null
+        }))
+      }))
+    };
+    const raw = JSON.stringify(data);
+    try { localStorage.setItem(SAVE_KEY, raw); } catch (_) {}
+    try { window.name = "THEHOTEL_SAVE:" + raw; } catch (_) {}
+    try {
+      if (window.AndroidUpdater && typeof window.AndroidUpdater.saveGameData === "function") {
+        window.AndroidUpdater.saveGameData(raw);
+      }
+    } catch (_) {}
+  } catch (_) {}
+}
+
+function loadGame() {
+  try {
+    let raw = null;
+    try { raw = localStorage.getItem(SAVE_KEY); } catch (_) {}
+    if (!raw && window.AndroidUpdater && typeof window.AndroidUpdater.loadGameData === "function") {
+      try { raw = window.AndroidUpdater.loadGameData(); } catch (_) {}
+    }
+    if (!raw && typeof window.name === "string" && window.name.startsWith("THEHOTEL_SAVE:")) {
+      raw = window.name.slice("THEHOTEL_SAVE:".length);
+    }
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data || typeof data.money !== "number") return false;
+
+    hotelName = (data.hotelName || "OTEL").slice(0, 18).toUpperCase();
+    money = data.money;
+    reputation = data.reputation || 0;
+    tools = typeof data.tools === "number" ? data.tools : 3;
+    dayCount = data.dayCount || 1;
+    dayTimer = data.dayTimer || 0;
+    isOpen = !!data.isOpen;
+    gasOn = data.gasOn !== undefined ? !!data.gasOn : true;
+    gasLeak = !!data.gasLeak;
+    gasLeakLeft = data.gasLeakLeft || 0;
+    parkState = data.parkState || "Locked";
+    parkLeft = data.parkLeft || 0;
+    if (Array.isArray(data.treePlanted)) {
+      for (let i = 0; i < treePlanted.length && i < data.treePlanted.length; i++) {
+        treePlanted[i] = !!data.treePlanted[i];
+      }
+    }
+    if (Array.isArray(data.achUnlocked)) {
+      for (let i = 0; i < achUnlocked.length && i < data.achUnlocked.length; i++) {
+        achUnlocked[i] = !!data.achUnlocked[i];
+      }
+    }
+    todayServed = data.todayServed || 0;
+    guestsSinceNeedy = typeof data.guestsSinceNeedy === "number" ? data.guestsSinceNeedy : 6;
+
+    if (Array.isArray(data.floors)) {
+      for (let f = 0; f < FloorCount && f < data.floors.length; f++) {
+        const flData = data.floors[f];
+        const fl = floors[f];
+        fl.state = flData.state || (f === 0 ? "Built" : "Locked");
+        fl.buildLeft = flData.buildLeft || 0;
+        fl.buildTotal = flData.buildTotal || FloorBuildSec[f];
+        if (Array.isArray(flData.slots)) {
+          for (let i = 0; i < 4 && i < flData.slots.length; i++) {
+            const sd = flData.slots[i];
+            const s = fl.slots[i];
+            s.type = sd.type || "Empty";
+            s.roomNo = sd.roomNo || 0;
+            s.hasDoor = !!sd.hasDoor;
+            if (Array.isArray(sd.items)) {
+              for (let k = 0; k < ItemCount; k++) s.items[k] = !!sd.items[k];
+            }
+            s.maintenance = typeof sd.maintenance === "number" ? sd.maintenance : 100;
+            if (sd.wall) s.wall = sd.wall;
+            if (sd.picColor) s.picColor = sd.picColor;
+            s.gymLevel = sd.gymLevel || 1;
+            s.onFire = !!sd.onFire;
+            s.fireLeft = sd.fireLeft || 0;
+
+            if (sd.guest && s.type === "Room") {
+              const gd = sd.guest;
+              const g = {
+                name: gd.name || "Misafir",
+                type: gd.type || "Normal",
+                role: gd.role || "None",
+                hint: gd.hint || "",
+                chinese: !!gd.chinese,
+                wantsToilet: !!gd.wantsToilet,
+                expired: !!gd.expired,
+                kids: gd.kids || 0,
+                overstay: gd.overstay || 0,
+                budget: gd.budget || 0,
+                offer: gd.offer || 0,
+                days: gd.days || 1,
+                daysLeft: gd.daysLeft || 1,
+                price: gd.price || 0,
+                attempts: 0,
+                wants: Array.isArray(gd.wants) ? gd.wants.slice() : new Array(ItemCount).fill(false),
+                patience: 25, maxPatience: 25,
+                atSpot: false, arrivedOnce: true, state: "InRoom",
+                room: s, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
+                gymTimer: rnd(10, 25), toiletTimer: rnd(12, 28), parkTimer: rnd(12, 28),
+                crimeTimer: rnd(10, 18), crimeDone: !!gd.crimeDone,
+                parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
+                hasBubble: false, bubbleLines: ["", ""]
+              };
+              const spawnPos = { x: s.X0 + SlotW * 0.5, y: fl.WalkY };
+              if (g.role === "Vampire") {
+                g.pawn = makePawn(spawnPos, "#f0ebf5", "#17131c", "#3d1424");
+              } else if (g.role === "Thief") {
+                g.pawn = makePawn(spawnPos, pick(Skins), "#1a1412", "#282c37");
+                g.pawn.isThief = true;
+              } else {
+                g.pawn = makeRandomPawn(spawnPos);
+              }
+              for (let k = 0; k < g.kids; k++) {
+                const kid = makeRandomPawn({ x: spawnPos.x - 24 * (k + 1), y: fl.WalkY });
+                kid.scale = 0.68; kid.follow = g.pawn; kid.followOffset = 48 * (k + 1);
+                g.kidPawns.push(kid);
+              }
+              s.guest = g;
+              guests.push(g);
+              startWander(g);
+            }
+          }
+        }
+      }
+    }
+
+    const cCount = Math.min(MaxCleaners, data.cleanerCount || 0);
+    for (let i = 0; i < cCount; i++) {
+      const p = makePawn({ x: ElevX + 110 + i * 45, y: floors[0].WalkY }, pick(Skins), pick(Hairs), "#338c99");
+      cleaners.push({ pawn: p, target: null, state: 0, timer: 0 });
+    }
+
+    // Oyun başında ilk odamızı ve kapımızı almamız lazım koruması (kayıt sonrası da kontrol)
+    if (!hasReadyRoom()) {
+      isOpen = false;
+      const fSlot = floors[0].slots[0];
+      const needed = (fSlot.type === "Room" ? 0 : CostBuildRoom) + (fSlot.hasDoor ? 0 : CostDoor);
+      if (money < needed) money = needed;
+    }
+
+    renumberRooms();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function resetSave() {
+  if (!confirm("Kayıtlı oyunu silip sıfırdan başlamak istediğine emin misin?")) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
+  try { window.name = ""; } catch (_) {}
+  try {
+    if (window.AndroidUpdater && typeof window.AndroidUpdater.saveGameData === "function") {
+      window.AndroidUpdater.saveGameData("");
+    }
+  } catch (_) {}
+  location.reload();
+}
+
+window.addEventListener("beforeunload", () => saveGame());
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });
+
+const hadSavedGame = loadGame();
 applySeason();
 updateDayNight();
 resetSpawn();
-log("Hoş geldin! Önce oda kur, kapısını al, sonra oteli aç.");
+if (hadSavedGame) {
+  log("💾 Kayıtlı otelin (" + hotelName + ") kaldığın yerden yüklendi!");
+} else {
+  log("Hoş geldin! Önce 1. odanı kur ve kapısını tak, sonra oteli aç.");
+}
 refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 3;
-const APP_VERSION_NAME = "1.2.0";
+const APP_VERSION_CODE = 4;
+const APP_VERSION_NAME = "1.3.0";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -2963,6 +3594,8 @@ const btnToggleSfx = document.getElementById("btn-toggle-sfx");
 const btnToggleBgm = document.getElementById("btn-toggle-bgm");
 const btnHowTo = document.getElementById("btn-how-to");
 const howToBox = document.getElementById("how-to-box");
+const hotelNameInput = document.getElementById("hotel-name-input");
+const btnResetSave = document.getElementById("btn-reset-save");
 
 const btnUpdate = document.getElementById("btn-update");
 const updateModal = document.getElementById("update-modal");
@@ -2975,16 +3608,37 @@ let latestUpdateData = null;
 
 menuVerBadge.textContent = "Sürüm v" + APP_VERSION_NAME;
 btnUpdate.textContent = "Güncelle\nv" + APP_VERSION_NAME;
+if (hotelNameInput) {
+  hotelNameInput.value = hotelName || "OTEL";
+  hotelNameInput.addEventListener("input", () => {
+    const v = hotelNameInput.value.trim().slice(0, 18).toUpperCase();
+    hotelName = v || "OTEL";
+  });
+}
+if (btnResetSave) {
+  btnResetSave.style.display = hadSavedGame ? "block" : "none";
+  btnResetSave.onclick = () => { play("tap"); resetSave(); };
+}
+if (hadSavedGame) {
+  btnStartGame.textContent = "▶ KAYITLI OYUNA DEVAM ET";
+}
 
 function openStartMenu() {
   inMenu = true;
-  btnStartGame.textContent = gameStartedOnce ? "▶ OYUNA DEVAM ET" : "▶ OYUNA BAŞLA";
+  saveGame();
+  if (hotelNameInput) hotelNameInput.value = hotelName || "OTEL";
+  if (btnResetSave) btnResetSave.style.display = "block";
+  btnStartGame.textContent = (gameStartedOnce || hadSavedGame) ? "▶ OYUNA DEVAM ET" : "▶ OYUNA BAŞLA";
   startScreen.style.display = "flex";
   checkForUpdate(false);
 }
 
 btnStartGame.onclick = () => {
   initAudio();
+  if (hotelNameInput && hotelNameInput.value.trim()) {
+    hotelName = hotelNameInput.value.trim().slice(0, 18).toUpperCase();
+  }
+  saveGame();
   inMenu = false;
   startScreen.style.display = "none";
   if (!gameStartedOnce) {
@@ -3050,14 +3704,15 @@ function drawMenuLogo() {
   c.strokeRect(42, 62, 156, 12);
 
   c.fillStyle = "#1f3373";
-  c.fillRect(76, 40, 88, 22);
+  c.fillRect(66, 40, 108, 22);
   c.lineWidth = 3;
-  c.strokeRect(76, 40, 88, 22);
+  c.strokeRect(66, 40, 108, 22);
   c.fillStyle = "#ffffff";
-  c.font = "bold 13px Arial";
+  const logoTitle = (hotelName || "OTEL").slice(0, 12);
+  c.font = (logoTitle.length > 8 ? "bold 10px Arial" : "bold 13px Arial");
   c.textAlign = "center";
   c.textBaseline = "middle";
-  c.fillText("HOTEL", 120, 51);
+  c.fillText(logoTitle, 120, 51);
 
   // Pencereler
   const winGlow = Math.sin(timeNow * 3) * 0.1 + 0.9;
@@ -3161,6 +3816,7 @@ async function checkForUpdate(manual) {
 
 async function installUpdate(data) {
   if (!data) return;
+  saveGame();
   const targetUrl = data.updateUrl || data.htmlUrl || "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html";
   btnDoUpdate.disabled = true;
   btnDoUpdate.textContent = "İndiriliyor...";
@@ -3173,6 +3829,7 @@ async function installUpdate(data) {
     if (!htmlContent || htmlContent.length < 500 || !htmlContent.includes("<html")) {
       throw new Error("Geçersiz güncelleme paketi");
     }
+    saveGame();
     if (window.AndroidUpdater && typeof window.AndroidUpdater.applyUpdate === "function") {
       btnDoUpdate.textContent = "Kuruluyor...";
       mucInstallBtn.textContent = "⚙️ Kuruluyor...";
