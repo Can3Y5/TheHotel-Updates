@@ -46,6 +46,86 @@
   #btn-staff { top: 40%; width: 13%; background: rgba(255,242,191,0.95); font-size: clamp(9px, 2.3vw, 12px); }
   #btn-ach { top: 52%; width: 13%; background: rgba(217,242,204,0.95); font-size: clamp(9px, 2.3vw, 12px); }
   #btn-update { top: 64%; width: 13%; background: rgba(204,230,255,0.95); font-size: clamp(8.5px, 2.1vw, 11px); white-space: pre-line; line-height: 1.05; text-align: center; }
+  #btn-menu { top: 76%; width: 13%; background: rgba(242,217,255,0.95); font-size: clamp(9px, 2.3vw, 12px); }
+
+  /* OYUN GİRİŞ EKRANI (ANA MENÜ) */
+  #start-screen {
+    position: absolute; inset: 0; z-index: 30;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 5% 6%; overflow-y: auto;
+    background-color: #f7f7f0;
+    background-image: linear-gradient(to right, #b8c7e6 1px, transparent 1px), linear-gradient(to bottom, #b8c7e6 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .menu-hero {
+    width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 1%;
+  }
+  #menu-logo-canvas {
+    width: 150px; height: 150px; border: 3px solid #1f1f26; border-radius: 24px;
+    background: #6eb8f5; box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+  }
+  .menu-title {
+    font-size: clamp(24px, 6.8vw, 34px); font-weight: 900; color: #1f1f26;
+    letter-spacing: 0.5px; text-align: center; margin-top: 4px;
+  }
+  .menu-sub {
+    font-size: clamp(11px, 3vw, 14px); font-weight: 600; color: #4a5568; text-align: center;
+  }
+  .menu-badge {
+    display: inline-block; background: #1f3373; color: #ffffff; font-weight: 800;
+    font-size: clamp(10px, 2.6vw, 12px); padding: 3px 10px; border-radius: 12px;
+    border: 2px solid #1f1f26;
+  }
+
+  /* Giriş Ekranı Güncelleme Denetim Kartı */
+  #menu-update-card {
+    width: 100%; background: rgba(255,255,255,0.95); border: 2.5px solid #1f1f26;
+    border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  .muc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #muc-status { font-size: clamp(11px, 2.9vw, 13.5px); font-weight: 800; color: #1f1f26; }
+  #muc-check-btn {
+    background: #d9ebff; border: 2px solid #1f1f26; border-radius: 6px;
+    padding: 5px 9px; font-size: clamp(10px, 2.5vw, 12px); font-weight: 700; color: #1f1f26; cursor: pointer;
+    white-space: nowrap;
+  }
+  #muc-notes {
+    display: none; font-size: clamp(10.5px, 2.6vw, 12.5px); color: #1f1f26;
+    background: #fff9db; border: 1.5px solid #e6b800; border-radius: 6px; padding: 7px 9px;
+    white-space: pre-line; line-height: 1.25;
+  }
+  #muc-install-btn {
+    display: none; width: 100%; padding: 9px; background: #8ce099;
+    border: 2px solid #1f1f26; border-radius: 6px; font-size: clamp(12px, 3.2vw, 14.5px);
+    font-weight: 900; color: #1f1f26; cursor: pointer;
+  }
+
+  /* Menü Butonları */
+  .menu-btns {
+    width: 100%; display: flex; flex-direction: column; gap: 8px;
+  }
+  .m-btn {
+    width: 100%; padding: 12px 10px; border: 2.5px solid #1f1f26; border-radius: 8px;
+    font-size: clamp(13px, 3.6vw, 17px); font-weight: 800; color: #1f1f26;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 3px 0 #1f1f26; transition: transform 0.06s;
+  }
+  .m-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f1f26; }
+  #btn-start-game { background: #8ce099; font-size: clamp(15px, 4.2vw, 20px); padding: 14px 10px; }
+  .menu-row-2 { display: flex; gap: 8px; width: 100%; }
+  .menu-row-2 .m-btn { flex: 1; font-size: clamp(11px, 2.8vw, 13.5px); padding: 10px 6px; }
+  #btn-toggle-sfx { background: #ffe699; }
+  #btn-toggle-bgm { background: #c7d9fa; }
+  #btn-how-to { background: #f2e6ff; font-size: clamp(11.5px, 3vw, 14px); padding: 9px; }
+  #how-to-box {
+    display: none; width: 100%; background: rgba(255,255,255,0.95); border: 2px solid #1f1f26;
+    border-radius: 8px; padding: 10px; font-size: clamp(10.5px, 2.6vw, 12.5px); color: #1f1f26;
+    line-height: 1.35; white-space: pre-line; max-height: 150px; overflow-y: auto;
+  }
+  .menu-footer {
+    font-size: clamp(9.5px, 2.3vw, 11.5px); color: #555; text-align: center; font-weight: 600;
+  }
 
   #ach-popup {
     position: absolute; left: 3%; top: 2%; width: 81%; min-height: 9%;
@@ -151,7 +231,42 @@
     <button id="btn-staff" class="vp-btn">Personel</button>
     <button id="btn-ach" class="vp-btn">Başarılar</button>
     <button id="btn-update" class="vp-btn">Güncelle
-v1.0.0</button>
+v1.1.0</button>
+    <button id="btn-menu" class="vp-btn">☰ Menü</button>
+  </div>
+  <!-- OYUN GİRİŞ EKRANI -->
+  <div id="start-screen">
+    <div class="menu-hero">
+      <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
+      <div class="menu-title">THE HOTEL GAME</div>
+      <div class="menu-sub">Otel Yönetim & İnşaat Simülasyonu</div>
+      <div class="menu-badge" id="menu-ver-badge">Sürüm v1.1.0</div>
+    </div>
+
+    <div id="menu-update-card">
+      <div class="muc-row">
+        <div id="muc-status">🔄 Güncellemeler denetleniyor...</div>
+        <button id="muc-check-btn">🔄 Denetle</button>
+      </div>
+      <div id="muc-notes"></div>
+      <button id="muc-install-btn">⬇ YENİ GÜNCELLEMEYİ İNDİR VE KUR</button>
+    </div>
+
+    <div class="menu-btns">
+      <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
+      <div class="menu-row-2">
+        <button id="btn-toggle-sfx" class="m-btn">🔊 Ses: AÇIK</button>
+        <button id="btn-toggle-bgm" class="m-btn">🎵 Müzik: AÇIK</button>
+      </div>
+      <button id="btn-how-to" class="m-btn">❓ Nasıl Oynanır?</button>
+      <div id="how-to-box">• Önce boş bir alana tıklayıp "Oda kur" ve "Kapı al" yap, ardından sağ üstten Oteli AÇ.
+• Gelen müşterilerle pazarlık yap veya teklifini kabul edip boş odaya yerleştir.
+• Müşterilerin istediği eşyaları (Yatak, TV, Klima, Ampul vb.), Tuvalet ve Park alanını kurarak yüksek yıldız ve itibar kazan.
+• Kışın odaları ısıtmak için Doğalgaz kazan dairesi veya Klima kur; gaz kaçağı ve yangınlara dikkat et!
+• Dışarıdaki kirlere dokunarak temizle: her 2 kirde +1 Alet kazanırsın.</div>
+    </div>
+
+    <div class="menu-footer">TheHotel Game • Otomatik Güncelleme Destekli</div>
   </div>
   <div id="update-modal">
     <div class="update-box">
@@ -257,28 +372,33 @@ const lerpColor = (c1, c2, t) => {
   return `rgb(${r},${g},${b})`;
 };
 
-// ===== SES SENTEZLEYİCİ (Web Audio API) =====
+// ===== SES VE MÜZİK SENTEZLEYİCİ (Android Native + WAV + Web Audio API) =====
 let audioCtx = null;
+let sfxEnabled = true;
+let bgmEnabled = true;
+let inMenu = true;
+let gameStartedOnce = false;
 const sounds = {};
-function initAudio() {
-  if (audioCtx) return;
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) return;
-  audioCtx = new AC();
-  sounds.open = synth([523.25, 659.25, 783.99, 1046.5], 0.11, 0.8, 4, 0.25);
-  sounds.close = synth([783.99, 659.25, 523.25, 392], 0.16, 0.8, 4, 0.25);
-  sounds.bell = synth([1318.5, 1760], 0.1, 0.6, 6, 0.22);
-  sounds.coin = synth([987.77, 1318.5], 0.07, 0.3, 10, 0.2);
-  sounds.build = synth([130.8, 98], 0.12, 0.35, 9, 0.35);
-  sounds.done = synth([523.25, 659.25, 783.99, 1046.5, 1318.5], 0.09, 0.7, 5, 0.22);
-  sounds.alarm = synth([233, 196, 233, 196], 0.14, 0.3, 3, 0.3);
-}
-function synth(freqs, step, noteLen, decay, vol) {
-  const rate = 44100;
+const wavUrls = {};
+
+const SOUND_DEFS = {
+  open:   { freqs: [523.25, 659.25, 783.99, 1046.5], step: 0.11, len: 0.8, decay: 4,  vol: 0.32 },
+  close:  { freqs: [783.99, 659.25, 523.25, 392.0],  step: 0.16, len: 0.8, decay: 4,  vol: 0.32 },
+  bell:   { freqs: [1318.5, 1760.0],                 step: 0.10, len: 0.6, decay: 6,  vol: 0.30 },
+  coin:   { freqs: [987.77, 1318.5],                 step: 0.07, len: 0.3, decay: 10, vol: 0.28 },
+  build:  { freqs: [130.8, 98.0],                    step: 0.12, len: 0.35,decay: 9,  vol: 0.42 },
+  done:   { freqs: [523.25, 659.25, 783.99, 1046.5, 1318.5], step: 0.09, len: 0.7, decay: 5, vol: 0.30 },
+  alarm:  { freqs: [233.0, 196.0, 233.0, 196.0],     step: 0.14, len: 0.3, decay: 3,  vol: 0.38 },
+  tap:    { freqs: [660.0],                          step: 0.04, len: 0.08,decay: 22, vol: 0.20 },
+  clean:  { freqs: [587.33, 783.99, 987.77],         step: 0.06, len: 0.22,decay: 12, vol: 0.26 },
+  reject: { freqs: [196.0, 146.83],                  step: 0.12, len: 0.28,decay: 8,  vol: 0.32 },
+  place:  { freqs: [440.0, 554.37, 659.25],          step: 0.07, len: 0.3, decay: 8,  vol: 0.28 }
+};
+
+function makePcmSamples(freqs, step, noteLen, decay, vol, rate = 22050) {
   const total = step * (freqs.length - 1) + noteLen;
   const n = Math.ceil(total * rate);
-  const buf = audioCtx.createBuffer(1, n, rate);
-  const data = buf.getChannelData(0);
+  const data = new Float32Array(n);
   const len = Math.round(noteLen * rate);
   for (let i = 0; i < freqs.length; i++) {
     const start = Math.round(i * step * rate);
@@ -289,17 +409,123 @@ function synth(freqs, step, noteLen, decay, vol) {
       data[start + s] += v * env * vol;
     }
   }
-  return buf;
+  return { data, rate };
 }
+
+function samplesToWavUrl(samples, rate) {
+  const numSamples = samples.length;
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+  const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+  writeStr(0, "RIFF");
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeStr(8, "WAVE");
+  writeStr(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, "data");
+  view.setUint32(40, numSamples * 2, true);
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+  const bytes = new Uint8Array(buffer);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return "data:audio/wav;base64," + btoa(bin);
+}
+
+function initAudio() {
+  if (! Object.keys(wavUrls).length) {
+    for (const [k, d] of Object.entries(SOUND_DEFS)) {
+      const pcm = makePcmSamples(d.freqs, d.step, d.len, d.decay, d.vol, 22050);
+      wavUrls[k] = samplesToWavUrl(pcm.data, pcm.rate);
+    }
+  }
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) {
+      audioCtx = new AC();
+      for (const [k, d] of Object.entries(SOUND_DEFS)) {
+        const pcm = makePcmSamples(d.freqs, d.step, d.len, d.decay, d.vol, 44100);
+        const buf = audioCtx.createBuffer(1, pcm.data.length, 44100);
+        buf.getChannelData(0).set(pcm.data);
+        sounds[k] = buf;
+      }
+    }
+  }
+  if (audioCtx && audioCtx.state === "suspended") {
+    audioCtx.resume().catch(() => {});
+  }
+}
+
 function play(name) {
+  if (!sfxEnabled) return;
   initAudio();
-  if (!audioCtx || !sounds[name]) return;
-  if (audioCtx.state === "suspended") audioCtx.resume();
-  const src = audioCtx.createBufferSource();
-  src.buffer = sounds[name];
-  src.connect(audioCtx.destination);
-  src.start();
+  // 1) Android Native ses köprüsü varsa kullan
+  if (window.AndroidUpdater && typeof window.AndroidUpdater.playSound === "function") {
+    try { window.AndroidUpdater.playSound(name); return; } catch (_) {}
+  }
+  // 2) Web Audio API
+  if (audioCtx && sounds[name] && audioCtx.state === "running") {
+    try {
+      const src = audioCtx.createBufferSource();
+      src.buffer = sounds[name];
+      src.connect(audioCtx.destination);
+      src.start();
+      return;
+    } catch (_) {}
+  }
+  // 3) WAV <audio> Yedek Sistemi
+  if (wavUrls[name]) {
+    try {
+      const a = new Audio(wavUrls[name]);
+      a.volume = 0.85;
+      a.play().catch(() => {});
+    } catch (_) {}
+  }
 }
+
+// Rahatlatıcı Otel Lobisi Arka Plan Müziği
+const BGM_NOTES = [
+  261.63, 329.63, 392.00, 493.88, 392.00, 329.63,
+  293.66, 349.23, 440.00, 523.25, 440.00, 349.23,
+  246.94, 329.63, 392.00, 493.88, 392.00, 329.63,
+  261.63, 329.63, 392.00, 523.25, 392.00, 329.63
+];
+let bgmIdx = 0, bgmTimer = 0;
+function updateBgm(dt) {
+  if (!bgmEnabled || inMenu) return;
+  bgmTimer -= dt;
+  if (bgmTimer <= 0) {
+    bgmTimer = 0.55;
+    const freq = BGM_NOTES[bgmIdx % BGM_NOTES.length];
+    bgmIdx++;
+    if (audioCtx && audioCtx.state === "running") {
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const now = audioCtx.currentTime;
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.045, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.48);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } catch (_) {}
+    }
+  }
+}
+
+window.addEventListener("pointerdown", () => initAudio(), { passive: true });
 
 // ===== OYUN DURUMU =====
 const floors = [];
@@ -381,13 +607,14 @@ for (let i = 0; i < ActCount; i++) {
 }
 
 openBtn.onclick = toggleOpen;
-document.getElementById("btn-zoom-in").onclick = () => zoomBy(1.25);
-document.getElementById("btn-zoom-out").onclick = () => zoomBy(0.8);
-document.getElementById("btn-fit").onclick = fitView;
-document.getElementById("btn-staff").onclick = () => selectMode("Staff");
-document.getElementById("btn-ach").onclick = () => selectMode("Ach");
-document.getElementById("btn-minus").onclick = () => { curPrice = Math.max(0, curPrice - 5); refreshGuest(); };
-document.getElementById("btn-plus").onclick = () => { curPrice = Math.min(500, curPrice + 5); refreshGuest(); };
+document.getElementById("btn-zoom-in").onclick = () => { play("tap"); zoomBy(1.25); };
+document.getElementById("btn-zoom-out").onclick = () => { play("tap"); zoomBy(0.8); };
+document.getElementById("btn-fit").onclick = () => { play("tap"); fitView(); };
+document.getElementById("btn-staff").onclick = () => { play("tap"); selectMode("Staff"); };
+document.getElementById("btn-ach").onclick = () => { play("tap"); selectMode("Ach"); };
+document.getElementById("btn-menu").onclick = () => { play("tap"); openStartMenu(); };
+document.getElementById("btn-minus").onclick = () => { play("tap"); curPrice = Math.max(0, curPrice - 5); refreshGuest(); };
+document.getElementById("btn-plus").onclick = () => { play("tap"); curPrice = Math.min(500, curPrice + 5); refreshGuest(); };
 offerBtn.onclick = onOffer;
 document.getElementById("btn-reject").onclick = onReject;
 
@@ -674,20 +901,24 @@ function onOffer() {
   if (curPrice <= g.budget) { acceptGuest(g, curPrice); return; }
   g.attempts++;
   if (g.type === "Needy") {
+    play("reject");
     if (g.attempts >= 3) { dismissFront(g, g.name + ': "Param yok, gerçekten... Gidiyorum."'); return; }
     curPrice = 0;
     log(g.name + ': "Param yok, ödeyemem!" (' + (3 - g.attempts) + ' hak kaldı)');
     refresh(); return;
   }
   if (g.type === "Threat") {
+    play("alarm");
     if (g.attempts >= 3) { threatDamage(g); return; }
     curPrice = 0;
     log(g.name + ': "Ödemem diyorum, bedavaya al!" (' + (3 - g.attempts) + ' hak kaldı)');
     refresh(); return;
   }
   if (g.attempts >= 3) {
+    play("reject");
     dismissFront(g, g.name + ': "Olmaz, çok pahalı. Gidiyorum!"'); return;
   }
+  play("tap");
   let np = Math.min(g.budget, round5(g.offer + (g.budget - g.offer) * 0.4));
   if (np <= g.offer) np = Math.min(g.budget, g.offer + 5);
   g.offer = np; curPrice = np;
@@ -697,7 +928,8 @@ function onOffer() {
 }
 
 function acceptGuest(g, price) {
-  if (freeRoomCount() === 0) { dismissFront(g, "Boş oda kalmadı!"); return; }
+  if (freeRoomCount() === 0) { play("reject"); dismissFront(g, "Boş oda kalmadı!"); return; }
+  play("place");
   pending = g; pendingPrice = price;
   log(g.name + " anlaştı (" + price + " TL). Şimdi bir oda seç ve Yerleştir'e bas.");
   refresh();
@@ -706,7 +938,7 @@ function acceptGuest(g, price) {
 function placeGuest() {
   const g = pending, room = selSlot;
   if (!g) return;
-  if (sel !== "Slot" || !room || !room.Ready || room.guest || room.onFire) { log("Bu oda uygun değil."); return; }
+  if (sel !== "Slot" || !room || !room.Ready || room.guest || room.onFire) { play("reject"); log("Bu oda uygun değil."); return; }
   const idx = queue.indexOf(g);
   if (idx >= 0) queue.splice(idx, 1);
   g.hasBubble = false; pending = null;
@@ -715,6 +947,7 @@ function placeGuest() {
   g.pawn.path = [];
   addPath(g.pawn, floorOf(g.pawn.pos.y), room.floor.idx, room.X0 + SlotW * 0.5);
   g.pawn.onArrive = () => onGuestInRoom(g);
+  play("place");
   log(g.name + " " + room.roomNo + ". odaya gidiyor (" + g.days + " gün, günlük " + g.price + " TL).");
   todayServed++;
   if (todayServed >= 10) unlock(1);
@@ -733,6 +966,7 @@ function onReject() {
   const g = front();
   if (!g) return;
   if (g.type === "Threat") { threatDamage(g); return; }
+  play("reject");
   dismissFront(g, g.name + " geri çevrildi.");
 }
 
@@ -884,6 +1118,7 @@ function cleanDirt(d) {
     play("coin");
   } else {
     floatText(d.x + 25, d.y + 40, "temizlendi", "#4d734d");
+    play("clean");
   }
   refreshHud();
   if (sel === "Slot") refreshPanel();
@@ -1129,6 +1364,7 @@ function checkout(s) {
 
 function pay(cost) {
   if (money >= cost) { money -= cost; return true; }
+  play("reject");
   log("Para yetmiyor!"); return false;
 }
 
@@ -1137,11 +1373,13 @@ function doMaint(s) {
   if (tools >= 1) {
     tools--;
     s.maintenance = 100;
+    play("clean");
     log("Bakım yapıldı (1 alet).");
     return true;
   }
   if (pay(maintCost(s))) {
     s.maintenance = 100;
+    play("clean");
     log("Bakım yapıldı.");
     return true;
   }
@@ -1260,9 +1498,9 @@ function log(msg) {
   logText.textContent = logLines.join("\n");
 }
 
-function selectSlot(s) { sel = "Slot"; selSlot = s; selFloor = null; refresh(); }
-function selectFloor(f) { sel = "Floor"; selFloor = f; selSlot = null; refresh(); }
-function selectMode(m) { sel = m; selSlot = null; selFloor = null; refresh(); }
+function selectSlot(s) { play("tap"); sel = "Slot"; selSlot = s; selFloor = null; refresh(); }
+function selectFloor(f) { play("tap"); sel = "Floor"; selFloor = f; selSlot = null; refresh(); }
+function selectMode(m) { play("tap"); sel = m; selSlot = null; selFloor = null; refresh(); }
 
 function floatText(x, y, msg, col) {
   floaties.push({ x, y, msg, col, life: 2.2, max: 2.2 });
@@ -2010,6 +2248,15 @@ function loop(now) {
 
   if (!camInit && viewport.clientWidth > 10) { camInit = true; fitView(); }
 
+  if (inMenu) {
+    drawMenuLogo();
+    drawWorld();
+    requestAnimationFrame(loop);
+    return;
+  }
+
+  updateBgm(dt);
+
   dayTimer += dt;
   if (dayTimer >= DayLength) { dayTimer = 0; newDay(); }
   updateDayNight();
@@ -2174,13 +2421,27 @@ log("Hoş geldin! Önce oda kur, kapısını al, sonra oteli aç.");
 refresh();
 requestAnimationFrame(loop);
 
-// ===== OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 1;
-const APP_VERSION_NAME = "1.0.0";
+// ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
+const APP_VERSION_CODE = 2;
+const APP_VERSION_NAME = "1.1.0";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
 ];
+
+const startScreen = document.getElementById("start-screen");
+const menuLogoCanvas = document.getElementById("menu-logo-canvas");
+const menuLogoCtx = menuLogoCanvas.getContext("2d");
+const menuVerBadge = document.getElementById("menu-ver-badge");
+const mucStatus = document.getElementById("muc-status");
+const mucCheckBtn = document.getElementById("muc-check-btn");
+const mucNotes = document.getElementById("muc-notes");
+const mucInstallBtn = document.getElementById("muc-install-btn");
+const btnStartGame = document.getElementById("btn-start-game");
+const btnToggleSfx = document.getElementById("btn-toggle-sfx");
+const btnToggleBgm = document.getElementById("btn-toggle-bgm");
+const btnHowTo = document.getElementById("btn-how-to");
+const howToBox = document.getElementById("how-to-box");
 
 const btnUpdate = document.getElementById("btn-update");
 const updateModal = document.getElementById("update-modal");
@@ -2191,10 +2452,137 @@ const btnDoUpdate = document.getElementById("btn-do-update");
 const btnCloseUpdate = document.getElementById("btn-close-update");
 let latestUpdateData = null;
 
+menuVerBadge.textContent = "Sürüm v" + APP_VERSION_NAME;
 btnUpdate.textContent = "Güncelle\nv" + APP_VERSION_NAME;
-btnUpdate.onclick = () => checkForUpdate(true);
-btnCloseUpdate.onclick = () => { updateModal.style.display = "none"; };
-btnDoUpdate.onclick = () => { if (latestUpdateData) installUpdate(latestUpdateData); };
+
+function openStartMenu() {
+  inMenu = true;
+  btnStartGame.textContent = gameStartedOnce ? "▶ OYUNA DEVAM ET" : "▶ OYUNA BAŞLA";
+  startScreen.style.display = "flex";
+  checkForUpdate(false);
+}
+
+btnStartGame.onclick = () => {
+  initAudio();
+  inMenu = false;
+  startScreen.style.display = "none";
+  if (!gameStartedOnce) {
+    gameStartedOnce = true;
+    play("open");
+  } else {
+    play("tap");
+  }
+};
+
+btnToggleSfx.onclick = () => {
+  sfxEnabled = !sfxEnabled;
+  btnToggleSfx.textContent = sfxEnabled ? "🔊 Ses: AÇIK" : "🔇 Ses: KAPALI";
+  btnToggleSfx.style.background = sfxEnabled ? "#ffe699" : "#d9d9e0";
+  if (sfxEnabled) play("tap");
+};
+
+btnToggleBgm.onclick = () => {
+  bgmEnabled = !bgmEnabled;
+  btnToggleBgm.textContent = bgmEnabled ? "🎵 Müzik: AÇIK" : "🎵 Müzik: KAPALI";
+  btnToggleBgm.style.background = bgmEnabled ? "#c7d9fa" : "#d9d9e0";
+  play("tap");
+};
+
+btnHowTo.onclick = () => {
+  play("tap");
+  howToBox.style.display = howToBox.style.display === "block" ? "none" : "block";
+};
+
+function drawMenuLogo() {
+  const c = menuLogoCtx;
+  const w = menuLogoCanvas.width, h = menuLogoCanvas.height;
+  c.clearRect(0, 0, w, h);
+
+  // Gökyüzü
+  const grad = c.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, "#4ba5f5");
+  grad.addColorStop(1, "#afe1ff");
+  c.fillStyle = grad;
+  c.fillRect(0, 0, w, h);
+
+  // Çim ve Yol
+  c.fillStyle = "#66b94b";
+  c.fillRect(0, 192, w, 48);
+  c.fillStyle = "#d2ccbe";
+  c.fillRect(0, 184, w, 10);
+
+  // Otel Binası
+  c.fillStyle = "#f5d7be";
+  c.fillRect(52, 72, 136, 114);
+  c.lineWidth = 4.5;
+  c.strokeStyle = "#1f1f26";
+  c.strokeRect(52, 72, 136, 114);
+
+  // Kat çizgileri
+  c.fillStyle = "#8c5f41";
+  c.fillRect(52, 110, 136, 5);
+  c.fillRect(52, 148, 136, 5);
+
+  // Çatı ve Tabela
+  c.fillStyle = "#a53232";
+  c.fillRect(42, 62, 156, 12);
+  c.strokeRect(42, 62, 156, 12);
+
+  c.fillStyle = "#1f3373";
+  c.fillRect(76, 40, 88, 22);
+  c.lineWidth = 3;
+  c.strokeRect(76, 40, 88, 22);
+  c.fillStyle = "#ffffff";
+  c.font = "bold 13px Arial";
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillText("HOTEL", 120, 51);
+
+  // Pencereler
+  const winGlow = Math.sin(timeNow * 3) * 0.1 + 0.9;
+  c.fillStyle = `rgba(255, 238, 120, ${winGlow})`;
+  for (const fy of [80, 118]) {
+    for (const wx of [64, 107, 150]) {
+      c.fillRect(wx, fy, 26, 22);
+      c.strokeRect(wx, fy, 26, 22);
+    }
+  }
+
+  // Giriş Kapısı ve Tente
+  c.fillStyle = "#bee6ff";
+  c.fillRect(102, 158, 36, 28);
+  c.strokeRect(102, 158, 36, 28);
+  c.fillStyle = "#dc3737";
+  c.fillRect(96, 152, 48, 8);
+  c.strokeRect(96, 152, 48, 8);
+
+  // Üstte 3 Parlayan Yıldız
+  const drawMiniStar = (sx, sy, rad) => {
+    c.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const ang = -Math.PI / 2 + i * Math.PI / 5;
+      const r = i % 2 === 0 ? rad : rad * 0.44;
+      const px = sx + r * Math.cos(ang), py = sy + r * Math.sin(ang);
+      if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.closePath();
+    c.fillStyle = "#ffd728";
+    c.fill();
+    c.lineWidth = 2.5;
+    c.strokeStyle = "#1f1f26";
+    c.stroke();
+  };
+  const pulse = 1 + 0.08 * Math.sin(timeNow * 4);
+  drawMiniStar(74, 24, 12 * pulse);
+  drawMiniStar(120, 19, 14 * pulse);
+  drawMiniStar(166, 24, 12 * pulse);
+}
+
+btnUpdate.onclick = () => { play("tap"); checkForUpdate(true); };
+mucCheckBtn.onclick = () => { play("tap"); checkForUpdate(true); };
+mucInstallBtn.onclick = () => { play("tap"); if (latestUpdateData) installUpdate(latestUpdateData); };
+btnCloseUpdate.onclick = () => { play("tap"); updateModal.style.display = "none"; };
+btnDoUpdate.onclick = () => { play("tap"); if (latestUpdateData) installUpdate(latestUpdateData); };
 
 async function fetchManifest() {
   const ts = Date.now();
@@ -2208,27 +2596,46 @@ async function fetchManifest() {
 }
 
 async function checkForUpdate(manual) {
+  mucStatus.textContent = "🔄 Güncellemeler denetleniyor...";
+  mucStatus.style.color = "#265999";
   if (manual) log("Güncellemeler kontrol ediliyor...");
   const data = await fetchManifest();
   if (!data || typeof data.versionCode !== "number") {
-    if (manual) log("Güncelleme sunucusuna ulaşılamadı veya henüz yeni sürüm yok.");
+    mucStatus.textContent = "⚠️ Sunucuya ulaşılamadı (Çevrimdışı mod)";
+    mucStatus.style.color = "#b35900";
+    if (manual) log("Güncelleme sunucusuna ulaşılamadı.");
     return;
   }
   if (data.versionCode > APP_VERSION_CODE) {
     latestUpdateData = data;
+    const newVerStr = "v" + (data.versionName || data.versionCode);
+    mucStatus.textContent = "🔔 Yeni Güncelleme Var! (" + newVerStr + ")";
+    mucStatus.style.color = "#d93333";
+    mucNotes.style.display = "block";
+    mucNotes.textContent = "Yenilikler (" + newVerStr + "):\n" + (data.notes || "Yeni özellikler ve iyileştirmeler.");
+    mucInstallBtn.style.display = "block";
+    mucInstallBtn.disabled = false;
+    mucInstallBtn.textContent = "⬇ GÜNCELLEMEYİ İNDİR VE KUR (" + newVerStr + ")";
+
     updTitle.textContent = "🔔 Yeni Güncelleme Var!";
-    updVer.textContent = "Mevcut: v" + APP_VERSION_NAME + "  →  Yeni: v" + (data.versionName || data.versionCode);
+    updVer.textContent = "Mevcut: v" + APP_VERSION_NAME + "  →  Yeni: " + newVerStr;
     updNotes.textContent = data.notes || "Yeni özellikler ve iyileştirmeler eklendi.";
     btnDoUpdate.disabled = false;
     btnDoUpdate.textContent = "İndir ve Kur";
     btnUpdate.style.background = "#ffe666";
-    btnUpdate.textContent = "YENİ!\nv" + (data.versionName || data.versionCode);
-    updateModal.style.display = "flex";
+    btnUpdate.textContent = "YENİ!\n" + newVerStr;
+    if (!inMenu || manual) updateModal.style.display = "flex";
     play("bell");
-    log("Yeni güncelleme bulundu: v" + (data.versionName || data.versionCode));
-  } else if (manual) {
-    log("Oyun güncel! (v" + APP_VERSION_NAME + ")");
-    floatText(camCenter.x, camCenter.y, "Sürüm güncel (v" + APP_VERSION_NAME + ")", "#1a8c26");
+    log("Yeni güncelleme bulundu: " + newVerStr);
+  } else {
+    mucStatus.textContent = "✅ Oyun Güncel (v" + APP_VERSION_NAME + ")";
+    mucStatus.style.color = "#1a8c26";
+    mucNotes.style.display = "none";
+    mucInstallBtn.style.display = "none";
+    if (manual) {
+      log("Oyun güncel! (v" + APP_VERSION_NAME + ")");
+      if (!inMenu) floatText(camCenter.x, camCenter.y, "Sürüm güncel (v" + APP_VERSION_NAME + ")", "#1a8c26");
+    }
   }
 }
 
@@ -2236,6 +2643,8 @@ async function installUpdate(data) {
   if (!data || !data.updateUrl) return;
   btnDoUpdate.disabled = true;
   btnDoUpdate.textContent = "İndiriliyor...";
+  mucInstallBtn.disabled = true;
+  mucInstallBtn.textContent = "⏳ Güncelleme İndiriliyor...";
   try {
     const res = await fetch(data.updateUrl + "?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -2245,10 +2654,10 @@ async function installUpdate(data) {
     }
     if (window.AndroidUpdater && typeof window.AndroidUpdater.applyUpdate === "function") {
       btnDoUpdate.textContent = "Kuruluyor...";
+      mucInstallBtn.textContent = "⚙️ Kuruluyor...";
       const ok = window.AndroidUpdater.applyUpdate(htmlContent, data.versionCode, String(data.versionName || data.versionCode));
       if (!ok) throw new Error("Kurulum başarısız");
     } else {
-      // Tarayıcı / Masaüstü için anında yenileme
       document.open();
       document.write(htmlContent);
       document.close();
@@ -2256,11 +2665,13 @@ async function installUpdate(data) {
   } catch (err) {
     btnDoUpdate.disabled = false;
     btnDoUpdate.textContent = "Tekrar Dene";
+    mucInstallBtn.disabled = false;
+    mucInstallBtn.textContent = "Tekrar Dene";
     log("Güncelleme indirilemedi: " + err.message);
   }
 }
 
-setTimeout(() => checkForUpdate(false), 1500);
+setTimeout(() => checkForUpdate(false), 600);
 </script>
 </body>
 </html>
