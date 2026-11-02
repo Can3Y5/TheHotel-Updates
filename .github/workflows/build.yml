@@ -1,0 +1,303 @@
+name: Build Android APK and Windows EXE
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu İndir
+        uses: actions/checkout@v4
+
+      - name: Java JDK 17 Kurulumu
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Android Gradle Projesini Oluştur ve APK Derle
+        run: |
+          mkdir -p android-app/app/src/main/java/com/oteloyunu/app
+          mkdir -p android-app/app/src/main/assets
+          cp index.html android-app/app/src/main/assets/index.html
+
+          cat << 'EOF' > android-app/settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "OtelOyunu"
+          include ':app'
+          EOF
+
+          cat << 'EOF' > android-app/build.gradle
+          plugins {
+              id 'com.android.application' version '8.2.0' apply false
+          }
+          EOF
+
+          cat << 'EOF' > android-app/app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.oteloyunu.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.oteloyunu.app"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+              buildTypes {
+                  debug {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          EOF
+
+          cat << 'EOF' > android-app/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <application
+                  android:label="TheHotel Game"
+                  android:hardwareAccelerated="true"
+                  android:usesCleartextTraffic="true"
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="portrait"
+                      android:configChanges="orientation|screenSize|keyboardHidden">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat << 'EOF' > android-app/app/src/main/java/com/oteloyunu/app/MainActivity.java
+          package com.oteloyunu.app;
+
+          import android.app.Activity;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.net.Uri;
+          import android.os.Bundle;
+          import android.view.View;
+          import android.view.WindowManager;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.Toast;
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.nio.charset.StandardCharsets;
+
+          public class MainActivity extends Activity {
+              private static final int BUILTIN_VERSION = 1;
+              private static final String PREFS_NAME = "thehotel_updater_prefs";
+              private static final String KEY_VER = "installed_version";
+              private static final String KEY_VER_NAME = "installed_version_name";
+              private static final String UPDATE_FILE = "game_update.html";
+
+              private WebView webView;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                  getWindow().getDecorView().setSystemUiVisibility(
+                      View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                      | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                      | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                      | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                      | View.SYSTEM_UI_FLAG_FULLSCREEN
+                      | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                  );
+
+                  webView = new WebView(this);
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setAllowFileAccess(true);
+                  settings.setAllowContentAccess(true);
+                  settings.setAllowFileAccessFromFileURLs(true);
+                  settings.setAllowUniversalAccessFromFileURLs(true);
+                  settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                  settings.setMediaPlaybackRequiresUserGesture(false);
+
+                  webView.addJavascriptInterface(new AndroidUpdater(this), "AndroidUpdater");
+                  webView.setWebViewClient(new WebViewClient());
+                  setContentView(webView);
+
+                  loadCurrentGame();
+              }
+
+              private void loadCurrentGame() {
+                  SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                  int installedVer = prefs.getInt(KEY_VER, BUILTIN_VERSION);
+                  File updateFile = new File(getFilesDir(), UPDATE_FILE);
+
+                  if (installedVer > BUILTIN_VERSION && updateFile.exists() && updateFile.length() > 100) {
+                      webView.loadUrl(updateFile.toURI().toString());
+                  } else {
+                      webView.loadUrl("file:///android_asset/index.html");
+                  }
+              }
+
+              public class AndroidUpdater {
+                  private final Context ctx;
+                  AndroidUpdater(Context c) { this.ctx = c; }
+
+                  @JavascriptInterface
+                  public int getInstalledVersion() {
+                      SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                      File updateFile = new File(ctx.getFilesDir(), UPDATE_FILE);
+                      int v = prefs.getInt(KEY_VER, BUILTIN_VERSION);
+                      if (v > BUILTIN_VERSION && updateFile.exists()) return v;
+                      return BUILTIN_VERSION;
+                  }
+
+                  @JavascriptInterface
+                  public boolean applyUpdate(final String htmlContent, final int versionCode, final String versionName) {
+                      try {
+                          if (htmlContent == null || htmlContent.length() < 500 || !htmlContent.contains("<html")) {
+                              return false;
+                          }
+                          File updateFile = new File(ctx.getFilesDir(), UPDATE_FILE);
+                          try (FileOutputStream fos = new FileOutputStream(updateFile, false)) {
+                              fos.write(htmlContent.getBytes(StandardCharsets.UTF_8));
+                              fos.flush();
+                          }
+                          SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                          prefs.edit()
+                              .putInt(KEY_VER, versionCode)
+                              .putString(KEY_VER_NAME, versionName)
+                              .apply();
+
+                          runOnUiThread(() -> {
+                              Toast.makeText(ctx, "Güncelleme kuruldu: v" + versionName, Toast.LENGTH_LONG).show();
+                              webView.clearCache(true);
+                              loadCurrentGame();
+                          });
+                          return true;
+                      } catch (Exception e) {
+                          return false;
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public void openExternalUrl(final String url) {
+                      try {
+                          Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          ctx.startActivity(intent);
+                      } catch (Exception ignored) {}
+                  }
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (webView != null && webView.canGoBack()) {
+                      webView.goBack();
+                  } else {
+                      super.onBackPressed();
+                  }
+              }
+          }
+          EOF
+
+          cd android-app
+          gradle wrapper --gradle-version 8.5
+          ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../OtelOyunu-Android.apk
+
+      - name: APK Dosyasını Yükle (Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: OtelOyunu-Android-APK
+          path: OtelOyunu-Android.apk
+
+      - name: GitHub Releases Kısmına APK Yayınla
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: "TheHotel Game - Güncel APK (v1.0.0)"
+          body: "Otomatik güncelleme destekli Android APK dosyası. Aşağıdaki **OtelOyunu-Android.apk** dosyasına tıklayarak doğrudan indirebilirsiniz."
+          files: OtelOyunu-Android.apk
+          prerelease: false
+
+  build-windows-exe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu İndir
+        uses: actions/checkout@v4
+
+      - name: Node.js Kurulumu
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Electron ile Windows EXE Oluştur
+        run: |
+          mkdir -p win-app
+          cp index.html win-app/index.html
+          cat << 'EOF' > win-app/package.json
+          {
+            "name": "otel-oyunu",
+            "version": "1.0.0",
+            "main": "main.js"
+          }
+          EOF
+          cat << 'EOF' > win-app/main.js
+          const { app, BrowserWindow } = require('electron');
+          function createWindow() {
+            const win = new BrowserWindow({
+              width: 540,
+              height: 960,
+              autoHideMenuBar: true,
+              title: "TheHotel Game"
+            });
+            win.loadFile('index.html');
+          }
+          app.whenReady().then(createWindow);
+          app.on('window-all-closed', () => app.quit());
+          EOF
+          cd win-app
+          npm install --save-dev electron @electron/packager
+          npx electron-packager . OtelOyunu --platform=win32 --arch=x64 --out=../dist
+
+      - name: Windows EXE Dosyasını Yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: OtelOyunu-Windows-EXE
+          path: dist/OtelOyunu-win32-x64/
