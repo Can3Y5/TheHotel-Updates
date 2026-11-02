@@ -45,8 +45,75 @@
   #btn-fit { top: 28%; font-size: clamp(10px, 2.5vw, 13px); }
   #btn-staff { top: 40%; width: 13%; background: rgba(255,242,191,0.95); font-size: clamp(9px, 2.3vw, 12px); }
   #btn-ach { top: 52%; width: 13%; background: rgba(217,242,204,0.95); font-size: clamp(9px, 2.3vw, 12px); }
-  #btn-update { top: 64%; width: 13%; background: rgba(204,230,255,0.95); font-size: clamp(8.5px, 2.1vw, 11px); white-space: pre-line; line-height: 1.05; text-align: center; }
+  #btn-guestbook { top: 64%; width: 13%; background: rgba(255,224,178,0.96); font-size: clamp(8.5px, 2.1vw, 11px); white-space: pre-line; line-height: 1.05; text-align: center; }
+  #btn-update { display: none !important; }
   #btn-menu { top: 76%; width: 13%; background: rgba(242,217,255,0.95); font-size: clamp(9px, 2.3vw, 12px); }
+
+  /* MÜŞTERİ KİTABI MODAL */
+  #guestbook-modal {
+    position: absolute; inset: 0; background: rgba(10, 12, 20, 0.72);
+    display: none; align-items: center; justify-content: center; z-index: 25; padding: 4%;
+  }
+  .gb-box {
+    width: 100%; max-width: 400px; height: 84%; background: #fffcf2; border: 3px solid #1f1f26;
+    border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.48);
+  }
+  .gb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #1f1f26; padding-bottom: 8px;
+  }
+  .gb-title { font-size: clamp(15px, 4.2vw, 19px); font-weight: 900; color: #1f1f26; }
+  #btn-close-gb {
+    background: #fa9999; border: 2px solid #1f1f26; border-radius: 6px;
+    padding: 5px 10px; font-size: clamp(11px, 2.8vw, 13px); font-weight: 800; color: #1f1f26; cursor: pointer;
+  }
+  #gb-content {
+    flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px;
+  }
+  .gb-section-title {
+    font-size: clamp(11.5px, 3vw, 14px); font-weight: 800; color: #1f3373;
+    background: #dce8fc; border: 1.5px solid #1f1f26; border-radius: 6px; padding: 5px 8px;
+  }
+  .gb-empty {
+    font-size: clamp(11px, 2.8vw, 13px); color: #555; font-style: italic;
+    padding: 8px; text-align: center; background: rgba(0,0,0,0.03); border-radius: 6px;
+  }
+  .gb-card {
+    background: #ffffff; border: 2px solid #1f1f26; border-radius: 8px;
+    padding: 9px 10px; display: flex; flex-direction: column; gap: 6px;
+    box-shadow: 0 2px 0 rgba(31,31,38,0.15);
+  }
+  .gb-card-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+  }
+  .gb-name { font-size: clamp(12px, 3.2vw, 15px); font-weight: 800; color: #1f1f26; }
+  .gb-room-badge {
+    background: #ffe699; border: 1.5px solid #1f1f26; border-radius: 5px;
+    padding: 2px 7px; font-size: clamp(10px, 2.5vw, 12px); font-weight: 800; color: #1f1f26;
+  }
+  .gb-meta {
+    font-size: clamp(10.5px, 2.6vw, 12.5px); font-weight: 600; color: #3b4252;
+  }
+  .gb-wants-wrap {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px;
+  }
+  .gb-tag {
+    font-size: clamp(9.5px, 2.4vw, 11.5px); font-weight: 700; padding: 2px 6px;
+    border-radius: 4px; border: 1.5px solid #1f1f26;
+  }
+  .gb-tag.ok { background: #ccf2d4; color: #0f5223; border-color: #1a8c26; }
+  .gb-tag.miss { background: #ffd6d6; color: #8c1414; border-color: #cc2929; }
+  .gb-tag.neutral { background: #e8eef7; color: #1f3373; border-color: #6b82a8; }
+  .gb-card-actions {
+    display: flex; gap: 6px; margin-top: 2px;
+  }
+  .gb-act-btn {
+    flex: 1; padding: 6px 8px; border: 1.5px solid #1f1f26; border-radius: 5px;
+    font-size: clamp(10px, 2.6vw, 12px); font-weight: 800; color: #1f1f26; cursor: pointer;
+    background: #c7d9fa;
+  }
+  .gb-act-btn.warn { background: #ffe680; }
 
   /* OYUN GİRİŞ EKRANI (ANA MENÜ) */
   #start-screen {
@@ -230,9 +297,21 @@
     <button id="btn-fit" class="vp-btn">Orta</button>
     <button id="btn-staff" class="vp-btn">Personel</button>
     <button id="btn-ach" class="vp-btn">Başarılar</button>
+    <button id="btn-guestbook" class="vp-btn">📖 Müşteri
+Kitabı</button>
     <button id="btn-update" class="vp-btn">Güncelle
-v1.1.0</button>
+v1.2.0</button>
     <button id="btn-menu" class="vp-btn">☰ Menü</button>
+  </div>
+  <!-- MÜŞTERİ KİTABI -->
+  <div id="guestbook-modal">
+    <div class="gb-box">
+      <div class="gb-header">
+        <div class="gb-title">📖 Müşteri Kitabı</div>
+        <button id="btn-close-gb">✕ Kapat</button>
+      </div>
+      <div id="gb-content"></div>
+    </div>
   </div>
   <!-- OYUN GİRİŞ EKRANI -->
   <div id="start-screen">
@@ -240,7 +319,7 @@ v1.1.0</button>
       <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
       <div class="menu-title">THE HOTEL GAME</div>
       <div class="menu-sub">Otel Yönetim & İnşaat Simülasyonu</div>
-      <div class="menu-badge" id="menu-ver-badge">Sürüm v1.1.0</div>
+      <div class="menu-badge" id="menu-ver-badge">Sürüm v1.2.0</div>
     </div>
 
     <div id="menu-update-card">
@@ -573,6 +652,55 @@ const treePlanted = [true, false, false, false, true, false, false];
 const clouds = [];
 for (let i = 0; i < 5; i++) clouds.push({ x: -1300 + i * 700, y: 1500 + (i % 2) * 220 });
 
+// Dışarıdan geçen arabalar ve uçan kuşlar
+const cars = [], birds = [];
+let carTimer = 1.5, birdTimer = 1.0;
+const CarColors = ["#d93636", "#2b6ed9", "#f2f4f7", "#38a65c", "#e67326", "#6c47b8", "#334155"];
+
+function spawnCar(initialX) {
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  const kindRand = Math.random();
+  const kind = kindRand < 0.22 ? 1 : kindRand < 0.55 ? 0 : 2; // 0: Sedan, 1: Taksi, 2: SUV
+  const col = kind === 1 ? "#ffd426" : pick(CarColors);
+  const y = dir === 1 ? -102 : -54;
+  const startX = typeof initialX === "number" ? initialX : (dir === 1 ? -2100 : TotalW + 2100);
+  // Aynı şeritte çok yakın araba varsa çıkma
+  if (cars.some(c => c.dir === dir && Math.abs(c.x - startX) < 420)) return;
+  cars.push({
+    x: startX, y, dir, kind, col,
+    speed: rnd(260, 410),
+    wheelRot: 0
+  });
+}
+
+function spawnBirdFlock(initialX) {
+  if (isNight && Math.random() < 0.75) return;
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  const count = rndInt(1, 5);
+  const baseX = typeof initialX === "number" ? initialX : (dir === 1 ? -1600 : TotalW + 1600);
+  const baseY = rnd(380, 1280);
+  const spd = rnd(115, 185);
+  const birdCols = ["#2b3445", "#3d4f66", "#526075", "#f8fafc"];
+  const col = pick(birdCols);
+  for (let i = 0; i < count; i++) {
+    birds.push({
+      x: baseX - dir * i * rnd(38, 62),
+      y: baseY + (i % 2 === 0 ? 1 : -1) * i * rnd(16, 28),
+      baseY: baseY + (i % 2 === 0 ? 1 : -1) * i * rnd(16, 28),
+      dir, speed: spd * rnd(0.95, 1.05),
+      flapSpeed: rnd(9, 13),
+      phase: rnd(0, Math.PI * 2),
+      scale: rnd(0.78, 1.12),
+      col
+    });
+  }
+}
+
+// Başlangıçta sahnede 1 araba ve 1 kuş sürüsü olsun
+spawnCar(200);
+spawnBirdFlock(450);
+spawnBirdFlock(1150);
+
 // Mevsim parçacıkları (ekran oranında 0..1)
 const parts = [];
 for (let i = 0; i < 40; i++) {
@@ -606,12 +734,20 @@ for (let i = 0; i < ActCount; i++) {
   actBtns.push(b);
 }
 
+const btnGuestbook = document.getElementById("btn-guestbook");
+const guestbookModal = document.getElementById("guestbook-modal");
+const gbContent = document.getElementById("gb-content");
+const btnCloseGb = document.getElementById("btn-close-gb");
+
 openBtn.onclick = toggleOpen;
 document.getElementById("btn-zoom-in").onclick = () => { play("tap"); zoomBy(1.25); };
 document.getElementById("btn-zoom-out").onclick = () => { play("tap"); zoomBy(0.8); };
 document.getElementById("btn-fit").onclick = () => { play("tap"); fitView(); };
 document.getElementById("btn-staff").onclick = () => { play("tap"); selectMode("Staff"); };
 document.getElementById("btn-ach").onclick = () => { play("tap"); selectMode("Ach"); };
+btnGuestbook.onclick = () => { play("tap"); openGuestBook(); };
+btnCloseGb.onclick = () => { play("tap"); guestbookModal.style.display = "none"; };
+guestbookModal.onclick = e => { if (e.target === guestbookModal) { play("tap"); guestbookModal.style.display = "none"; } };
 document.getElementById("btn-menu").onclick = () => { play("tap"); openStartMenu(); };
 document.getElementById("btn-minus").onclick = () => { play("tap"); curPrice = Math.max(0, curPrice - 5); refreshGuest(); };
 document.getElementById("btn-plus").onclick = () => { play("tap"); curPrice = Math.min(500, curPrice + 5); refreshGuest(); };
@@ -1518,6 +1654,208 @@ function refreshHud() {
   topMid.textContent = "Gün " + day + " - " + SeasonNames[seasonIdx()] + " - " + part + "\nYıldız " + st + "/3  İtibar " + Math.round(reputation) + "/" + target + "  Ort. " + avg;
   openBtn.textContent = isOpen ? "AÇIK\n(kapat)" : "KAPALI\n(aç)";
   openBtn.style.background = isOpen ? "#8ce099" : "#f28c8c";
+  const stayingCount = allSlots.filter(s => s.type === "Room" && s.guest).length;
+  const totalActive = stayingCount + queue.length;
+  btnGuestbook.textContent = totalActive > 0 ? ("📖 Müşteri\nKitabı (" + totalActive + ")") : "📖 Müşteri\nKitabı";
+  if (guestbookModal.style.display === "flex") renderGuestBook();
+}
+
+function openGuestBook() {
+  renderGuestBook();
+  guestbookModal.style.display = "flex";
+}
+
+function renderGuestBook() {
+  gbContent.innerHTML = "";
+  const si = seasonIdx();
+  const toiletAvail = hasToilet();
+  const parkAvail = parkState === "Built";
+
+  // 1. Odalarda Konaklayan Müşteriler
+  const occupiedSlots = allSlots.filter(s => s.type === "Room" && s.guest);
+  const secStay = document.createElement("div");
+  secStay.className = "gb-section-title";
+  secStay.textContent = "🏨 Odalarda Konaklayan Müşteriler (" + occupiedSlots.length + ")";
+  gbContent.appendChild(secStay);
+
+  if (occupiedSlots.length === 0) {
+    const emp = document.createElement("div");
+    emp.className = "gb-empty";
+    emp.textContent = "Şu anda odalarda konaklayan müşteri yok.";
+    gbContent.appendChild(emp);
+  } else {
+    for (const s of occupiedSlots) {
+      const g = s.guest;
+      const card = document.createElement("div");
+      card.className = "gb-card";
+
+      const topRow = document.createElement("div");
+      topRow.className = "gb-card-top";
+      const nameEl = document.createElement("div");
+      nameEl.className = "gb-name";
+      const kidTag = g.kids > 0 ? " (" + g.kids + " çocuklu)" : "";
+      nameEl.textContent = "👤 " + g.name + kidTag;
+
+      const badge = document.createElement("div");
+      badge.className = "gb-room-badge";
+      const flLabel = s.floor.idx === 0 ? "Zemin Kat" : (s.floor.idx + ". Kat");
+      badge.textContent = s.roomNo + ". Oda • " + flLabel;
+      topRow.appendChild(nameEl);
+      topRow.appendChild(badge);
+      card.appendChild(topRow);
+
+      const meta = document.createElement("div");
+      meta.className = "gb-meta";
+      const stayTxt = g.expired ? "⚠️ Süresi doldu! (Çıkış bekliyor)" : ("⏳ Kalan: " + g.daysLeft + " gün");
+      const priceTxt = g.price > 0 ? ("💰 " + g.price + " TL/gün") : "💛 Ücretsiz Misafir";
+      const maintTxt = "🧹 Oda Bakımı: %" + Math.round(s.maintenance);
+      meta.textContent = stayTxt + "  •  " + priceTxt + "  •  " + maintTxt;
+      if (g.expired) meta.style.color = "#cc2929";
+      card.appendChild(meta);
+
+      const wantsWrap = document.createElement("div");
+      wantsWrap.className = "gb-wants-wrap";
+
+      let anyWant = false;
+      for (let k = 0; k < ItemCount; k++) {
+        if (!g.wants[k]) continue;
+        anyWant = true;
+        const hasIt = !!s.items[k];
+        const tag = document.createElement("span");
+        tag.className = "gb-tag " + (hasIt ? "ok" : "miss");
+        tag.textContent = (hasIt ? "✅ " : "❌ ") + ItemNames[k] + (hasIt ? "" : " (Eksik)");
+        wantsWrap.appendChild(tag);
+      }
+      if (g.wantsToilet) {
+        anyWant = true;
+        const tag = document.createElement("span");
+        tag.className = "gb-tag " + (toiletAvail ? "ok" : "miss");
+        tag.textContent = (toiletAvail ? "✅ Tuvalet" : "❌ Tuvalet (Yok)");
+        wantsWrap.appendChild(tag);
+      }
+      if (g.kids > 0) {
+        anyWant = true;
+        const tag = document.createElement("span");
+        tag.className = "gb-tag " + (parkAvail ? "ok" : "miss");
+        tag.textContent = (parkAvail ? "✅ Park" : "❌ Park (Yok)");
+        wantsWrap.appendChild(tag);
+      }
+      if (si === 3) {
+        const isWarm = heated(s);
+        const tag = document.createElement("span");
+        tag.className = "gb-tag " + (isWarm ? "ok" : "miss");
+        tag.textContent = isWarm ? "✅ Kış Isıtması" : "❌ Oda Soğuk (Klima/Doğalgaz)";
+        wantsWrap.appendChild(tag);
+      } else if (si === 1) {
+        const isCool = !!s.items[IKlima];
+        const tag = document.createElement("span");
+        tag.className = "gb-tag " + (isCool ? "ok" : "miss");
+        tag.textContent = isCool ? "✅ Yaz Serinliği" : "❌ Oda Sıcak (Klima Yok)";
+        wantsWrap.appendChild(tag);
+      }
+      if (!anyWant) {
+        const tag = document.createElement("span");
+        tag.className = "gb-tag ok";
+        tag.textContent = "✅ Özel eşya isteği yok";
+        wantsWrap.appendChild(tag);
+      }
+      card.appendChild(wantsWrap);
+
+      const actRow = document.createElement("div");
+      actRow.className = "gb-card-actions";
+      const btnGo = document.createElement("button");
+      btnGo.className = "gb-act-btn";
+      btnGo.textContent = "🔍 Odayı Seç / Eşya Al";
+      btnGo.onclick = () => {
+        play("tap");
+        guestbookModal.style.display = "none";
+        selectSlot(s);
+        camCenter.x = s.X0 + SlotW * 0.5;
+        camCenter.y = s.floor.BaseY + FloorH * 0.5;
+        applyCam();
+      };
+      actRow.appendChild(btnGo);
+
+      if (g.expired) {
+        const btnSend = document.createElement("button");
+        btnSend.className = "gb-act-btn warn";
+        btnSend.textContent = "👋 Müşteriyi Gönder";
+        btnSend.onclick = () => {
+          sendOff(g);
+          renderGuestBook();
+        };
+        actRow.appendChild(btnSend);
+      }
+      card.appendChild(actRow);
+      gbContent.appendChild(card);
+    }
+  }
+
+  // 2. Sırada / Girişte Bekleyen Müşteriler
+  const secQueue = document.createElement("div");
+  secQueue.className = "gb-section-title";
+  secQueue.textContent = "🛎️ Sırada Bekleyen Müşteriler (" + queue.length + ")";
+  gbContent.appendChild(secQueue);
+
+  if (queue.length === 0) {
+    const empQ = document.createElement("div");
+    empQ.className = "gb-empty";
+    empQ.textContent = isOpen ? "Şu anda sırada bekleyen müşteri yok." : "Otel kapalı. Müşteri gelmesi için oteli açın.";
+    gbContent.appendChild(empQ);
+  } else {
+    for (let i = 0; i < queue.length; i++) {
+      const g = queue[i];
+      const card = document.createElement("div");
+      card.className = "gb-card";
+
+      const topRow = document.createElement("div");
+      topRow.className = "gb-card-top";
+      const nameEl = document.createElement("div");
+      nameEl.className = "gb-name";
+      const kidTag = g.kids > 0 ? " (" + g.kids + " çocuklu)" : "";
+      nameEl.textContent = (i === 0 ? "🛎️ " : (i + 1) + ". ") + g.name + kidTag;
+
+      const badge = document.createElement("div");
+      badge.className = "gb-room-badge";
+      badge.style.background = pending === g ? "#99e6a6" : "#d9ebff";
+      badge.textContent = pending === g ? "Oda Seçiliyor" : (i === 0 ? "Resepsiyonda" : "Sırada #" + (i + 1));
+      topRow.appendChild(nameEl);
+      topRow.appendChild(badge);
+      card.appendChild(topRow);
+
+      const meta = document.createElement("div");
+      meta.className = "gb-meta";
+      const offerDesc = g.type === "Needy" ? "Depremzede (Ücretsiz oda istiyor)" :
+                        g.type === "Threat" ? "Tehdit ediyor (Ücretsiz istiyor)" :
+                        ("💰 Teklifi: " + g.offer + " TL/gün");
+      meta.textContent = "📅 " + g.days + " gün kalacak  •  " + offerDesc + "  •  ⏳ Sabır: " + Math.ceil(g.patience) + " sn";
+      card.appendChild(meta);
+
+      const wantsWrap = document.createElement("div");
+      wantsWrap.className = "gb-wants-wrap";
+      for (let k = 0; k < ItemCount; k++) {
+        if (!g.wants[k]) continue;
+        const tag = document.createElement("span");
+        tag.className = "gb-tag neutral";
+        tag.textContent = "📌 " + ItemNames[k];
+        wantsWrap.appendChild(tag);
+      }
+      if (g.wantsToilet) {
+        const tag = document.createElement("span");
+        tag.className = "gb-tag " + (toiletAvail ? "ok" : "miss");
+        tag.textContent = toiletAvail ? "✅ Tuvalet (Var)" : "❌ Tuvalet İstiyor";
+        wantsWrap.appendChild(tag);
+      }
+      if (g.kids > 0) {
+        const tag = document.createElement("span");
+        tag.className = "gb-tag " + (parkAvail ? "ok" : "miss");
+        tag.textContent = parkAvail ? "✅ Park (Var)" : "❌ Park İstiyor";
+        wantsWrap.appendChild(tag);
+      }
+      card.appendChild(wantsWrap);
+      gbContent.appendChild(card);
+    }
+  }
 }
 
 function setAct(i, t, show, on) {
@@ -1867,10 +2205,13 @@ function drawWorld() {
     rCircle(c.x + 175, c.y + 28, 65, 28, "rgba(255,255,255,0.92)", null);
   }
 
+  // Gökyüzünde uçan kuşlar
+  for (const bd of birds) drawBird(bd);
+
   // Çim, Yol, Kaldırım
-  rRect(-2200, -520, 7600, 470, GrassCol[si], null);
-  rRect(-2200, -80, 7600, 80, "#545766", null);
-  for (let i = 0; i < 42; i++) rRect(-2100 + i * 180, -44, 90, 7, "#ebdb66", null);
+  rRect(-2200, -520, 7600, 405, GrassCol[si], null);
+  rRect(-2200, -115, 7600, 115, "#545766", null);
+  for (let i = 0; i < 42; i++) rRect(-2100 + i * 180, -61, 90, 7, "#ebdb66", null);
   rRect(-2200, 0, 7600, SlabH, SidewalkCol[si], null);
 
   // Ağaçlar
@@ -1962,6 +2303,10 @@ function drawWorld() {
 
   // Kişiler (Pawns)
   for (const p of pawns) if (!p.dead && p.visible) drawPawn(p);
+
+  // Dışarıdan geçen arabalar (ön planda yolda)
+  cars.sort((a, b) => b.y - a.y);
+  for (const car of cars) drawCar(car);
 
   // Konuşma Balonları ve Süre Doldu Balonları
   for (const g of guests) {
@@ -2239,6 +2584,180 @@ function drawPawn(p) {
   ctx.restore();
 }
 
+function drawBird(b) {
+  ctx.save();
+  ctx.translate(b.x, -b.y);
+  ctx.scale(b.dir * b.scale, b.scale);
+
+  const flap = Math.sin(timeNow * b.flapSpeed + b.phase);
+  const wingTipY = -18 * flap;
+  const wingMidY = -9 * flap - 6;
+
+  // Arka kanat
+  ctx.beginPath();
+  ctx.moveTo(-4, -2);
+  ctx.quadraticCurveTo(-12, wingMidY - 4, -22, wingTipY - 3);
+  ctx.lineWidth = 3.2;
+  ctx.strokeStyle = Pencil;
+  ctx.stroke();
+
+  // Gövde ve kuyruk
+  ctx.beginPath();
+  ctx.moveTo(-16, 2);
+  ctx.lineTo(-24, -3);
+  ctx.lineTo(-22, 4);
+  ctx.closePath();
+  ctx.fillStyle = b.col;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = Pencil;
+  ctx.stroke();
+
+  rCircle(0, 0, 12, 6.5, b.col, Pencil, 2.2);
+  rCircle(11, 4, 6.5, 6, b.col, Pencil, 2.2);
+
+  // Gaga ve göz
+  ctx.beginPath();
+  ctx.moveTo(16, -4);
+  ctx.lineTo(24, -2);
+  ctx.lineTo(16, 0);
+  ctx.closePath();
+  ctx.fillStyle = "#ffb826";
+  ctx.fill();
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = Pencil;
+  ctx.stroke();
+  rCircle(13, 5, 1.8, 1.8, "#111", null);
+
+  // Ön kanat
+  ctx.beginPath();
+  ctx.moveTo(2, -1);
+  ctx.quadraticCurveTo(-6, wingMidY, -16, wingTipY);
+  ctx.quadraticCurveTo(-3, wingMidY * 0.5 + 2, 5, 1);
+  ctx.closePath();
+  ctx.fillStyle = b.col;
+  ctx.fill();
+  ctx.lineWidth = 2.4;
+  ctx.strokeStyle = Pencil;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawCar(car) {
+  ctx.save();
+  ctx.translate(car.x, -car.y);
+  ctx.scale(car.dir, 1);
+
+  // Gece far huzmesi
+  if (brightness() < 0.45) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(92, -18);
+    ctx.lineTo(280, -45);
+    ctx.lineTo(280, 8);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(92, -18, 280, -18);
+    grad.addColorStop(0, "rgba(255, 245, 150, 0.55)");
+    grad.addColorStop(1, "rgba(255, 245, 150, 0)");
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Gölge
+  rCircle(0, -3, 98, 11, "rgba(0,0,0,0.32)", null);
+
+  // Alt gövde
+  const w = car.kind === 2 ? 204 : 188;
+  const hBody = car.kind === 2 ? 34 : 30;
+  rRect(-w / 2, 10, w, hBody, car.col, Pencil, 3);
+
+  // Üst kabin ve pencereler
+  if (car.kind === 2) {
+    // SUV / Minivan
+    rRect(-w / 2 + 18, 10 + hBody - 2, w - 46, 30, car.col, Pencil, 3);
+    rRect(-w / 2 + 26, 10 + hBody + 3, 38, 20, "#bfe3ff", Pencil, 2);
+    rRect(-w / 2 + 70, 10 + hBody + 3, 40, 20, "#bfe3ff", Pencil, 2);
+    rRect(-w / 2 + 116, 10 + hBody + 3, 36, 20, "#bfe3ff", Pencil, 2);
+  } else {
+    // Sedan / Taksi
+    ctx.beginPath();
+    ctx.moveTo(-64, -(10 + hBody - 2));
+    ctx.lineTo(-38, -(10 + hBody + 28));
+    ctx.lineTo(44, -(10 + hBody + 28));
+    ctx.lineTo(68, -(10 + hBody - 2));
+    ctx.closePath();
+    ctx.fillStyle = car.col;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = Pencil;
+    ctx.stroke();
+
+    // Yan camlar
+    rRect(-34, 10 + hBody + 3, 34, 20, "#bfe3ff", Pencil, 2);
+    rRect(6, 10 + hBody + 3, 36, 20, "#bfe3ff", Pencil, 2);
+
+    // Taksi tabelası ve dama şeridi
+    if (car.kind === 1) {
+      rRect(-22, 10 + hBody + 28, 44, 14, "#ffffff", Pencil, 2);
+      rText("TAKSİ", -22, 10 + hBody + 28, 44, 14, 10, Pencil);
+      for (let k = 0; k < 8; k++) {
+        rRect(-56 + k * 14, 22, 7, 5, k % 2 === 0 ? "#1f1f26" : "#ffffff", null);
+      }
+    }
+  }
+
+  // Far ve stop lambası
+  rRect(w / 2 - 8, 20, 8, 12, "#fff275", Pencil, 2);
+  rRect(-w / 2, 20, 8, 12, "#ff3b3b", Pencil, 2);
+
+  // Tamponlar
+  rRect(w / 2 - 6, 8, 12, 8, "#3a3f4d", Pencil, 2);
+  rRect(-w / 2 - 6, 8, 12, 8, "#3a3f4d", Pencil, 2);
+
+  // Tekerlekler
+  for (const wx of [-w * 0.3, w * 0.3]) {
+    rCircle(wx, 14, 19, 19, "#22252e", Pencil, 3);
+    rCircle(wx, 14, 9, 9, "#d0d7e6", Pencil, 2);
+    const rx = wx + Math.cos(car.wheelRot) * 5;
+    const ry = 14 + Math.sin(car.wheelRot) * 5;
+    rCircle(rx, ry, 2.5, 2.5, "#22252e", null);
+  }
+
+  ctx.restore();
+}
+
+function updateCarsAndBirds(dt) {
+  carTimer -= dt;
+  if (carTimer <= 0) {
+    spawnCar();
+    carTimer = rnd(3.8, 8.5) * (isNight ? 1.5 : 1.0);
+  }
+  for (let i = cars.length - 1; i >= 0; i--) {
+    const c = cars[i];
+    c.x += c.dir * c.speed * dt;
+    c.wheelRot += c.speed * 0.05 * dt;
+    if ((c.dir === 1 && c.x > TotalW + 2400) || (c.dir === -1 && c.x < -2400)) {
+      cars.splice(i, 1);
+    }
+  }
+
+  birdTimer -= dt;
+  if (birdTimer <= 0) {
+    spawnBirdFlock();
+    birdTimer = rnd(4.5, 9.5);
+  }
+  for (let i = birds.length - 1; i >= 0; i--) {
+    const b = birds[i];
+    b.x += b.dir * b.speed * dt;
+    b.y = b.baseY + Math.sin(timeNow * 2.6 + b.phase) * 14;
+    if ((b.dir === 1 && b.x > TotalW + 2000) || (b.dir === -1 && b.x < -2000)) {
+      birds.splice(i, 1);
+    }
+  }
+}
+
 // ===== ANA OYUN DÖNGÜSÜ =====
 let lastTime = performance.now();
 function loop(now) {
@@ -2247,6 +2766,8 @@ function loop(now) {
   timeNow += dt;
 
   if (!camInit && viewport.clientWidth > 10) { camInit = true; fitView(); }
+
+  updateCarsAndBirds(dt);
 
   if (inMenu) {
     drawMenuLogo();
@@ -2422,8 +2943,8 @@ refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 2;
-const APP_VERSION_NAME = "1.1.0";
+const APP_VERSION_CODE = 3;
+const APP_VERSION_NAME = "1.2.0";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -2624,7 +3145,6 @@ async function checkForUpdate(manual) {
     btnDoUpdate.textContent = "İndir ve Kur";
     btnUpdate.style.background = "#ffe666";
     btnUpdate.textContent = "YENİ!\n" + newVerStr;
-    if (!inMenu || manual) updateModal.style.display = "flex";
     play("bell");
     log("Yeni güncelleme bulundu: " + newVerStr);
   } else {

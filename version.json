@@ -1,8 +1,8 @@
 {
-  "versionCode": 2,
-  "versionName": "1.1.0",
+  "versionCode": 3,
+  "versionName": "1.2.0",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.1.0: Oyun giriş ekranı (Ana Menü), giriş ekranında otomatik güncelleme denetimi, tüm ses efektleri + lobi arka plan müziği ve özel uygulama ikonu eklendi!"
+  "notes": "v1.2.0: Müşteri Kitabı (mevcut ve sıradaki müşterilerin isteklerini takip etme ve odaya tek tıkla gitme), oyun içi güncelle butonunun gizlenmesi, yoldan geçen arabalar (taksi, sedan, SUV, gece farları) ve gökyüzünde uçan kuşlar eklendi!"
 }
