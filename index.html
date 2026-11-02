@@ -2640,13 +2640,14 @@ async function checkForUpdate(manual) {
 }
 
 async function installUpdate(data) {
-  if (!data || !data.updateUrl) return;
+  if (!data) return;
+  const targetUrl = data.updateUrl || data.htmlUrl || "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html";
   btnDoUpdate.disabled = true;
   btnDoUpdate.textContent = "İndiriliyor...";
   mucInstallBtn.disabled = true;
   mucInstallBtn.textContent = "⏳ Güncelleme İndiriliyor...";
   try {
-    const res = await fetch(data.updateUrl + "?t=" + Date.now(), { cache: "no-store" });
+    const res = await fetch(targetUrl + "?t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const htmlContent = await res.text();
     if (!htmlContent || htmlContent.length < 500 || !htmlContent.includes("<html")) {
