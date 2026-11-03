@@ -1,8 +1,8 @@
 {
-  "versionCode": 4,
-  "versionName": "1.3.0",
+  "versionCode": 5,
+  "versionName": "1.4.0",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.3.0: Kalıcı Kayıt Sistemi (güncellemelerde kaldığın yerden devam), Otele İsim Verme, Gece Vampir ve Hırsız müşteriler (ipuçları ve odadan çıkarma), Depremzede (+20 İtibar, 15'te 1 oran) ve Bedavacı (+10 İtibar), Tehditkar müşterinin odaya yürüyüp zarar vermesi, Alet + Para ile bakım ve temizlikçi alet kullanımı, ilk oda + kapı başlangıç koruması!"
+  "notes": "v1.4.0: Yeni Oyun İkonu, tamamen yenilenen Açılış Ekranı (kompakt kart tasarımı ve yeni illüstrasyon logo) ve yenilenen Oyun İçi UI (ikonlu üst bilgi kartları, sol üst kompakt kamera butonları, ikonlu 3B eşya/oda butonları, birleşik müşteri pazarlık kartı ve koyu bildirim çubuğu)!"
 }

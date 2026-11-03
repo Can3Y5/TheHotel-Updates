@@ -9,45 +9,65 @@
   html, body { width: 100%; height: 100%; background: #0d0f14; overflow: hidden; font-family: 'Roboto', 'Segoe UI', Arial, sans-serif; }
   #app {
     position: relative; width: 100%; height: 100%; max-width: calc(100vh * 9 / 16);
-    margin: 0 auto; background: #f7f7f0; display: flex; flex-direction: column; overflow: hidden;
+    margin: 0 auto; background: #eef2f9; display: flex; flex-direction: column; overflow: hidden;
   }
   @media (max-aspect-ratio: 3/4) { #app { max-width: 100%; } }
   .grid-bg {
-    background-color: #f7f7f0;
-    background-image: linear-gradient(to right, #b8c7e6 1px, transparent 1px), linear-gradient(to bottom, #b8c7e6 1px, transparent 1px);
+    background-color: #f4f6fb;
+    background-image: linear-gradient(to right, rgba(160,180,215,0.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(160,180,215,0.28) 1px, transparent 1px);
     background-size: 20px 20px;
   }
-  /* Üst Bar (%6.5) */
+
+  /* ===== ÜST HUD BARI (%8) ===== */
   #top-bar {
-    height: 6.5%; width: 100%; display: flex; align-items: center; justify-content: space-between;
-    padding: 2px 2%; border-bottom: 2px solid #1f1f26; position: relative; z-index: 5;
+    height: 8%; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 4px 8px; background: linear-gradient(180deg, #fffef9 0%, #f3efe2 100%);
+    border-bottom: 3px solid #1f1f26; position: relative; z-index: 5;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
   }
-  #top-left { width: 28%; font-size: clamp(11px, 3.1vw, 17px); font-weight: 700; color: #1f1f26; white-space: pre-line; line-height: 1.15; }
-  #top-mid { width: 47%; font-size: clamp(9.5px, 2.4vw, 13.5px); line-height: 1.2; color: #1f1f26; white-space: pre-line; }
+  #top-left {
+    width: 28%; height: 100%; display: flex; flex-direction: column; justify-content: center;
+    background: #fff6d1; border: 2px solid #1f1f26; border-radius: 8px; padding: 2px 7px;
+    font-size: clamp(11px, 3vw, 15.5px); font-weight: 800; color: #1f1f26;
+    white-space: pre-line; line-height: 1.18; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+  #top-mid {
+    width: 48%; height: 100%; display: flex; flex-direction: column; justify-content: center;
+    background: #eaf2ff; border: 2px solid #1f1f26; border-radius: 8px; padding: 2px 7px;
+    font-size: clamp(9.5px, 2.35vw, 13px); font-weight: 700; line-height: 1.22; color: #1f293d;
+    white-space: pre-line; text-align: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+  }
   #open-btn {
-    width: 22%; height: 82%; border: 2px solid #1f1f26; border-radius: 4px;
-    font-size: clamp(10px, 2.7vw, 14px); font-weight: 700; color: #1f1f26;
+    width: 22%; height: 92%; border: 2.5px solid #1f1f26; border-radius: 8px;
+    font-size: clamp(10px, 2.6vw, 13.5px); font-weight: 900; color: #1f1f26;
     display: flex; align-items: center; justify-content: center; text-align: center;
-    white-space: pre-line; line-height: 1.05; cursor: pointer;
+    white-space: pre-line; line-height: 1.08; cursor: pointer;
+    box-shadow: 0 3px 0 #1f1f26; transition: transform 0.06s;
   }
-  /* Dünya Görünümü (%49.5) */
+  #open-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f1f26; }
+
+  /* ===== DÜNYA GÖRÜNÜMÜ (%51) ===== */
   #viewport {
-    position: relative; height: 49.5%; width: 100%; background: #9ed1f5; overflow: hidden; touch-action: none;
+    position: relative; height: 51%; width: 100%; background: #9ed1f5; overflow: hidden; touch-action: none;
   }
   #world-canvas { width: 100%; height: 100%; display: block; }
   .vp-btn {
-    position: absolute; right: 2%; width: 10%; height: 10%;
-    background: rgba(255,255,255,0.92); border: 2px solid #1f1f26; border-radius: 4px;
-    font-weight: 700; color: #1f1f26; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 3;
+    position: absolute;
+    background: rgba(255,255,255,0.94); border: 2px solid #1f1f26; border-radius: 8px;
+    font-weight: 800; color: #1f1f26; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 3; box-shadow: 0 2.5px 0 #1f1f26; transition: transform 0.06s;
   }
-  #btn-zoom-in { top: 4%; font-size: clamp(16px, 4.5vw, 24px); }
-  #btn-zoom-out { top: 16%; font-size: clamp(16px, 4.5vw, 24px); }
-  #btn-fit { top: 28%; font-size: clamp(10px, 2.5vw, 13px); }
-  #btn-staff { top: 40%; width: 13%; background: rgba(255,242,191,0.95); font-size: clamp(9px, 2.3vw, 12px); }
-  #btn-ach { top: 52%; width: 13%; background: rgba(217,242,204,0.95); font-size: clamp(9px, 2.3vw, 12px); }
-  #btn-guestbook { top: 64%; width: 13%; background: rgba(255,224,178,0.96); font-size: clamp(8.5px, 2.1vw, 11px); white-space: pre-line; line-height: 1.05; text-align: center; }
+  .vp-btn:active { transform: translateY(1.5px); box-shadow: 0 1px 0 #1f1f26; }
+  /* Sol üst kompakt kamera kontrolleri (kat yazılarını kapatmaz) */
+  #btn-zoom-in { top: 8px; left: 8px; width: 36px; height: 34px; font-size: 20px; background: rgba(255,255,255,0.92); }
+  #btn-zoom-out { top: 8px; left: 48px; width: 36px; height: 34px; font-size: 20px; background: rgba(255,255,255,0.92); }
+  #btn-fit { top: 8px; left: 88px; width: 48px; height: 34px; font-size: 12px; background: rgba(255,255,255,0.92); }
+  /* Sağ üst düzenli aksiyon hapları */
+  #btn-staff { top: 8px; right: 8px; width: 92px; height: 34px; background: #fff0b3; font-size: clamp(10px, 2.5vw, 12.5px); }
+  #btn-ach { top: 47px; right: 8px; width: 92px; height: 34px; background: #d8f5c9; font-size: clamp(10px, 2.5vw, 12.5px); }
+  #btn-guestbook { top: 86px; right: 8px; width: 92px; height: 38px; background: #ffdca8; font-size: clamp(9.5px, 2.3vw, 11.5px); white-space: pre-line; line-height: 1.05; text-align: center; }
   #btn-update { display: none !important; }
-  #btn-menu { top: 76%; width: 13%; background: rgba(242,217,255,0.95); font-size: clamp(9px, 2.3vw, 12px); }
+  #btn-menu { top: 129px; right: 8px; width: 92px; height: 34px; background: #eed6ff; font-size: clamp(10px, 2.5vw, 12.5px); }
 
   /* MÜŞTERİ KİTABI MODAL */
   #guestbook-modal {
@@ -56,7 +76,7 @@
   }
   .gb-box {
     width: 100%; max-width: 400px; height: 84%; background: #fffcf2; border: 3px solid #1f1f26;
-    border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
     box-shadow: 0 10px 28px rgba(0,0,0,0.48);
   }
   .gb-header {
@@ -115,57 +135,65 @@
   }
   .gb-act-btn.warn { background: #ffe680; }
 
-  /* OYUN GİRİŞ EKRANI (ANA MENÜ) */
+  /* ===== OYUN GİRİŞ EKRANI (YENİ TASARIM) ===== */
   #start-screen {
     position: absolute; inset: 0; z-index: 30;
-    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-    padding: 5% 6%; overflow-y: auto;
-    background-color: #f7f7f0;
-    background-image: linear-gradient(to right, #b8c7e6 1px, transparent 1px), linear-gradient(to bottom, #b8c7e6 1px, transparent 1px);
-    background-size: 22px 22px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 14px 16px; gap: 10px; overflow-y: auto;
+    background: linear-gradient(180deg, #b8e2ff 0%, #eef7ff 48%, #d8f2c9 100%);
+  }
+  .menu-card-shell {
+    width: 100%; max-width: 390px; background: rgba(255, 253, 246, 0.96);
+    border: 3px solid #1f1f26; border-radius: 20px; padding: 14px 14px 12px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    box-shadow: 0 10px 28px rgba(18, 28, 45, 0.22), 0 4px 0 #1f1f26;
   }
   .menu-hero {
-    width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 1%;
+    width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px;
   }
-  #menu-logo-canvas {
-    width: 150px; height: 150px; border: 3px solid #1f1f26; border-radius: 24px;
-    background: #6eb8f5; box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+  #menu-logo-img {
+    width: clamp(148px, 39vw, 192px); height: clamp(148px, 39vw, 192px);
+    border: 3.5px solid #1f1f26; border-radius: 26px; object-fit: cover;
+    background: #6eb8f5; box-shadow: 0 6px 16px rgba(0,0,0,0.22);
+  }
+  #menu-logo-canvas { display: none; }
+  .menu-title-row {
+    display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 2px;
   }
   .menu-title {
-    font-size: clamp(24px, 6.8vw, 34px); font-weight: 900; color: #1f1f26;
-    letter-spacing: 0.5px; text-align: center; margin-top: 4px;
+    font-size: clamp(20px, 5.6vw, 26px); font-weight: 900; color: #1f1f26;
+    letter-spacing: 0.4px; text-align: center;
   }
   .menu-sub {
-    font-size: clamp(11px, 3vw, 14px); font-weight: 600; color: #4a5568; text-align: center;
+    font-size: clamp(11px, 2.8vw, 13px); font-weight: 700; color: #4a5568; text-align: center;
   }
   .menu-badge {
-    display: inline-block; background: #1f3373; color: #ffffff; font-weight: 800;
-    font-size: clamp(10px, 2.6vw, 12px); padding: 3px 10px; border-radius: 12px;
+    display: inline-block; background: #1f3373; color: #ffd93b; font-weight: 800;
+    font-size: clamp(10px, 2.5vw, 12px); padding: 2px 9px; border-radius: 12px;
     border: 2px solid #1f1f26;
   }
 
   /* Giriş Ekranı Güncelleme Denetim Kartı */
   #menu-update-card {
-    width: 100%; background: rgba(255,255,255,0.95); border: 2.5px solid #1f1f26;
-    border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    width: 100%; background: #f2f7ff; border: 2px solid #1f1f26;
+    border-radius: 10px; padding: 7px 10px; display: flex; flex-direction: column; gap: 6px;
   }
   .muc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  #muc-status { font-size: clamp(11px, 2.9vw, 13.5px); font-weight: 800; color: #1f1f26; }
+  #muc-status { font-size: clamp(10.5px, 2.7vw, 13px); font-weight: 800; color: #1f1f26; }
   #muc-check-btn {
-    background: #d9ebff; border: 2px solid #1f1f26; border-radius: 6px;
-    padding: 5px 9px; font-size: clamp(10px, 2.5vw, 12px); font-weight: 700; color: #1f1f26; cursor: pointer;
-    white-space: nowrap;
+    background: #ffffff; border: 2px solid #1f1f26; border-radius: 6px;
+    padding: 4px 8px; font-size: clamp(10px, 2.4vw, 11.5px); font-weight: 800; color: #1f1f26; cursor: pointer;
+    white-space: nowrap; box-shadow: 0 2px 0 #1f1f26;
   }
   #muc-notes {
-    display: none; font-size: clamp(10.5px, 2.6vw, 12.5px); color: #1f1f26;
-    background: #fff9db; border: 1.5px solid #e6b800; border-radius: 6px; padding: 7px 9px;
+    display: none; font-size: clamp(10px, 2.5vw, 12px); color: #1f1f26;
+    background: #fff9db; border: 1.5px solid #e6b800; border-radius: 6px; padding: 6px 8px;
     white-space: pre-line; line-height: 1.25;
   }
   #muc-install-btn {
-    display: none; width: 100%; padding: 9px; background: #8ce099;
-    border: 2px solid #1f1f26; border-radius: 6px; font-size: clamp(12px, 3.2vw, 14.5px);
-    font-weight: 900; color: #1f1f26; cursor: pointer;
+    display: none; width: 100%; padding: 8px; background: #8ce099;
+    border: 2px solid #1f1f26; border-radius: 7px; font-size: clamp(11.5px, 3vw, 14px);
+    font-weight: 900; color: #1f1f26; cursor: pointer; box-shadow: 0 2.5px 0 #1f1f26;
   }
 
   /* Menü Butonları */
@@ -173,46 +201,49 @@
     width: 100%; display: flex; flex-direction: column; gap: 8px;
   }
   .m-btn {
-    width: 100%; padding: 12px 10px; border: 2.5px solid #1f1f26; border-radius: 8px;
-    font-size: clamp(13px, 3.6vw, 17px); font-weight: 800; color: #1f1f26;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 10px 10px; border: 2.5px solid #1f1f26; border-radius: 10px;
+    font-size: clamp(13px, 3.5vw, 16px); font-weight: 800; color: #1f1f26;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
     box-shadow: 0 3px 0 #1f1f26; transition: transform 0.06s;
   }
   .m-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f1f26; }
-  #btn-start-game { background: #8ce099; font-size: clamp(15px, 4.2vw, 20px); padding: 14px 10px; }
+  #btn-start-game {
+    background: linear-gradient(180deg, #98f2a7 0%, #65d477 100%);
+    font-size: clamp(15px, 4.2vw, 19px); font-weight: 900; padding: 13px 10px;
+  }
   .menu-row-2 { display: flex; gap: 8px; width: 100%; }
-  .menu-row-2 .m-btn { flex: 1; font-size: clamp(11px, 2.8vw, 13.5px); padding: 10px 6px; }
+  .menu-row-2 .m-btn { flex: 1; font-size: clamp(11px, 2.7vw, 13px); padding: 9px 6px; }
   #btn-toggle-sfx { background: #ffe699; }
   #btn-toggle-bgm { background: #c7d9fa; }
-  #btn-how-to { background: #f2e6ff; font-size: clamp(11.5px, 3vw, 14px); padding: 9px; }
-  #btn-reset-save { background: #ffd6d6; font-size: clamp(10.5px, 2.7vw, 13px); padding: 8px; }
+  #btn-how-to { background: #f2e6ff; }
+  #btn-reset-save { background: #ffd6d6; }
   .hotel-name-row {
     width: 100%; display: flex; align-items: center; gap: 6px;
-    background: rgba(255,255,255,0.95); border: 2px solid #1f1f26; border-radius: 8px; padding: 6px 10px;
+    background: #fff9e6; border: 2px solid #1f1f26; border-radius: 10px; padding: 5px 9px;
   }
   .hotel-name-row label {
-    font-size: clamp(11px, 2.8vw, 13.5px); font-weight: 800; color: #1f1f26; white-space: nowrap;
+    font-size: clamp(11px, 2.8vw, 13px); font-weight: 800; color: #1f1f26; white-space: nowrap;
   }
   #hotel-name-input {
-    flex: 1; min-width: 0; border: 2px solid #1f1f26; border-radius: 6px; padding: 6px 8px;
-    font-size: clamp(12px, 3.2vw, 15px); font-weight: 800; color: #1f3373; background: #fffdf5;
+    flex: 1; min-width: 0; border: 2px solid #1f1f26; border-radius: 6px; padding: 5px 8px;
+    font-size: clamp(12px, 3.1vw, 14.5px); font-weight: 900; color: #1f3373; background: #ffffff;
     user-select: text; -webkit-user-select: text;
   }
   #how-to-box {
-    display: none; width: 100%; background: rgba(255,255,255,0.95); border: 2px solid #1f1f26;
-    border-radius: 8px; padding: 10px; font-size: clamp(10.5px, 2.6vw, 12.5px); color: #1f1f26;
-    line-height: 1.35; white-space: pre-line; max-height: 150px; overflow-y: auto;
+    display: none; width: 100%; background: #fffdf5; border: 2px solid #1f1f26;
+    border-radius: 8px; padding: 9px; font-size: clamp(10px, 2.5vw, 12px); color: #1f1f26;
+    line-height: 1.35; white-space: pre-line; max-height: 135px; overflow-y: auto;
   }
   .menu-footer {
-    font-size: clamp(9.5px, 2.3vw, 11.5px); color: #555; text-align: center; font-weight: 600;
+    font-size: clamp(9.5px, 2.2vw, 11px); color: #3b4252; text-align: center; font-weight: 700;
   }
 
   #ach-popup {
-    position: absolute; left: 3%; top: 2%; width: 81%; min-height: 9%;
-    background: #ffe666; border: 2px solid #1f1f26; border-radius: 8px;
-    color: #1f1f26; font-weight: 700; font-size: clamp(11px, 2.8vw, 15px);
+    position: absolute; left: 3%; top: 10%; width: 70%; min-height: 9%;
+    background: #ffe666; border: 2.5px solid #1f1f26; border-radius: 10px;
+    color: #1f1f26; font-weight: 800; font-size: clamp(11px, 2.8vw, 15px);
     display: none; align-items: center; justify-content: center; text-align: center;
-    padding: 4px 8px; z-index: 6; pointer-events: none;
+    padding: 6px 10px; z-index: 6; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,0.22);
   }
 
   #update-modal {
@@ -221,7 +252,7 @@
   }
   .update-box {
     width: 100%; max-width: 360px; background: #fffdf5; border: 3px solid #1f1f26;
-    border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px;
+    border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;
     box-shadow: 0 10px 28px rgba(0,0,0,0.45);
   }
   .update-title { font-size: clamp(15px, 4vw, 19px); font-weight: 800; color: #1f1f26; text-align: center; }
@@ -239,66 +270,91 @@
   #btn-do-update { background: #8ce099; }
   #btn-close-update { background: #e6e6eb; }
 
-  /* Alt Panel (%44) */
+  /* ===== ALT KONTROL PANELİ (%41) ===== */
   #bottom-area {
-    height: 44%; width: 100%; position: relative; border-top: 2px solid #1f1f26;
-    display: flex; flex-direction: column; justify-content: space-between; padding: 1.2% 2%;
-  }
-  /* Seçili Alan Paneli */
-  #sel-panel {
-    height: 50%; width: 100%; background: rgba(255,255,255,0.9);
-    border: 2px solid #1f1f26; border-radius: 4px; padding: 1.5% 2%;
+    height: 41%; width: 100%; position: relative; border-top: 3px solid #1f1f26;
     display: flex; flex-direction: column; justify-content: space-between;
+    padding: 5px 7px; gap: 5px; background: #dfe7f5;
+  }
+  /* 1) Seçili Oda / Alan Kartı */
+  #sel-panel {
+    height: 51%; width: 100%; background: #ffffff;
+    border: 2.5px solid #1f1f26; border-radius: 10px; padding: 4px 6px;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 4px;
+    box-shadow: 0 2px 0 rgba(31,31,38,0.12);
   }
   #info-text {
-    height: 30%; font-size: clamp(9.5px, 2.4vw, 12.5px); color: #1f1f26;
-    white-space: pre-line; line-height: 1.15; overflow: hidden;
+    min-height: 24%; max-height: 30%; font-size: clamp(9.5px, 2.35vw, 12px); font-weight: 700;
+    color: #1f293d; background: #eef4ff; border: 1.5px solid #b8cce8; border-radius: 6px;
+    padding: 3px 7px; white-space: pre-line; line-height: 1.15; overflow: hidden;
+    display: flex; align-items: center;
   }
   #act-grid {
-    height: 68%; display: grid; grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(3, 1fr); gap: 3px;
+    flex: 1; display: grid; grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr); gap: 4px;
   }
   .act-btn {
-    background: #c7d9fa; border: 2px solid #1f1f26; border-radius: 3px;
-    font-size: clamp(9px, 2.2vw, 11.5px); font-weight: 600; color: #1f1f26;
+    background: linear-gradient(180deg, #dce9ff 0%, #bfd4fa 100%);
+    border: 2px solid #1f1f26; border-radius: 6px;
+    font-size: clamp(8.8px, 2.15vw, 11px); font-weight: 800; color: #1f1f26;
     white-space: pre-line; line-height: 1.05; text-align: center; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; padding: 1px;
+    display: flex; align-items: center; justify-content: center; padding: 1px 2px;
+    box-shadow: 0 2px 0 #1f1f26; transition: transform 0.05s;
   }
-  .act-btn:disabled { opacity: 0.45; cursor: default; }
-  .act-btn.place-btn { background: #99e6a6; }
+  .act-btn:active:not(:disabled) { transform: translateY(1.5px); box-shadow: 0 0.5px 0 #1f1f26; }
+  .act-btn:disabled {
+    opacity: 0.55; cursor: default; box-shadow: none; background: #e8ecf2; color: #4a5568; border-color: #7b8799;
+  }
+  .act-btn.owned-btn:disabled {
+    opacity: 0.9; background: #dcf7e3; color: #145924; border-color: #2e8540;
+  }
+  .act-btn.place-btn { background: linear-gradient(180deg, #a8f5b5 0%, #7be08c 100%); }
 
-  /* Müşteri Bilgisi */
-  #guest-text {
-    height: 15%; width: 100%; font-size: clamp(9.5px, 2.5vw, 13px);
-    color: #1f1f26; white-space: pre-line; line-height: 1.15;
-    display: flex; align-items: center; overflow: hidden; padding: 0 1%;
+  /* 2) Müşteri & Pazarlık Kartı */
+  #guest-card {
+    height: 35%; width: 100%; background: #fffdf5;
+    border: 2.5px solid #1f1f26; border-radius: 10px; padding: 4px 6px;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 4px;
+    box-shadow: 0 2px 0 rgba(31,31,38,0.12);
   }
-  /* Pazarlık Düğmeleri */
+  #guest-text {
+    flex: 1; width: 100%; font-size: clamp(9.5px, 2.4vw, 12px); font-weight: 700;
+    color: #1f1f26; white-space: pre-line; line-height: 1.15;
+    display: flex; align-items: center; overflow: hidden; padding: 1px 4px;
+  }
   #deal-row {
-    height: 16%; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1.5%;
+    height: 44%; min-height: 30px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 5px;
   }
   .deal-btn {
-    height: 100%; border: 2px solid #1f1f26; border-radius: 4px;
-    font-size: clamp(11px, 2.8vw, 15px); font-weight: 700; color: #1f1f26; cursor: pointer;
+    height: 100%; border: 2px solid #1f1f26; border-radius: 7px;
+    font-size: clamp(10.5px, 2.7vw, 14px); font-weight: 800; color: #1f1f26; cursor: pointer;
+    box-shadow: 0 2px 0 #1f1f26; transition: transform 0.05s;
   }
-  #btn-minus { width: 16%; background: #facccc; }
-  #price-text { width: 22%; text-align: center; font-size: clamp(14px, 4vw, 22px); font-weight: 800; color: #1f1f26; }
-  #btn-plus { width: 16%; background: #ccf2cc; }
-  #btn-offer { width: 23%; background: #99e6a6; }
-  #btn-reject { width: 20%; background: #fa9999; }
+  .deal-btn:active { transform: translateY(1.5px); box-shadow: 0 0.5px 0 #1f1f26; }
+  #btn-minus { width: 16%; background: #ffd1d1; }
+  #price-text {
+    width: 21%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: #fff4c2; border: 2px solid #1f1f26; border-radius: 7px;
+    text-align: center; font-size: clamp(13px, 3.6vw, 19px); font-weight: 900; color: #1f1f26;
+  }
+  #btn-plus { width: 16%; background: #c9f5cf; }
+  #btn-offer { width: 25%; background: linear-gradient(180deg, #98f2a7 0%, #6dd980 100%); }
+  #btn-reject { width: 19%; background: #ff9e9e; }
 
-  /* Günlük (Log) */
+  /* 3) Günlük / Son Olaylar Çubuğu (Log) */
   #log-text {
-    height: 14%; width: 100%; font-size: clamp(9.5px, 2.4vw, 12px);
-    color: #1f1f26; white-space: pre-line; line-height: 1.15;
-    display: flex; align-items: flex-end; overflow: hidden; padding: 0 1%;
+    height: 12%; width: 100%; font-size: clamp(9px, 2.25vw, 11.5px); font-weight: 600;
+    color: #f8fafc; background: #222736; border: 2px solid #1f1f26; border-radius: 8px;
+    white-space: pre-line; line-height: 1.15;
+    display: flex; align-items: center; overflow: hidden; padding: 2px 8px;
   }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="top-bar" class="grid-bg">
-    <div id="top-left">Para: 600 TL</div>
+  <div id="top-bar">
+    <div id="top-left">💰 600 TL
+🔧 1 Alet</div>
     <div id="top-mid"></div>
     <button id="open-btn"></button>
   </div>
@@ -306,14 +362,13 @@
     <canvas id="world-canvas"></canvas>
     <div id="ach-popup"></div>
     <button id="btn-zoom-in" class="vp-btn">+</button>
-    <button id="btn-zoom-out" class="vp-btn">-</button>
-    <button id="btn-fit" class="vp-btn">Orta</button>
-    <button id="btn-staff" class="vp-btn">Personel</button>
-    <button id="btn-ach" class="vp-btn">Başarılar</button>
+    <button id="btn-zoom-out" class="vp-btn">−</button>
+    <button id="btn-fit" class="vp-btn">🎯</button>
+    <button id="btn-staff" class="vp-btn">👷 Personel</button>
+    <button id="btn-ach" class="vp-btn">🏆 Başarılar</button>
     <button id="btn-guestbook" class="vp-btn">📖 Müşteri
 Kitabı</button>
-    <button id="btn-update" class="vp-btn">Güncelle
-v1.2.0</button>
+    <button id="btn-update" class="vp-btn">Güncelle</button>
     <button id="btn-menu" class="vp-btn">☰ Menü</button>
   </div>
   <!-- MÜŞTERİ KİTABI -->
@@ -328,40 +383,45 @@ v1.2.0</button>
   </div>
   <!-- OYUN GİRİŞ EKRANI -->
   <div id="start-screen">
-    <div class="menu-hero">
-      <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
-      <div class="menu-title">THE HOTEL GAME</div>
-      <div class="menu-sub">Otel Yönetim & İnşaat Simülasyonu</div>
-      <div class="menu-badge" id="menu-ver-badge">Sürüm v1.2.0</div>
-    </div>
+    <div class="menu-card-shell">
+      <div class="menu-hero">
+        <img id="menu-logo-img" src="data:image/jpeg;base64,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" alt="The Hotel Game" />
+        <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
+        <div class="menu-title-row">
+          <div class="menu-title">THE HOTEL GAME</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.4.0</div>
+        </div>
+        <div class="menu-sub">Otel Yönetim & İnşaat Simülasyonu</div>
+      </div>
 
-    <div id="menu-update-card">
-      <div class="muc-row">
-        <div id="muc-status">🔄 Güncellemeler denetleniyor...</div>
-        <button id="muc-check-btn">🔄 Denetle</button>
+      <div id="menu-update-card">
+        <div class="muc-row">
+          <div id="muc-status">🔄 Güncellemeler denetleniyor...</div>
+          <button id="muc-check-btn">🔄 Denetle</button>
+        </div>
+        <div id="muc-notes"></div>
+        <button id="muc-install-btn">⬇ YENİ GÜNCELLEMEYİ İNDİR VE KUR</button>
       </div>
-      <div id="muc-notes"></div>
-      <button id="muc-install-btn">⬇ YENİ GÜNCELLEMEYİ İNDİR VE KUR</button>
-    </div>
 
-    <div class="menu-btns">
-      <div class="hotel-name-row">
-        <label for="hotel-name-input">🏨 Otel İsmi:</label>
-        <input id="hotel-name-input" type="text" maxlength="16" value="OTEL" placeholder="Otelinizin İsmi..." />
-      </div>
-      <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
-      <div class="menu-row-2">
-        <button id="btn-toggle-sfx" class="m-btn">🔊 Ses: AÇIK</button>
-        <button id="btn-toggle-bgm" class="m-btn">🎵 Müzik: AÇIK</button>
-      </div>
-      <div class="menu-row-2">
-        <button id="btn-how-to" class="m-btn">❓ Nasıl Oynanır?</button>
-        <button id="btn-reset-save" class="m-btn">🗑️ Sıfırdan Başla</button>
-      </div>
-      <div id="how-to-box">• Başlangıçta önce boş alana tıklayıp 1. Odayı kur (100 TL) ve Kapısını al (50 TL); ardından sağ üstten Oteli AÇ.
+      <div class="menu-btns">
+        <div class="hotel-name-row">
+          <label for="hotel-name-input">🏨 Otel İsmi:</label>
+          <input id="hotel-name-input" type="text" maxlength="16" value="OTEL" placeholder="Otelinizin İsmi..." />
+        </div>
+        <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
+        <div class="menu-row-2">
+          <button id="btn-toggle-sfx" class="m-btn">🔊 Ses: AÇIK</button>
+          <button id="btn-toggle-bgm" class="m-btn">🎵 Müzik: AÇIK</button>
+        </div>
+        <div class="menu-row-2">
+          <button id="btn-how-to" class="m-btn">❓ Nasıl Oynanır?</button>
+          <button id="btn-reset-save" class="m-btn">🗑️ Sıfırdan Başla</button>
+        </div>
+        <div id="how-to-box">• Başlangıçta önce boş alana tıklayıp 1. Odayı kur (100 TL) ve Kapısını al (50 TL); ardından sağ üstten Oteli AÇ.
 • Gelen müşterilerin konuşmalarına dikkat et! Aralarında Hırsız (kameradan çekinir) veya gece gelen Vampir (ışığı sevmez, gece diğer müşterilere saldırabilir) olabilir!
 • Depremzedeleri ücretsiz misafir etmek +20 İtibar, normal ücretsiz misafirler ise +10 İtibar kazandırır.
 • Oda bakımları Para + 1 Alet ile yapılır; temizlikçiler de bakım yaparken 1 Alet kullanır. Dışarıdaki kirleri temizleyerek veya Personel menüsünden Alet edinebilirsin.</div>
+      </div>
     </div>
 
     <div class="menu-footer">TheHotel Game • Otomatik Güncelleme Destekli</div>
@@ -377,18 +437,20 @@ v1.2.0</button>
       </div>
     </div>
   </div>
-  <div id="bottom-area" class="grid-bg">
+  <div id="bottom-area">
     <div id="sel-panel">
       <div id="info-text"></div>
       <div id="act-grid"></div>
     </div>
-    <div id="guest-text"></div>
-    <div id="deal-row">
-      <button id="btn-minus" class="deal-btn">Azalt</button>
-      <div id="price-text">60 TL</div>
-      <button id="btn-plus" class="deal-btn">Arttır</button>
-      <button id="btn-offer" class="deal-btn">Teklif ver</button>
-      <button id="btn-reject" class="deal-btn">Reddet</button>
+    <div id="guest-card">
+      <div id="guest-text"></div>
+      <div id="deal-row">
+        <button id="btn-minus" class="deal-btn">➖ Azalt</button>
+        <div id="price-text">60 TL</div>
+        <button id="btn-plus" class="deal-btn">➕ Arttır</button>
+        <button id="btn-offer" class="deal-btn">Teklif ver</button>
+        <button id="btn-reject" class="deal-btn">✖ Reddet</button>
+      </div>
     </div>
     <div id="log-text"></div>
   </div>
@@ -1957,14 +2019,15 @@ function floatText(x, y, msg, col) {
 function refresh() { refreshHud(); refreshPanel(); refreshGuest(); }
 
 function refreshHud() {
-  topLeft.textContent = "Para: " + money + " TL\nAlet: " + tools;
+  topLeft.textContent = "💰 " + money + " TL\n🔧 Alet: " + tools;
   const avg = ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : "-";
   const st = stars();
   const target = st === 0 ? Star1 : st === 1 ? Star2 : Star3;
-  const part = brightness() > 0.35 ? "Gündüz" : "Gece";
-  topMid.textContent = "Gün " + day + " - " + SeasonNames[seasonIdx()] + " - " + part + "\nYıldız " + st + "/3  İtibar " + Math.round(reputation) + "/" + target + "  Ort. " + avg;
-  openBtn.textContent = isOpen ? "AÇIK\n(kapat)" : "KAPALI\n(aç)";
-  openBtn.style.background = isOpen ? "#8ce099" : "#f28c8c";
+  const isDayPart = brightness() > 0.35;
+  const part = isDayPart ? "☀️ Gündüz" : "🌙 Gece";
+  topMid.textContent = "📅 Gün " + day + " • " + SeasonNames[seasonIdx()] + " • " + part + "\n⭐ " + st + "/3   🏆 " + Math.round(reputation) + "/" + target + "   📊 " + avg;
+  openBtn.textContent = isOpen ? "🟢 AÇIK\n(Kapat)" : "🔴 KAPALI\n(Aç)";
+  openBtn.style.background = isOpen ? "linear-gradient(180deg, #98f2a7 0%, #65d477 100%)" : "linear-gradient(180deg, #ffb3b3 0%, #f07878 100%)";
   const stayingCount = allSlots.filter(s => s.type === "Room" && s.guest).length;
   const totalActive = stayingCount + queue.length;
   btnGuestbook.textContent = totalActive > 0 ? ("📖 Müşteri\nKitabı (" + totalActive + ")") : "📖 Müşteri\nKitabı";
@@ -2198,121 +2261,125 @@ function renderGuestBook() {
   }
 }
 
-function setAct(i, t, show, on) {
+const ItemIcons = ["💡", "🪑", "🗄️", "📹", "🛏️", "🍼", "📺", "❄️", "🧊"];
+
+function setAct(i, t, show, on, owned = false) {
   const b = actBtns[i];
   b.style.visibility = show ? "visible" : "hidden";
+  b.classList.toggle("owned-btn", !!owned);
   if (show) { b.textContent = t; b.disabled = !on; }
 }
 
 function refreshPanel() {
-  for (let i = 0; i < ActCount; i++) setAct(i, "", false, true);
-  actBtns[ActCount - 1].style.background = "#99e6a6";
+  for (let i = 0; i < ActCount; i++) setAct(i, "", false, true, false);
+  actBtns[ActCount - 1].style.background = "linear-gradient(180deg, #a8f5b5 0%, #7be08c 100%)";
   const readyOnce = hasReadyRoom();
 
   if (sel === "Staff") {
-    infoText.textContent = "Personel & Alet\nTemizlikçi: " + cleaners.length + "/" + MaxCleaners + " (Maaş: " + CleanerWage + " TL/gün)\nTemizlikçiler bakım yaparken 1 Alet harcar.";
-    setAct(0, "Temizlikçi al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < MaxCleaners);
-    setAct(1, "Temizlikçi çıkar", true, cleaners.length > 0);
-    setAct(2, "Alet satın al\n25 TL (+1)", true, readyOnce && money >= 25);
+    infoText.textContent = "👷 Personel & Alet Yönetimi  •  Temizlikçi: " + cleaners.length + "/" + MaxCleaners + " (Maaş: " + CleanerWage + " TL/gün)\nTemizlikçiler oda bakımı yaparken 1 Alet harcar.";
+    setAct(0, "👷 Temizlikçi Al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < MaxCleaners);
+    setAct(1, "👋 İşten Çıkar", true, cleaners.length > 0);
+    setAct(2, "🔧 +1 Alet Al\n25 TL", true, readyOnce && money >= 25);
   } else if (sel === "Ach") {
-    let t = "Başarılar";
-    for (const a of achs) t += "\n" + (a.done ? "[X] " : "[ ] ") + a.title + " (+" + a.reward + " TL)";
-    t += "\nBugün alınan müşteri: " + todayServed + "/10";
+    let t = "🏆 Başarılar  (Bugün alınan müşteri: " + todayServed + "/10)";
+    for (const a of achs) t += "\n" + (a.done ? "✅ " : "⬜ ") + a.title + " (+" + a.reward + " TL)";
     infoText.textContent = t;
   } else if (sel === "Garden") {
     const n = treePlanted.filter(Boolean).length;
-    infoText.textContent = "Bahçe\nAğaç: " + n + "/" + treePlanted.length + "\nBinanın dışına ağaç dikebilirsin.\nDışarıdaki kirlere dokunup temizle: 2 kirde 1 alet.";
-    setAct(0, "Ağaç dik\n" + TreeCost + " TL", true, readyOnce && n < treePlanted.length);
+    infoText.textContent = "🌳 Bahçe  •  Ağaç: " + n + "/" + treePlanted.length + "\nDışarıdaki kirlere dokunup temizle: her 2 kirde +1 Alet kazanırsın.";
+    setAct(0, "🌳 Ağaç Dik\n" + TreeCost + " TL", true, readyOnce && n < treePlanted.length);
   } else if (sel === "Park") {
     if (parkState === "Locked") {
-      infoText.textContent = "Park alanı\nÇocuklu müşteriler için.\nBedel: " + ParkCost + " TL   Süre: " + Math.round(ParkSec) + " sn";
-      setAct(0, "İnşa et\n" + ParkCost + " TL", true, readyOnce);
-    } else if (parkState === "Building") infoText.textContent = "Park alanı inşaatta\nKalan: " + Math.ceil(parkLeft) + " sn";
-    else infoText.textContent = "Park alanı hazır.\nÇocuklar burada oynar, ebeveynler park isteğinden memnun kalır.";
+      infoText.textContent = "🎠 Park Alanı (Çocuklu müşteriler için)  •  Bedel: " + ParkCost + " TL  •  Süre: " + Math.round(ParkSec) + " sn";
+      setAct(0, "🏗️ İnşa Et\n" + ParkCost + " TL", true, readyOnce);
+    } else if (parkState === "Building") infoText.textContent = "🏗️ Park alanı inşa ediliyor... Kalan: " + Math.ceil(parkLeft) + " sn";
+    else infoText.textContent = "🎠 Park alanı hazır! Çocuklar burada oynar, aileler memnun kalır.";
   } else if (sel === "Floor" && selFloor) {
     const fl = selFloor, n = fl.idx;
     if (fl.state === "Locked") {
       const starOk = stars() >= n, lowerOk = floors[n - 1].state === "Built";
-      infoText.textContent = n + ". kat (kilitli)\nYıldız: " + (starOk ? "tamam" : "eksik, " + StarTargets[n - 1] + " itibar gerekli") +
-        "\nBedel: " + FloorCost[n] + " TL   Süre: " + Math.round(FloorBuildSec[n]) + " sn" + (lowerOk ? "" : "\nÖnce alt katı tamamla");
-      setAct(0, "İnşa et\n" + FloorCost[n] + " TL", true, starOk && lowerOk);
-    } else if (fl.state === "Building") infoText.textContent = n + ". kat inşaatta\nKalan: " + Math.ceil(fl.buildLeft) + " sn";
-    else infoText.textContent = n + ". kat hazır.";
+      infoText.textContent = "🏢 " + n + ". Kat (Kilitli)  •  Yıldız: " + (starOk ? "Tamam" : "Eksik (" + StarTargets[n - 1] + " İtibar gerekli)") +
+        "\nBedel: " + FloorCost[n] + " TL  •  Süre: " + Math.round(FloorBuildSec[n]) + " sn" + (lowerOk ? "" : " (Önce alt katı kur)");
+      setAct(0, "🏗️ İnşa Et\n" + FloorCost[n] + " TL", true, starOk && lowerOk);
+    } else if (fl.state === "Building") infoText.textContent = "🏗️ " + n + ". kat inşaatta... Kalan: " + Math.ceil(fl.buildLeft) + " sn";
+    else infoText.textContent = "🏢 " + n + ". kat hazır.";
   } else if (selSlot) {
     const cur = selSlot;
     const mCost = maintCost(cur);
-    const maintLabel = "Bakım yap\n" + mCost + " TL + 1 Alet";
+    const maintLabel = "🧹 Bakım Yap\n" + mCost + " TL + 1 Alet";
     if (cur.type === "Empty") {
       const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
       if (!readyOnce) {
         infoText.textContent = anyRoomBuilt
-          ? "⚠️ Başlangıç Adımı 2/2: Önce kurduğun ilk odaya tıklayıp Kapı al (50 TL)!"
-          : "⚠️ Başlangıç Adımı 1/2: Oyuna başlamak için önce ilk odanı kur (100 TL)!";
+          ? "⚠️ Başlangıç Adımı 2/2: Önce kurduğun 1. Odaya tıklayıp Kapı al (50 TL)!"
+          : "⚠️ Başlangıç Adımı 1/2: Oyuna başlamak için önce 1. Odanı kur (100 TL)!";
       } else {
-        infoText.textContent = "Boş alan\nOda, spor odası, tuvalet, doğalgaz" + (cur.floor.idx === 0 ? " veya resepsiyon" : "") + " kurabilirsin.";
+        infoText.textContent = "➕ Boş Alan  •  Oda, spor salonu, tuvalet, doğalgaz" + (cur.floor.idx === 0 ? " veya resepsiyon" : "") + " kurabilirsin.";
       }
-      setAct(0, "Oda kur\n" + roomCost() + " TL", true, readyOnce || !anyRoomBuilt);
-      setAct(1, "Spor odası\n" + gymCost() + " TL", true, readyOnce);
-      setAct(2, "Tuvalet\n" + toiletCost() + " TL", true, readyOnce);
-      if (cur.floor.idx === 0) setAct(3, "Resepsiyon\n" + CostReception + " TL", true, readyOnce);
-      setAct(4, "Doğalgaz\n" + gasCost() + " TL", true, readyOnce && !gasSlot());
+      setAct(0, "🛏️ Oda Kur\n" + roomCost() + " TL", true, readyOnce || !anyRoomBuilt);
+      setAct(1, "🏋️ Spor Odası\n" + gymCost() + " TL", true, readyOnce);
+      setAct(2, "🚽 Tuvalet\n" + toiletCost() + " TL", true, readyOnce);
+      if (cur.floor.idx === 0) setAct(3, "🛎️ Resepsiyon\n" + CostReception + " TL", true, readyOnce);
+      setAct(4, "🔥 Doğalgaz\n" + gasCost() + " TL", true, readyOnce && !gasSlot());
     } else if (cur.type === "Reception") {
-      infoText.textContent = "Resepsiyon\nMüşterilerin sabrını %50 artırır.";
+      infoText.textContent = "🛎️ Resepsiyon  •  Sırada bekleyen müşterilerin sabrını %50 artırır.";
     } else if (cur.type === "Gas") {
-      infoText.textContent = "Doğalgaz kazan dairesi\nVana: " + (gasOn ? "AÇIK" : "KAPALI") + "   Bakım: %" + Math.round(cur.maintenance) +
-        (gasLeak ? "\nGAZ KAÇAĞI! " + Math.ceil(gasLeakLeft) + " sn içinde vanayı kapat!" : "\nKışın odaları ısıtır (günlük " + GasPerRoom + " TL x oda). Kaçak riski var.");
-      setAct(0, gasOn ? "Vanayı kapat" : "Vanayı aç", true, true);
+      infoText.textContent = "🔥 Doğalgaz Dairesi  •  Vana: " + (gasOn ? "AÇIK" : "KAPALI") + "  •  Bakım: %" + Math.round(cur.maintenance) +
+        (gasLeak ? "\n🚨 GAZ KAÇAĞI! " + Math.ceil(gasLeakLeft) + " sn içinde vanayı kapat!" : "\nKışın odaları ısıtır (günlük " + GasPerRoom + " TL/oda).");
+      setAct(0, gasOn ? "🔒 Vanayı Kapat" : "🔓 Vanayı Aç", true, true);
       setAct(1, maintLabel, true, cur.maintenance < 99.5);
     } else if (cur.type === "Gym") {
-      infoText.textContent = "Spor odası - Seviye " + cur.gymLevel + "/3\n" + cur.gymLevel + " kişi aynı anda spor yapabilir.\nSpor yapan misafir +" + GymPoints + " puan verir.";
-      if (cur.gymLevel < 3) setAct(0, "Yükselt\n" + gymUpgradeCost(cur.gymLevel) + " TL", true, true);
-      else setAct(0, "Son seviye", true, false);
+      infoText.textContent = "🏋️ Spor Odası (Seviye " + cur.gymLevel + "/3)  •  Aynı anda " + cur.gymLevel + " kişi spor yapabilir (+" + GymPoints + " İtibar).";
+      if (cur.gymLevel < 3) setAct(0, "⬆️ Yükselt\n" + gymUpgradeCost(cur.gymLevel) + " TL", true, true);
+      else setAct(0, "✅ Son Seviye", true, false, true);
     } else if (cur.type === "Toilet") {
-      infoText.textContent = "Tuvalet (2 kabin)\nBakım: %" + Math.round(cur.maintenance) + "\nTuvalet isteyen müşteriler memnun kalır.";
+      infoText.textContent = "🚽 Tuvalet (2 Kabin)  •  Bakım: %" + Math.round(cur.maintenance) + "\nTuvalet isteyen müşterilerin memnuniyetini sağlar.";
       setAct(0, maintLabel, true, cur.maintenance < 99.5);
     } else {
       const have = [];
       for (let k = 0; k < ItemCount; k++) if (cur.items[k]) have.push(ItemNames[k]);
-      const items = have.length > 0 ? have.join(", ") : "yok";
+      const items = have.length > 0 ? have.join(", ") : "Yok";
       let match = "";
       if (pending && cur.Ready) {
         let ok = 0, tot = 0;
         for (let k = 0; k < ItemCount; k++) if (pending.wants[k]) { tot++; if (cur.items[k]) ok++; }
-        match = "\nUyum: " + ok + "/" + tot + " istek";
+        match = "  •  🎯 Uyum: " + ok + "/" + tot;
       }
       let pre = "";
-      if (!cur.hasDoor) pre = "⚠️ Odayı kullanabilmek için önce Kapı al (50 TL)!\n";
-      else if (cur.onFire) pre = "YANGIN! " + Math.ceil(cur.fireLeft) + " sn içinde söndür!\n";
-      else if (cur.guest && cur.guest.expired) pre = cur.guest.name + " süresi doldu: sağ alttan gönder.\n";
-      infoText.textContent = pre + cur.roomNo + ". oda   Kapı: " + (cur.hasDoor ? "var" : "yok") + "   Bakım: %" + Math.round(cur.maintenance) + "\nEşyalar: " + items + match;
-      setAct(0, cur.hasDoor ? "Kapı var" : ("Kapı al\n" + CostDoor + " TL"), true, !cur.hasDoor);
-      for (let k = 0; k < ItemCount; k++)
-        setAct(k + 1, cur.items[k] ? (ItemNames[k] + " var") : (ItemNames[k] + "\n" + ItemCosts[k] + " TL"), true, readyOnce && !cur.items[k]);
+      if (!cur.hasDoor) pre = "⚠️ Odayı açmak için önce Kapı al (50 TL)!  •  ";
+      else if (cur.onFire) pre = "🔥 YANGIN! (" + Math.ceil(cur.fireLeft) + " sn)  •  ";
+      else if (cur.guest && cur.guest.expired) pre = "⏰ " + cur.guest.name + " süresi doldu!  •  ";
+      infoText.textContent = pre + "🚪 " + cur.roomNo + ". Oda  |  Kapı: " + (cur.hasDoor ? "Var" : "Yok") + "  |  Bakım: %" + Math.round(cur.maintenance) + match + "\n📦 Eşyalar: " + items;
+      setAct(0, cur.hasDoor ? "✅ Kapı Var" : ("🚪 Kapı Al\n" + CostDoor + " TL"), true, !cur.hasDoor, cur.hasDoor);
+      for (let k = 0; k < ItemCount; k++) {
+        const hasIt = cur.items[k];
+        setAct(k + 1, hasIt ? ("✅ " + ItemNames[k]) : (ItemIcons[k] + " " + ItemNames[k] + "\n" + ItemCosts[k] + " TL"), true, readyOnce && !hasIt, hasIt);
+      }
       setAct(ItemCount + 1, maintLabel, true, cur.maintenance < 99.5);
     }
-  } else infoText.textContent = "";
+  } else infoText.textContent = "👆 İşlem yapmak için oteldeki bir odaya veya alana dokunun.";
 
   // Sağ alttaki bağlamsal düğme: söndür / gönder / yerleştir / kov
   let shown = false;
   if (sel === "Slot" && selSlot) {
     const c2 = selSlot;
     if (c2.onFire) {
-      setAct(ActCount - 1, "Söndür\n" + (tools >= 1 ? "1 alet" : FireCost + " TL"), true, true);
-      actBtns[ActCount - 1].style.background = "#f28c66";
+      setAct(ActCount - 1, "🧯 Söndür\n" + (tools >= 1 ? "1 Alet" : FireCost + " TL"), true, true);
+      actBtns[ActCount - 1].style.background = "#ff9973";
       shown = true;
     } else if (c2.guest && c2.guest.expired && c2.guest.room === c2) {
-      setAct(ActCount - 1, "Gönder\n" + c2.guest.name, true, true);
+      setAct(ActCount - 1, "👋 Gönder\n" + c2.guest.name, true, true);
       actBtns[ActCount - 1].style.background = "#ffe680";
       shown = true;
     }
   }
   if (!shown && pending) {
     const ok = sel === "Slot" && selSlot && selSlot.Ready && !selSlot.guest && !selSlot.onFire;
-    setAct(ActCount - 1, "Yerleştir\n" + pending.name, true, ok);
+    setAct(ActCount - 1, "✅ Yerleştir\n" + pending.name, true, ok);
     shown = true;
   }
   if (!shown && sel === "Slot" && selSlot && selSlot.guest && !selSlot.guest.expired && selSlot.guest.room === selSlot) {
-    setAct(ActCount - 1, "Odadan Çıkar\n" + selSlot.guest.name, true, true);
+    setAct(ActCount - 1, "🚪 Odadan Çıkar\n" + selSlot.guest.name, true, true);
     actBtns[ActCount - 1].style.background = "#ffd6d6";
   }
 }
@@ -2329,32 +2396,31 @@ function refreshGuest() {
   priceText.textContent = curPrice + " TL";
   const g = front();
   if (g) {
-    const more = queue.length > 1 ? "   Sırada: " + (queue.length - 1) : "";
-    const status = "Sabır: " + Math.ceil(g.patience) + " sn   Hak: " + (3 - g.attempts) + more;
-    const kidTr = g.kids > 0 ? " - " + g.kids + " çocuklu" : "";
+    const more = queue.length > 1 ? "  •  👥 Sırada: " + (queue.length - 1) : "";
+    const status = "⏳ Sabır: " + Math.ceil(g.patience) + " sn  •  🎯 Hak: " + (3 - g.attempts) + more;
+    const kidTr = g.kids > 0 ? " (" + g.kids + " çocuklu)" : "";
     const hintLine = g.hint ? ('\n💬 "' + g.hint + '"') : "";
     if (pending === g) {
-      guestText.textContent = g.name + " " + pendingPrice + " TL'ye anlaştı.\nOda seç: yeşil çerçeveli boş odaya dokun,\nsonra Yerleştir'e bas. (" + wantList(g, false) + ")";
+      guestText.textContent = "✅ " + g.name + " (" + pendingPrice + " TL/gün) ile anlaşıldı!\n👉 Yeşil çerçeveli boş odaya dokunup '✅ Yerleştir' butonuna bas. (" + wantList(g, false) + ")";
     } else if (g.type === "Needy") {
-      guestText.textContent = g.name + " (Depremzede +20 İtibar) - " + g.days + " gün" + kidTr + '\n"' + g.story + '"\nİstekleri: ' + wantList(g, false) + "   " + status;
+      guestText.textContent = "🆘 " + g.name + " (Depremzede • +20 İtibar) • " + g.days + " gün" + kidTr + '\n💬 "' + g.story + '"\n📌 İstek: ' + wantList(g, false) + "  |  " + status;
     } else if (g.type === "Freebie") {
-      guestText.textContent = g.name + " (Ücretsiz +10 İtibar) - " + g.days + " gün" + kidTr + '\n"' + g.story + '"\nİstekleri: ' + wantList(g, false) + "   " + status;
+      guestText.textContent = "🎒 " + g.name + " (Ücretsiz • +10 İtibar) • " + g.days + " gün" + kidTr + '\n💬 "' + g.story + '"\n📌 İstek: ' + wantList(g, false) + "  |  " + status;
     } else if (g.type === "Threat") {
-      guestText.textContent = g.name + " - " + g.days + ' gün\n"' + g.story + '"\nBedava istiyor, reddedersen odaya gidip zarar verir!   ' + status;
+      guestText.textContent = "😡 " + g.name + " • " + g.days + ' gün  •  "' + g.story + '"\n⚠️ Bedava istiyor, reddedersen odaya gidip zarar verir!  |  ' + status;
     } else if (g.chinese) {
-      guestText.textContent = g.name + "  " + g.days + "天" + (g.kids > 0 ? "（带孩子 " + g.kids + "）" : "") + "  出价 " + g.offer + " 元\n我需要：" + wantList(g, true) +
-        "\n(Çince: " + g.days + " gün, " + g.offer + " TL" + kidTr + "; istek: " + wantList(g, false) + ")   " + status;
+      guestText.textContent = "🌏 " + g.name + "  " + g.days + "天" + (g.kids > 0 ? "（带孩子 " + g.kids + "）" : "") + "  出价 " + g.offer + " 元\n(Çince: " + g.days + " gün, " + g.offer + " TL" + kidTr + " • İstek: " + wantList(g, false) + ")  |  " + status;
     } else {
-      guestText.textContent = g.name + " - " + g.days + " gün" + kidTr + " - " + g.offer + " TL öneriyor\nİstekleri: " + wantList(g, false) + hintLine + "\n" + status;
+      guestText.textContent = "🛎️ " + g.name + " • " + g.days + " gün" + kidTr + " • 💰 " + g.offer + " TL öneriyor\n📌 İstekleri: " + wantList(g, false) + "  |  " + status + hintLine;
     }
-    if (pending) offerBtn.textContent = "Bekliyor";
-    else if (g.type !== "Normal") offerBtn.textContent = curPrice <= 0 ? "Bedava al" : "Teklif ver";
-    else offerBtn.textContent = curPrice <= g.offer ? "Kabul et" : "Teklif ver";
+    if (pending) offerBtn.textContent = "⏳ Bekliyor";
+    else if (g.type !== "Normal") offerBtn.textContent = curPrice <= 0 ? "🤝 Bedava Al" : "💬 Teklif Ver";
+    else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif Ver";
   } else {
-    offerBtn.textContent = "Teklif ver";
-    if (queue.length > 0) guestText.textContent = queue[0].name + " otele yaklaşıyor...";
-    else if (!isOpen) guestText.textContent = hasReadyRoom() ? "Otel kapalı, müşteri gelmez. (Sağ üstten AÇ)" : "Önce 1. Odayı kurup Kapısını al, sonra Oteli AÇ.";
-    else guestText.textContent = "Müşteri bekleniyor...";
+    offerBtn.textContent = "💬 Teklif Ver";
+    if (queue.length > 0) guestText.textContent = "🚶 " + queue[0].name + " otele yaklaşıyor...";
+    else if (!isOpen) guestText.textContent = hasReadyRoom() ? "🔴 Otel şu an kapalı. Müşteri gelmesi için sağ üstten AÇ." : "🛠️ Önce 1. Odayı kurup Kapısını al, sonra sağ üstten Oteli AÇ.";
+    else guestText.textContent = "🛎️ Resepsiyon açık, yeni müşteri bekleniyor...";
   }
 }
 
@@ -3535,7 +3601,7 @@ function loadGame() {
     if (!hasReadyRoom()) {
       isOpen = false;
       const fSlot = floors[0].slots[0];
-      const needed = (fSlot.type === "Room" ? 0 : CostBuildRoom) + (fSlot.hasDoor ? 0 : CostDoor);
+      const needed = (fSlot.type === "Room" ? 0 : CostRoom) + (fSlot.hasDoor ? 0 : CostDoor);
       if (money < needed) money = needed;
     }
 
@@ -3574,8 +3640,8 @@ refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 4;
-const APP_VERSION_NAME = "1.3.0";
+const APP_VERSION_CODE = 5;
+const APP_VERSION_NAME = "1.4.0";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
