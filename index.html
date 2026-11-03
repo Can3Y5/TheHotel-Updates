@@ -286,7 +286,7 @@
   #info-text {
     min-height: 24%; max-height: 30%; font-size: clamp(9.5px, 2.35vw, 12px); font-weight: 700;
     color: #1f293d; background: #eef4ff; border: 1.5px solid #b8cce8; border-radius: 6px;
-    padding: 3px 7px; white-space: pre-line; line-height: 1.15; overflow: hidden;
+    padding: 3px 7px; white-space: pre-line; line-height: 1.15; overflow-y: auto;
     display: flex; align-items: center;
   }
   #act-grid {
@@ -463,7 +463,15 @@ const Star1 = 250, Star2 = 500, Star3 = 750;
 const CostRoom = 100, CostRoomStep = 25, CostGym = 150, CostToilet = 120, CostGas = 250;
 const CostReception = 200, CostDoor = 50, CostMaint = 20;
 const ParkCost = 300, ParkSec = 25, TreeCost = 40;
-const CleanerHire = 150, CleanerWage = 15, MaxCleaners = 3;
+const CleanerHire = 150, CleanerWage = 15, MaxCleaners = 5;
+// Depo & Lojman (v1.5.0)
+const CostStorage = 220, CostDorm = 260;
+const StorageCap = [0, 6, 12, 20];          // depo seviyesine göre kapasite
+const StorageUpCost = [0, 0, 300, 500];     // 2. ve 3. seviyeye yükseltme bedeli
+const DormUpCost = [0, 0, 250, 400];
+const OrderDiscount = 0.7;                  // depodan sipariş: eşya fiyatının %70'i
+const DeliverySec = [0, 30, 24, 18];        // depo seviyesine göre teslimat süresi (sn)
+const SneakChance = 0.12;                   // süresi bitince gizlice kalma ihtimali
 const MaxQueue = 4, LeaveRating = 1, GymPoints = 2, ExerciseSec = 8;
 const FireCost = 60, FireSec = 25, GasPerRoom = 6, GasLeakSec = 25;
 const MaxDirt = 8, GiftChance = 0.18, Ach1Reward = 250, Ach2Reward = 400;
@@ -718,7 +726,7 @@ for (let f = 0; f < FloorCount; f++) {
     const s = {
       floor: fl, idx: i, type: "Empty", roomNo: 0, hasDoor: false,
       items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
-      gymLevel: 1, gymBusy: [false, false, false], toiletBusy: [false, false],
+      gymLevel: 1, gymBusy: [false, false, false], toiletBusy: [false, false], level: 1,
       onFire: false, fireLeft: 0,
       wall: pick(WallColors), picColor: pick(PictureColors),
       get X0() { return ElevW + this.idx * SlotW; },
@@ -734,6 +742,13 @@ let hotelName = "OTEL";
 let sel = "Slot", selSlot = floors[0].slots[0], selFloor = null;
 let money = StartMoney, tools = 1, day = 1, roomCounter = 0, builtRooms = 0, cleanCount = 0, todayServed = 0;
 let guestsSinceNeedy = 6, saveTimer = 0;
+// Depo stoğu, sipariş sepeti, yoldaki teslimatlar, kamyonlar ve kaldırımdaki koli yığını
+const stock = new Array(ItemCount).fill(0);
+const cart = new Array(ItemCount).fill(0);
+const shipments = [];
+const trucks = [];
+const crateItems = new Array(ItemCount).fill(0);
+const TruckStopX = -150, CrateX = -105;
 let reputation = 0, ratingSum = 0, ratingCount = 0;
 let isOpen = false, isNight = false, gasOn = true, gasLeak = false, gasLeakLeft = 0;
 let lastSeason = -1;
@@ -947,6 +962,106 @@ function queueX(i) { return waitX() - 110 * i; }
 function front() { return (queue.length > 0 && queue[0].atSpot) ? queue[0] : null; }
 function floorOf(y) { return clamp(Math.round((y - SlabH) / FloorH), 0, FloorCount - 1); }
 
+// ===== DEPO, SİPARİŞ, TESLİMAT, LOJMAN (v1.5.0) =====
+const sumArr = a => a.reduce((x, y) => x + y, 0);
+function storageSlot() { return allSlots.find(s => s.type === "Storage" && s.floor.state === "Built") || null; }
+function dormSlot() { return allSlots.find(s => s.type === "Dorm" && s.floor.state === "Built") || null; }
+function storageCap() { const s = storageSlot(); return s ? StorageCap[s.level] : 0; }
+function storageUsed() { return sumArr(stock) + sumArr(crateItems) + sumArr(cart) + shipments.reduce((t, sh) => t + sumArr(sh.items), 0); }
+function staffCap() { const d = dormSlot(); return 1 + (d ? 2 * d.level : 0); }
+function staffWageMult() { const d = dormSlot(); return d ? 1 - 0.1 * d.level : 1; }
+function orderCost(k) { return Math.round(ItemCosts[k] * OrderDiscount); }
+function cartCost() { let t = 0; for (let k = 0; k < ItemCount; k++) t += cart[k] * orderCost(k); return t; }
+// Faz 2'de resepsiyonist personeline bağlanacak; şimdilik Resepsiyon binası çeviri sağlar.
+function canTranslate() { return hasReception(); }
+function itemLabel(g, k) { return g && g.chinese && !canTranslate() ? ItemCn[k] : ItemNames[k]; }
+
+function addToCart(k) {
+  if (!storageSlot()) return;
+  if (storageUsed() >= storageCap()) { play("reject"); log("Depo kapasitesi dolu! Depoyu yükselt veya stok kullan."); return; }
+  cart[k]++; play("tap"); refreshPanel();
+}
+function clearCart() { cart.fill(0); play("tap"); refresh(); }
+function placeOrder() {
+  const st = storageSlot();
+  if (!st) return;
+  const n = sumArr(cart);
+  if (n === 0) return;
+  const cost = cartCost();
+  if (!pay(cost)) return;
+  const sec = DeliverySec[st.level];
+  shipments.push({ items: cart.slice(), left: sec, total: sec });
+  cart.fill(0);
+  play("build");
+  log("📦 Sipariş verildi (" + n + " eşya, " + cost + " TL). Kamyon " + sec + " sn içinde gelir.");
+  refresh(); saveGame();
+}
+function upgradeStorage(s) {
+  if (s.level >= 3) return;
+  if (!pay(StorageUpCost[s.level + 1])) return;
+  s.level++; play("done"); log("Depo seviye " + s.level + " oldu (kapasite " + StorageCap[s.level] + ")."); refresh(); saveGame();
+}
+function upgradeDorm(s) {
+  if (s.level >= 3) return;
+  if (!pay(DormUpCost[s.level + 1])) return;
+  s.level++; play("done"); log("Lojman seviye " + s.level + " oldu (personel kapasitesi " + staffCap() + ", maaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ")."); refresh(); saveGame();
+}
+function spawnTruck(sh) {
+  trucks.push({ x: -2100, y: -102, dir: 1, state: "driving", timer: 0, wheelRot: 0, speed: 380, sh });
+  play("bell");
+  log("🚚 Kargo kamyonu geliyor!");
+}
+function updateDeliveries(dt) {
+  for (let i = shipments.length - 1; i >= 0; i--) {
+    const sh = shipments[i];
+    sh.left -= dt;
+    if (sh.left <= 0) { shipments.splice(i, 1); spawnTruck(sh); }
+  }
+  for (let i = trucks.length - 1; i >= 0; i--) {
+    const t = trucks[i];
+    t.wheelRot += t.speed * 0.05 * dt;
+    if (t.state === "driving") {
+      t.x += t.speed * dt;
+      if (t.x >= TruckStopX) { t.x = TruckStopX; t.state = "unloading"; t.timer = 3; }
+    } else if (t.state === "unloading") {
+      t.timer -= dt;
+      if (t.timer <= 0) {
+        for (let k = 0; k < ItemCount; k++) crateItems[k] += t.sh.items[k];
+        t.sh = null; t.state = "leaving";
+        play("done");
+        floatText(CrateX + 40, SlabH + 140, "📦 Teslimat geldi! Dokun", "#1a5ccc");
+        log("📦 Kolilar kaldırıma bırakıldı. Depoya almak için kolilere dokun.");
+        saveGame();
+      }
+    } else {
+      t.x += t.speed * dt;
+      if (t.x > TotalW + 2400) trucks.splice(i, 1);
+    }
+  }
+}
+function collectCrate() {
+  const n = sumArr(crateItems);
+  if (n === 0) return;
+  if (!storageSlot()) { log("Kolileri koyacak bir Depo yok!"); return; }
+  for (let k = 0; k < ItemCount; k++) { stock[k] += crateItems[k]; crateItems[k] = 0; }
+  play("coin");
+  floatText(CrateX + 40, SlabH + 140, "+" + n + " eşya depoya alındı", "#1a8c26");
+  log("📦 " + n + " eşya depoya taşındı.");
+  refresh(); saveGame();
+}
+function installItem(s, k) {
+  if (s.items[k]) return;
+  if (stock[k] > 0) {
+    stock[k]--; s.items[k] = true; play("build");
+    log(s.roomNo + ". oda: " + ItemNames[k] + " depodan takıldı.");
+    saveGame();
+  } else if (pay(ItemCosts[k])) {
+    s.items[k] = true; play("build");
+    log(s.roomNo + ". oda: " + ItemNames[k] + " eklendi.");
+    saveGame();
+  }
+}
+
 function addPath(p, from, to, x) {
   if (from !== to) {
     p.path.push({ x: ElevX, y: floors[from].WalkY });
@@ -1115,7 +1230,7 @@ function onQueueArrive(g) {
   if (!g.arrivedOnce) {
     g.arrivedOnce = true;
     play("bell");
-    if (g.type === "Normal") log(g.name + " geldi, oda istiyor (" + g.offer + " TL öneriyor).");
+    if (g.type === "Normal") log(g.chinese ? (g.name + "：你好，我要房间（出价 " + g.offer + " 元）。") : (g.name + " geldi, oda istiyor (" + g.offer + " TL öneriyor)."));
     else if (g.type === "Needy") log(g.name + " (Depremzede) geldi: ücretsiz oda rica ediyor (+20 İtibar).");
     else if (g.type === "Freebie") log(g.name + " geldi: ücretsiz kalmak istiyor (+10 İtibar).");
     else { log(g.name + " geldi ve tehdit ediyor!"); play("alarm"); }
@@ -1192,13 +1307,13 @@ function onOffer() {
   }
   if (g.attempts >= 3) {
     play("reject");
-    dismissFront(g, g.name + ': "Olmaz, çok pahalı. Gidiyorum!"'); return;
+    dismissFront(g, g.chinese ? (g.name + ': "太贵了，我走了！"') : (g.name + ': "Olmaz, çok pahalı. Gidiyorum!"')); return;
   }
   play("tap");
   let np = Math.min(g.budget, round5(g.offer + (g.budget - g.offer) * 0.4));
   if (np <= g.offer) np = Math.min(g.budget, g.offer + 5);
   g.offer = np; curPrice = np;
-  log(g.name + ': "Bu kadar vermem, en fazla ' + np + ' TL." (' + (3 - g.attempts) + ' hak kaldı)');
+  log(g.chinese ? (g.name + ': "最多 ' + np + ' 元。" (' + (3 - g.attempts) + ' 次机会)') : (g.name + ': "Bu kadar vermem, en fazla ' + np + ' TL." (' + (3 - g.attempts) + ' hak kaldı)'));
   setBubbleText(g, 0);
   refresh();
 }
@@ -1381,8 +1496,22 @@ function triggerVampireHunt(g) {
   };
 }
 
+function catchSneaky(g) {
+  const s = g.room;
+  if (!s) return;
+  const fine = Math.max(30, g.price * 2);
+  money += fine; reputation += 5;
+  play("done");
+  floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🕵️ Kaçak misafir! +" + fine + " TL", "#1a8c26");
+  log("🕵️ " + s.roomNo + ". odada süresi bitmesine rağmen kalan " + g.name + " yakalandı! (+" + fine + " TL ceza, +5 İtibar)");
+  s.guest = null; g.room = null; g.sneaky = false;
+  startLeaving(g);
+  refresh(); saveGame();
+}
+
 function evictGuest(g) {
   if (!g || !g.room || g.state === "Leaving") return;
+  if (g.sneaky) { catchSneaky(g); return; }
   const s = g.room;
   s.guest = null;
   g.room = null;
@@ -1685,9 +1814,17 @@ function updateCleaners(dt) {
   }
 }
 
+function storageBuildCost() { return CostStorage + CostRoomStep * builtRooms; }
+function dormBuildCost() { return CostDorm + CostRoomStep * builtRooms; }
+
 function hireCleaner() {
   if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
-  if (cleaners.length >= MaxCleaners || !pay(CleanerHire)) return;
+  if (cleaners.length >= Math.min(MaxCleaners, staffCap())) {
+    play("reject");
+    log("Personel kapasitesi dolu (" + cleaners.length + "/" + staffCap() + "). Lojman kur veya yükselt!");
+    return;
+  }
+  if (!pay(CleanerHire)) return;
   const p = makePawn({ x: ElevW + 40, y: floors[0].WalkY }, pick(Skins), "#f2f2f2", "#3373cc");
   p.speed = 70;
   cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
@@ -1724,14 +1861,32 @@ function newDay() {
     const g = s.guest;
     s.maintenance = Math.max(0, s.maintenance - 10);
     if (g.expired) { g.overstay++; continue; }
+    if (g.sneaky) {
+      // Gizlice kalan müşteri: ödeme yok, oda yıpranır; kamera varsa yakalanabilir
+      g.sneakyDays = (g.sneakyDays || 0) + 1;
+      s.maintenance = Math.max(0, s.maintenance - 5);
+      if (s.items[IKamera] && Math.random() < 0.6) { catchSneaky(g); continue; }
+      if (g.sneakyDays >= 2) {
+        log("🕵️ " + g.name + " " + s.roomNo + ". odadan fark edilmeden sıvıştı! (-3 İtibar)");
+        reputation = Math.max(0, reputation - 3);
+        s.guest = null; g.room = null; g.sneaky = false;
+        startLeaving(g);
+      }
+      continue;
+    }
     if (g.price > 0) {
       money += g.price; paid = true;
       floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.62, "+" + g.price + " TL", "#1a8c26");
     }
     g.daysLeft--;
-    if (g.daysLeft <= 0) markExpired(g);
+    if (g.daysLeft <= 0) {
+      if (g.type === "Normal" && g.role === "None" && Math.random() < SneakChance) {
+        g.sneaky = true; g.sneakyDays = 0; g.daysLeft = 0;
+        if (s.items[IKamera] && Math.random() < 0.5) catchSneaky(g);
+      } else markExpired(g);
+    }
   }
-  const wage = cleaners.length * CleanerWage;
+  const wage = Math.round(cleaners.length * CleanerWage * staffWageMult());
   if (wage > 0) {
     money = Math.max(0, money - wage);
     floatText(ElevX, floors[0].WalkY + 150, "-" + wage + " TL maaş", "#b33333");
@@ -1955,8 +2110,21 @@ function onAction(i) {
       } else if (i === 4 && !gasSlot() && pay(gasCost())) {
         s.type = "Gas"; s.maintenance = 100; builtRooms++;
         play("build"); log("Doğalgaz kazan dairesi kuruldu. Kışın odaları ısıtır."); saveGame();
+      } else if (i === 5 && !storageSlot() && pay(storageBuildCost())) {
+        s.type = "Storage"; s.level = 1; builtRooms++;
+        play("build"); log("📦 Depo kuruldu (kapasite " + StorageCap[1] + "). Sipariş verip eşya stoklayabilirsin."); saveGame();
+      } else if (i === 6 && !dormSlot() && pay(dormBuildCost())) {
+        s.type = "Dorm"; s.level = 1; builtRooms++;
+        play("build"); log("🏠 Personel Lojmanı kuruldu (personel kapasitesi " + staffCap() + ")."); saveGame();
       }
     }
+  } else if (s.type === "Storage") {
+    if (i >= 0 && i < ItemCount) addToCart(i);
+    else if (i === 9) placeOrder();
+    else if (i === 10) upgradeStorage(s);
+    else if (i === 11) clearCart();
+  } else if (s.type === "Dorm") {
+    if (i === 0) upgradeDorm(s);
   } else if (s.type === "Gas") {
     if (i === 0) { toggleGas(); saveGame(); }
     else if (i === 1) doMaint(s);
@@ -1976,9 +2144,7 @@ function onAction(i) {
         refresh(); return;
       }
       const k = i - 1;
-      if (!s.items[k] && pay(ItemCosts[k])) {
-        s.items[k] = true; play("build"); log(s.roomNo + ". oda: " + ItemNames[k] + " eklendi."); saveGame();
-      }
+      installItem(s, k);
     } else if (i === ItemCount + 1) {
       doMaint(s);
     }
@@ -2106,21 +2272,21 @@ function renderGuestBook() {
         const hasIt = !!s.items[k];
         const tag = document.createElement("span");
         tag.className = "gb-tag " + (hasIt ? "ok" : "miss");
-        tag.textContent = (hasIt ? "✅ " : "❌ ") + ItemNames[k] + (hasIt ? "" : " (Eksik)");
+        tag.textContent = (hasIt ? "✅ " : "❌ ") + itemLabel(g, k) + (hasIt ? "" : (g.chinese && !canTranslate() ? "" : " (Eksik)"));
         wantsWrap.appendChild(tag);
       }
       if (g.wantsToilet) {
         anyWant = true;
         const tag = document.createElement("span");
         tag.className = "gb-tag " + (toiletAvail ? "ok" : "miss");
-        tag.textContent = (toiletAvail ? "✅ Tuvalet" : "❌ Tuvalet (Yok)");
+        tag.textContent = (g.chinese && !canTranslate() ? (toiletAvail ? "✅ 厕所" : "❌ 厕所") : (toiletAvail ? "✅ Tuvalet" : "❌ Tuvalet (Yok)"));
         wantsWrap.appendChild(tag);
       }
       if (g.kids > 0) {
         anyWant = true;
         const tag = document.createElement("span");
         tag.className = "gb-tag " + (parkAvail ? "ok" : "miss");
-        tag.textContent = (parkAvail ? "✅ Park" : "❌ Park (Yok)");
+        tag.textContent = (g.chinese && !canTranslate() ? (parkAvail ? "✅ 公园" : "❌ 公园") : (parkAvail ? "✅ Park" : "❌ Park (Yok)"));
         wantsWrap.appendChild(tag);
       }
       if (si === 3) {
@@ -2222,6 +2388,9 @@ function renderGuestBook() {
                         g.type === "Freebie" ? "Ücretsiz Misafir (+10 İtibar - Ücretsiz)" :
                         g.type === "Threat" ? "Tehdit ediyor (Ücretsiz istiyor)" :
                         ("💰 Teklifi: " + g.offer + " TL/gün");
+      if (g.chinese && !canTranslate()) {
+        meta.textContent = "📅 " + g.days + "天  •  💰 出价 " + g.offer + " 元  •  耐心 " + Math.ceil(g.patience) + " 秒";
+      } else
       meta.textContent = "📅 " + g.days + " gün kalacak  •  " + offerDesc + "  •  ⏳ Sabır: " + Math.ceil(g.patience) + " sn";
       card.appendChild(meta);
 
@@ -2240,19 +2409,19 @@ function renderGuestBook() {
         if (!g.wants[k]) continue;
         const tag = document.createElement("span");
         tag.className = "gb-tag neutral";
-        tag.textContent = "📌 " + ItemNames[k];
+        tag.textContent = "📌 " + itemLabel(g, k);
         wantsWrap.appendChild(tag);
       }
       if (g.wantsToilet) {
         const tag = document.createElement("span");
         tag.className = "gb-tag " + (toiletAvail ? "ok" : "miss");
-        tag.textContent = toiletAvail ? "✅ Tuvalet (Var)" : "❌ Tuvalet İstiyor";
+        tag.textContent = (g.chinese && !canTranslate()) ? "厕所" : (toiletAvail ? "✅ Tuvalet (Var)" : "❌ Tuvalet İstiyor");
         wantsWrap.appendChild(tag);
       }
       if (g.kids > 0) {
         const tag = document.createElement("span");
         tag.className = "gb-tag " + (parkAvail ? "ok" : "miss");
-        tag.textContent = parkAvail ? "✅ Park (Var)" : "❌ Park İstiyor";
+        tag.textContent = (g.chinese && !canTranslate()) ? "公园" : (parkAvail ? "✅ Park (Var)" : "❌ Park İstiyor");
         wantsWrap.appendChild(tag);
       }
       card.appendChild(wantsWrap);
@@ -2276,8 +2445,8 @@ function refreshPanel() {
   const readyOnce = hasReadyRoom();
 
   if (sel === "Staff") {
-    infoText.textContent = "👷 Personel & Alet Yönetimi  •  Temizlikçi: " + cleaners.length + "/" + MaxCleaners + " (Maaş: " + CleanerWage + " TL/gün)\nTemizlikçiler oda bakımı yaparken 1 Alet harcar.";
-    setAct(0, "👷 Temizlikçi Al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < MaxCleaners);
+    infoText.textContent = "👷 Personel & Alet  •  Temizlikçi: " + cleaners.length + "  •  Lojman kapasitesi: " + cleaners.length + "/" + staffCap() + (dormSlot() ? "" : " (Lojman yok: kapasite 1)") + "\nMaaş: " + Math.round(CleanerWage * staffWageMult()) + " TL/gün. Temizlikçiler bakım yaparken 1 Alet harcar.";
+    setAct(0, "👷 Temizlikçi Al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < Math.min(MaxCleaners, staffCap()));
     setAct(1, "👋 İşten Çıkar", true, cleaners.length > 0);
     setAct(2, "🔧 +1 Alet Al\n25 TL", true, readyOnce && money >= 25);
   } else if (sel === "Ach") {
@@ -2321,6 +2490,26 @@ function refreshPanel() {
       setAct(2, "🚽 Tuvalet\n" + toiletCost() + " TL", true, readyOnce);
       if (cur.floor.idx === 0) setAct(3, "🛎️ Resepsiyon\n" + CostReception + " TL", true, readyOnce);
       setAct(4, "🔥 Doğalgaz\n" + gasCost() + " TL", true, readyOnce && !gasSlot());
+      setAct(5, storageSlot() ? "📦 Depo var" : "📦 Depo\n" + storageBuildCost() + " TL", true, readyOnce && !storageSlot(), !!storageSlot());
+      setAct(6, dormSlot() ? "🏠 Lojman var" : "🏠 Lojman\n" + dormBuildCost() + " TL", true, readyOnce && !dormSlot(), !!dormSlot());
+    } else if (cur.type === "Storage") {
+      const used = storageUsed(), cap = storageCap();
+      let st = "";
+      for (let k = 0; k < ItemCount; k++) if (stock[k] > 0) st += ItemIcons[k] + "×" + stock[k] + " ";
+      let ship = "";
+      for (const sh of shipments) ship += "  🚚 " + Math.ceil(sh.left) + " sn (" + sumArr(sh.items) + " eşya)";
+      if (trucks.some(t => t.state !== "leaving")) ship += "  🚚 Kamyon geldi!";
+      const crateN = sumArr(crateItems);
+      infoText.textContent = "📦 Depo Sv." + cur.level + "  •  Kapasite: " + used + "/" + cap + "  •  Sipariş %" + Math.round(OrderDiscount * 100) + " fiyat  •  Teslimat " + DeliverySec[cur.level] + " sn\n" +
+        "Stok: " + (st || "boş") + (crateN ? "  📦 Kaldırımda " + crateN + " koli (dokun!)" : "") + ship + (sumArr(cart) ? "\n🛒 Sepet: " + sumArr(cart) + " eşya = " + cartCost() + " TL" : "");
+      for (let k = 0; k < ItemCount; k++) setAct(k, ItemIcons[k] + " " + ItemNames[k] + "\n" + orderCost(k) + " TL" + (cart[k] ? " ×" + cart[k] : ""), true, used < cap);
+      setAct(9, "🚚 Siparişi Ver\n" + cartCost() + " TL", true, sumArr(cart) > 0 && money >= cartCost());
+      if (cur.level < 3) setAct(10, "⬆️ Depo Sv." + (cur.level + 1) + "\n" + StorageUpCost[cur.level + 1] + " TL", true, true);
+      else setAct(10, "✅ Son seviye", true, false, true);
+    } else if (cur.type === "Dorm") {
+      infoText.textContent = "🏠 Personel Lojmanı Sv." + cur.level + "  •  Personel: " + cleaners.length + "/" + staffCap() + "\nMaaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ". Her seviye +2 personel kapasitesi ekler.";
+      if (cur.level < 3) setAct(0, "⬆️ Yükselt Sv." + (cur.level + 1) + "\n" + DormUpCost[cur.level + 1] + " TL", true, true);
+      else setAct(0, "✅ Son seviye", true, false, true);
     } else if (cur.type === "Reception") {
       infoText.textContent = "🛎️ Resepsiyon  •  Sırada bekleyen müşterilerin sabrını %50 artırır.";
     } else if (cur.type === "Gas") {
@@ -2353,7 +2542,8 @@ function refreshPanel() {
       setAct(0, cur.hasDoor ? "✅ Kapı Var" : ("🚪 Kapı Al\n" + CostDoor + " TL"), true, !cur.hasDoor, cur.hasDoor);
       for (let k = 0; k < ItemCount; k++) {
         const hasIt = cur.items[k];
-        setAct(k + 1, hasIt ? ("✅ " + ItemNames[k]) : (ItemIcons[k] + " " + ItemNames[k] + "\n" + ItemCosts[k] + " TL"), true, readyOnce && !hasIt, hasIt);
+        const lbl = stock[k] > 0 ? (ItemIcons[k] + " " + ItemNames[k] + "\n📦 Depodan tak (" + stock[k] + ")") : (ItemIcons[k] + " " + ItemNames[k] + "\n" + ItemCosts[k] + " TL");
+        setAct(k + 1, hasIt ? ("✅ " + ItemNames[k]) : lbl, true, readyOnce && !hasIt, hasIt);
       }
       setAct(ItemCount + 1, maintLabel, true, cur.maintenance < 99.5);
     }
@@ -2381,6 +2571,11 @@ function refreshPanel() {
   if (!shown && sel === "Slot" && selSlot && selSlot.guest && !selSlot.guest.expired && selSlot.guest.room === selSlot) {
     setAct(ActCount - 1, "🚪 Odadan Çıkar\n" + selSlot.guest.name, true, true);
     actBtns[ActCount - 1].style.background = "#ffd6d6";
+    shown = true;
+  }
+  if (!shown && sel === "Slot" && selSlot && selSlot.type === "Storage" && sumArr(cart) > 0) {
+    setAct(ActCount - 1, "🗑️ Sepeti Boşalt", true, true);
+    actBtns[ActCount - 1].style.background = "#ffd6d6";
   }
 }
 
@@ -2401,6 +2596,9 @@ function refreshGuest() {
     const kidTr = g.kids > 0 ? " (" + g.kids + " çocuklu)" : "";
     const hintLine = g.hint ? ('\n💬 "' + g.hint + '"') : "";
     if (pending === g) {
+      if (g.chinese) {
+        guestText.textContent = "✅ " + g.name + " · " + pendingPrice + " 元 成交！\n请选择空房间并点击 '✅ Yerleştir'。(" + wantList(g, !canTranslate()) + ")";
+      } else
       guestText.textContent = "✅ " + g.name + " (" + pendingPrice + " TL/gün) ile anlaşıldı!\n👉 Yeşil çerçeveli boş odaya dokunup '✅ Yerleştir' butonuna bas. (" + wantList(g, false) + ")";
     } else if (g.type === "Needy") {
       guestText.textContent = "🆘 " + g.name + " (Depremzede • +20 İtibar) • " + g.days + " gün" + kidTr + '\n💬 "' + g.story + '"\n📌 İstek: ' + wantList(g, false) + "  |  " + status;
@@ -2409,7 +2607,10 @@ function refreshGuest() {
     } else if (g.type === "Threat") {
       guestText.textContent = "😡 " + g.name + " • " + g.days + ' gün  •  "' + g.story + '"\n⚠️ Bedava istiyor, reddedersen odaya gidip zarar verir!  |  ' + status;
     } else if (g.chinese) {
-      guestText.textContent = "🌏 " + g.name + "  " + g.days + "天" + (g.kids > 0 ? "（带孩子 " + g.kids + "）" : "") + "  出价 " + g.offer + " 元\n(Çince: " + g.days + " gün, " + g.offer + " TL" + kidTr + " • İstek: " + wantList(g, false) + ")  |  " + status;
+      const cnStatus = "耐心 " + Math.ceil(g.patience) + " 秒 · 机会 " + (3 - g.attempts) + " 次";
+      let t = "🌏 " + g.name + " · " + g.days + "天" + (g.kids > 0 ? "（带孩子 " + g.kids + "）" : "") + " · 出价 " + g.offer + " 元\n我需要：" + wantList(g, true) + "\n" + cnStatus;
+      if (canTranslate()) t += "\n🛎️ Resepsiyon çevirisi: " + g.days + " gün, " + g.offer + " TL" + kidTr + " • İstek: " + wantList(g, false);
+      guestText.textContent = t;
     } else {
       guestText.textContent = "🛎️ " + g.name + " • " + g.days + " gün" + kidTr + " • 💰 " + g.offer + " TL öneriyor\n📌 İstekleri: " + wantList(g, false) + "  |  " + status + hintLine;
     }
@@ -2495,6 +2696,12 @@ function handleWorldTap(clientX, clientY) {
       sendOff(g);
       return;
     }
+  }
+
+  // Kaldırımdaki teslimat kolileri
+  if (sumArr(crateItems) > 0 && wx >= CrateX - 70 && wx <= CrateX + 90 && wy >= SlabH - 10 && wy <= SlabH + 130) {
+    collectCrate();
+    return;
   }
 
   // Dış kirler
@@ -2746,11 +2953,13 @@ function drawWorld() {
   if (climber) rRect(ElevX - 55, climber.pos.y - 6, 110, 150, "#b3bfcf", Pencil, 3);
 
   // Kişiler (Pawns)
+  drawCrates();
   for (const p of pawns) if (!p.dead && p.visible) drawPawn(p);
 
   // Dışarıdan geçen arabalar (ön planda yolda)
   cars.sort((a, b) => b.y - a.y);
   for (const car of cars) drawCar(car);
+  for (const t of trucks) drawTruck(t);
 
   // Konuşma Balonları ve Süre Doldu Balonları
   for (const g of guests) {
@@ -2847,6 +3056,7 @@ function drawSlot(s) {
   const x = s.X0, y = s.floor.BaseY;
   const isEmpty = s.type === "Empty", isRec = s.type === "Reception";
   const isRoom = s.type === "Room", isGym = s.type === "Gym", isToilet = s.type === "Toilet", isGas = s.type === "Gas";
+  const isStorage = s.type === "Storage", isDorm = s.type === "Dorm";
 
   let bg = s.wall, no = "", gt = "", mid = "";
   if (isEmpty) { bg = "rgba(209,219,235,0.9)"; mid = "BOŞ\n+ kur"; }
@@ -2861,6 +3071,12 @@ function drawSlot(s) {
     bg = (gasLeak && Math.floor(timeNow * 4) % 2 === 0) ? "#ff9973" : "#ebe6d6";
     no = "Doğalgaz";
     gt = gasLeak ? "KAÇAK!" : (gasOn ? "vana açık" : "vana kapalı") + " - %" + Math.round(s.maintenance);
+  } else if (isStorage) {
+    bg = "#e9e0d0"; no = "Depo Sv." + s.level;
+    gt = "stok " + sumArr(stock) + "/" + StorageCap[s.level];
+  } else if (isDorm) {
+    bg = "#e6dff2"; no = "Lojman Sv." + s.level;
+    gt = "personel " + cleaners.length + "/" + staffCap();
   } else {
     no = s.roomNo + ". oda";
     if (s.onFire) gt = "YANGIN!";
@@ -2962,6 +3178,37 @@ function drawSlot(s) {
     rCircle(x + 84, y + SlabH + 128, 18, 18, "#ffffff", Pencil, 2);
     rRect(x + 83, y + SlabH + 120, 2, 16, "#cc1a1a", null);
     rText("GAZ", x + 40, y + SlabH + 50, 110, 36, 26, Pencil);
+  } else if (isStorage) {
+    // Raflar ve koliler (stok miktarına göre dolar)
+    const boxCols = ["#d9a35b", "#c98c45", "#e2b873", "#b87a3d"];
+    const total = sumArr(stock);
+    let drawn = 0;
+    for (let sh = 0; sh < 3; sh++) {
+      const sy = y + SlabH + 30 + sh * 62;
+      rRect(x + 24, sy, SlotW - 60, 8, "#7a5a3a", Pencil, 2);
+      for (let b = 0; b < 8; b++) {
+        if (drawn >= total) break;
+        rRect(x + 32 + b * 40, sy + 8, 34, 28 + (b % 3) * 5, boxCols[(b + sh) % 4], Pencil, 2);
+        drawn++;
+      }
+    }
+    rRect(x + 24, y + SlabH, 8, 190, "#7a5a3a", null);
+    rRect(x + SlotW - 44, y + SlabH, 8, 190, "#7a5a3a", null);
+  } else if (isDorm) {
+    // Ranzalar ve personel sayısı kadar yastık
+    for (let k = 0; k < 2; k++) {
+      const bx = x + 28 + k * 170;
+      rRect(bx, y + SlabH, 8, 120, "#8c6b4a", null);
+      rRect(bx + 118, y + SlabH, 8, 120, "#8c6b4a", null);
+      for (let lv = 0; lv < 2; lv++) {
+        const by = y + SlabH + 12 + lv * 56;
+        const occupied = (k * 2 + lv) < cleaners.length;
+        rRect(bx, by, 126, 14, "#a07e57", Pencil, 2);
+        rRect(bx + 4, by + 14, 118, 16, occupied ? "#7fb3e6" : "#f2f2fa", Pencil, 2);
+        rRect(bx + 6, by + 30, 26, 10, "#ffffff", null);
+      }
+    }
+    rRect(x + 20, y + SlabH + 150, 90, 8, "#8c6b4a", null);
   }
 
   // Yangın alevleri + duman
@@ -3177,6 +3424,47 @@ function drawCar(car) {
   ctx.restore();
 }
 
+function drawCrates() {
+  const n = sumArr(crateItems);
+  if (n === 0) return;
+  const cols = ["#d9a35b", "#c98c45", "#e2b873"];
+  const cnt = Math.min(6, Math.max(1, Math.ceil(n / 2)));
+  for (let i = 0; i < cnt; i++) {
+    const cx = CrateX - 40 + (i % 3) * 44, cy = SlabH + Math.floor(i / 3) * 34;
+    rRect(cx, cy, 40, 32, cols[i % 3], Pencil, 2.5);
+    rRect(cx + 17, cy, 6, 32, "rgba(255,255,255,0.55)", null);
+  }
+  const bob = Math.sin(timeNow * 4) * 5;
+  rRect(CrateX - 55, SlabH + 80 + bob, 130, 40, "#fff2a6", Pencil, 2.5);
+  rText("📦 " + n + " koli\nDokun!", CrateX - 55, SlabH + 80 + bob, 130, 40, 15, Pencil);
+}
+
+function drawTruck(t) {
+  ctx.save();
+  ctx.translate(t.x, -t.y);
+  ctx.scale(t.dir, 1);
+  rCircle(0, -3, 125, 12, "rgba(0,0,0,0.32)", null);
+  // Kasa
+  rRect(-118, 18, 150, 82, "#f4f6fa", Pencil, 3);
+  rRect(-118, 54, 150, 14, "#2b6ed9", null);
+  rText("KARGO", -118, 70, 150, 28, 22, "#2b6ed9");
+  if (t.state === "unloading") {
+    rRect(-100, 100, 40, 18, "#d9a35b", Pencil, 2);
+    rRect(-56, 100, 40, 18, "#c98c45", Pencil, 2);
+  }
+  // Kabin
+  rRect(34, 18, 70, 52, "#2b6ed9", Pencil, 3);
+  rRect(72, 42, 28, 24, "#bfe3ff", Pencil, 2);
+  rRect(100, 24, 8, 12, "#fff275", Pencil, 2);
+  rRect(-122, 12, 232, 10, "#3a3f4d", Pencil, 2);
+  for (const wx of [-86, -40, 62]) {
+    rCircle(wx, 14, 19, 19, "#22252e", Pencil, 3);
+    rCircle(wx, 14, 8, 8, "#d0d7e6", Pencil, 2);
+    rCircle(wx + Math.cos(t.wheelRot) * 4, 14 + Math.sin(t.wheelRot) * 4, 2.2, 2.2, "#22252e", null);
+  }
+  ctx.restore();
+}
+
 function updateCarsAndBirds(dt) {
   carTimer -= dt;
   if (carTimer <= 0) {
@@ -3185,7 +3473,9 @@ function updateCarsAndBirds(dt) {
   }
   for (let i = cars.length - 1; i >= 0; i--) {
     const c = cars[i];
-    c.x += c.dir * c.speed * dt;
+    // Boşaltma yapan kamyonun arkasında bekle
+    const blocked = trucks.some(t => t.state === "unloading" && c.dir === 1 && c.x < t.x && t.x - c.x < 300);
+    if (!blocked) c.x += c.dir * c.speed * dt;
     c.wheelRot += c.speed * 0.05 * dt;
     if ((c.dir === 1 && c.x > TotalW + 2400) || (c.dir === -1 && c.x < -2400)) {
       cars.splice(i, 1);
@@ -3319,6 +3609,7 @@ function loop(now) {
 
   updateFires(dt);
   updateCleaners(dt);
+  updateDeliveries(dt);
 
   // Kişi Hareketleri
   for (let i = pawns.length - 1; i >= 0; i--) {
@@ -3399,7 +3690,8 @@ function loop(now) {
                         (sel === "Park" && parkState === "Building") ||
                         (cleaning && sel === "Slot") ||
                         (burning && sel === "Slot") ||
-                        (gasLeak && sel === "Slot");
+                        (gasLeak && sel === "Slot") ||
+                        (sel === "Slot" && selSlot && selSlot.type === "Storage" && (shipments.length > 0 || trucks.length > 0));
     if (buildingSel) refreshPanel();
   }
 
@@ -3418,7 +3710,7 @@ function saveGame() {
       money,
       reputation,
       tools,
-      dayCount,
+      dayCount: day, roomCounter, builtRooms, ratingSum, ratingCount, cleanCount,
       dayTimer,
       isOpen,
       gasOn,
@@ -3427,9 +3719,13 @@ function saveGame() {
       parkState,
       parkLeft,
       treePlanted: treePlanted.slice(),
-      achUnlocked: achUnlocked.slice(),
+      achUnlocked: achs.map(a => !!a.done),
       todayServed,
       guestsSinceNeedy,
+      stock: stock.slice(),
+      crateItems: crateItems.slice(),
+      shipments: shipments.map(sh => ({ items: sh.items.slice(), left: sh.left, total: sh.total }))
+        .concat(trucks.filter(t => t.sh).map(t => ({ items: t.sh.items.slice(), left: 2, total: t.sh.total }))),
       cleanerCount: cleaners.length,
       floors: floors.map(fl => ({
         state: fl.state,
@@ -3444,6 +3740,7 @@ function saveGame() {
           wall: s.wall,
           picColor: s.picColor,
           gymLevel: s.gymLevel,
+          level: s.level || 1,
           onFire: s.onFire,
           fireLeft: s.fireLeft,
           guest: (s.guest && s.guest.state !== "Leaving") ? {
@@ -3462,7 +3759,9 @@ function saveGame() {
             daysLeft: s.guest.daysLeft || 1,
             price: s.guest.price || 0,
             wants: (s.guest.wants || []).slice(),
-            crimeDone: !!s.guest.crimeDone
+            crimeDone: !!s.guest.crimeDone,
+            sneaky: !!s.guest.sneaky,
+            sneakyDays: s.guest.sneakyDays || 0
           } : null
         }))
       }))
@@ -3496,7 +3795,9 @@ function loadGame() {
     money = data.money;
     reputation = data.reputation || 0;
     tools = typeof data.tools === "number" ? data.tools : 3;
-    dayCount = data.dayCount || 1;
+    day = data.dayCount || 1;
+    roomCounter = data.roomCounter || 0; builtRooms = data.builtRooms || 0;
+    ratingSum = data.ratingSum || 0; ratingCount = data.ratingCount || 0; cleanCount = data.cleanCount || 0;
     dayTimer = data.dayTimer || 0;
     isOpen = !!data.isOpen;
     gasOn = data.gasOn !== undefined ? !!data.gasOn : true;
@@ -3510,12 +3811,19 @@ function loadGame() {
       }
     }
     if (Array.isArray(data.achUnlocked)) {
-      for (let i = 0; i < achUnlocked.length && i < data.achUnlocked.length; i++) {
-        achUnlocked[i] = !!data.achUnlocked[i];
+      for (let i = 0; i < achs.length && i < data.achUnlocked.length; i++) {
+        achs[i].done = !!data.achUnlocked[i];
       }
     }
     todayServed = data.todayServed || 0;
     guestsSinceNeedy = typeof data.guestsSinceNeedy === "number" ? data.guestsSinceNeedy : 6;
+    if (Array.isArray(data.stock)) for (let k = 0; k < ItemCount; k++) stock[k] = data.stock[k] || 0;
+    if (Array.isArray(data.crateItems)) for (let k = 0; k < ItemCount; k++) crateItems[k] = data.crateItems[k] || 0;
+    if (Array.isArray(data.shipments)) {
+      for (const sh of data.shipments) {
+        if (Array.isArray(sh.items)) shipments.push({ items: sh.items.slice(0, ItemCount), left: sh.left || 5, total: sh.total || 30 });
+      }
+    }
 
     if (Array.isArray(data.floors)) {
       for (let f = 0; f < FloorCount && f < data.floors.length; f++) {
@@ -3538,6 +3846,7 @@ function loadGame() {
             if (sd.wall) s.wall = sd.wall;
             if (sd.picColor) s.picColor = sd.picColor;
             s.gymLevel = sd.gymLevel || 1;
+            s.level = sd.level || 1;
             s.onFire = !!sd.onFire;
             s.fireLeft = sd.fireLeft || 0;
 
@@ -3565,6 +3874,7 @@ function loadGame() {
                 room: s, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
                 gymTimer: rnd(10, 25), toiletTimer: rnd(12, 28), parkTimer: rnd(12, 28),
                 crimeTimer: rnd(10, 18), crimeDone: !!gd.crimeDone,
+                sneaky: !!gd.sneaky, sneakyDays: gd.sneakyDays || 0,
                 parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
                 hasBubble: false, bubbleLines: ["", ""]
               };
@@ -3605,7 +3915,6 @@ function loadGame() {
       if (money < needed) money = needed;
     }
 
-    renumberRooms();
     return true;
   } catch (_) {
     return false;
@@ -3640,8 +3949,8 @@ refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 5;
-const APP_VERSION_NAME = "1.4.0";
+const APP_VERSION_CODE = 6;
+const APP_VERSION_NAME = "1.5.0";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"

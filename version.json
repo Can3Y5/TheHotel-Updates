@@ -1,8 +1,8 @@
 {
-  "versionCode": 5,
-  "versionName": "1.4.0",
+  "versionCode": 6,
+  "versionName": "1.5.0",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.4.0: Yeni Oyun İkonu, tamamen yenilenen Açılış Ekranı (kompakt kart tasarımı ve yeni illüstrasyon logo) ve yenilenen Oyun İçi UI (ikonlu üst bilgi kartları, sol üst kompakt kamera butonları, ikonlu 3B eşya/oda butonları, birleşik müşteri pazarlık kartı ve koyu bildirim çubuğu)!"
+  "notes": "v1.5.0: Depo (seviyeye bağlı kapasite, eşyalar depodan takılır), sipariş sistemi (teslimat süresi + kamyon gelip kolileri bırakır), Personel Lojmanı (personel kapasitesi ve maaş indirimi), süresi bitince gizlice kalan kaçak misafirler, Çinli müşterilerin yalnızca Çince konuşması (Resepsiyon varsa çeviri) ve oyun kayıt sisteminde önemli düzeltme (artık gerçekten kaydediyor)!"
 }
