@@ -464,14 +464,17 @@ const CostRoom = 100, CostRoomStep = 25, CostGym = 150, CostToilet = 120, CostGa
 const CostReception = 200, CostDoor = 50, CostMaint = 20;
 const ParkCost = 300, ParkSec = 25, TreeCost = 40;
 const CleanerHire = 150, CleanerWage = 15, MaxCleaners = 5;
-// Depo & Lojman (v1.5.0)
-const CostStorage = 220, CostDorm = 260;
+// Dış Binalar: Depo & Personel Lojmanı + Faz 2 Personeller (v1.6.0)
+const CostStorage = 220, StorageSec = 18, CostDorm = 260, DormSec = 20;
 const StorageCap = [0, 6, 12, 20];          // depo seviyesine göre kapasite
 const StorageUpCost = [0, 0, 300, 500];     // 2. ve 3. seviyeye yükseltme bedeli
 const DormUpCost = [0, 0, 250, 400];
 const OrderDiscount = 0.7;                  // depodan sipariş: eşya fiyatının %70'i
 const DeliverySec = [0, 30, 24, 18];        // depo seviyesine göre teslimat süresi (sn)
 const SneakChance = 0.12;                   // süresi bitince gizlice kalma ihtimali
+const RecHireCost = [0, 180, 260, 380], RecWage = [0, 18, 26, 36];
+const SecHireCost = [0, 200, 300, 420], SecWage = [0, 20, 28, 38];
+const RecMinPriceOpts = [0, 50, 75, 100, 125];
 const MaxQueue = 4, LeaveRating = 1, GymPoints = 2, ExerciseSec = 8;
 const FireCost = 60, FireSec = 25, GasPerRoom = 6, GasLeakSec = 25;
 const MaxDirt = 8, GiftChance = 0.18, Ach1Reward = 250, Ach2Reward = 400;
@@ -534,10 +537,12 @@ const ThreatStories = [
 const SlotW = 380, FloorH = 300, ElevW = 170, SlabH = 22;
 const TotalW = ElevW + 4 * SlotW;
 const ElevX = ElevW / 2;
-const ParkX = TotalW + 40, ParkW = 600;
+const StorageX = -680, StorageW = 380, StorageH = 230;
+const DormX = TotalW + 40, DormW = 380, DormH = 240;
+const ParkX = TotalW + 460, ParkW = 600;
 const WalkSpeed = 150, ClimbSpeed = 230;
 const FloorCount = 4, ActCount = 12;
-const TreeX = [-420, -700, -980, -1260, TotalW + 760, TotalW + 1000, TotalW + 1240];
+const TreeX = [-780, -1000, -1220, -1440, TotalW + 1140, TotalW + 1360, TotalW + 1580];
 
 const Pencil = "#1f1f26", Orange = "#ff8c00", Green = "#33cc4d", GhostLine = "rgba(77,89,115,0.9)";
 const WallColors = ["#fad9cc", "#d9edfa", "#e0f7d9", "#faf2c7", "#eddbf7", "#ccf2ed"];
@@ -748,7 +753,16 @@ const cart = new Array(ItemCount).fill(0);
 const shipments = [];
 const trucks = [];
 const crateItems = new Array(ItemCount).fill(0);
-const TruckStopX = -150, CrateX = -105;
+const TruckStopX = -490, CrateX = -490;
+// Dış Binalar: Depo ve Personel Lojmanı durumu
+let storageState = "Locked", storageLeft = 0, storageLevel = 1;
+const storageWorkers = [];
+let dormState = "Locked", dormLeft = 0, dormLevel = 1;
+const dormWorkers = [];
+// Faz 2 Personeller: Resepsiyonist & Güvenlik
+let receptionistLevel = 0, recNoKids = false, recMinPrice = 0, recAllowFree = true, recAutoPlace = true, recAutoTimer = 0;
+let receptionistPawn = null;
+let securityLevel = 0, securityPawn = null;
 let reputation = 0, ratingSum = 0, ratingCount = 0;
 let isOpen = false, isNight = false, gasOn = true, gasLeak = false, gasLeakLeft = 0;
 let lastSeason = -1;
@@ -962,54 +976,218 @@ function queueX(i) { return waitX() - 110 * i; }
 function front() { return (queue.length > 0 && queue[0].atSpot) ? queue[0] : null; }
 function floorOf(y) { return clamp(Math.round((y - SlabH) / FloorH), 0, FloorCount - 1); }
 
-// ===== DEPO, SİPARİŞ, TESLİMAT, LOJMAN (v1.5.0) =====
+// ===== DIŞ BİNALAR (DEPO, LOJMAN) & SİPARİŞ, TESLİMAT, PERSONEL (v1.6.0) =====
 const sumArr = a => a.reduce((x, y) => x + y, 0);
-function storageSlot() { return allSlots.find(s => s.type === "Storage" && s.floor.state === "Built") || null; }
-function dormSlot() { return allSlots.find(s => s.type === "Dorm" && s.floor.state === "Built") || null; }
-function storageCap() { const s = storageSlot(); return s ? StorageCap[s.level] : 0; }
+function hasStorage() { return storageState === "Built"; }
+function hasDorm() { return dormState === "Built"; }
+function storageSlot() { return hasStorage() ? { level: storageLevel } : null; }
+function dormSlot() { return hasDorm() ? { level: dormLevel } : null; }
+function storageCap() { return hasStorage() ? StorageCap[storageLevel] : 0; }
 function storageUsed() { return sumArr(stock) + sumArr(crateItems) + sumArr(cart) + shipments.reduce((t, sh) => t + sumArr(sh.items), 0); }
-function staffCap() { const d = dormSlot(); return 1 + (d ? 2 * d.level : 0); }
-function staffWageMult() { const d = dormSlot(); return d ? 1 - 0.1 * d.level : 1; }
+function staffCap() { return 1 + (hasDorm() ? 2 * dormLevel : 0); }
+function staffWageMult() { return hasDorm() ? 1 - 0.1 * dormLevel : 1; }
+function totalStaffCount() { return cleaners.length + (receptionistLevel > 0 ? 1 : 0) + (securityLevel > 0 ? 1 : 0); }
+function totalDailyWage() {
+  const raw = cleaners.length * CleanerWage + RecWage[receptionistLevel] + SecWage[securityLevel];
+  return Math.round(raw * staffWageMult());
+}
 function orderCost(k) { return Math.round(ItemCosts[k] * OrderDiscount); }
 function cartCost() { let t = 0; for (let k = 0; k < ItemCount; k++) t += cart[k] * orderCost(k); return t; }
-// Faz 2'de resepsiyonist personeline bağlanacak; şimdilik Resepsiyon binası çeviri sağlar.
-function canTranslate() { return hasReception(); }
+// Çince çeviri: Resepsiyonist (Sv.1+) varsa çeviri yapar, yoksa Çince kalır.
+function canTranslate() { return receptionistLevel >= 1; }
 function itemLabel(g, k) { return g && g.chinese && !canTranslate() ? ItemCn[k] : ItemNames[k]; }
 
 function addToCart(k) {
-  if (!storageSlot()) return;
+  if (!hasStorage()) return;
   if (storageUsed() >= storageCap()) { play("reject"); log("Depo kapasitesi dolu! Depoyu yükselt veya stok kullan."); return; }
   cart[k]++; play("tap"); refreshPanel();
 }
 function clearCart() { cart.fill(0); play("tap"); refresh(); }
 function placeOrder() {
-  const st = storageSlot();
-  if (!st) return;
+  if (!hasStorage()) return;
   const n = sumArr(cart);
   if (n === 0) return;
   const cost = cartCost();
   if (!pay(cost)) return;
-  const sec = DeliverySec[st.level];
+  const sec = DeliverySec[storageLevel];
   shipments.push({ items: cart.slice(), left: sec, total: sec });
   cart.fill(0);
   play("build");
-  log("📦 Sipariş verildi (" + n + " eşya, " + cost + " TL). Kamyon " + sec + " sn içinde gelir.");
+  log("📦 Sipariş verildi (" + n + " eşya, " + cost + " TL). Kamyon " + sec + " sn içinde Depo önüne gelir.");
   refresh(); saveGame();
 }
-function upgradeStorage(s) {
-  if (s.level >= 3) return;
-  if (!pay(StorageUpCost[s.level + 1])) return;
-  s.level++; play("done"); log("Depo seviye " + s.level + " oldu (kapasite " + StorageCap[s.level] + ")."); refresh(); saveGame();
+function tryBuildStorage() {
+  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
+  if (storageState !== "Locked" || !pay(CostStorage)) return;
+  storageState = "Building"; storageLeft = StorageSec;
+  for (let i = 0; i < 2; i++) {
+    const w = makePawn({ x: rnd(StorageX + 50, StorageX + StorageW - 50), y: floors[0].WalkY }, pick(Skins), "#ffd91a", "#f2801a");
+    w.speed = 60; w.wander = true; w.wMinX = StorageX + 40; w.wMaxX = StorageX + StorageW - 40; w.wTimer = rnd(0.2, 2);
+    storageWorkers.push(w);
+  }
+  play("build");
+  log("📦 Dış Depo binası inşaatı başladı (" + Math.round(StorageSec) + " sn).");
+  refresh(); saveGame();
 }
-function upgradeDorm(s) {
-  if (s.level >= 3) return;
-  if (!pay(DormUpCost[s.level + 1])) return;
-  s.level++; play("done"); log("Lojman seviye " + s.level + " oldu (personel kapasitesi " + staffCap() + ", maaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ")."); refresh(); saveGame();
+function finishStorage() {
+  storageState = "Built";
+  for (const w of storageWorkers) destroyPawn(w);
+  storageWorkers.length = 0;
+  play("done");
+  log("📦 Depo binası tamamlandı (kapasite " + StorageCap[storageLevel] + ")! Artık indirimli eşya siparişi verebilirsin.");
+  refresh(); saveGame();
+}
+function upgradeStorage() {
+  if (!hasStorage() || storageLevel >= 3) return;
+  if (!pay(StorageUpCost[storageLevel + 1])) return;
+  storageLevel++; play("done"); log("📦 Depo binası Seviye " + storageLevel + " oldu (kapasite " + StorageCap[storageLevel] + ")."); refresh(); saveGame();
+}
+function tryBuildDorm() {
+  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
+  if (dormState !== "Locked" || !pay(CostDorm)) return;
+  dormState = "Building"; dormLeft = DormSec;
+  for (let i = 0; i < 2; i++) {
+    const w = makePawn({ x: rnd(DormX + 50, DormX + DormW - 50), y: floors[0].WalkY }, pick(Skins), "#ffd91a", "#f2801a");
+    w.speed = 60; w.wander = true; w.wMinX = DormX + 40; w.wMaxX = DormX + DormW - 40; w.wTimer = rnd(0.2, 2);
+    dormWorkers.push(w);
+  }
+  play("build");
+  log("🏠 Personel Lojmanı binası inşaatı başladı (" + Math.round(DormSec) + " sn).");
+  refresh(); saveGame();
+}
+function finishDorm() {
+  dormState = "Built";
+  for (const w of dormWorkers) destroyPawn(w);
+  dormWorkers.length = 0;
+  play("done");
+  log("🏠 Personel Lojmanı binası tamamlandı (kapasite " + staffCap() + " personel, maaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ")!");
+  refresh(); saveGame();
+}
+function upgradeDorm() {
+  if (!hasDorm() || dormLevel >= 3) return;
+  if (!pay(DormUpCost[dormLevel + 1])) return;
+  dormLevel++; play("done"); log("🏠 Personel Lojmanı Seviye " + dormLevel + " oldu (kapasite " + staffCap() + ", maaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ")."); refresh(); saveGame();
+}
+function syncStaffPawns() {
+  const recSlot = allSlots.find(s => s.type === "Reception" && s.floor.state === "Built");
+  if (receptionistLevel > 0) {
+    const rx = recSlot ? (recSlot.X0 + 180) : (ElevW + 95);
+    if (!receptionistPawn || receptionistPawn.dead) {
+      receptionistPawn = makePawn({ x: rx, y: floors[0].WalkY }, pick(Skins), "#2b1b12", "#8c1d40");
+      receptionistPawn.isReceptionist = true;
+      receptionistPawn.facing = -1;
+    } else {
+      receptionistPawn.pos.x = rx;
+      receptionistPawn.pos.y = floors[0].WalkY;
+    }
+  } else if (receptionistPawn) {
+    destroyPawn(receptionistPawn);
+    receptionistPawn = null;
+  }
+
+  if (securityLevel > 0) {
+    if (!securityPawn || securityPawn.dead) {
+      securityPawn = makePawn({ x: -30, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#1b2845");
+      securityPawn.isSecurity = true;
+      securityPawn.speed = 65;
+      securityPawn.wander = true;
+      securityPawn.wMinX = -140;
+      securityPawn.wMaxX = ElevW + 130;
+      securityPawn.wTimer = 1.0;
+    }
+  } else if (securityPawn) {
+    destroyPawn(securityPawn);
+    securityPawn = null;
+  }
+}
+function hireOrUpgradeReceptionist() {
+  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
+  if (!hasReception()) { play("reject"); log("Resepsiyonist işe almak için önce zemin kata Resepsiyon kurmalısın!"); return; }
+  if (receptionistLevel >= 3) return;
+  if (receptionistLevel === 0 && totalStaffCount() >= staffCap()) {
+    play("reject");
+    log("Personel kapasitesi dolu (" + totalStaffCount() + "/" + staffCap() + ")! Otelin sağındaki Personel Lojmanı binasını kur veya yükselt.");
+    return;
+  }
+  const cost = RecHireCost[receptionistLevel + 1];
+  if (!pay(cost)) return;
+  receptionistLevel++;
+  syncStaffPawns();
+  play("done");
+  if (receptionistLevel === 1) log("🛎️ Resepsiyonist işe alındı (Sv.1)! Çince çeviri ve müşteri filtreleri (Çocuk/Alt Fiyat) açıldı.");
+  else if (receptionistLevel === 2) log("🛎️ Resepsiyonist Seviye 2 oldu! Müşteri bütçe ve tekliflerine +%15 pazarlık bonusu eklendi.");
+  else log("🛎️ Resepsiyonist Seviye 3 oldu! +%25 pazarlık bonusu ve Otomatik Kabul & Oda Yerleştirme açıldı!");
+  refresh(); saveGame();
+}
+function fireReceptionist() {
+  if (receptionistLevel === 0) return;
+  receptionistLevel = 0;
+  syncStaffPawns();
+  play("tap");
+  log("🛎️ Resepsiyonist işten çıkarıldı.");
+  refresh(); saveGame();
+}
+function hireOrUpgradeSecurity() {
+  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
+  if (securityLevel >= 3) return;
+  if (securityLevel === 0 && totalStaffCount() >= staffCap()) {
+    play("reject");
+    log("Personel kapasitesi dolu (" + totalStaffCount() + "/" + staffCap() + ")! Otelin sağındaki Personel Lojmanı binasını kur veya yükselt.");
+    return;
+  }
+  const cost = SecHireCost[securityLevel + 1];
+  if (!pay(cost)) return;
+  securityLevel++;
+  syncStaffPawns();
+  play("done");
+  if (securityLevel === 1) log("🛡️ Güvenlik Görevlisi işe alındı (Sv.1)! Tehdit edenleri kapıda engeller ve kaçak kalanları yakalar.");
+  else if (securityLevel === 2) log("🛡️ Güvenlik Seviye 2 oldu! Gizli Hırsızları tespit eder ve gece kamerasız odalarda bile yakalar.");
+  else log("🛡️ Güvenlik Seviye 3 oldu! Gizli Vampirleri tespit eder ve gece saldırılarını engeller!");
+  refresh(); saveGame();
+}
+function fireSecurity() {
+  if (securityLevel === 0) return;
+  securityLevel = 0;
+  syncStaffPawns();
+  play("tap");
+  log("🛡️ Güvenlik görevlisi işten çıkarıldı.");
+  refresh(); saveGame();
+}
+function toggleRecNoKids() {
+  if (receptionistLevel < 1) return;
+  recNoKids = !recNoKids; play("tap");
+  log("🛎️ Resepsiyonist Çocuklu Müşteri Filtresi: " + (recNoKids ? "REDDET (Çocuklu aileler alınmaz)" : "KABUL ET"));
+  refresh(); saveGame();
+}
+function cycleRecMinPrice() {
+  if (receptionistLevel < 1) return;
+  const idx = (RecMinPriceOpts.indexOf(recMinPrice) + 1) % RecMinPriceOpts.length;
+  recMinPrice = RecMinPriceOpts[idx]; play("tap");
+  log("🛎️ Resepsiyonist Alt Fiyat Sınırı: " + (recMinPrice > 0 ? (recMinPrice + " TL altı reddedilir") : "YOK"));
+  refresh(); saveGame();
+}
+function toggleRecAllowFree() {
+  if (receptionistLevel < 1) return;
+  recAllowFree = !recAllowFree; play("tap");
+  log("🛎️ Resepsiyonist Ücretsiz Misafir Filtresi: " + (recAllowFree ? "KABUL ET" : "REDDET"));
+  refresh(); saveGame();
+}
+function toggleRecAutoPlace() {
+  if (receptionistLevel < 3) return;
+  recAutoPlace = !recAutoPlace; play("tap");
+  log("🛎️ Resepsiyonist Otomatik Yerleştirme: " + (recAutoPlace ? "AÇIK" : "KAPALI"));
+  refresh(); saveGame();
+}
+function focusBuilding(mode) {
+  selectMode(mode);
+  if (mode === "Storage") camCenter.x = StorageX + StorageW * 0.5;
+  else if (mode === "Dorm") camCenter.x = DormX + DormW * 0.5;
+  applyCam();
 }
 function spawnTruck(sh) {
   trucks.push({ x: -2100, y: -102, dir: 1, state: "driving", timer: 0, wheelRot: 0, speed: 380, sh });
   play("bell");
-  log("🚚 Kargo kamyonu geliyor!");
+  log("🚚 Kargo kamyonu Depo binasına yaklaşıyor!");
 }
 function updateDeliveries(dt) {
   for (let i = shipments.length - 1; i >= 0; i--) {
@@ -1030,7 +1208,7 @@ function updateDeliveries(dt) {
         t.sh = null; t.state = "leaving";
         play("done");
         floatText(CrateX + 40, SlabH + 140, "📦 Teslimat geldi! Dokun", "#1a5ccc");
-        log("📦 Kolilar kaldırıma bırakıldı. Depoya almak için kolilere dokun.");
+        log("📦 Koliler Depo binası önüne bırakıldı. Depoya almak için kolilere dokun.");
         saveGame();
       }
     } else {
@@ -1042,11 +1220,11 @@ function updateDeliveries(dt) {
 function collectCrate() {
   const n = sumArr(crateItems);
   if (n === 0) return;
-  if (!storageSlot()) { log("Kolileri koyacak bir Depo yok!"); return; }
+  if (!hasStorage()) { log("Kolileri koyacak bir Depo yok!"); return; }
   for (let k = 0; k < ItemCount; k++) { stock[k] += crateItems[k]; crateItems[k] = 0; }
   play("coin");
   floatText(CrateX + 40, SlabH + 140, "+" + n + " eşya depoya alındı", "#1a8c26");
-  log("📦 " + n + " eşya depoya taşındı.");
+  log("📦 " + n + " eşya Depo binasına taşındı.");
   refresh(); saveGame();
 }
 function installItem(s, k) {
@@ -1182,8 +1360,12 @@ function spawnGuest() {
     if (g.chinese) b *= 1.4;
     if (g.kids > 0) b *= 1.2;
     if (g.role === "Vampire") b *= 1.25;
+    if (receptionistLevel === 2) b *= 1.15;
+    else if (receptionistLevel >= 3) b *= 1.25;
     g.budget = Math.round(b);
-    g.offer = Math.min(g.budget, round5(g.budget * rnd(0.55, 0.85)));
+    const offerMin = receptionistLevel >= 2 ? 0.65 : 0.55;
+    const offerMax = receptionistLevel >= 2 ? 0.90 : 0.85;
+    g.offer = Math.min(g.budget, round5(g.budget * rnd(offerMin, offerMax)));
     wantCount = rndInt(1, stars() > 0 ? 5 : 4);
   } else {
     wantCount = (g.type === "Needy" || g.type === "Freebie") ? rndInt(0, 2) : 0;
@@ -1203,16 +1385,16 @@ function spawnGuest() {
   if (g.role === "Vampire") g.wants[IAmpul] = false;
   if (g.kids > 0) g.wants[IBebek] = true;
   g.wantsToilet = g.type !== "Threat" && Math.random() < 0.5;
-  g.maxPatience = 25 * (hasReception() ? 1.5 : 1);
+  g.maxPatience = 25 * (hasReception() ? 1.5 : 1) * (1 + receptionistLevel * 0.15);
   g.patience = g.maxPatience;
 
   if (g.role === "Vampire") {
-    g.pawn = makePawn({ x: -520, y: floors[0].WalkY }, "#f0ebf5", "#17131c", "#3d1424");
+    g.pawn = makePawn({ x: -760, y: floors[0].WalkY }, "#f0ebf5", "#17131c", "#3d1424");
   } else if (g.role === "Thief") {
-    g.pawn = makePawn({ x: -520, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#282c37");
+    g.pawn = makePawn({ x: -760, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#282c37");
     g.pawn.isThief = true;
   } else {
-    g.pawn = makeRandomPawn({ x: -520, y: floors[0].WalkY });
+    g.pawn = makeRandomPawn({ x: -760, y: floors[0].WalkY });
   }
   for (let k = 0; k < g.kids; k++) {
     const kid = makeRandomPawn({ x: g.pawn.pos.x - 60 * (k + 1), y: floors[0].WalkY });
@@ -1229,8 +1411,60 @@ function onQueueArrive(g) {
   g.atSpot = true;
   if (!g.arrivedOnce) {
     g.arrivedOnce = true;
+    // Güvenlik Görevlisi (Sv.1+): Tehdit eden kişileri otele sokmadan kapıda engeller
+    if (g.type === "Threat" && securityLevel >= 1) {
+      play("done");
+      reputation += 5;
+      floatText(g.pawn.pos.x, g.pawn.pos.y + 145, "🛡️ Güvenlik Engelledi! +5 İtibar", "#1a8c26");
+      dismissFront(g, "🛡️ Güvenlik görevlisi tehditkar " + g.name + " adlı kişiyi kapıdan çevirdi! (+5 İtibar)");
+      saveGame();
+      return;
+    }
+    // Resepsiyonist (Sv.1+): Çocuk / Ücretsiz / Alt Fiyat Filtreleri
+    if (receptionistLevel >= 1) {
+      if (recNoKids && g.kids > 0) {
+        play("tap");
+        floatText(g.pawn.pos.x, g.pawn.pos.y + 140, "🛎️ Filtre: Çocuklu Alınmadı", "#6b4c9a");
+        dismissFront(g, "🛎️ Resepsiyonist filtre gereği çocuklu müşteri " + g.name + " adlı kişiyi kibarca geri çevirdi.");
+        return;
+      }
+      if ((g.type === "Needy" || g.type === "Freebie") && !recAllowFree) {
+        play("tap");
+        floatText(g.pawn.pos.x, g.pawn.pos.y + 140, "🛎️ Filtre: Ücretsiz Alınmadı", "#6b4c9a");
+        dismissFront(g, "🛎️ Resepsiyonist filtre gereği ücretsiz kalmak isteyen " + g.name + " adlı kişiyi geri çevirdi.");
+        return;
+      }
+      if (g.type === "Normal" && recMinPrice > 0) {
+        if (g.budget < recMinPrice) {
+          play("tap");
+          floatText(g.pawn.pos.x, g.pawn.pos.y + 140, "🛎️ Filtre: <" + recMinPrice + " TL", "#6b4c9a");
+          dismissFront(g, "🛎️ Resepsiyonist alt fiyat sınırını (" + recMinPrice + " TL) karşılamayan " + g.name + " adlı kişiyi geri çevirdi.");
+          return;
+        } else if (g.offer < recMinPrice) {
+          g.offer = recMinPrice;
+          setBubbleText(g, queue.indexOf(g));
+        }
+      }
+      // Güvenlik (Sv.2/3) + Resepsiyonist ortak çalışması: Hırsız veya Vampir tespit edilirse otomatik kov
+      if (g.role === "Thief" && securityLevel >= 2 && recAutoPlace && receptionistLevel >= 3) {
+        play("done");
+        reputation += 10;
+        floatText(g.pawn.pos.x, g.pawn.pos.y + 145, "🚨 Güvenlik Hırsızı Çevirdi! +10 İtibar", "#1a8c26");
+        dismissFront(g, "🚨 Güvenlik görevlisi sırada gizlenen HIRSIZ " + g.name + " adlı kişiyi tespit edip kapıdan çevirdi! (+10 İtibar)");
+        saveGame();
+        return;
+      }
+      if (g.role === "Vampire" && securityLevel >= 3 && recAutoPlace && receptionistLevel >= 3) {
+        play("done");
+        reputation += 15;
+        floatText(g.pawn.pos.x, g.pawn.pos.y + 145, "🚨 Güvenlik Vampiri Çevirdi! +15 İtibar", "#1a8c26");
+        dismissFront(g, "🚨 Güvenlik görevlisi sırada gizlenen VAMPİR " + g.name + " adlı kişiyi tespit edip kapıdan çevirdi! (+15 İtibar)");
+        saveGame();
+        return;
+      }
+    }
     play("bell");
-    if (g.type === "Normal") log(g.chinese ? (g.name + "：你好，我要房间（出价 " + g.offer + " 元）。") : (g.name + " geldi, oda istiyor (" + g.offer + " TL öneriyor)."));
+    if (g.type === "Normal") log(g.chinese && !canTranslate() ? (g.name + "：你好，我要房间（出价 " + g.offer + " 元）。") : (g.name + " geldi, oda istiyor (" + g.offer + " TL öneriyor)."));
     else if (g.type === "Needy") log(g.name + " (Depremzede) geldi: ücretsiz oda rica ediyor (+20 İtibar).");
     else if (g.type === "Freebie") log(g.name + " geldi: ücretsiz kalmak istiyor (+10 İtibar).");
     else { log(g.name + " geldi ve tehdit ediyor!"); play("alarm"); }
@@ -1326,14 +1560,13 @@ function acceptGuest(g, price) {
   refresh();
 }
 
-function placeGuest() {
-  const g = pending, room = selSlot;
-  if (!g) return;
-  if (sel !== "Slot" || !room || !room.Ready || room.guest || room.onFire) { play("reject"); log("Bu oda uygun değil."); return; }
+function placeGuestIntoRoom(g, room, price, byAuto = false) {
+  if (!g || !room || !room.Ready || room.guest || room.onFire) return false;
   const idx = queue.indexOf(g);
   if (idx >= 0) queue.splice(idx, 1);
-  g.hasBubble = false; pending = null;
-  g.price = pendingPrice; g.daysLeft = g.days;
+  g.hasBubble = false;
+  if (pending === g) pending = null;
+  g.price = price; g.daysLeft = g.days;
   room.guest = g; g.room = room; g.state = "ToRoom"; g.atSpot = false;
   g.pawn.path = [];
   addPath(g.pawn, floorOf(g.pawn.pos.y), room.floor.idx, room.X0 + SlotW * 0.5);
@@ -1343,13 +1576,13 @@ function placeGuest() {
   if (g.type === "Needy") {
     reputation += 20;
     floatText(room.X0 + SlotW * 0.5, room.floor.BaseY + FloorH * 0.65, "+20 İtibar (Depremzede)", "#1a8c26");
-    log(g.name + " (Depremzede) " + room.roomNo + ". odaya yerleştirildi! (+20 İtibar)");
+    log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " (Depremzede) " + room.roomNo + ". odaya yerleştirildi! (+20 İtibar)");
   } else if (g.type === "Freebie") {
     reputation += 10;
     floatText(room.X0 + SlotW * 0.5, room.floor.BaseY + FloorH * 0.65, "+10 İtibar (Misafir)", "#1a8c26");
-    log(g.name + " ücretsiz misafir olarak " + room.roomNo + ". odaya alındı! (+10 İtibar)");
+    log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " ücretsiz misafir olarak " + room.roomNo + ". odaya alındı! (+10 İtibar)");
   } else {
-    log(g.name + " " + room.roomNo + ". odaya gidiyor (" + g.days + " gün, günlük " + g.price + " TL).");
+    log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " " + room.roomNo + ". odaya yerleştirildi (" + g.days + " gün, günlük " + g.price + " TL).");
   }
 
   todayServed++;
@@ -1357,6 +1590,53 @@ function placeGuest() {
   reflowQueue();
   refresh();
   saveGame();
+  return true;
+}
+
+function placeGuest() {
+  const g = pending, room = selSlot;
+  if (!g) return;
+  if (sel !== "Slot" || !room || !room.Ready || room.guest || room.onFire) { play("reject"); log("Bu oda uygun değil."); return; }
+  placeGuestIntoRoom(g, room, pendingPrice, false);
+}
+
+function bestAutoRoom(g) {
+  let best = null, bestScore = -999;
+  for (const s of allSlots) {
+    if (!s.Ready || s.guest || s.onFire) continue;
+    let sc = s.maintenance * 0.05;
+    for (let k = 0; k < ItemCount; k++) {
+      if (g.wants[k]) sc += s.items[k] ? 10 : -4;
+    }
+    if (sc > bestScore) { bestScore = sc; best = s; }
+  }
+  return best;
+}
+
+function updateReceptionistAuto(dt) {
+  if (!isOpen || receptionistLevel < 3 || !recAutoPlace || pending) {
+    recAutoTimer = 0;
+    return;
+  }
+  const g = front();
+  if (!g || g.type === "Threat") {
+    recAutoTimer = 0;
+    return;
+  }
+  const room = bestAutoRoom(g);
+  if (!room) {
+    recAutoTimer = 0;
+    return;
+  }
+  recAutoTimer += dt;
+  if (recAutoTimer >= 1.1) {
+    recAutoTimer = 0;
+    let autoPrice = 0;
+    if (g.type === "Normal") {
+      autoPrice = Math.min(g.budget, round5(g.offer + (g.budget - g.offer) * 0.5));
+    }
+    placeGuestIntoRoom(g, room, autoPrice, true);
+  }
 }
 
 function onGuestInRoom(g) {
@@ -1419,12 +1699,13 @@ function threatDamage(g) {
 function triggerThiefAction(g) {
   const s = g.room;
   if (!s) return;
-  if (s.items[IKamera]) {
+  if (s.items[IKamera] || securityLevel >= 2) {
     play("done");
     money += 100;
     reputation += 15;
+    const byWho = s.items[IKamera] ? "Güvenlik Kamerasına" : "Güvenlik Görevlisine (Sv." + securityLevel + ")";
     floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🚓 Hırsız Yakalandı! +100 TL", "#1a8c26");
-    log("🚓 " + s.roomNo + ". odadaki " + g.name + " hırsızlık yaparken Güvenlik Kamerasına yakalandı! (+100 TL, +15 İtibar)");
+    log("🚓 " + s.roomNo + ". odadaki " + g.name + " hırsızlık yaparken " + byWho + " yakalandı! (+100 TL, +15 İtibar)");
     s.guest = null; g.room = null;
     startLeaving(g);
   } else {
@@ -1435,7 +1716,7 @@ function triggerThiefAction(g) {
     if (s.items[ITv]) { s.items[ITv] = false; itemMsg = " ve TV'yi"; }
     else if (s.items[IBuz]) { s.items[IBuz] = false; itemMsg = " ve Buzdolabını"; }
     floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🕵️ HIRSIZ! -" + stolen + " TL", "#cc1a1a");
-    log("🕵️ HIRSIZ! " + g.name + " gece " + stolen + " TL" + itemMsg + " çalıp kaçtı! (Kamera olsaydı yakalanırdı)");
+    log("🕵️ HIRSIZ! " + g.name + " gece " + stolen + " TL" + itemMsg + " çalıp kaçtı! (Kamera veya Sv.2 Güvenlik olsaydı yakalanırdı)");
     s.guest = null; g.room = null;
     g.pawn.speed = WalkSpeed * 1.45;
     startLeaving(g);
@@ -1469,11 +1750,16 @@ function triggerVampireHunt(g) {
       returnToRoom(g);
       return;
     }
-    if (vSlot.items[IKamera] && vSlot.items[IAmpul]) {
+    if ((vSlot.items[IKamera] && vSlot.items[IAmpul]) || securityLevel >= 3) {
       play("done");
-      reputation += 15;
-      floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🧛 Vampir Kaçtı! +15 İtibar", "#1a8c26");
-      log("🧛 Vampir " + g.name + ", " + vSlot.roomNo + ". odaya saldırdı ama Kamera ve Ampul ışığı sayesinde panikleyip otelden kaçtı!");
+      const bonusRep = securityLevel >= 3 ? 20 : 15;
+      reputation += bonusRep;
+      floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🧛 Vampir Kaçtı! +" + bonusRep + " İtibar", "#1a8c26");
+      if (securityLevel >= 3) {
+        log("🛡️ Sv.3 Güvenlik Görevlisi, Vampir " + g.name + " " + vSlot.roomNo + ". odaya saldırırken müdahale edip otelden kovdu! (+20 İtibar)");
+      } else {
+        log("🧛 Vampir " + g.name + ", " + vSlot.roomNo + ". odaya saldırdı ama Kamera ve Ampul ışığı sayesinde panikleyip otelden kaçtı!");
+      }
       if (g.room) g.room.guest = null;
       g.room = null;
       startLeaving(g);
@@ -1655,7 +1941,7 @@ function finishPark() {
 // Dış kirler ve aletler
 function spawnDirt() {
   if (dirts.length >= MaxDirt) return;
-  const x = Math.random() < 0.5 ? rnd(-780, -90) : rnd(TotalW + 700, TotalW + 1150);
+  const x = Math.random() < 0.5 ? rnd(-1150, -720) : rnd(TotalW + 1080, TotalW + 1450);
   dirts.push({ x, y: SlabH - 6, si: seasonIdx() });
 }
 function cleanDirt(d) {
@@ -1814,14 +2100,11 @@ function updateCleaners(dt) {
   }
 }
 
-function storageBuildCost() { return CostStorage + CostRoomStep * builtRooms; }
-function dormBuildCost() { return CostDorm + CostRoomStep * builtRooms; }
-
 function hireCleaner() {
   if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
-  if (cleaners.length >= Math.min(MaxCleaners, staffCap())) {
+  if (cleaners.length >= MaxCleaners || totalStaffCount() >= staffCap()) {
     play("reject");
-    log("Personel kapasitesi dolu (" + cleaners.length + "/" + staffCap() + "). Lojman kur veya yükselt!");
+    log("Personel kapasitesi dolu (" + totalStaffCount() + "/" + staffCap() + "). Otelin sağındaki Personel Lojmanı binasını kur veya yükselt!");
     return;
   }
   if (!pay(CleanerHire)) return;
@@ -1862,10 +2145,10 @@ function newDay() {
     s.maintenance = Math.max(0, s.maintenance - 10);
     if (g.expired) { g.overstay++; continue; }
     if (g.sneaky) {
-      // Gizlice kalan müşteri: ödeme yok, oda yıpranır; kamera varsa yakalanabilir
+      // Gizlice kalan müşteri: ödeme yok, oda yıpranır; Güvenlik Görevlisi veya Kamera varsa yakalanır
       g.sneakyDays = (g.sneakyDays || 0) + 1;
       s.maintenance = Math.max(0, s.maintenance - 5);
-      if (s.items[IKamera] && Math.random() < 0.6) { catchSneaky(g); continue; }
+      if (securityLevel >= 1 || (s.items[IKamera] && Math.random() < 0.6)) { catchSneaky(g); continue; }
       if (g.sneakyDays >= 2) {
         log("🕵️ " + g.name + " " + s.roomNo + ". odadan fark edilmeden sıvıştı! (-3 İtibar)");
         reputation = Math.max(0, reputation - 3);
@@ -1882,11 +2165,11 @@ function newDay() {
     if (g.daysLeft <= 0) {
       if (g.type === "Normal" && g.role === "None" && Math.random() < SneakChance) {
         g.sneaky = true; g.sneakyDays = 0; g.daysLeft = 0;
-        if (s.items[IKamera] && Math.random() < 0.5) catchSneaky(g);
+        if (securityLevel >= 1 || (s.items[IKamera] && Math.random() < 0.5)) catchSneaky(g);
       } else markExpired(g);
     }
   }
-  const wage = Math.round(cleaners.length * CleanerWage * staffWageMult());
+  const wage = totalDailyWage();
   if (wage > 0) {
     money = Math.max(0, money - wage);
     floatText(ElevX, floors[0].WalkY + 150, "-" + wage + " TL maaş", "#b33333");
@@ -2063,11 +2346,43 @@ function onAction(i) {
     if (sel === "Slot" && c2 && c2.guest && c2.guest.expired && c2.guest.room === c2) { sendOff(c2.guest); return; }
     if (pending) { placeGuest(); return; }
     if (sel === "Slot" && c2 && c2.guest && c2.guest.room === c2) { evictGuest(c2.guest); return; }
+    if (sel === "Storage" && hasStorage() && sumArr(cart) > 0) { clearCart(); return; }
   }
   if (sel === "Staff") {
     if (i === 0) hireCleaner();
     else if (i === 1) fireCleaner();
     else if (i === 2) buyTool();
+    else if (i === 3) hireOrUpgradeReceptionist();
+    else if (i === 4) hireOrUpgradeSecurity();
+    else if (i === 5) { focusBuilding("Dorm"); return; }
+    else if (i === 6) { focusBuilding("Storage"); return; }
+    else if (i === 7) toggleRecNoKids();
+    else if (i === 8) cycleRecMinPrice();
+    else if (i === 9) toggleRecAutoPlace();
+    else if (i === 10) {
+      if (securityLevel > 0) fireSecurity();
+      else if (receptionistLevel > 0) fireReceptionist();
+    }
+    refresh(); return;
+  }
+  if (sel === "Storage") {
+    if (storageState === "Locked") {
+      if (i === 0) tryBuildStorage();
+    } else if (storageState === "Built") {
+      if (i >= 0 && i < ItemCount) addToCart(i);
+      else if (i === 9) placeOrder();
+      else if (i === 10) upgradeStorage();
+      else if (i === 11) clearCart();
+    }
+    refresh(); return;
+  }
+  if (sel === "Dorm") {
+    if (dormState === "Locked") {
+      if (i === 0) tryBuildDorm();
+    } else if (dormState === "Built") {
+      if (i === 0) upgradeDorm();
+      else if (i === 1) selectMode("Staff");
+    }
     refresh(); return;
   }
   if (sel === "Garden") { if (i === 0) plantTree(); refresh(); return; }
@@ -2106,25 +2421,23 @@ function onAction(i) {
         s.type = "Toilet"; s.maintenance = 100; builtRooms++;
         play("build"); log("Tuvalet kuruldu."); saveGame();
       } else if (i === 3 && s.floor.idx === 0 && pay(CostReception)) {
-        s.type = "Reception"; play("build"); log("Resepsiyon kuruldu."); reflowQueue(); saveGame();
+        s.type = "Reception"; play("build"); log("Resepsiyon kuruldu. Artık Resepsiyonist işe alabilirsin!"); syncStaffPawns(); reflowQueue(); saveGame();
       } else if (i === 4 && !gasSlot() && pay(gasCost())) {
         s.type = "Gas"; s.maintenance = 100; builtRooms++;
         play("build"); log("Doğalgaz kazan dairesi kuruldu. Kışın odaları ısıtır."); saveGame();
-      } else if (i === 5 && !storageSlot() && pay(storageBuildCost())) {
-        s.type = "Storage"; s.level = 1; builtRooms++;
-        play("build"); log("📦 Depo kuruldu (kapasite " + StorageCap[1] + "). Sipariş verip eşya stoklayabilirsin."); saveGame();
-      } else if (i === 6 && !dormSlot() && pay(dormBuildCost())) {
-        s.type = "Dorm"; s.level = 1; builtRooms++;
-        play("build"); log("🏠 Personel Lojmanı kuruldu (personel kapasitesi " + staffCap() + ")."); saveGame();
+      } else if (i === 5) {
+        focusBuilding("Storage"); return;
+      } else if (i === 6) {
+        focusBuilding("Dorm"); return;
       }
     }
-  } else if (s.type === "Storage") {
-    if (i >= 0 && i < ItemCount) addToCart(i);
-    else if (i === 9) placeOrder();
-    else if (i === 10) upgradeStorage(s);
-    else if (i === 11) clearCart();
-  } else if (s.type === "Dorm") {
-    if (i === 0) upgradeDorm(s);
+  } else if (s.type === "Reception") {
+    if (i === 0) hireOrUpgradeReceptionist();
+    else if (i === 1) toggleRecNoKids();
+    else if (i === 2) cycleRecMinPrice();
+    else if (i === 3) toggleRecAllowFree();
+    else if (i === 4) toggleRecAutoPlace();
+    else if (i === 5) fireReceptionist();
   } else if (s.type === "Gas") {
     if (i === 0) { toggleGas(); saveGame(); }
     else if (i === 1) doMaint(s);
@@ -2258,7 +2571,10 @@ function renderGuestBook() {
         hintEl.className = "gb-meta";
         hintEl.style.color = "#7a3b1e";
         hintEl.style.fontStyle = "italic";
-        hintEl.textContent = '💬 "' + (g.hint || g.story) + '"';
+        let roleAlert = "";
+        if (g.role === "Thief" && securityLevel >= 2) roleAlert = " 🚨 [GÜVENLİK: HIRSIZ!]";
+        else if (g.role === "Vampire" && securityLevel >= 3) roleAlert = " 🚨 [GÜVENLİK: VAMPİR!]";
+        hintEl.textContent = '💬 "' + (g.hint || g.story) + '"' + roleAlert;
         card.appendChild(hintEl);
       }
 
@@ -2399,7 +2715,10 @@ function renderGuestBook() {
         hintEl.className = "gb-meta";
         hintEl.style.color = "#7a3b1e";
         hintEl.style.fontStyle = "italic";
-        hintEl.textContent = '💬 "' + (g.hint || g.story) + '"';
+        let roleAlert = "";
+        if (g.role === "Thief" && securityLevel >= 2) roleAlert = " 🚨 [GÜVENLİK: HIRSIZ!]";
+        else if (g.role === "Vampire" && securityLevel >= 3) roleAlert = " 🚨 [GÜVENLİK: VAMPİR!]";
+        hintEl.textContent = '💬 "' + (g.hint || g.story) + '"' + roleAlert;
         card.appendChild(hintEl);
       }
 
@@ -2445,10 +2764,76 @@ function refreshPanel() {
   const readyOnce = hasReadyRoom();
 
   if (sel === "Staff") {
-    infoText.textContent = "👷 Personel & Alet  •  Temizlikçi: " + cleaners.length + "  •  Lojman kapasitesi: " + cleaners.length + "/" + staffCap() + (dormSlot() ? "" : " (Lojman yok: kapasite 1)") + "\nMaaş: " + Math.round(CleanerWage * staffWageMult()) + " TL/gün. Temizlikçiler bakım yaparken 1 Alet harcar.";
-    setAct(0, "👷 Temizlikçi Al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < Math.min(MaxCleaners, staffCap()));
-    setAct(1, "👋 İşten Çıkar", true, cleaners.length > 0);
+    const recStr = receptionistLevel > 0 ? ("Sv." + receptionistLevel) : "Yok";
+    const secStr = securityLevel > 0 ? ("Sv." + securityLevel) : "Yok";
+    infoText.textContent = "👷 Personel & Alet  •  Kapasite: " + totalStaffCount() + "/" + staffCap() + (hasDorm() ? (" (Lojman Sv." + dormLevel + ")") : " (Lojman yok: kapasite 1)") +
+      "\n🧹 Temizlikçi: " + cleaners.length + "  •  🛎️ Resepsiyonist: " + recStr + "  •  🛡️ Güvenlik: " + secStr + "  •  💰 Toplam Maaş: " + totalDailyWage() + " TL/gün";
+    const canHireMore = totalStaffCount() < staffCap();
+    setAct(0, "👷 Temizlikçi Al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < MaxCleaners && canHireMore);
+    setAct(1, "👋 Temizlikçi Çıkar", true, cleaners.length > 0);
     setAct(2, "🔧 +1 Alet Al\n25 TL", true, readyOnce && money >= 25);
+    if (receptionistLevel < 3) {
+      const rCost = RecHireCost[receptionistLevel + 1];
+      const rLbl = receptionistLevel === 0 ? ("🛎️ Resepsiyonist Al\n" + rCost + " TL") : ("⬆️ Resepsiyonist Sv." + (receptionistLevel + 1) + "\n" + rCost + " TL");
+      const rOk = readyOnce && hasReception() && (receptionistLevel > 0 || canHireMore);
+      setAct(3, rLbl, true, rOk);
+    } else {
+      setAct(3, "✅ Resepsiyonist Sv.3", true, false, true);
+    }
+    if (securityLevel < 3) {
+      const sCost = SecHireCost[securityLevel + 1];
+      const sLbl = securityLevel === 0 ? ("🛡️ Güvenlik Al\n" + sCost + " TL") : ("⬆️ Güvenlik Sv." + (securityLevel + 1) + "\n" + sCost + " TL");
+      const sOk = readyOnce && (securityLevel > 0 || canHireMore);
+      setAct(4, sLbl, true, sOk);
+    } else {
+      setAct(4, "✅ Güvenlik Sv.3", true, false, true);
+    }
+    setAct(5, hasDorm() ? ("🏠 Lojman Binası\nSv." + dormLevel + " (" + totalStaffCount() + "/" + staffCap() + ")") : ("🏠 Lojman Binası\nKur: " + CostDorm + " TL"), true, true);
+    setAct(6, hasStorage() ? ("📦 Depo Binası\nSv." + storageLevel + " (" + storageUsed() + "/" + storageCap() + ")") : ("📦 Depo Binası\nKur: " + CostStorage + " TL"), true, true);
+    if (receptionistLevel >= 1) {
+      setAct(7, "🧒 Çocuklu: " + (recNoKids ? "REDDET" : "KABUL"), true, true);
+      setAct(8, "💰 Alt Sınır: " + (recMinPrice > 0 ? recMinPrice + " TL" : "YOK"), true, true);
+    }
+    if (receptionistLevel >= 3) {
+      setAct(9, "🤖 Oto-Yerleştir\n" + (recAutoPlace ? "AÇIK" : "KAPALI"), true, true);
+    }
+    if (securityLevel > 0 || receptionistLevel > 0) {
+      setAct(10, securityLevel > 0 ? "👋 Güvenliği Çıkar" : "👋 Resepsiyonisti Çıkar", true, true);
+    }
+  } else if (sel === "Storage") {
+    if (storageState === "Locked") {
+      infoText.textContent = "📦 Depo Binası (Otelin solundaki dış bina)  •  Bedel: " + CostStorage + " TL  •  Süre: " + Math.round(StorageSec) + " sn\nOda eşyalarını %30 indirimli sipariş edip stoklamanı sağlar. Kargo kamyonu buraya teslimat yapar.";
+      setAct(0, "🏗️ Depo Binası Kur\n" + CostStorage + " TL", true, readyOnce);
+    } else if (storageState === "Building") {
+      infoText.textContent = "🏗️ Depo binası inşa ediliyor... Kalan: " + Math.ceil(storageLeft) + " sn";
+    } else {
+      const used = storageUsed(), cap = storageCap();
+      let st = "";
+      for (let k = 0; k < ItemCount; k++) if (stock[k] > 0) st += ItemIcons[k] + "×" + stock[k] + " ";
+      let ship = "";
+      for (const sh of shipments) ship += "  🚚 " + Math.ceil(sh.left) + " sn (" + sumArr(sh.items) + " eşya)";
+      if (trucks.some(t => t.state !== "leaving")) ship += "  🚚 Kamyon geldi!";
+      const crateN = sumArr(crateItems);
+      infoText.textContent = "📦 Depo Binası Sv." + storageLevel + "  •  Kapasite: " + used + "/" + cap + "  •  Sipariş %" + Math.round(OrderDiscount * 100) + " fiyat  •  Teslimat " + DeliverySec[storageLevel] + " sn\n" +
+        "Stok: " + (st || "boş") + (crateN ? "  📦 Kaldırımda " + crateN + " koli (dokun!)" : "") + ship + (sumArr(cart) ? "\n🛒 Sepet: " + sumArr(cart) + " eşya = " + cartCost() + " TL" : "");
+      for (let k = 0; k < ItemCount; k++) setAct(k, ItemIcons[k] + " " + ItemNames[k] + "\n" + orderCost(k) + " TL" + (cart[k] ? " ×" + cart[k] : ""), true, used < cap);
+      setAct(9, "🚚 Siparişi Ver\n" + cartCost() + " TL", true, sumArr(cart) > 0 && money >= cartCost());
+      if (storageLevel < 3) setAct(10, "⬆️ Depo Sv." + (storageLevel + 1) + "\n" + StorageUpCost[storageLevel + 1] + " TL", true, true);
+      else setAct(10, "✅ Son Seviye", true, false, true);
+    }
+  } else if (sel === "Dorm") {
+    if (dormState === "Locked") {
+      infoText.textContent = "🏠 Personel Lojmanı Binası (Otelin sağındaki dış bina)  •  Bedel: " + CostDorm + " TL  •  Süre: " + Math.round(DormSec) + " sn\nTemizlikçi, Resepsiyonist ve Güvenlik çalıştırmak için personel kapasitesini artırır ve maaşları düşürür.";
+      setAct(0, "🏗️ Lojman Binası Kur\n" + CostDorm + " TL", true, readyOnce);
+    } else if (dormState === "Building") {
+      infoText.textContent = "🏗️ Personel Lojmanı binası inşa ediliyor... Kalan: " + Math.ceil(dormLeft) + " sn";
+    } else {
+      infoText.textContent = "🏠 Personel Lojmanı Binası Sv." + dormLevel + "  •  Personel Kapasitesi: " + totalStaffCount() + "/" + staffCap() +
+        "\nMaaş İndirimi: -%" + Math.round((1 - staffWageMult()) * 100) + "  •  Her seviye +2 personel kapasitesi ekler.";
+      if (dormLevel < 3) setAct(0, "⬆️ Yükselt Sv." + (dormLevel + 1) + "\n" + DormUpCost[dormLevel + 1] + " TL", true, true);
+      else setAct(0, "✅ Son Seviye", true, false, true);
+      setAct(1, "👷 Personel Yönetimi", true, true);
+    }
   } else if (sel === "Ach") {
     let t = "🏆 Başarılar  (Bugün alınan müşteri: " + todayServed + "/10)";
     for (const a of achs) t += "\n" + (a.done ? "✅ " : "⬜ ") + a.title + " (+" + a.reward + " TL)";
@@ -2483,35 +2868,35 @@ function refreshPanel() {
           ? "⚠️ Başlangıç Adımı 2/2: Önce kurduğun 1. Odaya tıklayıp Kapı al (50 TL)!"
           : "⚠️ Başlangıç Adımı 1/2: Oyuna başlamak için önce 1. Odanı kur (100 TL)!";
       } else {
-        infoText.textContent = "➕ Boş Alan  •  Oda, spor salonu, tuvalet, doğalgaz" + (cur.floor.idx === 0 ? " veya resepsiyon" : "") + " kurabilirsin.";
+        infoText.textContent = "➕ Boş Otel İçi Alan  •  Oda, spor salonu, tuvalet, doğalgaz" + (cur.floor.idx === 0 ? " veya resepsiyon" : "") + " kurabilirsin. (Depo ve Lojman otel dışında ayrı binalardır)";
       }
       setAct(0, "🛏️ Oda Kur\n" + roomCost() + " TL", true, readyOnce || !anyRoomBuilt);
       setAct(1, "🏋️ Spor Odası\n" + gymCost() + " TL", true, readyOnce);
       setAct(2, "🚽 Tuvalet\n" + toiletCost() + " TL", true, readyOnce);
       if (cur.floor.idx === 0) setAct(3, "🛎️ Resepsiyon\n" + CostReception + " TL", true, readyOnce);
       setAct(4, "🔥 Doğalgaz\n" + gasCost() + " TL", true, readyOnce && !gasSlot());
-      setAct(5, storageSlot() ? "📦 Depo var" : "📦 Depo\n" + storageBuildCost() + " TL", true, readyOnce && !storageSlot(), !!storageSlot());
-      setAct(6, dormSlot() ? "🏠 Lojman var" : "🏠 Lojman\n" + dormBuildCost() + " TL", true, readyOnce && !dormSlot(), !!dormSlot());
-    } else if (cur.type === "Storage") {
-      const used = storageUsed(), cap = storageCap();
-      let st = "";
-      for (let k = 0; k < ItemCount; k++) if (stock[k] > 0) st += ItemIcons[k] + "×" + stock[k] + " ";
-      let ship = "";
-      for (const sh of shipments) ship += "  🚚 " + Math.ceil(sh.left) + " sn (" + sumArr(sh.items) + " eşya)";
-      if (trucks.some(t => t.state !== "leaving")) ship += "  🚚 Kamyon geldi!";
-      const crateN = sumArr(crateItems);
-      infoText.textContent = "📦 Depo Sv." + cur.level + "  •  Kapasite: " + used + "/" + cap + "  •  Sipariş %" + Math.round(OrderDiscount * 100) + " fiyat  •  Teslimat " + DeliverySec[cur.level] + " sn\n" +
-        "Stok: " + (st || "boş") + (crateN ? "  📦 Kaldırımda " + crateN + " koli (dokun!)" : "") + ship + (sumArr(cart) ? "\n🛒 Sepet: " + sumArr(cart) + " eşya = " + cartCost() + " TL" : "");
-      for (let k = 0; k < ItemCount; k++) setAct(k, ItemIcons[k] + " " + ItemNames[k] + "\n" + orderCost(k) + " TL" + (cart[k] ? " ×" + cart[k] : ""), true, used < cap);
-      setAct(9, "🚚 Siparişi Ver\n" + cartCost() + " TL", true, sumArr(cart) > 0 && money >= cartCost());
-      if (cur.level < 3) setAct(10, "⬆️ Depo Sv." + (cur.level + 1) + "\n" + StorageUpCost[cur.level + 1] + " TL", true, true);
-      else setAct(10, "✅ Son seviye", true, false, true);
-    } else if (cur.type === "Dorm") {
-      infoText.textContent = "🏠 Personel Lojmanı Sv." + cur.level + "  •  Personel: " + cleaners.length + "/" + staffCap() + "\nMaaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ". Her seviye +2 personel kapasitesi ekler.";
-      if (cur.level < 3) setAct(0, "⬆️ Yükselt Sv." + (cur.level + 1) + "\n" + DormUpCost[cur.level + 1] + " TL", true, true);
-      else setAct(0, "✅ Son seviye", true, false, true);
+      setAct(5, hasStorage() ? ("📦 Dış Depo (Sv." + storageLevel + ")") : ("📦 Dış Depo Alanı\n" + CostStorage + " TL"), true, readyOnce);
+      setAct(6, hasDorm() ? ("🏠 Dış Lojman (Sv." + dormLevel + ")") : ("🏠 Dış Lojman Alanı\n" + CostDorm + " TL"), true, readyOnce);
     } else if (cur.type === "Reception") {
-      infoText.textContent = "🛎️ Resepsiyon  •  Sırada bekleyen müşterilerin sabrını %50 artırır.";
+      const rLv = receptionistLevel;
+      const bonusTxt = rLv === 0 ? "Resepsiyonist yok (Çince çeviri ve filtreler kapalı)" :
+                       rLv === 1 ? "Resepsiyonist Sv.1 (Çince çeviri + Filtreler açık)" :
+                       rLv === 2 ? "Resepsiyonist Sv.2 (+%15 Pazarlık Bonusu + Filtreler)" :
+                                   "Resepsiyonist Sv.3 (+%25 Pazarlık + Otomatik Oda Yerleştirme)";
+      infoText.textContent = "🛎️ Resepsiyon  •  " + bonusTxt +
+        (rLv >= 1 ? ("\nFiltreler: Çocuklu=" + (recNoKids ? "REDDET" : "KABUL") + " | Alt Sınır=" + (recMinPrice > 0 ? recMinPrice + " TL" : "YOK") + " | Ücretsiz=" + (recAllowFree ? "KABUL" : "REDDET") + (rLv >= 3 ? (" | Oto-Yerleştir=" + (recAutoPlace ? "AÇIK" : "KAPALI")) : "")) : "");
+      if (rLv < 3) {
+        const rCost = RecHireCost[rLv + 1];
+        const canHire = rLv > 0 || totalStaffCount() < staffCap();
+        setAct(0, rLv === 0 ? ("🛎️ Resepsiyonist Al\n" + rCost + " TL") : ("⬆️ Resepsiyonist Sv." + (rLv + 1) + "\n" + rCost + " TL"), true, readyOnce && canHire);
+      } else {
+        setAct(0, "✅ Resepsiyonist Sv.3", true, false, true);
+      }
+      setAct(1, "🧒 Çocuklular\n" + (recNoKids ? "REDDET" : "KABUL"), true, rLv >= 1);
+      setAct(2, "💰 Alt Fiyat\n" + (recMinPrice > 0 ? recMinPrice + " TL" : "YOK"), true, rLv >= 1);
+      setAct(3, "💚 Ücretsizler\n" + (recAllowFree ? "KABUL" : "REDDET"), true, rLv >= 1);
+      setAct(4, "🤖 Oto-Yerleştir\n" + (recAutoPlace ? "AÇIK" : "KAPALI"), true, rLv >= 3);
+      if (rLv > 0) setAct(5, "👋 İşten Çıkar", true, true);
     } else if (cur.type === "Gas") {
       infoText.textContent = "🔥 Doğalgaz Dairesi  •  Vana: " + (gasOn ? "AÇIK" : "KAPALI") + "  •  Bakım: %" + Math.round(cur.maintenance) +
         (gasLeak ? "\n🚨 GAZ KAÇAĞI! " + Math.ceil(gasLeakLeft) + " sn içinde vanayı kapat!" : "\nKışın odaları ısıtır (günlük " + GasPerRoom + " TL/oda).");
@@ -2573,7 +2958,7 @@ function refreshPanel() {
     actBtns[ActCount - 1].style.background = "#ffd6d6";
     shown = true;
   }
-  if (!shown && sel === "Slot" && selSlot && selSlot.type === "Storage" && sumArr(cart) > 0) {
+  if (!shown && sel === "Storage" && hasStorage() && sumArr(cart) > 0) {
     setAct(ActCount - 1, "🗑️ Sepeti Boşalt", true, true);
     actBtns[ActCount - 1].style.background = "#ffd6d6";
   }
@@ -2594,7 +2979,10 @@ function refreshGuest() {
     const more = queue.length > 1 ? "  •  👥 Sırada: " + (queue.length - 1) : "";
     const status = "⏳ Sabır: " + Math.ceil(g.patience) + " sn  •  🎯 Hak: " + (3 - g.attempts) + more;
     const kidTr = g.kids > 0 ? " (" + g.kids + " çocuklu)" : "";
-    const hintLine = g.hint ? ('\n💬 "' + g.hint + '"') : "";
+    let secWarn = "";
+    if (g.role === "Thief" && securityLevel >= 2) secWarn = "\n🚨 GÜVENLİK UYARISI: Bu kişi HIRSIZ! (Reddet veya Kameralı odaya al)";
+    else if (g.role === "Vampire" && securityLevel >= 3) secWarn = "\n🚨 GÜVENLİK UYARISI: Bu kişi VAMPİR! (Reddet!)";
+    const hintLine = (g.hint ? ('\n💬 "' + g.hint + '"') : "") + secWarn;
     if (pending === g) {
       if (g.chinese) {
         guestText.textContent = "✅ " + g.name + " · " + pendingPrice + " 元 成交！\n请选择空房间并点击 '✅ Yerleştir'。(" + wantList(g, !canTranslate()) + ")";
@@ -2609,7 +2997,7 @@ function refreshGuest() {
     } else if (g.chinese) {
       const cnStatus = "耐心 " + Math.ceil(g.patience) + " 秒 · 机会 " + (3 - g.attempts) + " 次";
       let t = "🌏 " + g.name + " · " + g.days + "天" + (g.kids > 0 ? "（带孩子 " + g.kids + "）" : "") + " · 出价 " + g.offer + " 元\n我需要：" + wantList(g, true) + "\n" + cnStatus;
-      if (canTranslate()) t += "\n🛎️ Resepsiyon çevirisi: " + g.days + " gün, " + g.offer + " TL" + kidTr + " • İstek: " + wantList(g, false);
+      if (canTranslate()) t += "\n🛎️ Resepsiyonist çevirisi: " + g.days + " gün, " + g.offer + " TL" + kidTr + " • İstek: " + wantList(g, false);
       guestText.textContent = t;
     } else {
       guestText.textContent = "🛎️ " + g.name + " • " + g.days + " gün" + kidTr + " • 💰 " + g.offer + " TL öneriyor\n📌 İstekleri: " + wantList(g, false) + "  |  " + status + hintLine;
@@ -2628,7 +3016,7 @@ function refreshGuest() {
 // ===== KAMERA & DOKUNMATİK KONTROLLER =====
 function applyCam() {
   zoom = clamp(zoom, 0.3, 2.0);
-  camCenter.x = clamp(camCenter.x, -1300, TotalW + 1300);
+  camCenter.x = clamp(camCenter.x, -1600, TotalW + 1700);
   camCenter.y = clamp(camCenter.y, -150, FloorCount * FloorH + 400);
 }
 function fitView() {
@@ -2732,6 +3120,14 @@ function handleWorldTap(clientX, clientY) {
   // Bahçe tabelası
   if (wx >= -270 && wx <= -130 && wy >= SlabH + 40 && wy <= SlabH + 120) {
     selectMode("Garden"); return;
+  }
+  // Dış Depo binası (otelin solunda)
+  if (wx >= StorageX && wx <= StorageX + StorageW && wy >= SlabH && wy <= SlabH + StorageH + 45) {
+    selectMode("Storage"); return;
+  }
+  // Dış Personel Lojmanı binası (otelin sağında)
+  if (wx >= DormX && wx <= DormX + DormW && wy >= SlabH && wy <= SlabH + DormH + 45) {
+    selectMode("Dorm"); return;
   }
   // Park alanı
   if (wx >= ParkX && wx <= ParkX + ParkW && wy >= SlabH && wy <= SlabH + 190) {
@@ -2945,7 +3341,9 @@ function drawWorld() {
     rText(String(StarTargets[i]), sx - 80, FloorCount * FloorH + 34, 160, 34, 28, Pencil);
   }
 
-  // Park Alanı
+  // Dış Binalar: Depo, Lojman ve Park Alanı
+  drawStorage();
+  drawDorm();
   drawPark();
 
   // Asansör Kabini
@@ -3008,6 +3406,86 @@ function drawWorld() {
   }
 
   ctx.restore();
+}
+
+function drawStorage() {
+  const x = StorageX, y = SlabH, w = StorageW, h = StorageH;
+  const isSel = sel === "Storage";
+  if (storageState === "Locked") {
+    rRect(x, y, w, h, "rgba(255,255,255,0.22)", isSel ? Orange : GhostLine, isSel ? 6 : 3);
+    rText("📦 DEPO BİNASI\n" + CostStorage + " TL - " + Math.round(StorageSec) + " sn inşaat\n(%30 İndirimli Eşya Siparişi)", x + 10, y + 55, w - 20, 120, 24, "#404d66");
+  } else if (storageState === "Building") {
+    rRect(x, y, w, h, "rgba(255,242,179,0.32)", isSel ? Orange : Pencil, isSel ? 6 : 3);
+    for (let k = 0; k <= 4; k++) rRect(x + k * (w - 14) / 4, y, 14, h, "#ffcc1a", Pencil, 1.5);
+    rRect(x + w / 2 - 150, y + 60, 300, 28, "#26262e", null);
+    const pr = clamp(1 - storageLeft / StorageSec, 0, 1);
+    rRect(x + w / 2 - 148, y + 62, 296 * pr, 24, "#4dcc59", null);
+    rText("Depo İnşaatı: " + Math.ceil(storageLeft) + " sn", x + 20, y + 96, w - 40, 36, 24, Pencil);
+  } else {
+    // Müstakil Depo Binası Gövdesi ve Çatısı
+    rRect(x, y, w, h, "#e6dcc8", Pencil, 3.5);
+    rRect(x - 10, y + h, w + 20, 18, "#6e472b", Pencil, 3);
+    rRect(x + 60, y + h + 18, w - 120, 36, "#2b547e", Pencil, 2.5);
+    rText("DEPO Sv." + storageLevel + " (" + sumArr(stock) + "/" + StorageCap[storageLevel] + ")", x + 60, y + h + 18, w - 120, 36, 20, "#ffffff");
+
+    // Kepenkli Kargo Kapısı (sol) + Raflar/Koliler (sağ vitrin)
+    rRect(x + 22, y, 110, 145, "#b0bac9", Pencil, 2.5);
+    for (let k = 1; k <= 5; k++) rRect(x + 26, y + k * 24, 102, 3, "#7b8799", null);
+    rRect(x + 148, y + 16, 212, 165, "#f5efe4", Pencil, 2.5);
+
+    const boxCols = ["#d9a35b", "#c98c45", "#e2b873", "#b87a3d"];
+    const total = sumArr(stock);
+    let drawn = 0;
+    for (let sh = 0; sh < 3; sh++) {
+      const sy = y + 26 + sh * 50;
+      rRect(x + 156, sy, 196, 7, "#7a5a3a", Pencil, 1.5);
+      for (let b = 0; b < 6; b++) {
+        if (drawn >= total) break;
+        rRect(x + 160 + b * 31, sy + 7, 27, 24 + (b % 2) * 4, boxCols[(b + sh) % 4], Pencil, 1.8);
+        drawn++;
+      }
+    }
+    if (isSel) rRect(x, y, w, h, null, Orange, 6);
+  }
+}
+
+function drawDorm() {
+  const x = DormX, y = SlabH, w = DormW, h = DormH;
+  const isSel = sel === "Dorm";
+  if (dormState === "Locked") {
+    rRect(x, y, w, h, "rgba(255,255,255,0.22)", isSel ? Orange : GhostLine, isSel ? 6 : 3);
+    rText("🏠 PERSONEL LOJMANI\n" + CostDorm + " TL - " + Math.round(DormSec) + " sn inşaat\n(+Personel Kapasitesi & Maaş İndirimi)", x + 10, y + 55, w - 20, 120, 23, "#404d66");
+  } else if (dormState === "Building") {
+    rRect(x, y, w, h, "rgba(255,242,179,0.32)", isSel ? Orange : Pencil, isSel ? 6 : 3);
+    for (let k = 0; k <= 4; k++) rRect(x + k * (w - 14) / 4, y, 14, h, "#ffcc1a", Pencil, 1.5);
+    rRect(x + w / 2 - 150, y + 60, 300, 28, "#26262e", null);
+    const pr = clamp(1 - dormLeft / DormSec, 0, 1);
+    rRect(x + w / 2 - 148, y + 62, 296 * pr, 24, "#4dcc59", null);
+    rText("Lojman İnşaatı: " + Math.ceil(dormLeft) + " sn", x + 20, y + 96, w - 40, 36, 24, Pencil);
+  } else {
+    // Müstakil Lojman Binası Gövdesi ve Çatısı
+    rRect(x, y, w, h, "#e6dff2", Pencil, 3.5);
+    rRect(x - 10, y + h, w + 20, 18, "#5e3c6e", Pencil, 3);
+    rRect(x + 45, y + h + 18, w - 90, 36, "#49306b", Pencil, 2.5);
+    rText("LOJMAN Sv." + dormLevel + " (" + totalStaffCount() + "/" + staffCap() + ")", x + 45, y + h + 18, w - 90, 36, 20, "#ffffff");
+
+    // Giriş kapısı + İçerideki ranzalar görünümü
+    drawDoor(x + 24, y, 76, 130, false);
+    rRect(x + 116, y + 18, 244, 155, "#f7f4fc", Pencil, 2.5);
+    const staffN = totalStaffCount();
+    for (let k = 0; k < 2; k++) {
+      const bx = x + 126 + k * 116;
+      rRect(bx, y + 22, 6, 110, "#8c6b4a", null);
+      rRect(bx + 96, y + 22, 6, 110, "#8c6b4a", null);
+      for (let lv = 0; lv < 2; lv++) {
+        const by = y + 30 + lv * 50;
+        const occupied = (k * 2 + lv) < staffN;
+        rRect(bx, by, 102, 12, "#a07e57", Pencil, 1.8);
+        rRect(bx + 4, by + 12, 94, 14, occupied ? "#7fb3e6" : "#f2f2fa", Pencil, 1.8);
+      }
+    }
+    if (isSel) rRect(x, y, w, h, null, Orange, 6);
+  }
 }
 
 function drawPark() {
@@ -3276,6 +3754,17 @@ function drawPawn(p) {
     rRect(-4, 77, 8, 2.5, "#111116", null);
   }
   rCircle(0, 97, 26, 12, p.hair, Pencil, 2);
+  if (p.isSecurity) {
+    // Güvenlik şapkası ve rozeti
+    rRect(-24, 96, 48, 12, "#152238", Pencil, 2);
+    rRect(-18, 93, 42, 5, "#0d1524", null);
+    rCircle(0, 102, 5, 5, "#ffd700", Pencil, 1.2);
+    rCircle(10, 48, 5, 5, "#ffd700", Pencil, 1.2);
+  } else if (p.isReceptionist) {
+    // Resepsiyonist yaka kartı ve kepi
+    rRect(-18, 98, 36, 10, "#8c1d40", Pencil, 2);
+    rRect(-12, 48, 14, 8, "#ffd700", Pencil, 1.2);
+  }
 
   ctx.restore();
 }
@@ -3593,6 +4082,14 @@ function loop(now) {
     parkLeft -= dt;
     if (parkLeft <= 0) finishPark();
   }
+  if (storageState === "Building") {
+    storageLeft -= dt;
+    if (storageLeft <= 0) finishStorage();
+  }
+  if (dormState === "Building") {
+    dormLeft -= dt;
+    if (dormLeft <= 0) finishDorm();
+  }
 
   // Dış kirler
   dirtTimer -= dt;
@@ -3610,6 +4107,7 @@ function loop(now) {
   updateFires(dt);
   updateCleaners(dt);
   updateDeliveries(dt);
+  updateReceptionistAuto(dt);
 
   // Kişi Hareketleri
   for (let i = pawns.length - 1; i >= 0; i--) {
@@ -3688,10 +4186,11 @@ function loop(now) {
     const burning = allSlots.some(s => s.onFire);
     const buildingSel = (sel === "Floor" && selFloor && selFloor.state === "Building") ||
                         (sel === "Park" && parkState === "Building") ||
+                        (sel === "Storage" && (storageState === "Building" || shipments.length > 0 || trucks.length > 0)) ||
+                        (sel === "Dorm" && dormState === "Building") ||
                         (cleaning && sel === "Slot") ||
                         (burning && sel === "Slot") ||
-                        (gasLeak && sel === "Slot") ||
-                        (sel === "Slot" && selSlot && selSlot.type === "Storage" && (shipments.length > 0 || trucks.length > 0));
+                        (gasLeak && sel === "Slot");
     if (buildingSel) refreshPanel();
   }
 
@@ -3718,6 +4217,18 @@ function saveGame() {
       gasLeakLeft,
       parkState,
       parkLeft,
+      storageState,
+      storageLeft,
+      storageLevel,
+      dormState,
+      dormLeft,
+      dormLevel,
+      receptionistLevel,
+      recNoKids,
+      recMinPrice,
+      recAllowFree,
+      recAutoPlace,
+      securityLevel,
       treePlanted: treePlanted.slice(),
       achUnlocked: achs.map(a => !!a.done),
       todayServed,
@@ -3805,6 +4316,18 @@ function loadGame() {
     gasLeakLeft = data.gasLeakLeft || 0;
     parkState = data.parkState || "Locked";
     parkLeft = data.parkLeft || 0;
+    storageState = data.storageState || "Locked";
+    storageLeft = data.storageLeft || 0;
+    storageLevel = data.storageLevel || 1;
+    dormState = data.dormState || "Locked";
+    dormLeft = data.dormLeft || 0;
+    dormLevel = data.dormLevel || 1;
+    receptionistLevel = data.receptionistLevel || 0;
+    recNoKids = !!data.recNoKids;
+    recMinPrice = data.recMinPrice || 0;
+    recAllowFree = data.recAllowFree !== undefined ? !!data.recAllowFree : true;
+    recAutoPlace = data.recAutoPlace !== undefined ? !!data.recAutoPlace : true;
+    securityLevel = data.securityLevel || 0;
     if (Array.isArray(data.treePlanted)) {
       for (let i = 0; i < treePlanted.length && i < data.treePlanted.length; i++) {
         treePlanted[i] = !!data.treePlanted[i];
@@ -3836,7 +4359,18 @@ function loadGame() {
           for (let i = 0; i < 4 && i < flData.slots.length; i++) {
             const sd = flData.slots[i];
             const s = fl.slots[i];
-            s.type = sd.type || "Empty";
+            // v1.5.0 kayıtlarından kalan otel içi Depo / Lojman alanlarını müstakil dış binalara taşı
+            if (sd.type === "Storage") {
+              storageState = "Built";
+              storageLevel = sd.level || 1;
+              s.type = "Empty";
+            } else if (sd.type === "Dorm") {
+              dormState = "Built";
+              dormLevel = sd.level || 1;
+              s.type = "Empty";
+            } else {
+              s.type = sd.type || "Empty";
+            }
             s.roomNo = sd.roomNo || 0;
             s.hasDoor = !!sd.hasDoor;
             if (Array.isArray(sd.items)) {
@@ -3904,8 +4438,10 @@ function loadGame() {
     const cCount = Math.min(MaxCleaners, data.cleanerCount || 0);
     for (let i = 0; i < cCount; i++) {
       const p = makePawn({ x: ElevX + 110 + i * 45, y: floors[0].WalkY }, pick(Skins), pick(Hairs), "#338c99");
-      cleaners.push({ pawn: p, target: null, state: 0, timer: 0 });
+      p.speed = 70;
+      cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
     }
+    syncStaffPawns();
 
     // Oyun başında ilk odamızı ve kapımızı almamız lazım koruması (kayıt sonrası da kontrol)
     if (!hasReadyRoom()) {
@@ -3949,8 +4485,8 @@ refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 6;
-const APP_VERSION_NAME = "1.5.0";
+const APP_VERSION_CODE = 7;
+const APP_VERSION_NAME = "1.6.0";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
