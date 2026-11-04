@@ -69,8 +69,8 @@ jobs:
                   applicationId "com.oteloyunu.app"
                   minSdk 24
                   targetSdk 34
-                  versionCode 9
-                  versionName "1.8.0"
+                  versionCode 10
+                  versionName "1.8.1"
               }
               buildTypes {
                   debug {
@@ -140,7 +140,7 @@ jobs:
           import java.util.concurrent.Executors;
 
           public class MainActivity extends Activity {
-              private static final int BUILTIN_VERSION = 9;
+              private static final int BUILTIN_VERSION = 10;
               private static final String PREFS_NAME = "thehotel_updater_prefs";
               private static final String KEY_VER = "installed_version";
               private static final String KEY_VER_NAME = "installed_version_name";
@@ -360,9 +360,9 @@ jobs:
       - name: GitHub Releases Kısmına APK Yayınla
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.8.0
-          name: "TheHotel Game - Güncel APK (v1.8.0)"
-          body: "v1.8.0: Haftalık Gazete & Rapor, Seri Katil gizemi ve olay yeri, Hırsız kamera sabotajı, Üst katlara Balkon ve açık otelde kuyruk sistemi içeren güncel Android APK dosyası."
+          tag_name: v1.8.1
+          name: "TheHotel Game - Güncel APK (v1.8.1)"
+          body: "v1.8.1: Ana Menüde '🆕 Yeni Oyun Başlat' butonu, rastgele Seri Katil baş harfi sistemi, Haftalık Gazete, Hırsız sabotajı ve üst kat Balkonlarını içeren güncel Android APK dosyası."
           files: OtelOyunu-Android.apk
           prerelease: false
 

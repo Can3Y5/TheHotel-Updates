@@ -239,7 +239,28 @@
   .m-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f1f26; }
   #btn-start-game {
     background: linear-gradient(180deg, #98f2a7 0%, #65d477 100%);
-    font-size: clamp(15px, 4.2vw, 19px); font-weight: 900; padding: 13px 10px;
+    font-size: clamp(15px, 4.2vw, 19px); font-weight: 900; padding: 12px 10px;
+  }
+  #btn-new-game {
+    background: linear-gradient(180deg, #ffe082 0%, #ffb300 100%);
+    font-size: clamp(13.5px, 3.7vw, 17px); font-weight: 900; padding: 10px 10px;
+  }
+  #newgame-confirm-box {
+    display: none; width: 100%; background: #fff5f5; border: 2.5px solid #c92a2a;
+    border-radius: 10px; padding: 9px 10px; flex-direction: column; gap: 7px;
+  }
+  .ngc-text {
+    font-size: clamp(10.5px, 2.7vw, 12.5px); font-weight: 800; color: #7a1212;
+    text-align: center; line-height: 1.25;
+  }
+  .ngc-row { display: flex; gap: 8px; width: 100%; }
+  #btn-confirm-newgame {
+    flex: 1; background: #ff6b6b; color: #ffffff; padding: 8px 6px;
+    border: 2px solid #1f1f26; border-radius: 7px; font-weight: 900; font-size: clamp(11px, 2.8vw, 13px); cursor: pointer;
+  }
+  #btn-cancel-newgame {
+    flex: 1; background: #e9ecef; color: #1f1f26; padding: 8px 6px;
+    border: 2px solid #1f1f26; border-radius: 7px; font-weight: 800; font-size: clamp(11px, 2.8vw, 13px); cursor: pointer;
   }
   .menu-row-2 { display: flex; gap: 8px; width: 100%; }
   .menu-row-2 .m-btn { flex: 1; font-size: clamp(11px, 2.7vw, 13px); padding: 9px 6px; }
@@ -448,13 +469,21 @@ Kitabı</button>
           <input id="hotel-name-input" type="text" maxlength="16" value="OTEL" placeholder="Otelinizin İsmi..." />
         </div>
         <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
+        <button id="btn-new-game" class="m-btn" style="display:none">🆕 YENİ OYUN BAŞLAT</button>
+        <div id="newgame-confirm-box">
+          <div class="ngc-text">⚠️ Mevcut kayıtlı otel silinecek ve 1. günden sıfırdan yeni bir oyun başlayacak. Emin misin?</div>
+          <div class="ngc-row">
+            <button id="btn-confirm-newgame">✔ Evet, Yeni Oyun</button>
+            <button id="btn-cancel-newgame">✖ Vazgeç</button>
+          </div>
+        </div>
         <div class="menu-row-2">
           <button id="btn-toggle-sfx" class="m-btn">🔊 Ses: AÇIK</button>
           <button id="btn-toggle-bgm" class="m-btn">🎵 Müzik: AÇIK</button>
         </div>
         <div class="menu-row-2">
           <button id="btn-how-to" class="m-btn">❓ Nasıl Oynanır?</button>
-          <button id="btn-reset-save" class="m-btn">🗑️ Sıfırdan Başla</button>
+          <button id="btn-reset-save" class="m-btn">🗑️ Kaydı Sil</button>
         </div>
         <div id="how-to-box">• Başlangıçta önce boş alana tıklayıp 1. Odayı kur (100 TL) ve Kapısını al (50 TL); ardından sağ üstten Oteli AÇ.
 • Gelen müşterilerin konuşmalarına dikkat et! Aralarında Hırsız (kameradan çekinir) veya gece gelen Vampir (ışığı sevmez, gece diğer müşterilere saldırabilir) olabilir!
@@ -547,8 +576,21 @@ const ItemNames = ["Ampul", "Masa", "Dolap", "Kamera", "Yatak", "Çocuk yatağı
 const ItemCn = ["灯泡", "桌子", "衣柜", "摄像头", "床", "儿童床", "电视", "空调", "冰箱"];
 const ItemCosts = [30, 40, 40, 60, 80, 60, 120, 100, 110];
 
-const FirstNames = ["Ahmet", "Ayşe", "Mehmet", "Fatma", "Ali", "Zeynep", "Mustafa", "Elif", "Can", "Selin", "Serkan", "Sinan", "Burak", "Deniz", "Emre", "Defne", "Kerem", "Kaan", "Merve", "Murat"];
-const KillerLetters = ["S", "K", "M", "A", "B", "D", "E"];
+const FirstNames = [
+  "Ahmet", "Ayşe", "Ali", "Arda",
+  "Burak", "Buse", "Berk",
+  "Can", "Cem", "Ceren",
+  "Deniz", "Defne", "Doruk",
+  "Elif", "Emre", "Ece",
+  "Fatma", "Furkan",
+  "Hakan", "Hande", "Halil",
+  "Kerem", "Kaan", "Kübra",
+  "Mehmet", "Mustafa", "Merve", "Murat",
+  "Selin", "Serkan", "Sinan", "Seda",
+  "Tolga", "Tuğba", "Tamer",
+  "Yusuf", "Yasemin", "Yiğit", "Zeynep"
+];
+const KillerLetters = ["A", "B", "C", "D", "E", "H", "K", "M", "S", "T", "Y"];
 const LastNames = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Aydın", "Öztürk", "Arslan", "Koç", "Polat"];
 const CnNames = ["李伟", "王芳", "张敏", "刘洋", "陈静", "杨磊"];
 const NeedyStories = [
@@ -811,7 +853,7 @@ let towerOrder = [];
 // Haftalık Gazete & Muhasebe Raporu + Seri Katil
 let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0 };
 let summaryOpen = false;
-let killerLetter = "S", killerCaughtWeek = 0, weekMurders = 0;
+let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
 // Faz 2 Personeller: Resepsiyonist & Güvenlik
 let receptionistLevel = 0, recNoKids = false, recMinPrice = 0, recAllowFree = true, recAutoPlace = true, recAutoTimer = 0;
 let receptionistPawn = null;
@@ -4675,7 +4717,7 @@ function saveGame() {
       dormState,
       dormLeft,
       dormLevel, kitchenState, kitchenLeft, cookLevel, towerOrder: towerOrder.slice(),
-      killerLetter, killerCaughtWeek, weekMurders, dayStats,
+      killerLetter, killerCaughtWeek, weekMurders, v181KillerRandomized: true, dayStats,
       receptionistLevel,
       recNoKids,
       recMinPrice,
@@ -4786,7 +4828,9 @@ function loadGame() {
     towerOrder = Array.isArray(data.towerOrder) ? data.towerOrder.filter(t => t === "Dorm" || t === "Kitchen") : [];
     if (dormState !== "Locked" && !towerOrder.includes("Dorm")) towerOrder.unshift("Dorm");
     if (kitchenState !== "Locked" && !towerOrder.includes("Kitchen")) towerOrder.push("Kitchen");
-    killerLetter = data.killerLetter || "S";
+    killerLetter = (data.v181KillerRandomized && data.killerLetter && KillerLetters.includes(data.killerLetter))
+      ? data.killerLetter
+      : pick(KillerLetters.filter(l => l !== "S"));
     killerCaughtWeek = data.killerCaughtWeek || 0;
     weekMurders = data.weekMurders || 0;
     if (data.dayStats && typeof data.dayStats === "object") {
@@ -4932,8 +4976,12 @@ function loadGame() {
   }
 }
 
-function resetSave() {
-  if (!confirm("Kayıtlı oyunu silip sıfırdan başlamak istediğine emin misin?")) return;
+function showNewGameConfirm() {
+  const box = document.getElementById("newgame-confirm-box");
+  if (box) box.style.display = box.style.display === "flex" ? "none" : "flex";
+}
+
+function startNewGameClean() {
   try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
   try { window.name = ""; } catch (_) {}
   try {
@@ -4941,13 +4989,129 @@ function resetSave() {
       window.AndroidUpdater.saveGameData("");
     }
   } catch (_) {}
-  location.reload();
+
+  const customName = (hotelNameInput && hotelNameInput.value.trim()) ? hotelNameInput.value.trim().slice(0, 18).toUpperCase() : "OTEL";
+  hotelName = customName || "OTEL";
+  money = StartMoney;
+  reputation = 0;
+  ratingSum = 0;
+  ratingCount = 0;
+  tools = 1;
+  day = 1;
+  dayTimer = 0;
+  roomCounter = 0;
+  builtRooms = 0;
+  cleanCount = 0;
+  todayServed = 0;
+  guestsSinceNeedy = 6;
+  isOpen = false;
+  isNight = false;
+  gasOn = true;
+  gasLeak = false;
+  gasLeakLeft = 0;
+  parkState = "Locked";
+  parkLeft = 0;
+  storageState = "Locked";
+  storageLeft = 0;
+  storageLevel = 1;
+  dormState = "Locked";
+  dormLeft = 0;
+  dormLevel = 1;
+  kitchenState = "Locked";
+  kitchenLeft = 0;
+  cookLevel = 0;
+  towerOrder = [];
+  receptionistLevel = 0;
+  recNoKids = false;
+  recMinPrice = 0;
+  recAllowFree = true;
+  recAutoPlace = true;
+  recAutoTimer = 0;
+  securityLevel = 0;
+  killerLetter = pick(KillerLetters);
+  killerCaughtWeek = 0;
+  weekMurders = 0;
+  dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney };
+  summaryOpen = false;
+  document.getElementById("day-modal").style.display = "none";
+
+  stock.fill(0);
+  cart.fill(0);
+  crateItems.fill(0);
+  shipments.length = 0;
+  trucks.length = 0;
+  queue.length = 0;
+  guests.length = 0;
+  pawns.length = 0;
+  cleaners.length = 0;
+  storageWorkers.length = 0;
+  dormWorkers.length = 0;
+  kitchenWorkers.length = 0;
+  parkWorkers.length = 0;
+  floaties.length = 0;
+  dirts.length = 0;
+  receptionistPawn = null;
+  securityPawn = null;
+  cookPawn = null;
+  pending = null;
+  lastFront = null;
+
+  for (let i = 0; i < treePlanted.length; i++) treePlanted[i] = (i === 0 || i === 4);
+  for (const a of achs) a.done = false;
+
+  for (let f = 0; f < FloorCount; f++) {
+    const fl = floors[f];
+    fl.state = f === 0 ? "Built" : "Locked";
+    fl.buildLeft = 0;
+    fl.buildTotal = 0;
+    fl.workers.length = 0;
+    for (let i = 0; i < 4; i++) {
+      const s = fl.slots[i];
+      s.type = "Empty";
+      s.roomNo = 0;
+      s.hasDoor = false;
+      s.hasBalcony = false;
+      s.hasCorpse = false;
+      s.corpseName = "";
+      s.items.fill(false);
+      s.maintenance = 100;
+      s.guest = null;
+      s.gymLevel = 1;
+      s.gymBusy = [false, false, false];
+      s.toiletBusy = [false, false];
+      s.level = 1;
+      s.onFire = false;
+      s.fireLeft = 0;
+      s.wall = pick(WallColors);
+      s.picColor = pick(PictureColors);
+    }
+  }
+
+  sel = "Slot";
+  selSlot = floors[0].slots[0];
+  selFloor = null;
+  logLines.length = 0;
+  applySeason();
+  updateDayNight();
+  resetSpawn();
+  log("🆕 Yeni oyun başlatıldı! Önce 1. odanı kur ve kapısını tak, sonra oteli aç.");
+  log("📰 Haftalık Gazete: Şehirde '" + killerLetter + "' harfiyle başlayan bir seri katil aranıyor! Sağdaki 📰 Gazete butonuna bakabilirsin.");
+  saveGame();
+  refresh();
+  fitView();
+
+  const box = document.getElementById("newgame-confirm-box");
+  if (box) box.style.display = "none";
+  inMenu = false;
+  gameStartedOnce = true;
+  startScreen.style.display = "none";
+  play("open");
 }
 
 window.addEventListener("beforeunload", () => saveGame());
 document.addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });
 
-const hadSavedGame = loadGame();
+let hadSavedGame = loadGame();
 applySeason();
 updateDayNight();
 resetSpawn();
@@ -4961,8 +5125,8 @@ refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 9;
-const APP_VERSION_NAME = "1.8.0";
+const APP_VERSION_CODE = 10;
+const APP_VERSION_NAME = "1.8.1";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -4977,6 +5141,10 @@ const mucCheckBtn = document.getElementById("muc-check-btn");
 const mucNotes = document.getElementById("muc-notes");
 const mucInstallBtn = document.getElementById("muc-install-btn");
 const btnStartGame = document.getElementById("btn-start-game");
+const btnNewGame = document.getElementById("btn-new-game");
+const btnConfirmNewGame = document.getElementById("btn-confirm-newgame");
+const btnCancelNewGame = document.getElementById("btn-cancel-newgame");
+const newGameConfirmBox = document.getElementById("newgame-confirm-box");
 const btnToggleSfx = document.getElementById("btn-toggle-sfx");
 const btnToggleBgm = document.getElementById("btn-toggle-bgm");
 const btnHowTo = document.getElementById("btn-how-to");
@@ -5002,9 +5170,19 @@ if (hotelNameInput) {
     hotelName = v || "OTEL";
   });
 }
+if (btnNewGame) {
+  btnNewGame.style.display = hadSavedGame ? "flex" : "none";
+  btnNewGame.onclick = () => { play("tap"); showNewGameConfirm(); };
+}
 if (btnResetSave) {
-  btnResetSave.style.display = hadSavedGame ? "block" : "none";
-  btnResetSave.onclick = () => { play("tap"); resetSave(); };
+  btnResetSave.style.display = hadSavedGame ? "flex" : "none";
+  btnResetSave.onclick = () => { play("tap"); showNewGameConfirm(); };
+}
+if (btnConfirmNewGame) {
+  btnConfirmNewGame.onclick = () => { play("tap"); startNewGameClean(); };
+}
+if (btnCancelNewGame) {
+  btnCancelNewGame.onclick = () => { play("tap"); if (newGameConfirmBox) newGameConfirmBox.style.display = "none"; };
 }
 if (hadSavedGame) {
   btnStartGame.textContent = "▶ KAYITLI OYUNA DEVAM ET";
@@ -5013,9 +5191,12 @@ if (hadSavedGame) {
 function openStartMenu() {
   inMenu = true;
   saveGame();
+  hadSavedGame = true;
   if (hotelNameInput) hotelNameInput.value = hotelName || "OTEL";
-  if (btnResetSave) btnResetSave.style.display = "block";
-  btnStartGame.textContent = (gameStartedOnce || hadSavedGame) ? "▶ OYUNA DEVAM ET" : "▶ OYUNA BAŞLA";
+  if (btnNewGame) btnNewGame.style.display = "flex";
+  if (btnResetSave) btnResetSave.style.display = "flex";
+  if (newGameConfirmBox) newGameConfirmBox.style.display = "none";
+  btnStartGame.textContent = (gameStartedOnce || hadSavedGame) ? "▶ KAYITLI OYUNA DEVAM ET" : "▶ OYUNA BAŞLA";
   startScreen.style.display = "flex";
   checkForUpdate(false);
 }
