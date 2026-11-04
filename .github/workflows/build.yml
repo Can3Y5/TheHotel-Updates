@@ -69,8 +69,8 @@ jobs:
                   applicationId "com.oteloyunu.app"
                   minSdk 24
                   targetSdk 34
-                  versionCode 11
-                  versionName "1.9.0"
+                  versionCode 12
+                  versionName "1.9.1"
               }
               buildTypes {
                   debug {
@@ -140,7 +140,7 @@ jobs:
           import java.util.concurrent.Executors;
 
           public class MainActivity extends Activity {
-              private static final int BUILTIN_VERSION = 11;
+              private static final int BUILTIN_VERSION = 12;
               private static final String PREFS_NAME = "thehotel_updater_prefs";
               private static final String KEY_VER = "installed_version";
               private static final String KEY_VER_NAME = "installed_version_name";
@@ -360,9 +360,9 @@ jobs:
       - name: GitHub Releases Kısmına APK Yayınla
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.0
-          name: "TheHotel Game - Güncel APK (v1.9.0)"
-          body: "v1.9.0: 1 Yıldız sonrası Etkinlikler Sistemi (Ünlü Konuk Ziyareti, Yan Oda Koruması / Sessiz Yan Oda İsteği, Sosyete Düğünü, Şehir Festivali), Haftalık Gazete Etkinlik Takvimi ve önceki tüm yenilikleri içeren güncel Android APK dosyası."
+          tag_name: v1.9.1
+          name: "TheHotel Game - Güncel APK (v1.9.1)"
+          body: "v1.9.1: Ana menüde '📜 Geçmiş' (Güncelleme Geçmişi / Sürüm Notları) penceresi, v1.9.0 Etkinlikler Sistemi (Ünlü Konuk & Koruma, Düğün, Festival) ve önceki tüm yenilikleri içeren güncel Android APK dosyası."
           files: OtelOyunu-Android.apk
           prerelease: false
 

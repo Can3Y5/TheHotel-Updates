@@ -208,12 +208,60 @@
     width: 100%; background: #f2f7ff; border: 2px solid #1f1f26;
     border-radius: 10px; padding: 7px 10px; display: flex; flex-direction: column; gap: 6px;
   }
-  .muc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  #muc-status { font-size: clamp(10.5px, 2.7vw, 13px); font-weight: 800; color: #1f1f26; }
-  #muc-check-btn {
+  .muc-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  #muc-status { font-size: clamp(10px, 2.55vw, 12.5px); font-weight: 800; color: #1f1f26; flex: 1; min-width: 0; }
+  .muc-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  #muc-check-btn, #muc-history-btn {
     background: #ffffff; border: 2px solid #1f1f26; border-radius: 6px;
-    padding: 4px 8px; font-size: clamp(10px, 2.4vw, 11.5px); font-weight: 800; color: #1f1f26; cursor: pointer;
-    white-space: nowrap; box-shadow: 0 2px 0 #1f1f26;
+    padding: 4px 7px; font-size: clamp(9.5px, 2.35vw, 11.5px); font-weight: 800; color: #1f1f26; cursor: pointer;
+    white-space: nowrap; box-shadow: 0 2px 0 #1f1f26; transition: transform 0.06s;
+  }
+  #muc-history-btn { background: #fff0b3; }
+  #muc-check-btn:active, #muc-history-btn:active { transform: translateY(1.5px); box-shadow: 0 0.5px 0 #1f1f26; }
+
+  /* Güncelleme Geçmişi Modalı */
+  #changelog-modal {
+    position: absolute; inset: 0; background: rgba(10, 12, 20, 0.78);
+    display: none; align-items: center; justify-content: center; z-index: 36; padding: 4%;
+  }
+  .cl-box {
+    width: 100%; max-width: 400px; height: 84%; background: #fffcf2; border: 3px solid #1f1f26;
+    border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.52);
+  }
+  .cl-header {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2.5px solid #1f1f26; padding-bottom: 8px;
+  }
+  .cl-title { font-size: clamp(14.5px, 4vw, 18px); font-weight: 900; color: #1f1f26; }
+  #btn-close-cl {
+    background: #fa9999; border: 2px solid #1f1f26; border-radius: 6px;
+    padding: 5px 10px; font-size: clamp(11px, 2.8vw, 13px); font-weight: 800; color: #1f1f26; cursor: pointer;
+  }
+  #cl-content {
+    flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding-right: 3px;
+  }
+  .cl-card {
+    background: #ffffff; border: 2px solid #1f1f26; border-radius: 10px;
+    padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;
+    box-shadow: 0 2px 0 rgba(31,31,38,0.14);
+  }
+  .cl-card.latest { background: #fffbe6; border-color: #b37700; }
+  .cl-card-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
+  }
+  .cl-ver-badge {
+    background: #1f3373; color: #ffd93b; font-weight: 900;
+    font-size: clamp(10.5px, 2.6vw, 12.5px); padding: 2px 8px; border-radius: 6px;
+    border: 1.5px solid #1f1f26;
+  }
+  .cl-card.latest .cl-ver-badge { background: #1a8c26; color: #ffffff; }
+  .cl-ver-title {
+    font-size: clamp(11.5px, 3vw, 14px); font-weight: 900; color: #1f1f26; flex: 1;
+  }
+  .cl-list {
+    font-size: clamp(10.5px, 2.65vw, 12.5px); color: #2b3240; line-height: 1.38;
+    white-space: pre-line;
   }
   #muc-notes {
     display: none; font-size: clamp(10px, 2.5vw, 12px); color: #1f1f26;
@@ -457,7 +505,10 @@ Kitabı</button>
       <div id="menu-update-card">
         <div class="muc-row">
           <div id="muc-status">🔄 Güncellemeler denetleniyor...</div>
-          <button id="muc-check-btn">🔄 Denetle</button>
+          <div class="muc-actions">
+            <button id="muc-history-btn">📜 Geçmiş</button>
+            <button id="muc-check-btn">🔄 Denetle</button>
+          </div>
         </div>
         <div id="muc-notes"></div>
         <button id="muc-install-btn">⬇ YENİ GÜNCELLEMEYİ İNDİR VE KUR</button>
@@ -493,6 +544,16 @@ Kitabı</button>
     </div>
 
     <div class="menu-footer">TheHotel Game • Otomatik Güncelleme Destekli</div>
+  </div>
+  <!-- GÜNCELLEME GEÇMİŞİ (SÜRÜM NOTLARI) MODALI -->
+  <div id="changelog-modal">
+    <div class="cl-box">
+      <div class="cl-header">
+        <div class="cl-title">📜 Güncelleme Geçmişi</div>
+        <button id="btn-close-cl">✕ Kapat</button>
+      </div>
+      <div id="cl-content"></div>
+    </div>
   </div>
   <div id="update-modal">
     <div class="update-box">
@@ -5397,11 +5458,75 @@ refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 11;
-const APP_VERSION_NAME = "1.9.0";
+const APP_VERSION_CODE = 12;
+const APP_VERSION_NAME = "1.9.1";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
+];
+
+const CHANGELOG_HISTORY = [
+  {
+    ver: "v1.9.1",
+    title: "Güncelleme Geçmişi (Sürüm Takibi)",
+    latest: true,
+    notes: "• Ana menüdeki güncelleme kutusunun yanına '📜 Geçmiş' butonu eklendi.\n• Oyuna ilk sürümden bugüne kadar hangi güncellemede nelerin eklendiğini detaylıca takip edebileceğiniz Sürüm Geçmişi penceresi hazırlandı."
+  },
+  {
+    ver: "v1.9.0",
+    title: "Etkinlikler Sistemi (Ünlü Konuk, Düğün & Festival)",
+    notes: "• Otel 1 Yıldız (250+ İtibar) olduğunda 8-10 günde bir 2 gün süren Etkinlikler başlar ve Haftalık Gazetede önceden duyurulur.\n• 🌟 Ünlü Konuk Ziyareti: Altın taçlı ünlü misafirler ~2.1x bütçeyle gelir; yan odada 🕶️ Koruma (+80 TL/gün) veya 🤫 Sessiz Yan Oda ister. Memnun kalırsa +150 TL bahşiş ve +30 İtibar bırakır.\n• 🕶️ Koruma (Bodyguard): Yan odada kalan koruma, ünlü konuğa Seri Katil saldırırsa katili suçüstü yakalar (+200 TL, +25 İtibar).\n• 💍 Sosyete Düğünü (+%35 bütçe, +40 TL bahşiş) ve 🎪 Şehir Festivali (+%40 müşteri sıklığı, balkonlu odalarda +12 İtibar) eklendi."
+  },
+  {
+    ver: "v1.8.1",
+    title: "Yeni Oyun Butonu & Rastgele Seri Katil Harfi",
+    notes: "• Ana menüye kayıtlı oyunu silip 1. günden temiz başlangıç yapmayı sağlayan '🆕 YENİ OYUN BAŞLAT' butonu ve oyun içi onay kutusu eklendi.\n• Seri Katilin aranan baş harfi artık sabit 'S' değil; her oyunda ve her hafta A, B, C, D, E, H, K, M, S, T, Y harfleri arasından rastgele belirleniyor."
+  },
+  {
+    ver: "v1.8.0",
+    title: "Haftalık Gazete, Seri Katil, Sabotaj & Balkon",
+    notes: "• 📰 Haftalık Gazete & Muhasebe Raporu: Günlük raporun oyunu sık bölmesi kaldırıldı; 7 günde bir Haftalık Rapor ve Gazete eklendi.\n• 🔪 Seri Katil & Olay Yeri: Gazetede baş harfi ihbar edilen seri katil gece odalara sızabilir; olay yeri temizlenene kadar oda kilitlenir.\n• 🕵️ Hırsız Kamera Sabotajı: Hırsızlar gece odadaki kamerayı %45 ihtimalle bozabilir.\n• 🌅 Üst Kat Balkonları: 1. kat ve üzerindeki odalara balkon (140 TL) yapılabilir.\n• 🚶 Açık Otel Kuyruğu: Odalar dolu olsa bile otel AÇIK kaldığı sürece kapıda müşteri kuyruğu oluşur."
+  },
+  {
+    ver: "v1.7.0",
+    title: "Lojman Kulesi, Mutfak & Aşçı Sistemi",
+    notes: "• 👨‍🍳 Mutfak & Aşçı: Lojman binası ile Mutfak binası aynı kulede üst üste inşa edilebilir (ilk hangisi yapılırsa altta yer alır).\n• Lojman seviyesi arttıkça kat yüksekliği görsel olarak büyür.\n• Aşçı her gün seviyesi kadar sıcak yemek hazırlar ve oteldeki misafirlere servis ederek ek gelir + memnuniyet sağlar.\n• Asansörün sağındaki müşteri bekleme noktasına 🛎️ Misafir Kayıt Masası eklendi."
+  },
+  {
+    ver: "v1.6.0",
+    title: "Dış Binalar, Resepsiyonist & Güvenlik Görevlisi",
+    notes: "• 📦 Depo ve 🏠 Personel Lojmanı otel dışına müstakil binalar olarak taşındı.\n• 🛎️ Resepsiyonist (Sv.1-3): Müşterilerle otomatik pazarlık yapar, filtre uygular ve uygun boş odaya yerleştirir.\n• 🛡️ Güvenlik Görevlisi (Sv.1-3): Otel girişinde nöbet tutar; Hırsız, Vampir, kaçak müşteri ve tehditkar tipleri yakalar."
+  },
+  {
+    ver: "v1.5.0",
+    title: "Depo Siparişi, Kamyon Teslimatı & Kaçak Müşteriler",
+    notes: "• 🚚 Depo üzerinden %30 indirimli toptan eşya siparişi ve kamyonla koli teslimatı eklendi.\n• 🕵️ Süresi dolduğu halde odadan çıkmayıp ücret ödemeden kalmaya çalışan kaçak müşteriler eklendi.\n• 🇨🇳 Çinli misafirlerin konuşmaları tamamen Çince yapıldı ve kayıt sistemi güçlendirildi."
+  },
+  {
+    ver: "v1.4.0",
+    title: "Yeni Oyun İkonu & Modern Arayüz Tasarımı",
+    notes: "• Giriş ekranı, oyun logosu, üst bilgi çubuğu ve alt kontrol panelleri mobil ekranlara tam uyumlu şekilde baştan tasarlandı."
+  },
+  {
+    ver: "v1.3.0",
+    title: "Kayıt Sistemi, Hırsız, Vampir & Alet Sistemi",
+    notes: "• 💾 Otomatik oyun kaydı (Save/Load) ve otel ismi değiştirme eklendi.\n• 🧛 Gece gelen Vampir ve 🕵️ Hırsız müşteriler (ipucu konuşmalarıyla) eklendi.\n• 🔧 Oda bakımları ve temizlikçiler için Alet (Tamir Çantası) mekaniği eklendi."
+  },
+  {
+    ver: "v1.2.0",
+    title: "Müşteri Kitabı & Canlı Dış Dünya",
+    notes: "• 📖 Otelde konaklayan ve sırada bekleyen tüm misafirlerin isteklerini gösteren Müşteri Kitabı eklendi.\n• 🚗 Otel önündeki caddeden geçen arabalar ve gökyüzünde uçan kuş sürüleri eklendi."
+  },
+  {
+    ver: "v1.1.0",
+    title: "Ana Menü, Ses Motoru & Otomatik Güncelleme",
+    notes: "• 🎵 Oyun giriş ekranı, arka plan lobi müziği ve ses efektleri eklendi.\n• 🔄 Uygulama içinden tek tıkla yeni sürüm denetleme ve kurma (OTA) sistemi eklendi."
+  },
+  {
+    ver: "v1.0.0",
+    title: "İlk Sürüm (Temel Otel Simülasyonu)",
+    notes: "• 🏨 4 katlı otel inşası, oda eşyaları, spor salonu, tuvalet, park, doğalgaz sistemi, mevsimler ve müşteri pazarlık sistemi ile ilk sürüm yayınlandı."
+  }
 ];
 
 const startScreen = document.getElementById("start-screen");
@@ -5410,6 +5535,10 @@ const menuLogoCtx = menuLogoCanvas.getContext("2d");
 const menuVerBadge = document.getElementById("menu-ver-badge");
 const mucStatus = document.getElementById("muc-status");
 const mucCheckBtn = document.getElementById("muc-check-btn");
+const mucHistoryBtn = document.getElementById("muc-history-btn");
+const changelogModal = document.getElementById("changelog-modal");
+const clContent = document.getElementById("cl-content");
+const btnCloseCl = document.getElementById("btn-close-cl");
 const mucNotes = document.getElementById("muc-notes");
 const mucInstallBtn = document.getElementById("muc-install-btn");
 const btnStartGame = document.getElementById("btn-start-game");
@@ -5596,6 +5725,41 @@ function drawMenuLogo() {
 
 btnUpdate.onclick = () => { play("tap"); checkForUpdate(true); };
 mucCheckBtn.onclick = () => { play("tap"); checkForUpdate(true); };
+if (mucHistoryBtn) {
+  mucHistoryBtn.onclick = () => {
+    play("tap");
+    renderChangelog();
+    changelogModal.style.display = "flex";
+  };
+}
+if (btnCloseCl) {
+  btnCloseCl.onclick = () => {
+    play("tap");
+    changelogModal.style.display = "none";
+  };
+}
+if (changelogModal) {
+  changelogModal.onclick = (e) => {
+    if (e.target === changelogModal) {
+      play("tap");
+      changelogModal.style.display = "none";
+    }
+  };
+}
+
+function renderChangelog() {
+  if (!clContent) return;
+  clContent.innerHTML = CHANGELOG_HISTORY.map(item => `
+    <div class="cl-card${item.latest ? " latest" : ""}">
+      <div class="cl-card-top">
+        <span class="cl-ver-badge">${item.ver}${item.latest ? " • GÜNCEL" : ""}</span>
+        <span class="cl-ver-title">${item.title}</span>
+      </div>
+      <div class="cl-list">${item.notes}</div>
+    </div>
+  `).join("");
+}
+
 mucInstallBtn.onclick = () => { play("tap"); if (latestUpdateData) installUpdate(latestUpdateData); };
 btnCloseUpdate.onclick = () => { play("tap"); updateModal.style.display = "none"; };
 btnDoUpdate.onclick = () => { play("tap"); if (latestUpdateData) installUpdate(latestUpdateData); };

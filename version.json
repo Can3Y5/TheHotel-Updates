@@ -1,8 +1,8 @@
 {
-  "versionCode": 11,
-  "versionName": "1.9.0",
+  "versionCode": 12,
+  "versionName": "1.9.1",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.0 (Parça 2 - Etkinlikler Sistemi): Otel 1 Yıldız (250+ İtibar) olduğunda 8-10 günde bir 2 gün süren Etkinlikler (🌟 Ünlü Konuk Ziyareti, 💍 Sosyete Düğünü, 🎪 Şehir Festivali) başlıyor ve Haftalık Gazetede önceden duyuruluyor! Ünlü konuklar yan odada 🕶️ Koruma (+80 TL/gün) veya sessiz yan oda ister; şartları sağlanınca +150 TL bahşiş ve +30 İtibar bırakır."
+  "notes": "v1.9.1: Ana menüdeki güncelleme kutusunun yanına '📜 Geçmiş' (Güncelleme Geçmişi) butonu eklendi! Artık v1.0.0'dan bugüne kadar hangi sürümde oyuna nelerin eklendiğini tek tıkla detaylıca inceleyebilirsiniz."
 }
