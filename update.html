@@ -591,6 +591,14 @@ const FirstNames = [
   "Yusuf", "Yasemin", "Yiğit", "Zeynep"
 ];
 const KillerLetters = ["A", "B", "C", "D", "E", "H", "K", "M", "S", "T", "Y"];
+const VipNames = ["Tarkan", "Kıvanç", "Serenay", "Kenan", "Hadise", "Haluk", "Ajda", "Cem"];
+const EventTypes = ["VIP", "Wedding", "Festival"];
+const EventTitles = {
+  VIP: "🌟 Ünlü Konuk Ziyareti",
+  Wedding: "💍 Sosyete Düğünü",
+  Festival: "🎪 Şehir Festivali & Turist Akını"
+};
+const BodyguardDailyPrice = 80;
 const LastNames = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Aydın", "Öztürk", "Arslan", "Koç", "Polat"];
 const CnNames = ["李伟", "王芳", "张敏", "刘洋", "陈静", "杨磊"];
 const NeedyStories = [
@@ -850,10 +858,11 @@ const dormWorkers = [];
 let kitchenState = "Locked", kitchenLeft = 0, cookLevel = 0, cookPawn = null;
 const kitchenWorkers = [];
 let towerOrder = [];
-// Haftalık Gazete & Muhasebe Raporu + Seri Katil
+// Haftalık Gazete & Muhasebe Raporu + Seri Katil + Etkinlikler (v1.9.0)
 let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0 };
 let summaryOpen = false;
 let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
+let activeEvent = "", eventDaysLeft = 0, nextEventDay = 0, nextEventType = "VIP", vipSpawnedThisEvent = false;
 // Faz 2 Personeller: Resepsiyonist & Güvenlik
 let receptionistLevel = 0, recNoKids = false, recMinPrice = 0, recAllowFree = true, recAutoPlace = true, recAutoTimer = 0;
 let receptionistPawn = null;
@@ -1061,8 +1070,23 @@ function gasSlot() { return allSlots.find(s => s.type === "Gas" && s.floor.state
 function heated(s) { return s.items[IKlima] || (gasSlot() !== null && gasOn); }
 function hasReadyRoom() { return allSlots.some(s => s.Ready); }
 function freeRoomCount() { return allSlots.filter(s => s.Ready && !s.guest && !s.onFire).length; }
+function adjacentSlots(s) {
+  if (!s || !s.floor) return [];
+  return s.floor.slots.filter(sl => Math.abs(sl.idx - s.idx) === 1);
+}
+function isAdjacentNoisy(s) {
+  return adjacentSlots(s).some(sl => sl.type === "Gym" || sl.type === "Toilet" || (sl.guest && sl.guest.kids > 0));
+}
+function scheduleNextEventIfEligible() {
+  if (stars() >= 1 && !activeEvent && nextEventDay <= 0) {
+    nextEventDay = day + rndInt(8, 11);
+    nextEventType = pick(EventTypes);
+    log("⭐ Otelin 1 Yıldız oldu! Artık 8–10 günde bir özel etkinlikler başlayacak. (İlk etkinlik: Gün " + nextEventDay + " - " + EventTitles[nextEventType] + ")");
+  }
+}
 function resetSpawn() {
-  const mult = (1 + stars() * 0.3) * SeasonSpawn[seasonIdx()] * (isNight ? 0.4 : 1.0);
+  const evMult = activeEvent === "Festival" ? 1.4 : activeEvent === "Wedding" ? 1.25 : 1.0;
+  const mult = (1 + stars() * 0.3) * SeasonSpawn[seasonIdx()] * (isNight ? 0.4 : 1.0) * evMult;
   spawnTimer = rnd(4, 9) / mult;
 }
 function waitX() {
@@ -1442,6 +1466,7 @@ function applyRating(st) {
   ratingSum += st;
   ratingCount++;
   dayStats.rSum += st; dayStats.rCnt++;
+  scheduleNextEventIfEligible();
 }
 
 function unlock(i) {
@@ -1517,6 +1542,7 @@ function spawnGuest() {
 
   const g = {
     type: gType, role: "None", hint: "",
+    isVip: false, vipRule: "", bodyguardBooked: false, eventTag: "",
     chinese: false, wantsToilet: false, wantsBalcony: false, expired: false, kids: 0, overstay: 0,
     budget: 0, offer: 0, days: rndInt(1, 5), daysLeft: 0, price: 0, attempts: 0,
     wants: new Array(ItemCount).fill(false), patience: 0, maxPatience: 0,
@@ -1530,8 +1556,23 @@ function spawnGuest() {
   g.chinese = g.type === "Normal" && Math.random() < ChanceChinese;
   g.name = g.chinese ? pick(CnNames) : pick(FirstNames) + " " + pick(LastNames);
 
+  // Aktif Etkinlik Kontrolü: Ünlü Ziyareti (VIP), Sosyete Düğünü veya Festival
+  if (activeEvent === "VIP" && !vipSpawnedThisEvent && g.type !== "Needy") {
+    vipSpawnedThisEvent = true;
+    g.type = "Normal";
+    g.role = "None";
+    g.chinese = false;
+    g.isVip = true;
+    g.eventTag = "VIP";
+    g.name = "🌟 Ünlü: " + pick(VipNames);
+    g.vipRule = Math.random() < 0.5 ? "Bodyguard" : "Quiet";
+    g.hint = g.vipRule === "Bodyguard"
+      ? ("Korumamın hemen yan odamda kalmasını istiyorum (Koruma için +" + BodyguardDailyPrice + " TL/gün ek öderim)!")
+      : "Yan odalarımda gürültülü aktivite (Spor/Tuvalet) veya çocuklu aile istemiyorum, kafamı dinleyeceğim!";
+  }
+
   // Gizli Roller: Gece Vampir (%24), Seri Katil (%16 - Gazetedeki baş harfle başlar, ipucu vermez), Hırsız (%14)
-  if (g.type === "Normal" && !g.chinese) {
+  if (g.type === "Normal" && !g.chinese && !g.isVip) {
     const nightNow = isNight || brightness() < 0.45;
     const activeKiller = guests.some(x => x.role === "Killer" && x.state !== "Leaving");
     if (!activeKiller && killerCaughtWeek === 0 && Math.random() < 0.16) {
@@ -1546,15 +1587,24 @@ function spawnGuest() {
     } else if (Math.random() < 0.14) {
       g.role = "Thief";
       g.hint = pick(ThiefHints);
+    } else if (activeEvent === "Wedding") {
+      g.eventTag = "Wedding";
+      g.hint = "Şehirdeki sosyete düğünü için geldik, en güzel odanızı hazırlayın!";
+    } else if (activeEvent === "Festival") {
+      g.eventTag = "Festival";
+      g.hint = "Festival için şehre geldik! Üst katta balkonlu bir odanız varsa harika olur.";
     }
   }
 
-  g.kids = (g.type !== "Threat" && g.role === "None" && Math.random() < ChanceFamily) ? rndInt(1, 3) : 0;
-  g.wantsBalcony = (g.type === "Normal" && floors[1].state === "Built" && Math.random() < 0.35);
+  g.kids = (g.type !== "Threat" && g.role === "None" && !g.isVip && Math.random() < ChanceFamily) ? rndInt(1, 3) : 0;
+  g.wantsBalcony = (g.type === "Normal" && floors[1].state === "Built" && (g.eventTag === "Festival" || (g.isVip && Math.random() < 0.6) || Math.random() < 0.35));
 
   let wantCount = 0;
   if (g.type === "Normal") {
     let b = rndInt(40, 141) * (1 + stars() * 0.25);
+    if (g.isVip) b = rndInt(125, 185) * (1 + stars() * 0.25) * 2.1;
+    else if (g.eventTag === "Wedding") b *= 1.35;
+    else if (g.eventTag === "Festival") b *= 1.25;
     if (g.chinese) b *= 1.4;
     if (g.kids > 0) b *= 1.2;
     if (g.wantsBalcony) b *= 1.25;
@@ -1592,6 +1642,9 @@ function spawnGuest() {
   } else if (g.role === "Thief") {
     g.pawn = makePawn({ x: -760, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#282c37");
     g.pawn.isThief = true;
+  } else if (g.isVip) {
+    g.pawn = makePawn({ x: -760, y: floors[0].WalkY }, pick(Skins), "#e6bf59", "#b3246b");
+    g.pawn.isVip = true;
   } else {
     g.pawn = makeRandomPawn({ x: -760, y: floors[0].WalkY });
   }
@@ -1763,6 +1816,48 @@ function acceptGuest(g, price) {
   refresh();
 }
 
+function spawnBodyguardInRoom(vipGuest, bgRoom) {
+  if (!vipGuest || !bgRoom || !bgRoom.Ready || bgRoom.guest || bgRoom.onFire) return false;
+  const shortVip = vipGuest.name.replace("🌟 Ünlü: ", "");
+  const bg = {
+    type: "Normal", role: "Bodyguard", hint: "Ünlü konuk " + shortVip + " için koruma görevindeyim.",
+    isVip: false, vipRule: "", bodyguardBooked: false, eventTag: "VIP",
+    chinese: false, wantsToilet: false, wantsBalcony: false, expired: false, kids: 0, overstay: 0,
+    name: "🕶️ Koruma (" + shortVip + ")",
+    budget: BodyguardDailyPrice, offer: BodyguardDailyPrice,
+    days: vipGuest.daysLeft || vipGuest.days || 1,
+    daysLeft: vipGuest.daysLeft || vipGuest.days || 1,
+    price: BodyguardDailyPrice, attempts: 0,
+    wants: new Array(ItemCount).fill(false), patience: 25, maxPatience: 25,
+    atSpot: false, arrivedOnce: true, state: "ToRoom",
+    room: bgRoom, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
+    gymTimer: 999, toiletTimer: 999, parkTimer: 999,
+    crimeTimer: 999, crimeDone: true,
+    parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
+    hasBubble: false, bubbleLines: ["", ""]
+  };
+  bg.pawn = makePawn({ x: vipGuest.pawn ? vipGuest.pawn.pos.x - 45 : -500, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#1c202b");
+  bg.pawn.isThief = true;
+  bg.pawn.isBodyguard = true;
+  bgRoom.guest = bg;
+  guests.push(bg);
+  addPath(bg.pawn, floorOf(bg.pawn.pos.y), bgRoom.floor.idx, bgRoom.X0 + SlotW * 0.5);
+  bg.pawn.onArrive = () => onGuestInRoom(bg);
+  vipGuest.bodyguardBooked = true;
+  floatText(bgRoom.X0 + SlotW * 0.5, bgRoom.floor.BaseY + FloorH * 0.65, "🕶️ Koruma Yerleşti! (+" + BodyguardDailyPrice + " TL/gün)", "#1a5ccc");
+  log("🕶️ " + vipGuest.name + " yan odaya (" + bgRoom.roomNo + ". oda) Korumasını da yerleştirdi! (+" + BodyguardDailyPrice + " TL/gün ek gelir)");
+  return true;
+}
+
+function tryPlacePendingBodyguards() {
+  for (const s of allSlots) {
+    const g = s.guest;
+    if (!g || !g.isVip || g.vipRule !== "Bodyguard" || g.bodyguardBooked || g.state === "Leaving") continue;
+    const adjFree = adjacentSlots(s).find(sl => sl.Ready && !sl.guest && !sl.onFire);
+    if (adjFree) spawnBodyguardInRoom(g, adjFree);
+  }
+}
+
 function placeGuestIntoRoom(g, room, price, byAuto = false) {
   if (!g || !room || !room.Ready || room.guest || room.onFire) return false;
   const idx = queue.indexOf(g);
@@ -1786,6 +1881,17 @@ function placeGuestIntoRoom(g, room, price, byAuto = false) {
     log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " ücretsiz misafir olarak " + room.roomNo + ". odaya alındı! (+10 İtibar)");
   } else {
     log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " " + room.roomNo + ". odaya yerleştirildi (" + g.days + " gün, günlük " + g.price + " TL).");
+  }
+
+  if (g.isVip && g.vipRule === "Bodyguard") {
+    const adjFree = adjacentSlots(room).find(sl => sl.Ready && !sl.guest && !sl.onFire);
+    if (adjFree) {
+      spawnBodyguardInRoom(g, adjFree);
+    } else {
+      log("⚠️ " + g.name + " yan odada korumasının kalmasını istiyor! Yan odayı boşaltıp/açarsan koruması otomatik yerleşir.");
+    }
+  } else if (g.isVip && g.vipRule === "Quiet" && isAdjacentNoisy(room)) {
+    log("⚠️ Dikkat: " + g.name + " sessiz yan oda istemişti ama bu odanın yanında Spor/Tuvalet veya çocuklu aile var!");
   }
 
   todayServed++;
@@ -1813,6 +1919,12 @@ function bestAutoRoom(g) {
       if (g.wants[k]) sc += s.items[k] ? 10 : -4;
     }
     if (g.wantsBalcony) sc += s.hasBalcony ? 12 : -5;
+    if (g.isVip && g.vipRule === "Bodyguard") {
+      const hasAdjFree = adjacentSlots(s).some(sl => sl.Ready && !sl.guest && !sl.onFire);
+      sc += hasAdjFree ? 25 : -15;
+    } else if (g.isVip && g.vipRule === "Quiet") {
+      sc += isAdjacentNoisy(s) ? -25 : 20;
+    }
     if (sc > bestScore) { bestScore = sc; best = s; }
   }
   return best;
@@ -1942,7 +2054,7 @@ function triggerThiefAction(g) {
 function triggerKillerHunt(g) {
   const s = g.room;
   if (!s) return;
-  const victims = allSlots.filter(sl => sl.type === "Room" && sl !== s && sl.guest && sl.guest.role !== "Killer" && sl.guest.role !== "Vampire" && sl.guest.state !== "Leaving");
+  const victims = allSlots.filter(sl => sl.type === "Room" && sl !== s && sl.guest && sl.guest.role !== "Killer" && sl.guest.role !== "Vampire" && sl.guest.role !== "Bodyguard" && sl.guest.state !== "Leaving");
   if (victims.length === 0) {
     g.crimeTimer = 9;
     return;
@@ -1961,6 +2073,21 @@ function triggerKillerHunt(g) {
     const victim = vSlot.guest;
     if (!victim || victim.state === "Leaving") {
       returnToRoom(g);
+      return;
+    }
+    // Yan odada Koruma varsa Ünlü konuğu korur ve Seri Katili yakalar!
+    if (victim.isVip && adjacentSlots(vSlot).some(sl => sl.guest && sl.guest.role === "Bodyguard")) {
+      killerCaughtWeek = 1;
+      reputation += 25;
+      money += 200;
+      play("done");
+      floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🕶️ KORUMA SERİ KATİLİ YAKALADI! +200 TL", "#1a8c26");
+      log("🕶️ KAHRAMAN KORUMA! Yan odadaki koruma, " + victim.name + " odasına sızan Seri Katil " + g.name + " adlı kişiyi suçüstü yakaladı! (+200 TL ödül, +25 İtibar)");
+      if (g.room) g.room.guest = null;
+      g.room = null;
+      startLeaving(g);
+      refresh();
+      saveGame();
       return;
     }
     // Seri katil sessizce kurbanı öldürür, kurban olduğu yerde kalır ve katil kendi odasına döner!
@@ -2495,6 +2622,34 @@ function newDay() {
     if (Math.random() < ch) { startFire(s); fires++; }
   }
 
+  // Etkinlik Takvimi (1 Yıldız sonrası 8-10 günde bir)
+  if (activeEvent) {
+    eventDaysLeft--;
+    if (eventDaysLeft <= 0) {
+      log("🏁 Etkinlik sona erdi: " + (EventTitles[activeEvent] || activeEvent) + ".");
+      activeEvent = "";
+      vipSpawnedThisEvent = false;
+      if (stars() >= 1) {
+        nextEventDay = day + rndInt(8, 11);
+        nextEventType = pick(EventTypes);
+      }
+    }
+  } else if (stars() >= 1) {
+    if (nextEventDay <= 0) {
+      nextEventDay = day + rndInt(8, 11);
+      nextEventType = pick(EventTypes);
+    } else if (day >= nextEventDay) {
+      activeEvent = nextEventType || pick(EventTypes);
+      eventDaysLeft = 2;
+      vipSpawnedThisEvent = false;
+      nextEventDay = 0;
+      play("done");
+      floatText(ElevX + 360, floors[0].WalkY + 180, "🎉 ETKİNLİK: " + EventTitles[activeEvent], "#d97706");
+      log("🎉 ETKİNLİK BAŞLADI (" + EventTitles[activeEvent] + " - 2 Gün)! Detaylar için 📰 Gazete'ye bak.");
+    }
+  }
+  tryPlacePendingBodyguards();
+
   if (paid) play("coin");
   // Haftalık Gazete & Rapor: Her 7 günde bir (Gün 8, 15, 22...) otomatik açılır; oyunu her gün bölmez!
   if ((day - 1) % 7 === 0) {
@@ -2524,6 +2679,15 @@ function showWeeklyNewspaper(isWeekEnd = false) {
     ? "✅ <b>SON DAKİKA:</b> Bu hafta aranan Seri Katil otelinizdeki başarılı ihbar sayesinde yakalandı! Şehir güvende."
     : ("🚨 <b>EMNİYET UYARISI:</b> Şehirde tehlikeli bir <b>Seri Katil</b> aranıyor! Polis, zanlının isminin <b>'" + killerLetter + "'</b> harfiyle başladığını tahmin ediyor. Normal bir müşteri gibi davranıp geceleri diğer odalardaki müşterileri öldürüyor! Şüpheliyi odasından çıkarıp ihbar edene <b>+200 TL</b> ödül var.");
   h += "<div class='news-alert'>" + killerStatus + "</div>";
+  let evTxt = "";
+  if (activeEvent) {
+    evTxt = "🎉 <b>AKTİF ETKİNLİK:</b> Şu anda şehirde <b>" + EventTitles[activeEvent] + "</b> devam ediyor! (Kalan: <b>" + eventDaysLeft + " gün</b>).";
+  } else if (stars() >= 1 && nextEventDay > day) {
+    evTxt = "📅 <b>YAKLAŞAN ETKİNLİK DUYURUSU:</b> <b>" + (nextEventDay - day) + " gün sonra (Gün " + nextEventDay + ")</b> şehirde <b>" + EventTitles[nextEventType] + "</b> başlayacak! (Ünlüler yan odada koruma veya sessiz oda, turistler balkonlu oda ister).";
+  } else {
+    evTxt = "⭐ <b>ETKİNLİK TAKVİMİ:</b> Oteliniz <b>1 Yıldız (250 İtibar)</b> olduğunda 8–10 günde bir özel etkinlikler (Ünlü Konuk ve Korumaları, Sosyete Düğünü, Festival) başlayacak ve burada duyurulacak!";
+  }
+  h += "<div class='news-subbox' style='background:#eef6ff;border-color:#5b8def'>" + evTxt + "</div>";
   const corpseCount = allSlots.filter(s => s.hasCorpse).length;
   h += "<div class='news-subbox'>📌 <b>Şehir & Otel Gündemi:</b> Mevsim <b>" + SeasonNames[seasonIdx()] + "</b>. " +
     (corpseCount > 0 ? ("⚠️ Otelde <b>" + corpseCount + " olay yeri (ceset)</b> var! Odayı seçip polise bildir.") : "Otelde asayiş kontrol altında.") +
@@ -2560,11 +2724,21 @@ function closeDaySummary() {
 
 function checkout(s) {
   const g = s.guest;
+  if (g.role === "Bodyguard") {
+    log(g.name + " koruma görevini tamamlayıp ayrıldı.");
+    floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "Görev tamam!", "#1a5ccc");
+    s.guest = null; g.room = null;
+    startLeaving(g);
+    tryPlacePendingBodyguards();
+    saveGame();
+    return;
+  }
   if (g.type === "Freebie") {
     log(g.name + " (Ücretsiz Misafir) teşekkür ederek ayrıldı (Toplam +10 İtibar).");
     floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "Teşekkürler!", "#1a8c26");
     s.guest = null; g.room = null;
     startLeaving(g);
+    tryPlacePendingBodyguards();
     saveGame();
     return;
   }
@@ -2573,6 +2747,7 @@ function checkout(s) {
     floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "Çok teşekkürler!", "#1a8c26");
     s.guest = null; g.room = null;
     startLeaving(g);
+    tryPlacePendingBodyguards();
     saveGame();
     return;
   }
@@ -2586,6 +2761,44 @@ function checkout(s) {
   if (g.wantsBalcony && !s.hasBalcony) { r -= 1; reasons.push("balkon yoktu"); }
   else if (s.hasBalcony && r < 5) { r += 0.5; }
   if (allSlots.some(sl => sl.hasCorpse)) { r -= 1; reasons.push("otelde olay yeri vardı"); }
+  if (g.isVip) {
+    if (g.vipRule === "Bodyguard") {
+      if (g.bodyguardBooked) {
+        reputation += 30;
+        money += 150;
+        dayStats.income += 150;
+        reasons.push("koruması yan odada kaldı +150 TL bahşiş & +30 İtibar");
+      } else {
+        r -= 2;
+        reasons.push("yan odada koruması kalamadı");
+      }
+    } else if (g.vipRule === "Quiet") {
+      if (!isAdjacentNoisy(s)) {
+        reputation += 30;
+        money += 150;
+        dayStats.income += 150;
+        reasons.push("yan odalar sessizdi +150 TL bahşiş & +30 İtibar");
+      } else {
+        r -= 2;
+        reasons.push("yan odada gürültü/aktivite vardı");
+      }
+    }
+    // Ünlü ayrılırken yan odadaki korumasını da beraberinde götürür
+    for (const adj of adjacentSlots(s)) {
+      if (adj.guest && adj.guest.role === "Bodyguard") {
+        const bg = adj.guest;
+        adj.guest = null; bg.room = null;
+        startLeaving(bg);
+      }
+    }
+  } else if (g.eventTag === "Wedding" && r >= 4) {
+    money += 40;
+    dayStats.income += 40;
+    reasons.push("düğün bahşişi +40 TL");
+  } else if (g.eventTag === "Festival" && s.hasBalcony && r >= 4) {
+    reputation += 12;
+    reasons.push("festival balkon bonusu +12 İtibar");
+  }
   if (g.kids > 0 && parkState !== "Built") { r -= 1; reasons.push("park yoktu"); }
   if (g.price > g.budget * 0.9) { r -= 1; reasons.push("pahalıydı"); }
   if (s.maintenance < 20) { r -= 2; reasons.push("oda bakımsızdı"); }
@@ -2817,7 +3030,9 @@ function onAction(i) {
     if (i === 0) doMaint(s);
   } else if (s.type === "Room") {
     if (i === 0 && !s.hasDoor && pay(CostDoor)) {
-      s.hasDoor = true; play("build"); log(s.roomNo + ". oda için kapı alındı! Artık sağ üstten Oteli Açabilirsin."); saveGame();
+      s.hasDoor = true; play("build"); log(s.roomNo + ". oda için kapı alındı! Artık sağ üstten Oteli Açabilirsin.");
+      tryPlacePendingBodyguards();
+      saveGame();
     } else if (i === 0 && s.hasDoor && s.floor.idx >= 1 && !s.hasBalcony && pay(CostBalcony)) {
       s.hasBalcony = true; play("build"); log("🌿 " + s.roomNo + ". odaya Balkon eklendi! Balkonlu oda isteyen müşteriler memnun kalacak."); saveGame();
     } else if (i >= 1 && i <= ItemCount) {
@@ -2874,7 +3089,8 @@ function refreshHud() {
   const target = st === 0 ? Star1 : st === 1 ? Star2 : Star3;
   const isDayPart = brightness() > 0.35;
   const part = isDayPart ? "☀️ Gündüz" : "🌙 Gece";
-  topMid.textContent = "📅 Gün " + day + " • " + SeasonNames[seasonIdx()] + " • " + part + "\n⭐ " + st + "/3   🏆 " + Math.round(reputation) + "/" + target + "   📊 " + avg;
+  const evBadge = activeEvent ? (" • " + (activeEvent === "VIP" ? "🌟 Ünlü" : activeEvent === "Wedding" ? "💍 Düğün" : "🎪 Festival")) : "";
+  topMid.textContent = "📅 Gün " + day + " • " + SeasonNames[seasonIdx()] + " • " + part + evBadge + "\n⭐ " + st + "/3   🏆 " + Math.round(reputation) + "/" + target + "   📊 " + avg;
   openBtn.textContent = isOpen ? "🟢 AÇIK\n(Kapat)" : "🔴 KAPALI\n(Aç)";
   openBtn.style.background = isOpen ? "linear-gradient(180deg, #98f2a7 0%, #65d477 100%)" : "linear-gradient(180deg, #ffb3b3 0%, #f07878 100%)";
   const stayingCount = allSlots.filter(s => s.type === "Room" && s.guest).length;
@@ -2973,6 +3189,19 @@ function renderGuestBook() {
         const tag = document.createElement("span");
         tag.className = "gb-tag " + (s.hasBalcony ? "ok" : "miss");
         tag.textContent = s.hasBalcony ? "✅ Balkonlu Oda" : "❌ Balkon İstiyor (Yok)";
+        wantsWrap.appendChild(tag);
+      }
+      if (g.isVip) {
+        anyWant = true;
+        const tag = document.createElement("span");
+        if (g.vipRule === "Bodyguard") {
+          tag.className = "gb-tag " + (g.bodyguardBooked ? "ok" : "miss");
+          tag.textContent = g.bodyguardBooked ? "✅ Yan Odada Koruması Var" : "❌ Yan Odada Koruma İstiyor (Boş Oda Aç)";
+        } else {
+          const quietOk = !isAdjacentNoisy(s);
+          tag.className = "gb-tag " + (quietOk ? "ok" : "miss");
+          tag.textContent = quietOk ? "✅ Yan Odalar Sessiz" : "❌ Yan Odada Gürültü/Aktivite Var!";
+        }
         wantsWrap.appendChild(tag);
       }
       if (g.kids > 0) {
@@ -3383,6 +3612,7 @@ function wantList(g, cn) {
   for (let k = 0; k < ItemCount; k++) if (g.wants[k]) w.push(cn ? ItemCn[k] : ItemNames[k]);
   if (g.wantsToilet) w.push(cn ? "厕所" : "Tuvalet");
   if (g.wantsBalcony) w.push(cn ? "阳台" : "Balkon");
+  if (g.isVip) w.push(g.vipRule === "Bodyguard" ? "🕶️ Yan Odada Koruma" : "🤫 Sessiz Yan Oda");
   if (g.kids > 0) w.push(cn ? "公园" : "Park");
   return w.join(cn ? "、" : ", ");
 }
@@ -4223,13 +4453,27 @@ function drawPawn(p) {
   rCircle(0, 78, 25, 25, p.skin, Pencil, 2.5);
   rCircle(-10, 78, 3, 4, Pencil, null);
   rCircle(10, 78, 3, 4, Pencil, null);
-  if (p.isThief) {
+  if (p.isThief || p.isBodyguard) {
     rRect(-18, 74, 14, 8, "#111116", Pencil, 1.5);
     rRect(4, 74, 14, 8, "#111116", Pencil, 1.5);
     rRect(-4, 77, 8, 2.5, "#111116", null);
+  } else if (p.isVip) {
+    rRect(-19, 73, 15, 9, "#ffd700", Pencil, 1.5);
+    rRect(4, 73, 15, 9, "#ffd700", Pencil, 1.5);
+    rRect(-4, 77, 8, 2.5, "#ffd700", null);
   }
   rCircle(0, 97, 26, 12, p.hair, Pencil, 2);
-  if (p.isSecurity) {
+  if (p.isVip) {
+    // Ünlü konuk altın tacı
+    rRect(-14, 102, 28, 9, "#ffd700", Pencil, 1.6);
+    rCircle(-10, 111, 3.5, 3.5, "#ff4d6d", Pencil, 1);
+    rCircle(0, 113, 4, 4, "#ffd700", Pencil, 1);
+    rCircle(10, 111, 3.5, 3.5, "#ff4d6d", Pencil, 1);
+  } else if (p.isBodyguard) {
+    // Koruma kırmızı kravatı ve kulaklığı
+    rRect(-3, 36, 6, 22, "#b81d24", Pencil, 1.2);
+    rCircle(-25, 78, 3.5, 3.5, "#111116", null);
+  } else if (p.isSecurity) {
     // Güvenlik şapkası ve rozeti
     rRect(-24, 96, 48, 12, "#152238", Pencil, 2);
     rRect(-18, 93, 42, 5, "#0d1524", null);
@@ -4718,6 +4962,7 @@ function saveGame() {
       dormLeft,
       dormLevel, kitchenState, kitchenLeft, cookLevel, towerOrder: towerOrder.slice(),
       killerLetter, killerCaughtWeek, weekMurders, v181KillerRandomized: true, dayStats,
+      activeEvent, eventDaysLeft, nextEventDay, nextEventType, vipSpawnedThisEvent,
       receptionistLevel,
       recNoKids,
       recMinPrice,
@@ -4760,6 +5005,10 @@ function saveGame() {
             chinese: !!s.guest.chinese,
             wantsToilet: !!s.guest.wantsToilet,
             wantsBalcony: !!s.guest.wantsBalcony,
+            isVip: !!s.guest.isVip,
+            vipRule: s.guest.vipRule || "",
+            bodyguardBooked: !!s.guest.bodyguardBooked,
+            eventTag: s.guest.eventTag || "",
             expired: !!s.guest.expired,
             kids: s.guest.kids || 0,
             overstay: s.guest.overstay || 0,
@@ -4836,6 +5085,14 @@ function loadGame() {
     if (data.dayStats && typeof data.dayStats === "object") {
       dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation }, data.dayStats);
     }
+    activeEvent = data.activeEvent || "";
+    eventDaysLeft = data.eventDaysLeft || 0;
+    nextEventDay = data.nextEventDay || 0;
+    nextEventType = (data.nextEventType && EventTypes.includes(data.nextEventType)) ? data.nextEventType : pick(EventTypes);
+    vipSpawnedThisEvent = !!data.vipSpawnedThisEvent;
+    if (stars() >= 1 && !activeEvent && nextEventDay <= day) {
+      scheduleNextEventIfEligible();
+    }
     receptionistLevel = data.receptionistLevel || 0;
     recNoKids = !!data.recNoKids;
     recMinPrice = data.recMinPrice || 0;
@@ -4911,6 +5168,10 @@ function loadGame() {
                 chinese: !!gd.chinese,
                 wantsToilet: !!gd.wantsToilet,
                 wantsBalcony: !!gd.wantsBalcony,
+                isVip: !!gd.isVip,
+                vipRule: gd.vipRule || "",
+                bodyguardBooked: !!gd.bodyguardBooked,
+                eventTag: gd.eventTag || "",
                 expired: !!gd.expired,
                 kids: gd.kids || 0,
                 overstay: gd.overstay || 0,
@@ -4937,6 +5198,12 @@ function loadGame() {
               } else if (g.role === "Thief") {
                 g.pawn = makePawn(spawnPos, pick(Skins), "#1a1412", "#282c37");
                 g.pawn.isThief = true;
+              } else if (g.role === "Bodyguard") {
+                g.pawn = makePawn(spawnPos, pick(Skins), "#141418", "#1c2026");
+                g.pawn.isBodyguard = true;
+              } else if (g.isVip) {
+                g.pawn = makePawn(spawnPos, pick(Skins), "#2b1d0e", "#d4af37");
+                g.pawn.isVip = true;
               } else {
                 g.pawn = makeRandomPawn(spawnPos);
               }
@@ -5031,6 +5298,11 @@ function startNewGameClean() {
   killerLetter = pick(KillerLetters);
   killerCaughtWeek = 0;
   weekMurders = 0;
+  activeEvent = "";
+  eventDaysLeft = 0;
+  nextEventDay = 0;
+  nextEventType = "VIP";
+  vipSpawnedThisEvent = false;
   dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney };
   summaryOpen = false;
   document.getElementById("day-modal").style.display = "none";
@@ -5125,8 +5397,8 @@ refresh();
 requestAnimationFrame(loop);
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 10;
-const APP_VERSION_NAME = "1.8.1";
+const APP_VERSION_CODE = 11;
+const APP_VERSION_NAME = "1.9.0";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
