@@ -1,8 +1,8 @@
 {
-  "versionCode": 8,
-  "versionName": "1.7.0",
+  "versionCode": 9,
+  "versionName": "1.8.0",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.7.0: Lojman Kulesi! Lojman ve yeni Mutfak katı otelin dışında aynı kuleye üst üste kurulur (ilk kurulan altta), lojman seviyesi arttıkça katı yükselir. Aşçı (Sv.1-3) müşterilere yemek satar ve puanı artırır. Gün sonu özeti ekranı (gelir, gider, net, yorum ortalaması), misafir kayıt masası ve resepsiyon filtre düzeltmeleri."
+  "notes": "v1.8.0 (1. Paket): Haftalık Gazete & Haftalık Rapor (her 7 günde bir + sağdaki 📰 Gazete butonu), Seri Katil gizemi (gazetede baş harfi duyurulur, geceleri gizlice cinayet işler, olay yeri ve ödüllü yakalama!), Hırsız kamera sabotajı, Üst kat odalara Balkon inşa etme ve otel açıkken odalar dolu olsa bile kuyruk oluşması!"
 }
