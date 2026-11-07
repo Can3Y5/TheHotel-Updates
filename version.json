@@ -1,8 +1,8 @@
 {
-  "versionCode": 17,
-  "versionName": "1.9.9-beta",
+  "versionCode": 18,
+  "versionName": "1.9.10-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.9-beta: Başlangıç kilitlenmesi (softlock) tamamen giderildi! Koridor inşaatı artık hiçbir kural tarafından engellenmez. Zemin katta resepsiyon ve 1. oda arkasına başlangıç koridoru eklendi; mevcut kilitli kayıtlar oyuna girildiğinde otomatik olarak kurtarılır."
+  "notes": "v1.9.10-beta: Oda-koridor bağlantısı ve kapı genişliği gerçekçi ölçülere optimize edildi. 2 koridor arasındaki birleşim kemer, tavan kirişi ve flütlü duvar sütunuyla mimari olarak zenginleştirildi; kırmızı kadife yolluk koridor boyunca kesintisiz merkezlendi. Oyun başlangıcında 2 koridor oyuncu kontrolüne verildi ve adım adım yönlendirici rehberlik eklendi."
 }
