@@ -1,8 +1,8 @@
 {
-  "versionCode": 14,
-  "versionName": "1.9.6-beta",
+  "versionCode": 15,
+  "versionName": "1.9.7-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.6-beta: Personel Lojmanı (Dorm) haritada görünür hale getirildi ve istenen parsele serbestçe kurulabilmesi/taşınabilmesi eklendi! Mevcut kayıtlı oyunlardaki lojmanlar haritaya otomatik kurtarılır."
+  "notes": "v1.9.7-beta: Otel arsası 6x6 ızgaraya (36 parsel) genişletildi! Kaldırımla resepsiyon arasına yeşil çim boşluk ve taş yürüyüş yolu eklendi. Odaların kapıları sadece koridora (veya lobiye) değen kenara açılabilecek şekilde düzenlendi."
 }
