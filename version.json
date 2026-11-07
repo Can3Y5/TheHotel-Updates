@@ -1,8 +1,8 @@
 {
-  "versionCode": 12,
-  "versionName": "1.9.1",
+  "versionCode": 13,
+  "versionName": "1.9.5-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.1: Ana menüdeki güncelleme kutusunun yanına '📜 Geçmiş' (Güncelleme Geçmişi) butonu eklendi! Artık v1.0.0'dan bugüne kadar hangi sürümde oyuna nelerin eklendiğini tek tıkla detaylıca inceleyebilirsiniz."
+  "notes": "v1.9.5-beta (ÖN İZLEME / BETA TEST): Oyun baştan aşağı Grand Hotel Tycoon tarzı 2.5D İzometrik Kesit (Cutaway) Tatil Köyü grafiklerine kavuştu! Damalı mermer Büyük Lobi, açık yüzme havuzu ve şezlonglar, sol kanat Restoran & Mutfak, kesit yatak odaları & banyolar, çatı terası & barı, sevimli chibi karakterler ve tam ekran yüzen HUD arayüzü eklendi!"
 }
