@@ -2045,6 +2045,21 @@ function loadGame() {
       }
     }
 
+    // Otomatik Başlangıç Koridoru Kurtarma:
+    // Eğer zemin katta 1. Oda (Slot 31) kurulmuş ama henüz ona değen bir koridor yoksa (ör: Slot 25 veya 26 boşsa)
+    // Oyuncunun kilitlenip kalmaması için slot 25 ve 26'ya otomatik koridor atanır!
+    const room31 = floors[0].slots[31];
+    if (room31 && room31.type === "Room" && !getRoomDoorWall(room31)) {
+      if (floors[0].slots[25].type === "Empty") {
+        floors[0].slots[25].type = "Corridor";
+        floors[0].slots[25].parcelBuilt = true;
+      }
+      if (floors[0].slots[26].type === "Empty") {
+        floors[0].slots[26].type = "Corridor";
+        floors[0].slots[26].parcelBuilt = true;
+      }
+    }
+
     const cCount = Math.min(MaxCleaners, data.cleanerCount || 0);
     for (let i = 0; i < cCount; i++) {
       const p = makePawn({ x: ElevX + 110 + i * 45, y: floors[0].WalkY }, pick(Skins), pick(Hairs), "#338c99");
@@ -2163,8 +2178,13 @@ function startNewGameClean() {
     fl.workers.length = 0;
     for (let i = 0; i < 36; i++) {
       const s = fl.slots[i];
-      s.type = (f === 0 && i === 32) ? "Reception" : "Empty";
-      s.parcelBuilt = (f === 0 && (i === 32 || i === 31));
+      let t = "Empty";
+      if (f === 0) {
+        if (i === 32) t = "Reception";
+        else if (i === 26 || i === 25) t = "Corridor";
+      }
+      s.type = t;
+      s.parcelBuilt = (f === 0 && (i === 32 || i === 31 || i === 26 || i === 25));
       s.hasEnsuite = false;
       s.furnLayout = {};
       s.roomNo = 0;
@@ -4212,10 +4232,10 @@ function plantTree() {
 function checkStartupSoftlock() {
   if (!hasReadyRoom()) {
     const hasAnyRoom = allSlots.some(s => s.type === "Room" && s.floor.state === "Built");
-    const needed = hasAnyRoom ? CostDoor : (roomCost() + CostDoor);
+    const needed = hasAnyRoom ? (CostDoor + CostCorridor) : (roomCost() + CostDoor + CostCorridor);
     if (money < needed) {
       money = needed;
-      log("💡 Başlangıç Desteği: İlk odanı ve kapını kurabilmen için bütçen " + needed + " TL'ye tamamlandı.");
+      log("💡 Başlangıç Desteği: İlk odanı, koridorunu ve kapını kurabilmen için bütçen " + needed + " TL'ye tamamlandı.");
     }
   }
 }
@@ -4307,22 +4327,24 @@ function onAction(i) {
   const s = selSlot;
   if (!s) return;
   if (s.type === "Empty") {
-    const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
-    if (i === 0) {
-      if (!hasReadyRoom() && anyRoomBuilt) {
-        play("reject");
-        log("Önce kurduğun ilk odanın kapısını al (50 TL)!");
-        refresh(); return;
+    if (i === 8) {
+      if (pay(CostCorridor)) {
+        s.type = "Corridor"; s.parcelBuilt = true; builtRooms++;
+        play("build"); log("Koridor & Hol kuruldu."); saveGame(); refresh(); return;
       }
+      return;
+    }
+    if (i === 0) {
       if (pay(roomCost())) {
         s.type = "Room"; s.roomNo = ++roomCounter; builtRooms++;
         play("build"); log(s.roomNo + ". oda kuruldu. Şimdi kapısını al (50 TL)!");
-        saveGame();
+        saveGame(); refresh(); return;
       }
+      return;
     } else {
       if (!hasReadyRoom()) {
         play("reject");
-        log("Oyunun bozulmaması için önce 1. Odayı kurup Kapısını almalısın!");
+        log("Önce en az 1 odayı ve koridorunu tamamlayıp kapısını almalısın!");
         refresh(); return;
       }
       if (i === 1 && pay(gymCost())) {
@@ -5448,25 +5470,38 @@ onAction = function(i) {
         log("Önce bu parselin yanındaki (veya altındaki) parsele bina kurmalısın!");
         return;
       }
-      const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
-      if (i === 0) {
-        if (!hasReadyRoom() && anyRoomBuilt) {
-          play("reject");
-          log("Önce kurduğun ilk odanın kapısını al (50 TL)!");
-          refresh(); return;
+
+      // 1) KORİDOR & HOL (i === 8): HER ZAMAN VE ÖNCELİKLE İNŞA EDİLEBİLİR!
+      if (i === 8) {
+        if (pay(CostCorridor)) {
+          s.type = "Corridor"; s.parcelBuilt = true; builtRooms++;
+          play("build"); log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
+          refresh(); saveGame(); return;
         }
+        return;
+      }
+
+      // 2) ODA KUR (i === 0): HER ZAMAN İNŞA EDİLEBİLİR!
+      if (i === 0) {
         if (pay(roomCost())) {
           s.type = "Room"; s.parcelBuilt = true; s.roomNo = ++roomCounter; builtRooms++;
           autoArrangeRoom(s);
           furnSelectedKey = 4;
-          play("build"); log("🛏️ " + s.roomNo + ". Oda kuruldu! Şimdi Kapı al (50 TL) ve 4x4 ızgaraya eşya diz.");
+          play("build");
+          if (getRoomDoorWall(s)) {
+            log("🛏️ " + s.roomNo + ". Oda kuruldu! Şimdi Kapı al (50 TL) ve 4x4 ızgaraya eşya diz.");
+          } else {
+            log("🛏️ " + s.roomNo + ". Oda kuruldu! Odayı açmak için hemen yanına bir '🚪 Koridor & Hol' (60 TL) inşa et.");
+          }
           refresh(); saveGame();
         }
         return;
       }
+
+      // 3) DİĞER TESİSLER (Spor, Tuvalet, Mutfak vb.): En az 1 hazır oda gerektirir
       if (!hasReadyRoom()) {
         play("reject");
-        log("Oyunun bozulmaması için önce 1. Odayı kurup Kapısını almalısın!");
+        log("Önce en az 1 odayı ve koridorunu tamamlayıp kapısını almalısın!");
         refresh(); return;
       }
       if (i === 1 && pay(gymCost())) {
@@ -5720,8 +5755,8 @@ function refreshGuest() {
 }
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 16;
-const APP_VERSION_NAME = "1.9.8-beta";
+const APP_VERSION_CODE = 17;
+const APP_VERSION_NAME = "1.9.9-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
