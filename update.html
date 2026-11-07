@@ -1892,15 +1892,15 @@ function loadGame() {
           for (let i = 0; i < 25 && i < flData.slots.length; i++) {
             const sd = flData.slots[i];
             const s = fl.slots[i];
-            // v1.5.0 kayıtlarından kalan otel içi Depo / Lojman alanlarını müstakil dış binalara taşı
+            // Depo & Lojman modüler parsel tiplerini koru
             if (sd.type === "Storage") {
               storageState = "Built";
               storageLevel = sd.level || 1;
-              s.type = "Empty";
+              s.type = "Storage";
             } else if (sd.type === "Dorm") {
               dormState = "Built";
               dormLevel = sd.level || 1;
-              s.type = "Empty";
+              s.type = "Dorm";
             } else {
               s.type = sd.type || "Empty";
             }
@@ -1983,6 +1983,22 @@ function loadGame() {
             }
           }
         }
+      }
+    }
+
+    // Otomatik Lojman Kurtarma (Daha önceki kayıtlarda lojman inşa edilmiş ama parseli silinmiş veya atanmamışsa)
+    if (dormState === "Built" && !allSlots.some(s => s.type === "Dorm")) {
+      const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+      if (cand) {
+        cand.type = "Dorm";
+        cand.parcelBuilt = true;
+      }
+    }
+    if (storageState === "Built" && !allSlots.some(s => s.type === "Storage")) {
+      const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+      if (cand) {
+        cand.type = "Storage";
+        cand.parcelBuilt = true;
       }
     }
 
@@ -2279,6 +2295,13 @@ function finishStorage() {
   storageState = "Built";
   for (const w of storageWorkers) destroyPawn(w);
   storageWorkers.length = 0;
+  if (!allSlots.some(s => s.type === "Storage")) {
+    const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+    if (cand) {
+      cand.type = "Storage";
+      cand.parcelBuilt = true;
+    }
+  }
   play("done");
   log("📦 Depo binası tamamlandı (kapasite " + StorageCap[storageLevel] + ")! Artık indirimli eşya siparişi verebilirsin.");
   refresh(); saveGame();
@@ -2305,6 +2328,13 @@ function finishDorm() {
   dormState = "Built";
   for (const w of dormWorkers) destroyPawn(w);
   dormWorkers.length = 0;
+  if (!allSlots.some(s => s.type === "Dorm")) {
+    const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+    if (cand) {
+      cand.type = "Dorm";
+      cand.parcelBuilt = true;
+    }
+  }
   play("done");
   log("🏠 Personel Lojmanı binası tamamlandı (kapasite " + staffCap() + " personel, maaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ")!");
   refresh(); saveGame();
@@ -4197,7 +4227,25 @@ function onAction(i) {
       if (i === 0) tryBuildDorm();
     } else if (dormState === "Built") {
       if (i === 0) upgradeDorm();
-      else if (i === 1) selectMode("Staff");
+      else if (i === 1) {
+        const dormS = allSlots.find(sl => sl.type === "Dorm");
+        if (dormS) {
+          selectSlot(dormS);
+          if (typeof focusIsoSlot === "function") focusIsoSlot(dormS);
+        } else {
+          const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+          if (cand) {
+            cand.type = "Dorm";
+            cand.parcelBuilt = true;
+            selectSlot(cand);
+            if (typeof focusIsoSlot === "function") focusIsoSlot(cand);
+            play("done");
+            log("🏠 Personel Lojmanı haritaya yerleştirildi!");
+          } else {
+            log("⚠️ Haritada lojman koyacak boş inşa edilebilir parsel bulunamadı.");
+          }
+        }
+      } else if (i === 2) selectMode("Staff");
     }
     refresh(); return;
   }
@@ -5111,17 +5159,21 @@ function refreshPanel() {
       setAct(2, "👷 Personel Yönetimi", true, true);
     }
   } else if (sel === "Dorm") {
-    if (dormState === "Locked") {
-      infoText.textContent = "🏠 Personel Lojmanı  •  Bedel: " + CostDorm + " TL\nTemizlikçi, Resepsiyonist, Güvenlik ve Aşçı için personel kapasitesini artırır ve maaşları düşürür.";
+    const dormS = allSlots.find(sl => sl.type === "Dorm");
+    if (dormState === "Locked" && !dormS) {
+      infoText.textContent = "🏠 Personel Lojmanı  •  Bedel: " + CostDorm + " TL\nTemizlikçi, Resepsiyonist, Güvenlik ve Aşçı için personel kapasitesini artırır ve maaşları düşürür.\nHaritada boş bir parsele dokunup 'Lojman Binası' butonuna basarak da kurabilirsin!";
       setAct(0, "🏗️ Lojman Binası Kur\n" + CostDorm + " TL", true, readyOnce);
     } else if (dormState === "Building") {
       infoText.textContent = "🏗️ Personel Lojmanı inşa ediliyor... Kalan: " + Math.ceil(dormLeft) + " sn";
     } else {
-      infoText.textContent = "🏠 Personel Lojmanı Sv." + dormLevel + "  •  Kapasite: " + totalStaffCount() + "/" + staffCap() +
-        "  •  Maaş İndirimi: -%" + Math.round((1 - staffWageMult()) * 100);
+      const dormPosStr = dormS ? ("(" + (dormS.floor.idx + 1) + ". Kat • Parsel " + (parcelCoords(dormS.idx).gu + 1) + "," + (parcelCoords(dormS.idx).gv + 1) + ")") : "(Haritaya yerleştirilmedi)";
+      infoText.textContent = "🏠 Personel Lojmanı Sv." + dormLevel + " " + dormPosStr + "  •  Kapasite: " + totalStaffCount() + "/" + staffCap() +
+        "  •  Maaş İndirimi: -%" + Math.round((1 - staffWageMult()) * 100) +
+        "\n💡 İpucu: Haritada boş bir parsele dokunup '🔄 Lojmanı Buraya Taşı' butonuyla yerini serbestçe değiştirebilirsin.";
       if (dormLevel < 3) setAct(0, "⬆️ Yükselt Sv." + (dormLevel + 1) + "\n" + DormUpCost[dormLevel + 1] + " TL", true, true);
       else setAct(0, "✅ Son Seviye", true, false, true);
-      setAct(1, "👷 Personel Yönetimi", true, true);
+      setAct(1, dormS ? "📍 Haritada Göster" : "📍 Boş Parsele Yerleştir", true, true);
+      setAct(2, "👷 Personel Yönetimi", true, true);
     }
   } else if (sel === "Ach") {
     let t = "🏆 Başarılar  (Bugün alınan müşteri: " + todayServed + "/10)";
@@ -5171,8 +5223,14 @@ function refreshPanel() {
       if (cur.floor.idx === 0) {
         setAct(3, hasKitchen() ? "✅ Restoran Var" : ("🍳 Restoran & Mutfak\n" + CostKitchen + " TL"), true, canBuildHere && readyOnce && !hasKitchen(), hasKitchen());
         setAct(4, parkState === "Built" ? "✅ Havuz Var" : ("🏊 Açık Havuz & Park\n" + ParkCost + " TL"), true, canBuildHere && readyOnce && parkState === "Locked", parkState === "Built");
-        setAct(5, hasStorage() ? "✅ Depo Var" : ("📦 Depo Binası\n" + CostStorage + " TL"), true, canBuildHere && readyOnce && !hasStorage(), hasStorage());
-        setAct(6, hasDorm() ? "✅ Lojman Var" : ("🏠 Lojman Binası\n" + CostDorm + " TL"), true, canBuildHere && readyOnce && !hasDorm(), hasDorm());
+
+        const existingStorage = allSlots.find(sl => sl.type === "Storage");
+        const storageLbl = existingStorage ? "🔄 Depoyu Buraya Taşı\n(Ücretsiz)" : (storageState === "Built" ? "📍 Depoyu Buraya Kur\n(Ücretsiz)" : ("📦 Depo Binası\n" + CostStorage + " TL"));
+        setAct(5, storageLbl, true, canBuildHere && readyOnce);
+
+        const existingDorm = allSlots.find(sl => sl.type === "Dorm");
+        const dormLbl = existingDorm ? "🔄 Lojmanı Buraya Taşı\n(Ücretsiz)" : (dormState === "Built" ? "📍 Lojmanı Buraya Kur\n(Ücretsiz)" : ("🏠 Lojman Binası\n" + CostDorm + " TL"));
+        setAct(6, dormLbl, true, canBuildHere && readyOnce);
       } else {
         setAct(3, "🏖️ Çatı Terası & Bar\n" + CostRoofTerrace + " TL", true, canBuildHere && readyOnce);
         const nextFl = floors.find(f => f.state === "Locked");
@@ -5201,10 +5259,13 @@ function refreshPanel() {
       if (storageLevel < 3) setAct(1, "⬆️ Depo Sv." + (storageLevel + 1) + "\n" + StorageUpCost[storageLevel + 1] + " TL", true, true);
       else setAct(1, "✅ Son Seviye", true, false, true);
     } else if (cur.type === "Dorm") {
-      infoText.textContent = "🏠 Personel Lojmanı Sv." + dormLevel + " " + coordStr + "  •  Personel Kapasitesi: " + totalStaffCount() + "/" + staffCap();
+      infoText.textContent = "🏠 Personel Lojmanı Sv." + dormLevel + " " + coordStr + "  •  Personel Kapasitesi: " + totalStaffCount() + "/" + staffCap() +
+        "  •  Maaş İndirimi: -%" + Math.round((1 - staffWageMult()) * 100) +
+        "\n💡 İpucu: Lojmanı başka bir parsele taşımak için haritadaki herhangi bir boş parsele dokunup '🔄 Lojmanı Buraya Taşı' butonuna bas!";
       if (dormLevel < 3) setAct(0, "⬆️ Lojman Sv." + (dormLevel + 1) + "\n" + DormUpCost[dormLevel + 1] + " TL", true, true);
       else setAct(0, "✅ Son Seviye", true, false, true);
-      setAct(1, "👷 Personel Yönetimi", true, true);
+      setAct(1, "🔄 Başka Parsele Taşı", true, true);
+      setAct(2, "👷 Personel Yönetimi", true, true);
     } else if (cur.type === "Reception") {
       const rLv = receptionistLevel;
       const bonusTxt = rLv === 0 ? "Resepsiyonist yok (Çince çeviri ve filtreler kapalı)" :
@@ -5373,15 +5434,63 @@ onAction = function(i) {
           play("done"); log("🏊 Açık Yüzme Havuzu & Park seçtiğin parsele kuruldu!");
           refresh(); saveGame(); return;
         }
-        if (i === 5 && !hasStorage() && pay(CostStorage)) {
-          s.type = "Storage"; s.parcelBuilt = true; storageState = "Built";
-          play("done"); log("📦 Depo Binası seçtiğin parsele kuruldu!");
-          refresh(); saveGame(); return;
+        if (i === 5) {
+          const existingStorage = allSlots.find(sl => sl.type === "Storage");
+          if (existingStorage) {
+            existingStorage.type = "Empty";
+            existingStorage.parcelBuilt = false;
+            s.type = "Storage";
+            s.parcelBuilt = true;
+            storageState = "Built";
+            play("done");
+            log("📦 Depo Binası yeni parsele taşındı!");
+            selectSlot(s);
+            refresh(); saveGame(); return;
+          } else if (storageState === "Built") {
+            s.type = "Storage";
+            s.parcelBuilt = true;
+            play("done");
+            log("📦 Depo Binası bu parsele yerleştirildi!");
+            selectSlot(s);
+            refresh(); saveGame(); return;
+          } else if (pay(CostStorage)) {
+            s.type = "Storage";
+            s.parcelBuilt = true;
+            storageState = "Built";
+            play("done");
+            log("📦 Depo Binası seçtiğin parsele kuruldu!");
+            selectSlot(s);
+            refresh(); saveGame(); return;
+          }
         }
-        if (i === 6 && !hasDorm() && pay(CostDorm)) {
-          s.type = "Dorm"; s.parcelBuilt = true; dormState = "Built";
-          play("done"); log("🏠 Personel Lojmanı seçtiğin parsele kuruldu!");
-          refresh(); saveGame(); return;
+        if (i === 6) {
+          const existingDorm = allSlots.find(sl => sl.type === "Dorm");
+          if (existingDorm) {
+            existingDorm.type = "Empty";
+            existingDorm.parcelBuilt = false;
+            s.type = "Dorm";
+            s.parcelBuilt = true;
+            dormState = "Built";
+            play("done");
+            log("🏠 Personel Lojmanı yeni parsele taşındı!");
+            selectSlot(s);
+            refresh(); saveGame(); return;
+          } else if (dormState === "Built") {
+            s.type = "Dorm";
+            s.parcelBuilt = true;
+            play("done");
+            log("🏠 Personel Lojmanı bu parsele yerleştirildi!");
+            selectSlot(s);
+            refresh(); saveGame(); return;
+          } else if (pay(CostDorm)) {
+            s.type = "Dorm";
+            s.parcelBuilt = true;
+            dormState = "Built";
+            play("done");
+            log("🏠 Personel Lojmanı seçtiğin parsele kuruldu!");
+            selectSlot(s);
+            refresh(); saveGame(); return;
+          }
         }
       } else {
         if (i === 3 && pay(CostRoofTerrace)) {
@@ -5420,7 +5529,11 @@ onAction = function(i) {
     }
     if (s.type === "Dorm" && i !== ActCount - 1) {
       if (i === 0) upgradeDorm();
-      else if (i === 1) selectMode("Staff");
+      else if (i === 1) {
+        play("tap");
+        log("📍 Lojmanı taşımak istediğin boş parsele dokun ve '🔄 Lojmanı Buraya Taşı' butonuna bas!");
+      }
+      else if (i === 2) selectMode("Staff");
       refresh(); return;
     }
     if (s.type === "Reception" && i === 6) {
@@ -5551,8 +5664,8 @@ function refreshGuest() {
 }
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 13;
-const APP_VERSION_NAME = "1.9.5-beta";
+const APP_VERSION_CODE = 14;
+const APP_VERSION_NAME = "1.9.6-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -7018,11 +7131,48 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
 
   // 6) Personel Lojmanı Parseli (Dorm)
   if (s.type === "Dorm") {
-    const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#e3d6c1", "#c4b59d", "#ab9b82", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
-    drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, "#6e473b", "#f2e8d8", "#cfbda2", false, false, 0);
-    isoBox(u0, v0, u0 + 12, v1, z0, z1, "#6e473b", "#cfbda2", "#f2e8d8", OUTLINE_COL, 2);
-    isoBox(u0 + 28, v0 + 26, u0 + 108, v0 + 78, z0 + 2, z0 + 22, "#ffffff", "#8ab8e6", "#6b9bc9", OUTLINE_COL, 1.6);
-    isoBox(u0 + 28, v0 + 105, u0 + 108, v0 + 157, z0 + 2, z0 + 22, "#ffffff", "#9be3af", "#72c488", OUTLINE_COL, 1.6);
+    const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#e0d3be", "#c4b59d", "#ab9b82", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+    // Şık ahşap parke zemin kaplaması
+    const steps = 4, du = (u1 - u0) / steps, dv = (v1 - v0) / steps;
+    for (let iu = 0; iu < steps; iu++) {
+      for (let iv = 0; iv < steps; iv++) {
+        const col = (iu + iv) % 2 === 0 ? "#eedfca" : "#e4d3bc";
+        isoQuad(u0 + iu * du, v0 + iv * dv, u0 + (iu + 1) * du, v0 + (iv + 1) * dv, z0, col, "rgba(120,90,60,0.15)", 0.8);
+      }
+    }
+    // Arka ve sol bölme duvarları
+    drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, "#5c3d2e", "#eddcc8", "#cfbda2", false, false, 0);
+    isoBox(u0, v0, u0 + 12, v1, z0, z1, "#5c3d2e", "#cfbda2", "#eddcc8", OUTLINE_COL, 2);
+
+    // 1. Personel Ranzası (Ahşap çerçeve, mavi nevresim & beyaz yastık)
+    isoBox(u0 + 24, v0 + 22, u0 + 106, v0 + 74, z0, z0 + 18, "#ffffff", "#60a5fa", "#3b82f6", OUTLINE_COL, 1.5);
+    isoBox(u0 + 24, v0 + 22, u0 + 44, v0 + 74, z0 + 18, z0 + 24, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2); // Yastık
+    // Ranza Üst Katı (Sv.2+)
+    if (dormLevel >= 2) {
+      isoBox(u0 + 24, v0 + 22, u0 + 106, v0 + 74, z0 + 36, z0 + 48, "#ffffff", "#93c5fd", "#60a5fa", OUTLINE_COL, 1.3);
+      isoBox(u0 + 22, v0 + 20, u0 + 28, v0 + 26, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
+      isoBox(u0 + 102, v0 + 20, u0 + 108, v0 + 26, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
+    }
+
+    // 2. Personel Yatağı / Ranzası (Yeşil nevresim)
+    isoBox(u0 + 24, v0 + 102, u0 + 106, v0 + 154, z0, z0 + 18, "#ffffff", "#4ade80", "#22c55e", OUTLINE_COL, 1.5);
+    isoBox(u0 + 24, v0 + 102, u0 + 44, v0 + 154, z0 + 18, z0 + 24, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
+    if (dormLevel >= 3) {
+      isoBox(u0 + 24, v0 + 102, u0 + 106, v0 + 154, z0 + 36, z0 + 48, "#ffffff", "#86efac", "#4ade80", OUTLINE_COL, 1.3);
+      isoBox(u0 + 22, v0 + 100, u0 + 28, v0 + 106, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
+      isoBox(u0 + 102, v0 + 100, u0 + 108, v0 + 106, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
+    }
+
+    // Personel Soyunma Dolapları (Metal Locker)
+    isoBox(u0 + 128, v0 + 20, u0 + 168, v0 + 64, z0, z0 + 44, "#64748b", "#475569", "#334155", OUTLINE_COL, 1.4);
+    isoBox(u0 + 128, v0 + 41, u0 + 168, v0 + 43, z0, z0 + 44, "#1e293b", "#0f172a", "#020617", null, 0); // Bölme çizgisi
+
+    // Personel Dinlenme Masası & Kahve Köşesi
+    isoBox(u0 + 124, v0 + 102, u0 + 164, v0 + 152, z0, z0 + 20, "#d97706", "#b45309", "#92400e", OUTLINE_COL, 1.4);
+    // Masa üstü kupası & radyo
+    isoBox(u0 + 138, v0 + 115, u0 + 148, v0 + 125, z0 + 20, z0 + 28, "#f8fafc", "#ef4444", "#dc2626", null, 0);
+    isoBox(u0 + 136, v0 + 132, u0 + 152, v0 + 146, z0 + 20, z0 + 29, "#1e293b", "#334155", "#475569", null, 0);
+
     isoLabel("🏠 LOJMAN Sv." + dormLevel + " (" + totalStaffCount() + "/" + staffCap() + ")", u0 + 52, v0 + 52, z0 + 88, 11, "#3b1e54", "#f3e8ff", 6, 2.5);
     addHitPoly(poly, () => {
       selectSlot(s);
