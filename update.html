@@ -1571,6 +1571,7 @@ let furnRot = 0;            // 0: Yatay, 1: Dikey
 
 const IBanyo = 9;
 const CostEnsuite = 90;
+const CostElevator = 150;
 const CostRoofTerrace = 180;
 const CostCorridor = 60;
 
@@ -1585,7 +1586,7 @@ const ITEM_FOOTPRINTS = {
   6: { w: 1, h: 1, name: "TV (1x1)", icon: "📺", defU: 3, defV: 3, wall: false },
   7: { w: 1, h: 1, name: "Klima", icon: "❄️", defU: 1, defV: 0, wall: true },
   8: { w: 1, h: 1, name: "Buzdolabı (1x1)", icon: "🧊", defU: 2, defV: 3, wall: false },
-  9: { w: 2, h: 2, name: "Özel Banyo (2x2)", icon: "🚿", defU: 0, defV: 0, wall: false }
+  9: { w: 2, h: 1, name: "Özel Banyo (2x1)", icon: "🚿", defU: 0, defV: 0, wall: false }
 };
 
 function ensureRoomFurnLayout(s) {
@@ -1678,7 +1679,39 @@ function parcelCoords(idx) {
 function isRoofedStructure(type) {
   return type === "Room" || type === "Reception" || type === "Kitchen" ||
          type === "Storage" || type === "Dorm" || type === "Gym" ||
-         type === "Toilet" || type === "Gas" || type === "Corridor";
+         type === "Toilet" || type === "Gas" || type === "Corridor" || type === "Elevator";
+}
+
+function hasAdjacentCorridor(slot) {
+  if (!slot) return false;
+  const { gu, gv } = parcelCoords(slot.idx);
+  const fl = slot.floor;
+  if (!fl) return false;
+  const back = (gu > 0) ? fl.slots[(gu - 1) * 6 + gv] : null;
+  const right = (gv < 5) ? fl.slots[gu * 6 + (gv + 1)] : null;
+  const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
+  const front = (gu < 5) ? fl.slots[(gu + 1) * 6 + gv] : null;
+  return isCorridor(back) || isCorridor(right) || isCorridor(left) || isCorridor(front);
+}
+
+function getElevatorDoorWall(slot) {
+  if (!slot) return "front";
+  const { gu, gv } = parcelCoords(slot.idx);
+  const fl = slot.floor;
+  if (!fl) return "front";
+  const front = (gu < 5) ? fl.slots[(gu + 1) * 6 + gv] : null;
+  const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
+  const right = (gv < 5) ? fl.slots[gu * 6 + (gv + 1)] : null;
+  const back = (gu > 0) ? fl.slots[(gu - 1) * 6 + gv] : null;
+  if (isCorridor(front)) return "front";
+  if (isCorridor(left)) return "left";
+  if (isCorridor(right)) return "right";
+  if (isCorridor(back)) return "back";
+  return "front";
+}
+
+function hasElevator() {
+  return allSlots.some(sl => sl.type === "Elevator" && sl.floor.state === "Built");
 }
 
 // Bir parselin koridor olup olmadığını kontrol eder (Sadece ve sadece Koridor, Resepsiyon DEĞİL)
@@ -4194,6 +4227,11 @@ function doMaint(s) {
 function tryBuildFloor(fl) {
   const n = fl.idx;
   if (fl.state !== "Locked") return;
+  if (n > 0 && !hasElevator()) {
+    play("reject");
+    log("⚠️ Üst katları (" + (n + 1) + ". Kat) açabilmek için önce oteline bir '🛗 Asansör' (150 TL) kurmalısın!");
+    return;
+  }
   if (stars() < n) { log(n + ". kat için " + n + " yıldız gerekli (itibar " + StarTargets[n - 1] + ")."); return; }
   if (floors[n - 1].state !== "Built") { log("Önce alttaki katı tamamla."); return; }
   if (!pay(FloorCost[n])) return;
@@ -5323,11 +5361,19 @@ function refreshPanel() {
         setAct(3, "🏖️ Çatı Terası & Bar\n" + CostRoofTerrace + " TL", true, canBuildHere && readyOnce);
         const nextFl = floors.find(f => f.state === "Locked");
         if (nextFl) {
-          setAct(4, "🏢 " + (nextFl.idx + 1) + ". Katı Aç\n" + FloorCost[nextFl.idx] + " TL", true, stars() >= nextFl.idx && floors[nextFl.idx - 1].state === "Built");
+          const elevOk = hasElevator();
+          const flLbl = elevOk ? ("🏢 " + (nextFl.idx + 1) + ". Katı Aç\n" + FloorCost[nextFl.idx] + " TL") : ("🏢 " + (nextFl.idx + 1) + ". Katı Aç\n(Asansör Şart)");
+          setAct(4, flLbl, true, stars() >= nextFl.idx && floors[nextFl.idx - 1].state === "Built" && elevOk);
         }
       }
       setAct(7, "🔥 Doğalgaz Odası\n" + gasCost() + " TL", true, canBuildHere && readyOnce && !gasSlot());
       setAct(8, "🚪 Koridor & Hol\n" + CostCorridor + " TL", true, canBuildHere);
+      const adjCorr = hasAdjacentCorridor(cur);
+      const elevLbl = adjCorr ? ("🛗 Asansör\n" + CostElevator + " TL") : "🛗 Asansör\n(Koridor Gerekli)";
+      setAct(9, elevLbl, true, canBuildHere && readyOnce && adjCorr);
+    } else if (cur.type === "Elevator") {
+      infoText.textContent = "🛗 Lüks Otel Asansörü " + coordStr +
+        "\nKatlar arasında hızlı ve konforlu ulaşım sağlar. Üst kat odalarının açılması ve müşteri memnuniyeti için gereklidir.";
     } else if (cur.type === "Corridor") {
       infoText.textContent = "🚪 Koridor & Lüks Kat Holü " + coordStr +
         "\nOdaları, asansörü ve tesisleri birbirine bağlar. Konukların ve personelin rahatça dolaşmasını sağlar.";
@@ -5394,7 +5440,7 @@ function refreshPanel() {
       ensureRoomFurnLayout(cur);
       const have = [];
       for (let k = 0; k < ItemCount; k++) if (cur.items[k]) have.push(ItemNames[k]);
-      if (cur.hasEnsuite) have.push("Özel Banyo (2x2)");
+      if (cur.hasEnsuite) have.push("Özel Banyo (2x1)");
       const items = have.length > 0 ? have.join(", ") : "Yok";
       let match = "";
       if (pending && cur.Ready) {
@@ -5424,7 +5470,7 @@ function refreshPanel() {
       } else if (cur.floor.idx >= 1 && !cur.hasBalcony) {
         setAct(0, "🌿 Balkon Yap\n" + CostBalcony + " TL", true, true, false);
       } else {
-        setAct(0, cur.hasEnsuite ? "🚿 Banyo (2x2)\n(Taşı / Seç)" : ("🚿 Özel Banyo (2x2)\n" + CostEnsuite + " TL"), true, readyOnce, cur.hasEnsuite, furnSelectedKey === IBanyo);
+        setAct(0, cur.hasEnsuite ? "🚿 Banyo (2x1)\n(Taşı / Seç)" : ("🚿 Özel Banyo (2x1)\n" + CostEnsuite + " TL"), true, readyOnce, cur.hasEnsuite, furnSelectedKey === IBanyo);
       }
 
       for (let k = 0; k < ItemCount; k++) {
@@ -5504,6 +5550,22 @@ onAction = function(i) {
           } else {
             log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
           }
+          refresh(); saveGame(); return;
+        }
+        return;
+      }
+
+      // ASANSÖR İNŞA ET (i === 9): Koridora bağlı olma zorunluluğuyla!
+      if (i === 9) {
+        if (!hasAdjacentCorridor(s)) {
+          play("reject");
+          log("⚠️ Asansör inşa edebilmek için bu parselin hemen yanına bir '🚪 Koridor & Hol' (60 TL) kurmalısın!");
+          return;
+        }
+        if (pay(CostElevator)) {
+          s.type = "Elevator"; s.parcelBuilt = true; builtRooms++;
+          play("build");
+          log("🛗 Lüks Otel Asansörü kuruldu! Katlar arası hızlı geçiş ve üst kat açılışı sağlandı.");
           refresh(); saveGame(); return;
         }
         return;
@@ -5783,8 +5845,8 @@ function refreshGuest() {
 }
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 18;
-const APP_VERSION_NAME = "1.9.10-beta";
+const APP_VERSION_CODE = 19;
+const APP_VERSION_NAME = "1.9.11-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -7140,33 +7202,57 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
       isoLabel("★ RESEPSİYON ★", u1, (v0 + v1) * 0.5, z0 + 73, 9, "#ffd700", null, 0, 0);
     }
 
-    // C) Arka Duvar (u = u0): Lüks Akustik Ahşap Kaplama & Bütünleşik Asansör
-    isoBox(u0, v0, u0 + 12, v1, z0, z1, "#8c583a", "#d9c2a6", "#cbb092", OUTLINE_COL, 2);
-    // Ahşap lambri & süpürgelik
-    isoBox(u0 + 11, v0, u0 + 14, v1, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
+    // C) Arka Duvar (u = u0): Asansör kaldırıldı! Arkada Koridor varsa KAPISIZ KEMERLİ GİRİŞ açılır, yoksa sağlam duvardır.
+    const hasBackCorr = !!(backSlot && backSlot.type === "Corridor");
+    if (!hasBackCorr) {
+      // Arkada koridor YOK: Tamamen kapalı sağlam lobi arka duvarı & süpürgelik
+      isoBox(u0, v0, u0 + 12, v1, z0, z1, "#8c583a", "#d9c2a6", "#cbb092", OUTLINE_COL, 2);
+      isoBox(u0 + 11, v0, u0 + 14, v1, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
+      isoBox(u0 + 11, v0, u0 + 14, v1, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
 
-    // Dikey Akustik Ahşap Çıtalar & Altın Logo
-    for (let su = u0 + 24; su <= u0 + 64; su += 14) {
-      isoBox(su, v0 + 10, su + 7, v0 + 14, z0 + 10, z1 - 10, "#b57945", "#9e6637", "#7d4e27", null, 0);
+      // Resepsiyon Arkası Dikey Akustik Ahşap Çıtalar
+      for (let sv = v0 + 20; sv <= v0 + 60; sv += 10) {
+        isoBox(u0 + 11, sv, u0 + 15, sv + 5, z0 + 10, z1 - 10, "#b57945", "#9e6637", "#7d4e27", null, 0);
+      }
+      // Altın Logo ve Otel Adı Paneli
+      isoBox(u0 + 11, (v0 + v1) * 0.5 - 20, u0 + 15, (v0 + v1) * 0.5 + 20, z0 + 50, z0 + 72, "#ffd700", "#e6bd1a", "#b38f09", OUTLINE_COL, 1.3);
+      isoLabel("★ " + (hotelName || "HOTEL").toUpperCase() + " ★", u0 + 16, (v0 + v1) * 0.5, z0 + 61, 8.5, "#3a281f", null, 0, 0);
+      // İkiz Pirinç Aplik Lambalar
+      isoBox(u0 + 11, v0 + 35, u0 + 16, v0 + 43, z0 + 48, z0 + 58, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
+      isoBox(u0 + 11, v1 - 45, u0 + 16, v1 - 37, z0 + 48, z0 + 58, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
+    } else {
+      // Arkada KORİDOR VAR: Kapısız Lüks Kemerli Giriş Açıklığı (v0 + 76 .. v0 + 154 = 78 birim ferah geçiş!)
+      const av0 = v0 + 76, av1 = v0 + 154;
+      // 1) Sol Arka Duvar (v0 .. av0 = Banko arkası sağlam duvar)
+      isoBox(u0, v0, u0 + 12, av0, z0, z1, "#8c583a", "#d9c2a6", "#cbb092", OUTLINE_COL, 2);
+      isoBox(u0 + 11, v0, u0 + 14, av0, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
+      isoBox(u0 + 11, v0, u0 + 14, av0, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
+      // Banko Arkası Logo
+      isoBox(u0 + 11, v0 + 24, u0 + 15, v0 + 54, z0 + 48, z0 + 64, "#ffd700", "#e6bd1a", "#b38f09", OUTLINE_COL, 1.2);
+      isoLabel("HOTEL", u0 + 16, v0 + 39, z0 + 56, 7.5, "#3a281f", null, 0, 0);
+
+      // 2) Sağ Arka Duvar (av1 .. v1 = Sağ köşe sağlam duvar)
+      isoBox(u0, av1, u0 + 12, v1, z0, z1, "#8c583a", "#d9c2a6", "#cbb092", OUTLINE_COL, 2);
+      isoBox(u0 + 11, av1, u0 + 14, v1, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
+      isoBox(u0 + 11, av1, u0 + 14, v1, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
+
+      // 3) Kemer Üst Başlığı (av0 .. av1, z0 + 68 .. z1) - Kapısız Giriş!
+      isoBox(u0, av0, u0 + 12, av1, z0 + 68, z1, "#8c583a", "#d9c2a6", "#cbb092", OUTLINE_COL, 1.8);
+      // Kemer Taç Pervazı & Kilit Taşı
+      isoBox(u0 - 1, av0 - 2, u0 + 14, av1 + 2, z0 + 66, z0 + 70, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.2);
+      isoBox(u0 - 0.5, (av0 + av1) * 0.5 - 5, u0 + 13.5, (av0 + av1) * 0.5 + 5, z0 + 64, z0 + 73, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.1);
+      // Geçiş Yönlendirme Tabelası
+      isoBox(u0 + 11, (av0 + av1) * 0.5 - 26, u0 + 14, (av0 + av1) * 0.5 + 26, z0 + 73, z0 + 83, "#3a281f", "#1e293b", "#0f172a", OUTLINE_COL, 1);
+      isoLabel("🚪 KAT HOLÜ & ODALAR ➔", u0 + 15, (av0 + av1) * 0.5, z0 + 78, 7.5, "#ffd700", null, 0, 0);
+
+      // 4) Kemer Taşıyıcı Sütunları
+      isoBox(u0 - 1, av0 - 3, u0 + 13, av0 + 2, z0, z0 + 68, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.3);
+      isoBox(u0 - 1, av1 - 2, u0 + 13, av1 + 3, z0, z0 + 68, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.3);
+
+      // 5) Zemin Mermer Geçiş Eşiği & Yolluk Bağlantısı
+      isoQuad(u0 - 2, av0 + 4, u0 + 14, av1 - 4, z0 + 0.3, "#f8f3ea", "rgba(180, 155, 125, 0.35)", 1);
+      isoQuad(u0 - 1, av0 + 14, u0 + 13, av1 - 14, z0 + 0.45, "#991b1b", "#ffd700", 0.8);
     }
-    isoBox(u0 + 38, v0 + 10, u0 + 54, v0 + 14, z0 + 48, z0 + 64, "#ffd700", "#e6bd1a", "#b38f09", OUTLINE_COL, 1.2);
-    isoLabel("G", u0 + 46, v0 + 15, z0 + 56, 11, "#3a281f", null, 0, 0);
-
-    // D) BÜTÜNLEŞİK MODERN OTEL ASANSÖRÜ (Lobi Arka Duvarı Merkezinde: Grand Hotel Tycoon Orijinali!)
-    // 1) Asansör Mermer Sövesi
-    isoBox(u0 + 6, v0 + 70, u0 + 18, v0 + 148, z0, z0 + 82, "#ffffff", "#eed8b8", "#d4bca0", OUTLINE_COL, 2);
-    // 2) Çift Paslanmaz Çelik Kayar Kapı
-    isoBox(u0 + 10, v0 + 74, u0 + 16, v0 + 108, z0 + 1, z0 + 72, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.4);
-    isoBox(u0 + 10, v0 + 110, u0 + 16, v0 + 144, z0 + 1, z0 + 72, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.4);
-    isoQuad(u0 + 16.2, v0 + 108.5, u0 + 16.2, v0 + 109.5, z0 + 1, "#1e293b", null, 0);
-    // 3) Dijital LED Kat Göstergesi
-    isoBox(u0 + 8, v0 + 94, u0 + 16, v0 + 124, z0 + 73, z0 + 81, "#1a202c", "#0f172a", "#020617", OUTLINE_COL, 1.2);
-    isoLabel("▲ " + (fIdx + 1) + " ▼", u0 + 17, v0 + 109, z0 + 77, 8.5, "#ffd700", null, 0, 0);
-    // 4) Çağırma Buton Paneli
-    isoBox(u0 + 10, v0 + 154, u0 + 16, v0 + 162, z0 + 34, z0 + 46, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.1);
-    isoQuad(u0 + 16.2, v0 + 156, u0 + 16.2, v0 + 160, z0 + 40, "#22c55e", null, 0);
-    // 5) Başlık Tabelası
-    isoLabel("🛗 ASANSÖR", u0 + 17, v0 + 109, z0 + 85, 8, "#475569", "#f8fafc", 3, 1.5);
 
     // E) Yan Bölme Duvarları: SADECE Koridor varsa kemerli geçiş, Oda veya dış cephe varsa SAĞLAM KAPALI DUVAR!
     // Sol Duvar (v = v0)
@@ -7396,17 +7482,22 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     }
 
     // Sol Bölme Duvarı (v = v0)
+    const leftIsElev = leftSlot && leftSlot.type === "Elevator";
     if (leftSlot && leftSlot.type === "Corridor") {
       // İki koridor yan yana bağlandığında ferah, geniş ve kesintisiz tek bir lüks hol oluşur.
-      // 1) Tavanda Grand Klasik Taşıyıcı Tavan Kirişi / Kemer Başlığı
       isoBox(u0, v0 - 2, u1, v0 + 2, z1 - 16, z1, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.4);
       isoBox(u0 - 1, v0 - 3, u1 + 1, v0 + 3, z1 - 6, z1 - 3, "#ffd700", "#d4af37", "#a38218", null, 0);
       isoBox(u0 + 92, v0 - 4, u0 + 103, v0 + 4, z1 - 20, z1 - 12, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1);
-      // 2) Arka Duvarda İki Koridoru Bağlayan Flütlü Mermer Duvar Kolonu (Pilaster)
       isoBox(u0 - 1, v0 - 6, u0 + 14, v0 + 6, z0, z1, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.4);
       isoBox(u0 + 12, v0 - 4, u0 + 14.5, v0 + 4, z0 + 12, z1 - 16, "#faf8f5", "#ddd8ce", "#ccc6ba", null, 0);
       isoBox(u0 - 2, v0 - 7, u0 + 15, v0 + 7, z0, z0 + 8, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.1);
       isoBox(u0 - 2, v0 - 7, u0 + 15, v0 + 7, z1 - 20, z1 - 12, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.1);
+    } else if (leftIsElev) {
+      // Solda Asansör var: Asansör kapısına açılan kemerli açıklık (u0 + 45 .. u1 - 45 açık!)
+      isoBox(u0, v0, u0 + 45, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+      isoBox(u1 - 45, v0, u1, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+      isoBox(u0 + 45, v0, u1 - 45, v0 + 10, z0 + 68, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
+      isoBox(u0 + 43, v0 - 1, u1 - 43, v0 + 11, z0 + 66, z0 + 70, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
     } else if (!leftConnected) {
       // Dış cephe: Sağlam kapalı duvar & lambri
       isoBox(u0, v0, u1, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
@@ -7419,9 +7510,16 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     }
 
     // Sağ Bölme Duvarı (v = v1)
+    const rightIsElev = rightSlot && rightSlot.type === "Elevator";
     if (rightCorr) {
       // Sağda da koridor varsa geçiş tamamen açık, tavanda zarif tavan kirişi
       isoBox(u0, v1 - 2, u1, v1 + 2, z1 - 16, z1, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.4);
+    } else if (rightIsElev) {
+      // Sağda Asansör var: Asansör kapısına açılan kemerli açıklık (u0 + 45 .. u1 - 45 açık!)
+      isoBox(u0, v1 - 10, u0 + 45, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+      isoBox(u1 - 45, v1 - 10, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+      isoBox(u0 + 45, v1 - 10, u1 - 45, v1, z0 + 68, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
+      isoBox(u0 + 43, v1 - 11, u1 - 43, v1 + 1, z0 + 66, z0 + 70, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
     } else if (!rightConnected) {
       // Dış cephe: Sağlam kapalı duvar & pencereli hol sonu
       isoBox(u0, v1 - 10, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
@@ -7455,6 +7553,85 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     isoBox(u0 + 88, v0 + 88, u0 + 107, v0 + 107, z1 - 28, z1 - 18, "rgba(254, 240, 138, 0.9)", "#eab308", "#ca8a04", OUTLINE_COL, 1.2);
 
     isoLabel("🚪 KORİDOR & HOL", u0 + 52, v0 + 52, z0 + 88, 11, "#3a281f", "#fffdf5", 6, 2.5);
+    addHitPoly(poly, () => {
+      selectSlot(s);
+      if (queue.length > 0) {
+        syncFront();
+        refreshGuest();
+      }
+    });
+    return;
+  }
+
+  // 7.5) Lüks Otel Asansör Kulesi Parseli (Elevator - Bağımsız Oda Olarak İnşa Edilebilir!)
+  if (s.type === "Elevator") {
+    const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#2c2825", "#201c1a", "#181514", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+    // Damalı Siyah & Altın İtalyan Mermer Taban
+    const steps = 4, du = (u1 - u0) / steps, dv = (v1 - v0) / steps;
+    for (let iu = 0; iu < steps; iu++) {
+      for (let iv = 0; iv < steps; iv++) {
+        const col = (iu + iv) % 2 === 0 ? "#1e293b" : "#0f172a";
+        isoQuad(u0 + iu * du, v0 + iv * dv, u0 + (iu + 1) * du, v0 + (iv + 1) * dv, z0, col, "rgba(212,175,55,0.25)", 1);
+      }
+    }
+
+    // 4 Köşe Altın Taşıyıcı Kule Sütunları
+    const colW = 12;
+    isoBox(u0, v0, u0 + colW, v0 + colW, z0, z1, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1.2);
+    isoBox(u0, v1 - colW, u0 + colW, v1, z0, z1, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1.2);
+    isoBox(u1 - colW, v0, u1, v0 + colW, z0, z1, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1.2);
+    isoBox(u1 - colW, v1 - colW, u1, v1, z0, z1, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1.2);
+
+    // Kule Tavan Kirişleri & Çelik Halat Motoru (z1 - 12 .. z1)
+    isoBox(u0, v0, u1, v1, z1 - 12, z1, "#3a281f", "#261a14", "#170f0c", OUTLINE_COL, 1.5);
+    isoBox(u0 + 20, v0 + 20, u1 - 20, v1 - 20, z1 - 16, z1 - 12, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1.2);
+
+    // Çelik Taşıyıcı Halatlar
+    for (const hu of [u0 + 75, u0 + 120]) {
+      isoBox(hu, (v0 + v1) * 0.5 - 2, hu + 3, (v0 + v1) * 0.5 + 2, z0 + 35, z1 - 16, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    }
+
+    // Panoramik Şeffaf Cam & Çelik Asansör Kabini (Merkezde)
+    const cu0 = u0 + 44, cv0 = v0 + 44, cu1 = u1 - 44, cv1 = v1 - 44;
+    // Kabin Tabanı
+    isoBox(cu0, cv0, cu1, cv1, z0 + 4, z0 + 9, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.2);
+    // Şeffaf Panoramik Cam Duvarlar
+    isoBox(cu0 + 4, cv0 + 4, cu1 - 4, cv1 - 4, z0 + 9, z0 + 58, "rgba(200, 230, 255, 0.28)", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.3);
+    // Kabin İçi Altın Korkuluklar
+    isoBox(cu0 + 7, cv0 + 7, cu1 - 7, cv1 - 7, z0 + 26, z0 + 29, "#ffd700", "#d4af37", "#a38218", null, 0);
+    // Kabin Tavanı & Altın Taç
+    isoBox(cu0 - 1, cv0 - 1, cu1 + 1, cv1 + 1, z0 + 58, z0 + 63, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.2);
+    isoBox(cu0 + 2, cv0 + 2, cu1 - 2, cv1 - 2, z0 + 63, z0 + 66, "#ffd700", "#d4af37", "#a38218", null, 0);
+
+    // Asansörün Koridora Bakan Kapısı (Çift Paslanmaz Çelik Kayar Kapı & LED Kat Göstergesi)
+    const eDoorWall = getElevatorDoorWall(s);
+    if (eDoorWall === "front") {
+      isoBox(u1 - 10, v0 + 55, u1, v1 - 55, z0, z0 + 74, "#ffffff", "#eed8b8", "#d4bca0", OUTLINE_COL, 1.8);
+      isoBox(u1 - 8, v0 + 60, u1 - 2, (v0 + v1) * 0.5 - 1, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox(u1 - 8, (v0 + v1) * 0.5 + 1, u1 - 2, v1 - 60, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox(u1 - 7, (v0 + v1) * 0.5 - 14, u1 - 1, (v0 + v1) * 0.5 + 14, z0 + 67, z0 + 73, "#0f172a", "#020617", "#000000", null, 0);
+      isoLabel("▲ " + (fIdx + 1) + " ▼", u1 - 1, (v0 + v1) * 0.5, z0 + 70, 7.5, "#22c55e", null, 0, 0);
+    } else if (eDoorWall === "left") {
+      isoBox(u0 + 55, v0, u1 - 55, v0 + 10, z0, z0 + 74, "#ffffff", "#eed8b8", "#d4bca0", OUTLINE_COL, 1.8);
+      isoBox(u0 + 60, v0 + 2, (u0 + u1) * 0.5 - 1, v0 + 8, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox((u0 + u1) * 0.5 + 1, v0 + 2, u1 - 60, v0 + 8, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox((u0 + u1) * 0.5 - 14, v0 + 1, (u0 + u1) * 0.5 + 14, v0 + 7, z0 + 67, z0 + 73, "#0f172a", "#020617", "#000000", null, 0);
+      isoLabel("▲ " + (fIdx + 1) + " ▼", (u0 + u1) * 0.5, v0 + 8, z0 + 70, 7.5, "#22c55e", null, 0, 0);
+    } else if (eDoorWall === "right") {
+      isoBox(u0 + 55, v1 - 10, u1 - 55, v1, z0, z0 + 74, "#ffffff", "#eed8b8", "#d4bca0", OUTLINE_COL, 1.8);
+      isoBox(u0 + 60, v1 - 8, (u0 + u1) * 0.5 - 1, v1 - 2, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox((u0 + u1) * 0.5 + 1, v1 - 8, u1 - 60, v1 - 2, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox((u0 + u1) * 0.5 - 14, v1 - 7, (u0 + u1) * 0.5 + 14, v1 - 1, z0 + 67, z0 + 73, "#0f172a", "#020617", "#000000", null, 0);
+      isoLabel("▲ " + (fIdx + 1) + " ▼", (u0 + u1) * 0.5, v1 - 2, z0 + 70, 7.5, "#22c55e", null, 0, 0);
+    } else {
+      isoBox(u0, v0 + 55, u0 + 10, v1 - 55, z0, z0 + 74, "#ffffff", "#eed8b8", "#d4bca0", OUTLINE_COL, 1.8);
+      isoBox(u0 + 2, v0 + 60, u0 + 8, (v0 + v1) * 0.5 - 1, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox(u0 + 2, (v0 + v1) * 0.5 + 1, u0 + 8, v1 - 60, z0 + 1, z0 + 66, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.2);
+      isoBox(u0 + 1, (v0 + v1) * 0.5 - 14, u0 + 7, (v0 + v1) * 0.5 + 14, z0 + 67, z0 + 73, "#0f172a", "#020617", "#000000", null, 0);
+      isoLabel("▲ " + (fIdx + 1) + " ▼", u0 + 8, (v0 + v1) * 0.5, z0 + 70, 7.5, "#22c55e", null, 0, 0);
+    }
+
+    isoLabel("🛗 ASANSÖR", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 88, 11, "#3a281f", "#fffdf5", 6, 2.5);
     addHitPoly(poly, () => {
       selectSlot(s);
       if (queue.length > 0) {
@@ -7738,18 +7915,37 @@ function drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV) {
   if (typeof cellV !== 'number') { cellU = cellS; cellV = cellS; }
   const layout = s.furnLayout || {};
 
-  // 1) Özel Banyo Kabini (2x2 hücre: Mavi fayans, cam duşakabin, lavabo)
+  // 1) Özel Banyo Kabini (2x1 hücre: Mavi seramik fayans, lüks cam duşakabin, lavabo & batarya)
   if (s.hasEnsuite && layout[9]) {
     const p = layout[9];
-    const bu0 = u0 + p.ru * cellU + 4, bv0 = v0 + p.rv * cellV + 4;
-    const bu1 = u0 + (p.ru + 2) * cellU - 4, bv1 = v0 + (p.rv + 2) * cellV - 4;
+    const sp = itemSpan(9, p.rot || 0);
+    const bu0 = u0 + p.ru * cellU + 3, bv0 = v0 + p.rv * cellV + 3;
+    const bu1 = u0 + (p.ru + sp.du) * cellU - 3, bv1 = v0 + (p.rv + sp.dv) * cellV - 3;
     const hi = furnSelectedKey === 9 ? "#ff8c00" : OUTLINE_COL;
+
+    // A) Açık Mavi Seramik Banyo Tabanı
     isoQuad(bu0, bv0, bu1, bv1, z0 + 1, "#b8e2f5", hi, furnSelectedKey === 9 ? 3 : 1.5);
-    isoBox(bu0, bv0, bu1, bv0 + 7, z0 + 2, z0 + 68, "#89c8e8", "#a8dcf5", "#91cde8", hi, 1.4);
-    isoBox(bu0, bv0, bu0 + 7, bv1, z0 + 2, z0 + 68, "#89c8e8", "#91cde8", "#a8dcf5", hi, 1.4);
-    const shPoly = [iso(bu1, bv0, z0 + 2), iso(bu1, bv1, z0 + 2), iso(bu1, bv1, z0 + 58), iso(bu1, bv0, z0 + 58)];
-    drawPoly2D(shPoly, "rgba(190, 238, 255, 0.42)", hi, 1.5);
-    isoBox(bu0 + 12, bv0 + 48, bu0 + 44, bv0 + 82, z0 + 2, z0 + 24, "#ffffff", "#d9e6f2", "#c2d4e6", OUTLINE_COL, 1.4);
+
+    // B) Arka ve Yan Buzlu Cam Duvarlar
+    isoBox(bu0, bv0, bu1, bv0 + 5, z0 + 2, z0 + 64, "#89c8e8", "#a8dcf5", "#91cde8", hi, 1.3);
+    isoBox(bu0, bv0, bu0 + 5, bv1, z0 + 2, z0 + 64, "#89c8e8", "#91cde8", "#a8dcf5", hi, 1.3);
+
+    // C) Yarı Saydam Şeffaf Duşakabin Camı
+    const shPoly = [iso(bu1, bv0, z0 + 2), iso(bu1, bv1, z0 + 2), iso(bu1, bv1, z0 + 56), iso(bu1, bv0, z0 + 56)];
+    drawPoly2D(shPoly, "rgba(180, 235, 255, 0.40)", hi, 1.4);
+
+    // D) Krom Duş Başlığı & Batarya
+    isoBox(bu0 + 4, bv0 + 4, bu0 + 10, bv0 + 10, z0 + 44, z0 + 56, "#e2e8f0", "#cbd5e1", "#94a3b8", null, 0);
+    isoBox(bu0 + 4, bv0 + 10, bu0 + 16, bv0 + 14, z0 + 54, z0 + 57, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+
+    // E) Porselen Lavabo & Ayna Ünitesi
+    if (sp.du >= 2) {
+      isoBox(bu0 + (bu1 - bu0) * 0.52, bv0 + 4, bu1 - 4, bv1 - 4, z0 + 2, z0 + 24, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.2);
+      isoBox(bu0 + (bu1 - bu0) * 0.58, bv0 + 5, bu1 - 6, bv0 + 7, z0 + 30, z0 + 48, "#38bdf8", "#93c5fd", "#60a5fa", OUTLINE_COL, 1);
+    } else {
+      isoBox(bu0 + 4, bv0 + (bv1 - bv0) * 0.52, bu1 - 4, bv1 - 4, z0 + 2, z0 + 24, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.2);
+      isoBox(bu0 + 5, bv0 + (bv1 - bv0) * 0.58, bu0 + 7, bv1 - 6, z0 + 30, z0 + 48, "#38bdf8", "#93c5fd", "#60a5fa", OUTLINE_COL, 1);
+    }
   }
 
   // 2) Yatak (2x1 hücre, yatay veya dikey döndürülebilir)
