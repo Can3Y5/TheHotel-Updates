@@ -32,7 +32,7 @@
   #top-bar {
     position: absolute; top: 0; left: 0; right: 0; height: 64px;
     display: flex; align-items: flex-start; justify-content: space-between;
-    padding: 8px 12px; pointer-events: none; z-index: 12;
+    padding: 8px 12px; pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out; z-index: 12;
   }
   .hud-top-left {
     display: flex; align-items: center; gap: 8px; pointer-events: auto; flex-wrap: wrap;
@@ -160,7 +160,7 @@
   /* ===== SOL YÜZEN BUTONLAR ===== */
   #left-hud-top {
     position: absolute; top: 56px; left: 10px; z-index: 11;
-    display: flex; flex-direction: column; gap: 11px; pointer-events: none;
+    display: flex; flex-direction: column; gap: 11px; pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out;
   }
   .left-top-row {
     display: flex; align-items: center; gap: 8px; pointer-events: auto;
@@ -216,7 +216,7 @@
   #right-hud {
     position: absolute; top: 96px; right: 10px; z-index: 11;
     display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
-    pointer-events: none;
+    pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out;
   }
   #right-hud > * { pointer-events: auto; }
   #satisfaction-card {
@@ -311,7 +311,7 @@
   #bottom-area {
     position: absolute; left: 50%; bottom: 78px; transform: translateX(-50%);
     width: min(95%, 670px); z-index: 15;
-    display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+    display: flex; flex-direction: column; gap: 6px; pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out;
   }
   #sel-panel {
     pointer-events: auto; width: 100%;
@@ -415,7 +415,7 @@
 
   #log-text {
     position: fixed; top: 76px; left: 50%; transform: translateX(-50%);
-    z-index: 10; pointer-events: none;
+    z-index: 10; pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out;
     background: rgba(32, 24, 18, 0.84); color: #fff8eb;
     border: 2px solid #c9a66b; border-radius: 12px;
     padding: 3px 12px; font-size: clamp(9.5px, 1.9vw, 11.5px); font-weight: 700;
@@ -644,7 +644,7 @@
     width: min(84%, 380px); background: #ffe666; border: 3px solid #3a281f; border-radius: 12px;
     color: #3a281f; font-weight: 900; font-size: clamp(12px, 2.8vw, 15px);
     display: none; align-items: center; justify-content: center; text-align: center;
-    padding: 8px 12px; z-index: 20; pointer-events: none; box-shadow: 0 6px 16px rgba(0,0,0,0.32);
+    padding: 8px 12px; z-index: 20; pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out; box-shadow: 0 6px 16px rgba(0,0,0,0.32);
   }
 
   #update-modal {
@@ -669,15 +669,107 @@
   #btn-do-update { background: #8ce099; }
   #btn-close-update { background: #e6e6eb; }
 
-  @media (max-width: 560px) {
-    #hud-center-banner { min-width: 140px; padding: 4px 12px 5px 12px; }
-    .lv-pill, .star-pill, .curr-pill { height: 31px; min-width: 84px; padding-left: 28px; font-size: 12px; }
-    .lv-star-icon, .star-badge-num, .curr-icon { width: 32px; height: 32px; font-size: 11px; }
-    .round-hud-btn { width: 46px; }
-    .rhb-circle { width: 42px; height: 42px; font-size: 20px; }
-    .sq-cream-btn { width: 42px; height: 42px; font-size: 18px; }
-    .dock-btn { width: 54px; height: 54px; }
-    .dock-icon { font-size: 22px; }
+
+  /* ===== MOBIL & DAR EKRAN DUYARLI TASARIM (<= 640px) ===== */
+  /* ===== MOBIL & DAR/ALCAK EKRAN DUYARLI TASARIM (<= 640px genislik veya <= 500px yukseklik) ===== */
+  @media (max-width: 640px), (max-height: 500px) {
+    /* 1. Ust Bar */
+    #top-bar { padding: 4px 6px; height: 48px; }
+    
+    .hud-top-left { gap: 4px; }
+    .lv-pill {
+      height: 28px; min-width: 66px; padding: 2px 6px 2px 24px; font-size: 11px; border-width: 2px;
+    }
+    .lv-star-icon { width: 28px; height: 28px; font-size: 9.5px; left: -4px; top: -2px; border-width: 2px; }
+    .lv-num { font-size: 13px; }
+    
+    .star-pill {
+      height: 28px; padding: 2px 6px 2px 22px; border-width: 2px; gap: 2px;
+    }
+    .star-badge-num { width: 26px; height: 26px; font-size: 9.5px; left: -4px; top: -2px; border-width: 2px; }
+    .star-icons { font-size: 11px; letter-spacing: 0.5px; }
+
+    /* Orta Baslik: Mobilde sadece gun bilgisi kompakt rozet olarak gorunur */
+    #hud-center-banner {
+      min-width: auto; padding: 3px 10px 4px 10px; border-radius: 0 0 12px 12px;
+      border-width: 2px; border-top: none;
+    }
+    #hud-hotel-title { display: none; }
+    #top-mid { font-size: 10px; margin-top: 0; }
+
+    /* Sag Para & Elmas */
+    .hud-top-right { gap: 3px; }
+    .hud-currency-row { gap: 4px; }
+    .curr-pill {
+      height: 28px; min-width: 68px; padding: 2px 6px 2px 22px; font-size: 11px; border-width: 2px;
+    }
+    .curr-icon { width: 26px; height: 26px; font-size: 12px; left: -3px; top: -1px; border-width: 2px; }
+    .curr-plus-btn { width: 19px; height: 19px; font-size: 12px; margin-left: 3px; margin-right: -3px; }
+
+    .hud-sub-pill { padding: 2px 5px; border-radius: 10px; gap: 4px; }
+    .sub-icon-btn { width: 24px; height: 22px; font-size: 12px; border-radius: 6px; }
+
+    /* 2. Sol Ust Butonlar */
+    #left-hud-top { top: 46px; left: 6px; gap: 6px; }
+    .left-top-row { gap: 5px; }
+    .round-hud-btn { width: 40px; }
+    .rhb-circle { width: 36px; height: 36px; font-size: 17px; border-width: 2px; }
+    .rhb-label { font-size: 8px; padding: 1px 4px; margin-top: -4px; }
+    .notif-dot { width: 14px; height: 14px; font-size: 9px; border-width: 1.5px; }
+    
+    /* Personel ve Calisan butonlari mobilde gizlenir (alttaki Personel dock\'u ile erisilir) */
+    #btn-staff, #btn-workers-hud { display: none !important; }
+
+    /* 3. Sol Alt Kare Butonlar */
+    #left-hud-bottom {
+      bottom: 74px; left: 6px; gap: 5px;
+    }
+    .sq-cream-btn { width: 40px; height: 40px; font-size: 18px; border-radius: 11px; border-width: 2px; }
+    .sq-cream-btn .sq-sub { font-size: 7.5px; margin-top: 0px; }
+    /* Menu butonu sag ustte (gear) zaten oldugundan mobilde sol altta gizlenir */
+    #btn-menu { display: none !important; }
+
+    /* 4. Sag Hud (Memnuniyet, Katlar, Zoom) */
+    #right-hud { top: 68px; right: 6px; gap: 6px; }
+    /* Yukselt zaten alt dock\'ta vardir */
+    #btn-upgrade-hud { display: none !important; }
+
+    #satisfaction-card {
+      width: 92px; padding: 4px 6px; border-radius: 10px; border-width: 2px;
+    }
+    .sat-title { font-size: 8px; margin-bottom: 2px; }
+    .sat-bar-wrap { height: 10px; margin-left: 6px; border-width: 1.5px; }
+    .sat-smiley { width: 16px; height: 16px; font-size: 10px; left: -8px; top: -4px; border-width: 1.5px; }
+
+    .floor-tabs { gap: 3px; }
+    .fl-tab-btn { padding: 2px 6px; font-size: 9px; border-radius: 6px; }
+    /* Kilitli katlar mobilde ekran kaplamasin */
+    .fl-tab-btn.locked { display: none; }
+
+    .cam-mini-row { gap: 3px; }
+    .vp-btn { width: 25px; height: 23px; font-size: 11px; border-radius: 6px; }
+
+    /* 5. Alt Dock */
+    #bottom-dock {
+      padding: 4px 10px 5px 10px; gap: 6px; border-radius: 16px 16px 0 0; border-width: 2.5px;
+    }
+    .dock-btn {
+      width: 46px; height: 46px; border-radius: 12px; border-width: 2px;
+    }
+    .dock-icon { font-size: 20px; margin-top: -3px; }
+    .dock-label { font-size: 8.5px; padding: 1px 5px; bottom: -5px; border-radius: 5px; }
+
+    /* 6. Bildirim & Log Metni */
+    #log-text {
+      top: 48px; max-width: 80%; padding: 3px 8px; font-size: 9.5px;
+      border-radius: 8px; border-width: 1.5px;
+    }
+
+    /* 7. Cekmece & Islem Paneli */
+    #bottom-area { bottom: 62px; width: 96%; }
+    #sel-panel { padding: 6px 8px; border-radius: 12px; }
+    #act-grid { gap: 4px; }
+    .act-btn { font-size: 9px; padding: 3px 2px; min-height: 32px; }
   }
 </style>
 </head>
@@ -4210,10 +4302,19 @@ function toggleOpen() {
   refresh();
 }
 
+let logFadeTimer = null;
 function log(msg) {
   logLines.push(msg);
   while (logLines.length > 3) logLines.shift();
-  logText.textContent = logLines.join("\n");
+  if (logText) {
+    logText.textContent = logLines.join("\n");
+    logText.style.opacity = "1";
+    logText.onclick = () => { logText.style.opacity = "0"; };
+    clearTimeout(logFadeTimer);
+    logFadeTimer = setTimeout(() => {
+      if (logText) logText.style.opacity = "0";
+    }, 7500);
+  }
 }
 
 function selectSlot(s) { play("tap"); sel = "Slot"; selSlot = s; selFloor = null; refresh(); }
