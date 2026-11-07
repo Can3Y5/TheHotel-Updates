@@ -1681,15 +1681,13 @@ function isRoofedStructure(type) {
          type === "Toilet" || type === "Gas" || type === "Corridor";
 }
 
-// Bir parselin koridor veya ana lobi/resepsiyon olup olmadığını kontrol eder
-function isCorridorOrLobby(slot) {
+// Bir parselin koridor olup olmadığını kontrol eder (Sadece ve sadece Koridor, Resepsiyon DEĞİL)
+function isCorridor(slot) {
   if (!slot) return false;
-  if (slot.type === "Corridor") return true;
-  if (slot.floor && slot.floor.idx === 0 && slot.type === "Reception") return true;
-  return false;
+  return slot.type === "Corridor";
 }
 
-// Odanın kapısının hangi duvara açılacağını tespit eder: "left", "right", "back", "front" veya null (koridora değmiyorsa)
+// Odanın kapısının hangi duvara açılacağını tespit eder: "back", "right", "left", "front" veya null (koridora değmiyorsa)
 function getRoomDoorWall(s) {
   if (!s || s.type !== "Room") return null;
   const { gu, gv } = parcelCoords(s.idx);
@@ -1697,16 +1695,17 @@ function getRoomDoorWall(s) {
   if (!fl) return null;
 
   // 4 komşu parsel
-  const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
-  const right = (gv < 5) ? fl.slots[gu * 6 + (gv + 1)] : null;
   const back = (gu > 0) ? fl.slots[(gu - 1) * 6 + gv] : null;
+  const right = (gv < 5) ? fl.slots[gu * 6 + (gv + 1)] : null;
+  const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
   const front = (gu < 5) ? fl.slots[(gu + 1) * 6 + gv] : null;
 
-  // Sadece Koridor'a (veya zemin katta Resepsiyon'a) değen duvarda kapı olabilir!
-  if (isCorridorOrLobby(left)) return "left";
-  if (isCorridorOrLobby(right)) return "right";
-  if (isCorridorOrLobby(back)) return "back";
-  if (isCorridorOrLobby(front)) return "front";
+  // Kapı SADECE ve SADECE komşu bir Koridor'a açılabilir (Resepsiyon'a asla kapı açılamaz!)
+  // Öncelik: back (arkadaki koridor - en doğal izometrik otel girişi), sonra right, left, front.
+  if (isCorridor(back)) return "back";
+  if (isCorridor(right)) return "right";
+  if (isCorridor(left)) return "left";
+  if (isCorridor(front)) return "front";
   return null;
 }
 
@@ -5287,7 +5286,7 @@ function refreshPanel() {
         }
       }
       setAct(7, "🔥 Doğalgaz Odası\n" + gasCost() + " TL", true, canBuildHere && readyOnce && !gasSlot());
-      setAct(8, "🚪 Koridor & Hol\n" + CostCorridor + " TL", true, canBuildHere && readyOnce);
+      setAct(8, "🚪 Koridor & Hol\n" + CostCorridor + " TL", true, canBuildHere);
     } else if (cur.type === "Corridor") {
       infoText.textContent = "🚪 Koridor & Lüks Kat Holü " + coordStr +
         "\nOdaları, asansörü ve tesisleri birbirine bağlar. Konukların ve personelin rahatça dolaşmasını sağlar.";
@@ -5721,8 +5720,8 @@ function refreshGuest() {
 }
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 15;
-const APP_VERSION_NAME = "1.9.7-beta";
+const APP_VERSION_CODE = 16;
+const APP_VERSION_NAME = "1.9.8-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -7086,26 +7085,29 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     // 5) Başlık Tabelası
     isoLabel("🛗 ASANSÖR", u0 + 17, v0 + 109, z0 + 85, 8, "#475569", "#f8fafc", 3, 1.5);
 
-    // E) Yan Bölme Duvarları & Odalara Geçiş Kemerleri
-    // Sol Duvar (v = v0): Eğer solunda oda/bina varsa kemerli geçiş, yoksa sağlam dış duvar
-    if (leftConnected) {
-      // Kemerli Hol Geçişi (West Wing / 1. Odaya Bağlantı)
+    // E) Yan Bölme Duvarları: SADECE Koridor varsa kemerli geçiş, Oda veya dış cephe varsa SAĞLAM KAPALI DUVAR!
+    // Sol Duvar (v = v0)
+    if (leftSlot && leftSlot.type === "Corridor") {
+      // Kemerli Hol Geçişi (Koridora Bağlantı)
       isoBox(u0, v0, u0 + 40, v0 + 10, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
       isoBox(u1 - 40, v0, u1, v0 + 10, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
       isoBox(u0 + 40, v0, u1 - 40, v0 + 10, z0 + 66, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.6);
       isoBox(u0 + 38, v0 - 1, u1 - 38, v0 + 11, z0 + 64, z0 + 68, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
     } else {
+      // Oda veya dış cephe: Tamamen kapalı sağlam duvar & lambri
       isoBox(u0, v0, u1, v0 + 10, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
+      isoBox(u0, v0 + 9, u1, v0 + 12, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
     }
 
-    // Sağ Duvar (v = v1): Eğer sağında bina varsa kemerli geçiş, yoksa dış duvar
-    if (rightConnected) {
+    // Sağ Duvar (v = v1)
+    if (rightSlot && rightSlot.type === "Corridor") {
       isoBox(u0, v1 - 10, u0 + 40, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
       isoBox(u1 - 40, v1 - 10, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
       isoBox(u0 + 40, v1 - 10, u1 - 40, v1, z0 + 66, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
       isoBox(u0 + 38, v1 - 11, u1 - 38, v1 + 1, z0 + 64, z0 + 68, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
     } else {
       isoBox(u0, v1 - 10, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+      isoBox(u0, v1 - 12, u1, v1 - 9, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
     }
 
     // F) Resepsiyon Bankosu & Görevli
@@ -7292,21 +7294,44 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     drawCorridorRunnerCarpet(u0, v0, u1, v1, z0);
 
     // Arka Duvar (u = u0)
-    isoBox(u0, v0, u0 + 10, v1, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 2);
-    isoBox(u0 + 9, v0, u0 + 12, v1, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.2);
-    isoBox(u0 + 9, v0, u0 + 12, v1, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
-    // Duvarda Tablo & Pirinç Aplik Lamba
-    isoBox(u0 + 10, v0 + 80, u0 + 13, v0 + 130, z0 + 48, z0 + 72, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
-    isoQuad(u0 + 13.2, v0 + 84, u0 + 13.2, v0 + 126, z0 + 52, "#38bdf8", null, 0);
-    isoBox(u0 + 10, v0 + 55, u0 + 15, v0 + 63, z0 + 50, z0 + 60, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
-    isoBox(u0 + 10, v0 + 147, u0 + 15, v0 + 155, z0 + 50, z0 + 60, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
+    if (backSlot && backSlot.type === "Corridor") {
+      // Arkada da koridor varsa geçiş tamamen açık, tavanda zarif tavan kirişi
+      isoBox(u0 - 1, v0, u0 + 4, v1, z1 - 12, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.2);
+    } else {
+      // Arka Duvar: Sıcak Krem Sıva, Tablo & Aplikler
+      isoBox(u0, v0, u0 + 10, v1, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 2);
+      isoBox(u0 + 9, v0, u0 + 12, v1, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.2);
+      isoBox(u0 + 9, v0, u0 + 12, v1, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
+      // Duvarda Tablo & Pirinç Aplik Lamba
+      isoBox(u0 + 10, v0 + 80, u0 + 13, v0 + 130, z0 + 48, z0 + 72, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
+      isoQuad(u0 + 13.2, v0 + 84, u0 + 13.2, v0 + 126, z0 + 52, "#38bdf8", null, 0);
+      isoBox(u0 + 10, v0 + 55, u0 + 15, v0 + 63, z0 + 50, z0 + 60, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
+      isoBox(u0 + 10, v0 + 147, u0 + 15, v0 + 155, z0 + 50, z0 + 60, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
+    }
 
-    // Sol Bölme Duvarı / Kemer Açıklığı (v = v0)
-    drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, "#8c583a", "#fbf7ee", "#ebdcc7", false, false, 0);
+    // Sol Bölme Duvarı (v = v0)
+    if (leftSlot && leftSlot.type === "Corridor") {
+      // İki koridor yan yana bağlandığında aralarında bölme duvarı / kolon OLMAZ!
+      // Koridorlar birleşerek ferah, geniş ve kesintisiz tek bir lüks hol oluşturur.
+      // Tavanda zarif taşıyıcı tavan kirişi:
+      isoBox(u0, v0 - 1, u1, v0 + 4, z1 - 12, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    } else if (!leftConnected) {
+      // Dış cephe: Sağlam kapalı duvar & lambri
+      isoBox(u0, v0, u1, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+      isoBox(u0, v0 + 9, u1, v0 + 12, z0, z0 + 7, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+      isoBox(u0, v0 + 9, u1, v0 + 12, z0 + 40, z0 + 43, "#c98b56", "#a86e3b", "#8a5426", null, 0);
+    } else {
+      // Komşu bir oda/tesis ise sağlam bölme duvarı
+      isoBox(u0, v0, u1, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+      isoBox(u0, v0 + 9, u1, v0 + 12, z0, z0 + 7, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+    }
 
-    // Koridor Mobilyaları: Lüks Bordo Kadife Dinlenme Koltuğu & Saksı Palmiye
-    isoBox(u0 + 120, v0 + 35, u0 + 158, v0 + 115, z0, z0 + 20, "#831843", "#6b1236", "#500727", OUTLINE_COL, 1.6);
-    isoBox(u0 + 120, v0 + 35, u0 + 130, v0 + 115, z0 + 20, z0 + 36, "#9f1239", "#831843", "#6b1236", OUTLINE_COL, 1.4);
+    // Koridor Mobilyaları: Yalnızca önde oda kapısı yoksa koltuk yerleştir, varsa yürüyüş yolunu temiz tut!
+    const frontIsRoomWithDoor = frontSlot && frontSlot.type === "Room" && getRoomDoorWall(frontSlot) === "back";
+    if (!frontIsRoomWithDoor) {
+      isoBox(u0 + 120, v0 + 35, u0 + 158, v0 + 115, z0, z0 + 20, "#831843", "#6b1236", "#500727", OUTLINE_COL, 1.6);
+      isoBox(u0 + 120, v0 + 35, u0 + 130, v0 + 115, z0 + 20, z0 + 36, "#9f1239", "#831843", "#6b1236", OUTLINE_COL, 1.4);
+    }
     // Altın Koltuk Ayakları
     isoBox(u0 + 122, v0 + 37, u0 + 126, v0 + 41, z0, z0 + 4, "#ffd700", "#d4af37", "#a38218", null, 0);
     isoBox(u0 + 152, v0 + 37, u0 + 156, v0 + 41, z0, z0 + 4, "#ffd700", "#d4af37", "#a38218", null, 0);
@@ -7381,8 +7406,8 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
   }
 
   // C) Sol Yan Duvar (v = v0)
-  if (leftConnected && gv >= 3) {
-    // Lobinin sağına kurulan odanın (örn: Slot 23 / 102. Oda) lobiye açılan kapısı
+  if (doorWall === "left") {
+    // Kapı sol duvara (solundaki koridora) açılıyor
     isoBox(u0, v0, u0 + 40, v0 + wallThick, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
     isoBox(u1 - 40, v0, u1, v0 + wallThick, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
     isoBox(u0 + 40, v0, u1 - 40, v0 + wallThick, z0 + 66, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.6);
@@ -7401,13 +7426,14 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
       }
     }
   } else {
+    // Sağlam kapalı sol duvar (Komşu ister Resepsiyon olsun ister başka oda olsun kapalı sağlam duvar!)
     isoBox(u0, v0, u1, v0 + wallThick, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
     isoBox(u0, v0 + wallThick - 1, u1, v0 + wallThick + 2, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
   }
 
-  // D) Sağ Yan Duvar & Odaya Giriş Kapısı (v = v1)
-  if (rightConnected) {
-    // Lobiden veya komşu odadan odaya geçiş kemeri ve kapısı
+  // D) Sağ Yan Duvar (v = v1)
+  if (doorWall === "right") {
+    // Kapı sağ duvara (sağındaki koridora) açılıyor
     isoBox(u0, v1 - wallThick, u0 + 40, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
     isoBox(u1 - 40, v1 - wallThick, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
     isoBox(u0 + 40, v1 - wallThick, u1 - 40, v1, z0 + 66, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
@@ -7419,18 +7445,17 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
       isoLabel(String(s.roomNo || 101), u0 + 48, v1 - 3, z0 + 49.5, 7, "#3a281f", null, 0, 0);
 
       if (!s.hasDoor) {
-        // Kapı Henüz Alınmamış: Temiz Ahşap Kapı Kasasında "Kapı Al" Uyarısı
         isoQuad(u0 + 55, v1 - wallThick * 0.5, u1 - 55, v1 - wallThick * 0.5, z0 + 32, "#fbbf24", "#d97706", 2);
         isoLabel("🚪 Kapı Al!", (u0 + u1) * 0.5, v1 + 4, z0 + 36, 8.5, "#995200", "#fff3cd", 5, 1.8);
       } else {
-        // Kapı Alınmış: Lüks 5 Yıldızlı Ahşap Otel Kapısı (Hafif içeri doğru aralık)
         isoBox(u0 + 48, v1 - wallThick - 6, u0 + 52, v1 - 1, z0, z0 + 64, "#b57945", "#9e6637", "#845227", OUTLINE_COL, 1.4);
         isoBox(u0 + 50, v1 - 5, u0 + 53, v1 - 2, z0 + 30, z0 + 33, "#ffd700", "#d4af37", "#9c7c1b", null, 0);
       }
     }
   } else {
-    // Sağ kenar dış cephe ise sağlam duvar
+    // Sağlam kapalı sağ duvar (Komşu ister Resepsiyon olsun, ister başka oda olsun kapalı sağlam duvar!)
     isoBox(u0, v1 - wallThick, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
+    isoBox(u0, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
   }
 
   // E) Ön Kenar (u = u1: Çim & Cadde Tarafı - Manzaralı Alçak Süpürgelik & Cam Korkuluk)
