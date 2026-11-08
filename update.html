@@ -1858,6 +1858,19 @@ function isCorridor(slot) {
   return slot.type === "Corridor";
 }
 
+function getRoomAvailableDoorWalls(s) {
+  if (!s || (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym") || !s.floor) return [];
+  const { gu, gv } = parcelCoords(s.idx);
+  const fl = s.floor;
+  if (!fl) return [];
+  const walls = [];
+  if (gu > 0 && isCorridor(fl.slots[(gu - 1) * 6 + gv])) walls.push("back");
+  if (gv < 5 && isCorridor(fl.slots[gu * 6 + (gv + 1)])) walls.push("right");
+  if (gv > 0 && isCorridor(fl.slots[gu * 6 + (gv - 1)])) walls.push("left");
+  if (gu < 5 && isCorridor(fl.slots[(gu + 1) * 6 + gv])) walls.push("front");
+  return walls;
+}
+
 // Odanın kapısının hangi duvara açılacağını tespit eder: "back", "right", "left", "front" veya null (koridora değmiyorsa)
 function getRoomDoorWall(s) {
   if (!s || (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym")) return null;
@@ -1871,6 +1884,15 @@ function getRoomDoorWall(s) {
   const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
   const front = (gu < 5) ? fl.slots[(gu + 1) * 6 + gv] : null;
 
+  // Özel odalarda SADECE 1 TANE giriş kısmı olmalı:
+  // Eğer odanın seçilmiş geçerli bir kapı yönü varsa ve o komşuda koridor bulunuyorsa onu koru
+  if (s.doorWall) {
+    if (s.doorWall === "back" && isCorridor(back)) return "back";
+    if (s.doorWall === "right" && isCorridor(right)) return "right";
+    if (s.doorWall === "left" && isCorridor(left)) return "left";
+    if (s.doorWall === "front" && isCorridor(front)) return "front";
+  }
+
   // Kapı SADECE ve SADECE komşu bir Koridor'a açılabilir (Resepsiyon'a asla kapı açılamaz!)
   // Öncelik: back (arkadaki koridor - en doğal izometrik otel girişi), sonra right, left, front.
   if (isCorridor(back)) return "back";
@@ -1878,6 +1900,28 @@ function getRoomDoorWall(s) {
   if (isCorridor(left)) return "left";
   if (isCorridor(front)) return "front";
   return null;
+}
+
+function getWallTrName(w) {
+  if (w === "back") return "Arka";
+  if (w === "front") return "Ön";
+  if (w === "left") return "Sol";
+  if (w === "right") return "Sağ";
+  return "Yok";
+}
+
+function cycleRoomDoorWall(s) {
+  const avail = getRoomAvailableDoorWalls(s);
+  if (avail.length <= 1) return;
+  const curWall = getRoomDoorWall(s);
+  const curIdx = avail.indexOf(curWall);
+  const nextIdx = (curIdx + 1) % avail.length;
+  s.doorWall = avail[nextIdx];
+  const name = s.roomNo ? s.roomNo + ". oda" : (s.type === "Toilet" ? "Genel WC" : "Spor salonu");
+  if (typeof log === "function") log("🚪 " + name + " giriş kapısı " + getWallTrName(s.doorWall) + " koridora yönlendirildi!");
+  if (typeof play === "function") play("tap");
+  if (typeof refresh === "function") refresh();
+  if (typeof saveGame === "function") saveGame();
 }
 
 function isParcelBuildable(fIdx, idx) {
@@ -1958,6 +2002,7 @@ function saveGame() {
           furnLayout: s.furnLayout || {},
           roomNo: s.roomNo,
           hasDoor: s.hasDoor,
+          doorWall: s.doorWall || null,
           hasBalcony: !!s.hasBalcony,
           hasCorpse: !!s.hasCorpse,
           corpseName: s.corpseName || "",
@@ -2137,6 +2182,7 @@ function loadGame() {
             s.furnLayout = (sd.furnLayout && typeof sd.furnLayout === "object") ? sd.furnLayout : {};
             s.roomNo = sd.roomNo || 0;
             s.hasDoor = !!sd.hasDoor;
+            s.doorWall = sd.doorWall || null;
             s.hasBalcony = !!(sd.hasBalcony && f >= 1);
             s.hasCorpse = !!sd.hasCorpse;
             s.corpseName = sd.corpseName || "";
@@ -6192,9 +6238,21 @@ function refreshPanel() {
       infoText.textContent = "🏋️ Spor Odası (Seviye " + cur.gymLevel + "/3) " + coordStr + "  •  Aynı anda " + cur.gymLevel + " kişi spor yapabilir (+" + GymPoints + " İtibar).";
       if (cur.gymLevel < 3) setAct(0, "⬆️ Yükselt\n" + gymUpgradeCost(cur.gymLevel) + " TL", true, true);
       else setAct(0, "✅ Son Seviye", true, false, true);
+      const availWalls = getRoomAvailableDoorWalls(cur);
+      if (availWalls.length > 1) {
+        const curW = getRoomDoorWall(cur);
+        const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
+        setAct(1, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
+      }
     } else if (cur.type === "Toilet") {
       infoText.textContent = "🚽 Genel Banyo & WC (2 Kabin) " + coordStr + "  •  Bakım: %" + Math.round(cur.maintenance);
       setAct(0, maintLabel, true, cur.maintenance < 99.5);
+      const availWalls = getRoomAvailableDoorWalls(cur);
+      if (availWalls.length > 1) {
+        const curW = getRoomDoorWall(cur);
+        const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
+        setAct(1, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
+      }
     } else if (cur.type === "Room") {
       ensureRoomFurnLayout(cur);
       const have = [];
@@ -6248,7 +6306,14 @@ function refreshPanel() {
         // Kurulu eşyaların da butonunu aktif bırakıyoruz ki oyuncu tıklayıp 4x4 ızgarada taşıyabilsin!
         setAct(k + 1, hasIt ? ownedLbl : buyLbl, true, readyOnce, hasIt, furnSelectedKey === k);
       }
-      setAct(ItemCount + 1, maintLabel, true, cur.maintenance < 99.5);
+      const availWalls = getRoomAvailableDoorWalls(cur);
+      if (availWalls.length > 1 && (!cur.hasDoor || cur.maintenance >= 99.5)) {
+        const curW = getRoomDoorWall(cur);
+        const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
+        setAct(ItemCount + 1, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
+      } else {
+        setAct(ItemCount + 1, maintLabel, true, cur.maintenance < 99.5);
+      }
     }
   } else {
     infoText.textContent = "👆 İşlem yapmak için oteldeki bir parsele/odaya veya alttaki 🔨 İnşa et butonuna dokunun.";
@@ -6533,10 +6598,22 @@ onAction = function(i) {
       if (nextFl) tryBuildFloor(nextFl);
       refresh(); saveGame(); return;
     }
+    if (s.type === "Gym" && i === 1 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1) {
+      cycleRoomDoorWall(s);
+      return;
+    }
+    if (s.type === "Toilet" && i === 1 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1) {
+      cycleRoomDoorWall(s);
+      return;
+    }
 
     // Oda Eşyası Satın Alma / 4x4 Izgarada Seçme & Taşıma
     if (s.type === "Room" && i !== ActCount - 1) {
       ensureRoomFurnLayout(s);
+      if (i === ItemCount + 1 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1 && (!s.hasDoor || s.maintenance >= 99.5)) {
+        cycleRoomDoorWall(s);
+        return;
+      }
       if (i === 0) {
         if (!s.hasDoor) {
           if (pay(CostDoor)) {
@@ -8615,13 +8692,13 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     drawCorridorRunnerCarpet(u0, v0, u1, v1, z0, leftCorr, rightCorr, backCorr, frontCorr);
 
     // Arka Duvar (u = u0)
-    const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym"));
+    const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym") && getRoomDoorWall(backSlot) === "front");
     if (backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
       // Arkada Koridor veya Asansör varsa geçiş tamamen açık, tavanda zarif tavan kirişi
       isoBox(u0 - 1, v0, u0 + 4, v1, z1 - 12, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.2);
     } else if (backHasDoorToCorr) {
-      // Arkada WC, Oda veya Tesis var: Arka duvarda kemerli kapı açıklığı, pervazlar ve kapı!
-      const vd0 = v0 + 77, vd1 = v0 + 118;
+      // Arkada WC, Oda veya Tesis var ve kapısı bu koridora bakıyor: Arka duvarda kemerli kapı açıklığı, pervazlar ve kapı!
+      const vd0 = v0 + 95, vd1 = v0 + 135;
       // 1) Sol Duvar Bölümü
       isoBox(u0, v0, u0 + 10, vd0, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 2);
       isoBox(u0 + 9, v0, u0 + 12, vd0, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
@@ -8649,11 +8726,16 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
         isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, "#2563eb", "#1d4ed8", "#1e40af", OUTLINE_COL, 1);
         isoLabel("WC 🚻", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#ffffff", null, 0, 0);
       } else if (backSlot.type === "Room") {
-        // Ahşap Oda Kapısı & Plaketi
-        isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, "#965b32", "#824b26", "#683918", OUTLINE_COL, 1.3);
-        isoBox(u0 - 10, vd0 + 4, u0 - 7, vd0 + 7, z0 + 30, z0 + 33, "#ffd700", "#d4af37", "#9c7c1b", null, 0);
-        isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 8, u0 + 11.5, (vd0 + vd1) * 0.5 + 8, z0 + 68, z0 + 76, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1);
-        isoLabel(String(backSlot.roomNo || 101), u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#3a281f", null, 0, 0);
+        if (!backSlot.hasDoor) {
+          isoQuad(u0 + 5, vd0 + 4, u0 + 5, vd1 - 4, z0 + 28, "#fbbf24", "#d97706", 1.8);
+          isoLabel("🚪 Kapı Al!", u0 + 9, (vd0 + vd1) * 0.5, z0 + 32, 7.5, "#995200", "#fff3cd", 4, 1.5);
+        } else {
+          // Ahşap Oda Kapısı & Plaketi
+          isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, "#965b32", "#824b26", "#683918", OUTLINE_COL, 1.3);
+          isoBox(u0 - 10, vd0 + 4, u0 - 7, vd0 + 7, z0 + 30, z0 + 33, "#ffd700", "#d4af37", "#9c7c1b", null, 0);
+          isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 8, u0 + 11.5, (vd0 + vd1) * 0.5 + 8, z0 + 68, z0 + 76, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1);
+          isoLabel(String(backSlot.roomNo || 101), u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#3a281f", null, 0, 0);
+        }
       } else if (backSlot.type === "Gym") {
         isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.3);
         isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
@@ -9082,9 +9164,70 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     isoBox(u0, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
   }
 
-  // E) Ön Kenar (u = u1: Çim & Cadde Tarafı - Manzaralı Alçak Süpürgelik & Cam Korkuluk)
-  isoBox(u1 - 4, v0, u1, v1, z0, z0 + 14, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.2);
-  isoBox(u1 - 5, v0, u1 + 1, v1, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+  // E) Ön Kenar (u = u1: Çim & Cadde Tarafı veya Ön Koridor Geçişi)
+  if (doorWall === "front") {
+    // Kapı ön duvara (öndeki koridora) açılıyor! (vd0 = v0 + 95 .. vd1 = v0 + 135)
+    const vd0 = v0 + 95, vd1 = v0 + 135;
+    // Sol süpürgelik
+    isoBox(u1 - 4, v0, u1, vd0, z0, z0 + 14, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.2);
+    isoBox(u1 - 5, v0, u1 + 1, vd0, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+    // Sağ süpürgelik
+    isoBox(u1 - 4, vd1, u1, v1, z0, z0 + 14, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.2);
+    isoBox(u1 - 5, vd1, u1 + 1, v1, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+    // Kapı eşiği (mermer / pirinç geçiş çıtası)
+    isoQuad(u1 - 4, vd0, u1 + 4, vd1, z0 + 0.3, "#e2d5c3", "#a89078", 1);
+    // Kapı söve dikmeleri
+    isoBox(u1 - 2.5, vd0 - 1.5, u1 + 1.5, vd0 + 1.5, z0, z0 + 26, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+    isoBox(u1 - 2.5, vd1 - 1.5, u1 + 1.5, vd1 + 1.5, z0, z0 + 26, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+
+    if (s.type === "Room") {
+      if (!s.hasDoor) {
+        isoQuad(u1 + 2, vd0 + 4, u1 + 2, vd1 - 4, z0 + 28, "#fbbf24", "#d97706", 1.8);
+        isoLabel("🚪 Kapı Al!", u1 + 4, (vd0 + vd1) * 0.5, z0 + 32, 7.5, "#995200", "#fff3cd", 4, 1.5);
+      } else {
+        isoBox(u1 - 8, vd0 + 2, u1 + 2, vd0 + 6, z0, z0 + 63, "#965b32", "#824b26", "#683918", OUTLINE_COL, 1.3);
+        isoBox(u1 - 6, vd0 + 4, u1 - 3, vd0 + 7, z0 + 30, z0 + 33, "#ffd700", "#d4af37", "#9c7c1b", null, 0);
+        isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 7, u1 + 3.5, (vd0 + vd1) * 0.5 + 7, z0 + 48, z0 + 55, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1);
+        isoLabel(String(s.roomNo || 101), u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#3a281f", null, 0, 0);
+      }
+    } else if (s.type === "Toilet") {
+      isoBox(u1 - 8, vd0 + 2, u1 + 2, vd0 + 6, z0, z0 + 63, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.3);
+      isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 12, u1 + 3.5, (vd0 + vd1) * 0.5 + 12, z0 + 48, z0 + 55, "#2563eb", "#1d4ed8", "#1e40af", OUTLINE_COL, 1);
+      isoLabel("WC 🚻", u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+    } else if (s.type === "Gym") {
+      isoBox(u1 - 8, vd0 + 2, u1 + 2, vd0 + 6, z0, z0 + 63, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.3);
+      isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 14, u1 + 3.5, (vd0 + vd1) * 0.5 + 14, z0 + 48, z0 + 55, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
+      isoLabel("GYM 🏋️", u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+    }
+  } else {
+    // Kapı önde değil: Kesintisiz alçak süpürgelik & pervaz
+    isoBox(u1 - 4, v0, u1, v1, z0, z0 + 14, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.2);
+    isoBox(u1 - 5, v0, u1 + 1, v1, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+  }
+
+  // F) 4 Köşe Taşıyıcı Kolonları ve 4 Yöne Bağlantı Kiriş Çerçevesi (Kullanıcı Şeması)
+  if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") {
+    const colSize = 6;
+    const roomCorners = [
+      [u0, v0],
+      [u0, v1 - colSize],
+      [u1 - colSize, v0],
+      [u1 - colSize, v1 - colSize]
+    ];
+    for (const [cu, cv] of roomCorners) {
+      isoBox(cu, cv, cu + colSize, cv + colSize, z0, z1, "#8c583a", "#faf7f2", "#ebe3d5", OUTLINE_COL, 1.1);
+      isoBox(cu - 0.5, cv - 0.5, cu + colSize + 0.5, cv + colSize + 0.5, z0, z0 + 5, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
+      isoBox(cu - 0.5, cv - 0.5, cu + colSize + 0.5, cv + colSize + 0.5, z1 - 5, z1, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
+    }
+
+    // Tavan Kirişleri (Arka, Sol, Sağ ve komşu varsa Ön)
+    isoBox(u0, v0, u0 + 5, v1, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
+    isoBox(u0, v0, u1, v0 + 5, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
+    isoBox(u0, v1 - 5, u1, v1, z1 - 5, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.1);
+    if (frontConnected) {
+      isoBox(u1 - 5, v0, u1, v1, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
+    }
+  }
 
   if (s.type === "Room") {
     ensureRoomFurnLayout(s);
