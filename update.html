@@ -3152,10 +3152,12 @@ function findCorridorSlotPath(fIdx, fromSlotIdx, toSlotIdx) {
   return [fromSlotIdx, toSlotIdx];
 }
 
-function startLeaving(g) {
+function startLeaving(g, fromRoom = null) {
   g.state = "Leaving";
   g.hasBubble = false;
   g.expired = false;
+  g.leaveTimer = 0;
+  const leaveRoom = fromRoom || g.room || g.prevRoom || null;
   const p = g.pawn;
   p.visible = true;
   p.sleeping = false;
@@ -3165,24 +3167,23 @@ function startLeaving(g) {
     kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = p;
   }
   g.kidsAtPark = false;
-  p.wander = false; p.exercise = false; p.speed = 95; p.path = [];
+  p.wander = false; p.exercise = false; p.speed = 110; p.path = [];
 
-  if (!p.iso) {
-    const curUvz = logicalToIsoUVZ(p.pos.x, p.pos.y, p);
-    p.iso = { u: curUvz.u, v: curUvz.v, z: curUvz.z };
-  }
   const exitPath = [];
 
   // Müşteri odadaysa: Duvarlardan geçmeden, kapıdan çıkıp koridorları takip ederek resepsiyona yürü
-  if (g.room) {
-    const doorPts = getRoomDoorPoints(g.room);
-    const corrSlot = getRoomCorridorSlot(g.room);
+  if (leaveRoom) {
+    const doorPts = getRoomDoorPoints(leaveRoom);
+    const corrSlot = getRoomCorridorSlot(leaveRoom);
+    if (!p.iso) {
+      p.iso = { u: doorPts.roomTarget.u, v: doorPts.roomTarget.v, z: doorPts.roomTarget.z };
+    }
     // 1) Oda içinden kapı eşiğine
     exitPath.push(doorPts.inside);
     // 2) Kapıdan geçerek koridora çık
     exitPath.push(doorPts.outside);
 
-    if (g.room.floor.idx === 0) {
+    if (leaveRoom.floor.idx === 0) {
       if (corrSlot) {
         const revPath = findCorridorSlotPath(0, corrSlot.idx, 26);
         for (const sIdx of revPath) {
@@ -3195,18 +3196,18 @@ function startLeaving(g) {
       exitPath.push({ u: 940, v: 505, z: 8 });
     } else {
       // Üst kat: Koridordan o kattaki asansöre yürü
-      const elevF = floors[g.room.floor.idx].slots.find(s => s.type === "Elevator");
+      const elevF = floors[leaveRoom.floor.idx].slots.find(s => s.type === "Elevator");
       const elevCorrF = getElevatorCorridorSlot(elevF);
       if (corrSlot && elevCorrF) {
-        const toElevPath = findCorridorSlotPath(g.room.floor.idx, corrSlot.idx, elevCorrF.idx);
+        const toElevPath = findCorridorSlotPath(leaveRoom.floor.idx, corrSlot.idx, elevCorrF.idx);
         for (const sIdx of toElevPath) {
-          exitPath.push(getSlotCenterIso(g.room.floor.idx, sIdx));
+          exitPath.push(getSlotCenterIso(leaveRoom.floor.idx, sIdx));
         }
       }
       const elev0 = floors[0].slots.find(s => s.type === "Elevator");
       if (elev0) {
         const elevB0 = slotIsoBox(0, elev0.idx);
-        const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: getSlotCenterIso(g.room.floor.idx, 0).z };
+        const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: getSlotCenterIso(leaveRoom.floor.idx, 0).z };
         const elevPt0 = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: 8 };
         exitPath.push(elevPtF);
         exitPath.push(elevPt0);
@@ -3223,11 +3224,20 @@ function startLeaving(g) {
     }
   }
 
+  if (!p.iso) {
+    const curUvz = logicalToIsoUVZ(p.pos.x, p.pos.y, p);
+    p.iso = { u: curUvz.u, v: curUvz.v, z: curUvz.z };
+  }
+
   // Resepsiyon ön çıkış kapısı ve kaldırımdan uzaklaşma
-  exitPath.push({ u: 1035, v: 525, z: 8 });
-  exitPath.push({ u: 1065, v: 525, z: 4 });
+  if (leaveRoom || (p.iso && p.iso.u < 1030)) {
+    exitPath.push({ u: 1035, v: 525, z: 8 });
+    exitPath.push({ u: 1065, v: 525, z: 4 });
+  } else if (p.iso && p.iso.u < 1060) {
+    exitPath.push({ u: 1065, v: 525, z: 4 });
+  }
   exitPath.push({ u: 1095, v: 525, z: 0 });
-  exitPath.push({ u: 1095, v: 1400, z: 0 });
+  exitPath.push({ u: 1095, v: 1150, z: 0 });
 
   p.isoPath = exitPath;
   p.onIsoArrive = () => {
@@ -3744,8 +3754,9 @@ function catchSneaky(g) {
   play("done");
   floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🕵️ Kaçak misafir! +" + fine + " TL", "#1a8c26");
   log("🕵️ " + s.roomNo + ". odada süresi bitmesine rağmen kalan " + g.name + " yakalandı! (+" + fine + " TL ceza, +5 İtibar)");
+  g.prevRoom = s;
   s.guest = null; g.room = null; g.sneaky = false;
-  startLeaving(g);
+  startLeaving(g, s);
   refresh(); saveGame();
 }
 
@@ -3753,6 +3764,7 @@ function evictGuest(g) {
   if (!g || !g.room || g.state === "Leaving") return;
   if (g.sneaky) { catchSneaky(g); return; }
   const s = g.room;
+  g.prevRoom = s;
   s.guest = null;
   g.room = null;
   if (g.role === "Killer") {
@@ -4378,8 +4390,8 @@ function checkout(s) {
     log(g.name + " hediye olarak " + n + " alet bıraktı.");
   }
 
-  s.guest = null; g.room = null;
-  startLeaving(g);
+  const rLeave = s; s.guest = null; g.room = null; g.prevRoom = rLeave;
+  startLeaving(g, rLeave);
   saveGame();
 }
 
@@ -6032,14 +6044,20 @@ function refreshGuest() {
 }
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 20;
-const APP_VERSION_NAME = "1.9.12-beta";
+const APP_VERSION_CODE = 21;
+const APP_VERSION_NAME = "1.9.13-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
 ];
 
 const CHANGELOG_HISTORY = [
+  {
+    ver: "v1.9.13-beta",
+    title: "FPS Drop & Kasma Cozumu, Mobil DPR & Cop Toplayici Optimizasyonu",
+    latest: true,
+    notes: "\u2022 \u26a1 Ani Kasma / FPS Dususunu Giderildi: Gunler ilerledikce otelden ayrilan musterilerin bellekte ve sahnede birikmesine yol acan dongu giderildi; ayrilan konuklar icin otomatik cop toplayici (Garbage Collector) eklendi.\n\u2022 \ud83d\udcf1 Mobil DPR & Piksel Yuku Optimizasyonu: Yuksek cozunurluklu telefon ekranlarinda (3x-3.5x Retina) GPU'yu asiri zorlayan tuval boyutu dengelendi ve 60 FPS akicilik saglandi.\n\u2022 \ud83c\udfc3 Hizli Cikis Rotasi: Ayrilan konuklar gereksiz lobi turlarini atlayarak dogrudan cikis kapisina yonlendirildi ve yuruyus hizlari artirildi.\n\u2022 \ud83c\udfaf Parsel Dongusu Hafifletildi: Her karede 1200'den fazla kez calisan bos parsel insa edilebilirlik taramasi yalnizca insaat cekmecesi acikken calisacak sekilde optimize edildi."
+  },
   {
     ver: "v1.9.5-beta",
     title: "Modüler 5x5 Parsel İnşaatı, 4x4 Oda İçi Eşya Dizilimi & 2.5D Grafikler",
@@ -6488,7 +6506,16 @@ function focusIsoTarget(mode) {
 
 // Mantıksal (wx, wy) oyun koordinatını 5x5 parsel sistemindeki izometrik (u, v, z) koordinatına dönüştürür
 function logicalToIsoUVZ(wx, wy, pawn = null) {
-  // 0) Uyuyan karakterler (ana musteri veya cocuk) dogrudan odalarindaki yatagin yastigina yerlestirilir
+  // 0) Eger pawn'in dogrudan izometrik 3D konumu varsa hemen onu kullan (O(1) ultra-hizli donus)
+  if (pawn && pawn.iso) {
+    return {
+      u: pawn.iso.u,
+      v: pawn.iso.v,
+      z: pawn.iso.z !== undefined ? pawn.iso.z : 0,
+      inPool: false
+    };
+  }
+  // 0.5) Uyuyan karakterler (ana musteri veya cocuk) dogrudan odalarindaki yatagin yastigina yerlestirilir
   if (pawn && (pawn.sleeping || (pawn.follow && pawn.follow.sleeping))) {
     const parentPawn = (pawn.follow && pawn.follow.sleeping) ? pawn.follow : pawn;
     const isKid = !!(pawn.follow && pawn.follow.sleeping);
@@ -7005,7 +7032,7 @@ function drawMiniChibi(u, v, z, skin = "#fcd9b8", hair = "#59331a", shirt = "#4d
 
 // ===== ANA DÜNYA ÇİZİMİ (5x5 PARSEL & 4x4 ODA İÇİ SİSTEMİ) =====
 function drawWorld() {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
   const cw = viewport.clientWidth || 800, ch = viewport.clientHeight || 600;
   if (canvas.width !== Math.floor(cw * dpr) || canvas.height !== Math.floor(ch * dpr)) {
     canvas.width = Math.floor(cw * dpr);
@@ -7094,10 +7121,13 @@ function drawWorld() {
       for (let f = 0; f <= viewFloor; f++) {
         if (floors[f].state !== "Built") continue;
         const s = floors[f].slots[idx];
-        const canB = isParcelBuildable(f, idx);
+        const isBuilt = (s.type !== "Empty" || s.parcelBuilt);
         const isSel = (sel === "Slot" && selSlot === s);
-        if (s.type !== "Empty" || s.parcelBuilt || (f === viewFloor && (showBuildGrid || isSel) && canB)) {
-          drawIsoModularParcel(s, f, idx, canB, showBuildGrid);
+        if (isBuilt || (f === viewFloor && (showBuildGrid || isSel))) {
+          const canB = isBuilt ? true : isParcelBuildable(f, idx);
+          if (isBuilt || canB) {
+            drawIsoModularParcel(s, f, idx, canB, showBuildGrid);
+          }
         }
       }
     }
@@ -8641,7 +8671,7 @@ function updateCarsAndBirds(dt) {
 // ===== ANA OYUN DÖNGÜSÜ =====
 let lastTime = performance.now();
 function loop(now) {
-  const dt = Math.min(0.1, (now - lastTime) / 1000);
+  const dt = Math.max(0, Math.min(0.1, (now - lastTime) / 1000));
   lastTime = now;
   timeNow += dt;
 
@@ -8774,10 +8804,26 @@ function loop(now) {
   updateDeliveries(dt);
   updateReceptionistAuto(dt);
 
-    // Kisi Hareketleri
+  // Guvenli Temizlik: Cikis yapan misafirler ve basibos pawns icin periyodik Garbage Collection
+  for (let i = guests.length - 1; i >= 0; i--) {
+    const g = guests[i];
+    if (g.state === "Leaving") {
+      g.leaveTimer = (g.leaveTimer || 0) + dt;
+      if (g.leaveTimer > 10 || (g.pawn && g.pawn.iso && g.pawn.iso.v >= 1140) || (g.pawn && g.pawn.dead)) {
+        destroyPawn(g.pawn);
+        for (const k of g.kidPawns) destroyPawn(k);
+        guests.splice(i, 1);
+      }
+    }
+  }
+
+  // Kisi Hareketleri & Olulerin / Uzanmislarin Temizligi
   for (let i = pawns.length - 1; i >= 0; i--) {
     const p = pawns[i];
-    if (p.dead) { pawns.splice(i, 1); continue; }
+    if (p.dead || (p.iso && p.iso.v >= 1140)) {
+      pawns.splice(i, 1);
+      continue;
+    }
     let moving = false, climbing = false;
 
     // Izometrik 3D Yol Hareketi (Kaldirim, Giris Tas Yolu, Lobi Kuyrugu, Odaya Gidis)
