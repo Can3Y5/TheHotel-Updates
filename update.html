@@ -2916,14 +2916,6 @@ function onOffer() {
   }
   const g = front();
   if (!g) return;
-  if (freeRoomCount() === 0 && curPrice <= g.budget) {
-    play("reject");
-    log("⚠️ Otelde boş oda yok! Önce süresi dolan bir müşteriyi gönder, yeni oda aç veya oteli kapat.");
-    if (typeof camCenter !== "undefined") {
-      floatText(camCenter.x, camCenter.y, "⚠️ Otel Dolu! '❌ Reddet'e basarak müşteriyi gönderin veya yeni oda açın.", "#d93333");
-    }
-    return;
-  }
   if (curPrice <= g.budget) { acceptGuest(g, curPrice); return; }
   g.attempts++;
   if (g.type === "Needy" || g.type === "Freebie") {
@@ -2957,9 +2949,6 @@ function acceptGuest(g, price) {
   if (freeRoomCount() === 0) {
     play("reject");
     log("⚠️ Şu an boş oda yok! Önce süresi dolan bir müşteriyi gönder veya yeni oda aç (ya da oteli kapat).");
-    if (typeof camCenter !== "undefined") {
-      floatText(camCenter.x, camCenter.y, "⚠️ Otelde Boş Oda Yok! (Otel Dolu)", "#d93333");
-    }
     return;
   }
   play("place");
@@ -6660,23 +6649,11 @@ function refreshGuest() {
     } else {
       guestText.textContent = "🛎️ " + g.name + " • " + g.days + " gün" + kidTr + " • 💰 " + g.offer + " TL öneriyor\n📌 İstek: " + wantList(g, false) + "  |  " + status + hintLine;
     }
-    if (pending) {
-      offerBtn.textContent = "✔ Odaya Yerleştir";
-      offerBtn.style.background = "";
-    } else if (freeRoomCount() === 0 && (curPrice <= g.offer || g.type !== "Normal")) {
-      offerBtn.textContent = "🚫 Otel Dolu";
-      offerBtn.style.background = "#d97706";
-      guestText.textContent += "\n⚠️ Oteldeki tüm odalar dolu! Yeni bir oda inşa edin veya müşteriyi '❌ Reddet' ile geri çevirin.";
-    } else if (g.type !== "Normal") {
-      offerBtn.textContent = curPrice <= 0 ? "🤝 Bedava Al" : "💬 Teklif Ver";
-      offerBtn.style.background = "";
-    } else {
-      offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif Ver";
-      offerBtn.style.background = "";
-    }
+    if (pending) offerBtn.textContent = "✔ Odaya Yerleştir";
+    else if (g.type !== "Normal") offerBtn.textContent = curPrice <= 0 ? "🤝 Bedava Al" : "💬 Teklif Ver";
+    else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif Ver";
   } else {
     offerBtn.textContent = "💬 Teklif Ver";
-    offerBtn.style.background = "";
   }
 }
 
