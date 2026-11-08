@@ -1,8 +1,8 @@
 {
-  "versionCode": 22,
-  "versionName": "1.9.14-beta",
+  "versionCode": 23,
+  "versionName": "1.9.15-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.14-beta: Resepsiyon bankosu önüne özel mavi dairesel teklif verme noktası eklendi; sıranın başındaki müşteri tam bu noktada pazarlık yapar. Müşteri geliş rotası kaldırımdan giriş taş yoluna ve bankoya bağlanacak şekilde kırmızı kesik çizgiye uyarlandı. Bekleyen diğer müşteriler teklif noktasının arkasından kapı eşiğine, giriş taş yoluna ve kaldırıma doğru tek sıra halinde dizilir. Müşteri ayrılış rotası sarı kesik çizgiye göre kaldırımdan cadde boyunca aşağıya yönlendirildi. Caddenin karşısına yeni karşı kaldırım inşa edildi."
+  "notes": "v1.9.15-beta: Koridor ve Genel WC arasındaki bağlantı duvarına şık beyaz banyo kapısı, krom kol ve mavi WC tabelası eklendi; koridor hollerinden WC'ye kapılı geçiş sağlandı. Resepsiyon ile otel odaları arasındaki çift duvar kaldırıldı, tek ve temiz bir bölme duvarı oluşturuldu. Koridor ve hol parselleri üzerindeki KORİDOR & HOL isim etiketleri kaldırılarak sade ve ferah bir lüks koridor görünümü sağlandı."
 }
