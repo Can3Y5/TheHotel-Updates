@@ -1,8 +1,8 @@
 {
-  "versionCode": 19,
-  "versionName": "1.9.11-beta",
+  "versionCode": 20,
+  "versionName": "1.9.12-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.11-beta: Özel banyo boyutu 2x2'den 2x1'e düşürülerek odada yer açıldı. Resepsiyon arka duvarındaki asansör kaldırıldı; arkasına koridor eklendiğinde lüks kapısız kemerli giriş açılması sağlandı. Asansör koridora bağlı olma zorunluluğuyla bağımsız inşa edilebilir bir oda türü haline getirildi ve üst katlara erişim asansöre bağlandı."
+  "notes": "v1.9.12-beta: Koridordaki kirmizi yolluk hali L ve T donuslerinde kesintisiz baglanacak sekilde dinamik hale getirildi. Musterilerin oda duvarlarindan gecmesi engellendi; misafirler artik odalarina ve cikisa tamamen koridor merkezlerini ve kapilari takip ederek ulasiyor. Asansor gorseli bastan asagi yenilendi; sari blok kaldirilarak panoramik seffaf cam kabin, fircalanmis celik sutunlar, cift kayar kapi, dijital LED kat gostergesi ve koridora tam oturan luks portal eklendi."
 }
