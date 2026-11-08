@@ -1864,42 +1864,30 @@ function getRoomAvailableDoorWalls(s) {
   const fl = s.floor;
   if (!fl) return [];
   const walls = [];
+
+  // 1. Öncelik: Koridor olan komşular
   if (gu > 0 && isCorridor(fl.slots[(gu - 1) * 6 + gv])) walls.push("back");
   if (gv < 5 && isCorridor(fl.slots[gu * 6 + (gv + 1)])) walls.push("right");
   if (gv > 0 && isCorridor(fl.slots[gu * 6 + (gv - 1)])) walls.push("left");
   if (gu < 5 && isCorridor(fl.slots[(gu + 1) * 6 + gv])) walls.push("front");
-  return walls;
+  if (walls.length > 0) return walls;
+
+  // 2. Öncelik: Koridor yoksa inşa edilmiş çatı altı yapılar (Resepsiyon, diğer odalar vs.)
+  if (gu > 0 && fl.slots[(gu - 1) * 6 + gv] && fl.slots[(gu - 1) * 6 + gv].type !== "Empty") walls.push("back");
+  if (gv < 5 && fl.slots[gu * 6 + (gv + 1)] && fl.slots[gu * 6 + (gv + 1)].type !== "Empty") walls.push("right");
+  if (gv > 0 && fl.slots[gu * 6 + (gv - 1)] && fl.slots[gu * 6 + (gv - 1)].type !== "Empty") walls.push("left");
+  if (gu < 5 && fl.slots[(gu + 1) * 6 + gv] && fl.slots[(gu + 1) * 6 + gv].type !== "Empty") walls.push("front");
+  if (walls.length > 0) return walls;
+
+  return ["back"];
 }
 
-// Odanın kapısının hangi duvara açılacağını tespit eder: "back", "right", "left", "front" veya null (koridora değmiyorsa)
+// Odanın kapısının hangi duvara açılacağını tespit eder: "back", "right", "left", "front" (ÖZEL odalarda SADECE 1 GİRİŞ KAPISI)
 function getRoomDoorWall(s) {
   if (!s || (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym")) return null;
-  const { gu, gv } = parcelCoords(s.idx);
-  const fl = s.floor;
-  if (!fl) return null;
-
-  // 4 komşu parsel
-  const back = (gu > 0) ? fl.slots[(gu - 1) * 6 + gv] : null;
-  const right = (gv < 5) ? fl.slots[gu * 6 + (gv + 1)] : null;
-  const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
-  const front = (gu < 5) ? fl.slots[(gu + 1) * 6 + gv] : null;
-
-  // Özel odalarda SADECE 1 TANE giriş kısmı olmalı:
-  // Eğer odanın seçilmiş geçerli bir kapı yönü varsa ve o komşuda koridor bulunuyorsa onu koru
-  if (s.doorWall) {
-    if (s.doorWall === "back" && isCorridor(back)) return "back";
-    if (s.doorWall === "right" && isCorridor(right)) return "right";
-    if (s.doorWall === "left" && isCorridor(left)) return "left";
-    if (s.doorWall === "front" && isCorridor(front)) return "front";
-  }
-
-  // Kapı SADECE ve SADECE komşu bir Koridor'a açılabilir (Resepsiyon'a asla kapı açılamaz!)
-  // Öncelik: back (arkadaki koridor - en doğal izometrik otel girişi), sonra right, left, front.
-  if (isCorridor(back)) return "back";
-  if (isCorridor(right)) return "right";
-  if (isCorridor(left)) return "left";
-  if (isCorridor(front)) return "front";
-  return null;
+  const avail = getRoomAvailableDoorWalls(s);
+  if (s.doorWall && avail.includes(s.doorWall)) return s.doorWall;
+  return avail[0] || "back";
 }
 
 function getWallTrName(w) {
@@ -6737,8 +6725,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 26;
-const APP_VERSION_NAME = "1.9.18-beta";
+const APP_VERSION_CODE = 27;
+const APP_VERSION_NAME = "1.9.19-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6746,9 +6734,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.19-beta",
+    title: "Gelişmiş Dış Mekan Atmosferi, Viktorya Sokak Lambaları, Çiçek Saksıları, Yaya Geçidi & 4 Köşe Oda Mimarisi",
+    latest: true,
+    notes: "• 🌳 Zengin Dış Mekan & Bahçe Atmosferi: Kaldırım boyunca dökme demir Viktorya sokak lambaları yerleştirildi; akşam ve gece saatlerinde zemine sıcak amber ışık yayarlar. Kaldırım bordürüne renkli petunyalarla dolu sedir ağacı çiçek tarhları (planter box) eklendi.\n• 🚸 Yaya Geçidi (Zebra Crossing): Otel giriş kapısının tam karşısına cadde boyunca uzanan belirgin beyaz yaya geçidi çizgileri çizildi.\n• 🌴 Rüzgarda Salınan Palmiyeler & Taş Yatakları: Palmiye ağaçlarına rüzgarda organik salınım animasyonu, gövde diplerine koyu organik malç ve dekoratif beyaz peyzaj çakıl taşları eklendi.\n• ✨ Mevsimsel Atmosfer Parçacıkları: İlkbaharda rüzgarda uçuşan pembe sakura yaprakları, yaz gecelerinde dans eden ışıltılı ateş böcekleri, sonbaharda süzülen altın sarısı-kızıl yapraklar ve kışın yumuşak kar taneleri eklendi.\n• 🏛️ 4 Köşe Mimari Kolonları & Tek Kapı: Özel odalarda 4 köşeye taşıyıcı kolonlar eklendi, koridor geçişlerindeki yüzen kirişler kaldırıldı ve odalarda tek giriş kapısı garantilendi."
+  },
+  {
     ver: "v1.9.18-beta",
     title: "Lüks İtalyan Mermeri & Meşe Parke Dokuları, Kraliyet Halısı, Köşe Kolonları ve 4 Yöne Bağlantı",
-    latest: true,
+    latest: false,
     notes: "• 🏛️ Lüks Zemin Dokuları: Otel odalarına sıcak meşe balıksırtı ahşap parke dokusu; koridor, lobi ve resepsiyona cilalı İtalyan mermer dokusu; koridor yolluklarına altın işlemeli bordo kraliyet halısı deseni entegre edildi.\n• 🌑 Ortam Gölgeleri (Ambient Occlusion): Duvar diplerine ve köşelere yumuşak geçişli gölgeler eklenerek odalara gerçekçi 3D derinlik kazandırıldı.\n• 📐 4 Yöne Bağlantı & Mimari Köşe Kolonları: Özel odaların 4 köşesine taşıyıcı kolonlar ve tavan bağlantı kirişleri eklendi. Özel odalarda kesin olarak tek kapı garantilendi ve çoklu koridor komşuluğunda '🔄 Kapı Yönü' değiştirme seçeneği getirildi."
   },
   {
@@ -7807,55 +7801,172 @@ function drawRoomFloorAO(u0, v0, u1, v1, z) {
 }
 
 // ===== BUNDLED: render/props.js =====
-// [render/props.js] Dekor: palmiye, çalı, şemsiye, şezlong, saksı, mini karakter
+// [render/props.js] Dekor: palmiye, çalı, şemsiye, şezlong, saksı, mini karakter, sokak lambası, çiçeklik
 function drawPalmTree(u, v, z, scale = 1.0, flip = 1) {
   const p = iso(u, v, z);
   ctx.save();
   ctx.translate(p.x, p.y);
   ctx.scale(scale * flip, scale);
-  ctx.fillStyle = "rgba(25, 55, 18, 0.24)";
-  ctx.beginPath(); ctx.ellipse(6, 4, 38, 16, 0, 0, Math.PI * 2); ctx.fill();
+
+  // 1) Ağaç dibi malç ve beyaz bahçe çakıl taşları halkası
+  ctx.fillStyle = "rgba(40, 25, 15, 0.45)";
+  ctx.beginPath(); ctx.ellipse(0, 3, 24, 11, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#f1f5f9"; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1;
+  for (let a = 0; a < Math.PI * 2; a += 0.7) {
+    const sx = Math.cos(a) * 22, sy = Math.sin(a) * 10 + 2;
+    ctx.beginPath(); ctx.ellipse(sx, sy, 3, 2, a, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
+
+  // 2) Zemin yumuşak gölgesi
+  ctx.fillStyle = "rgba(20, 45, 15, 0.22)";
+  ctx.beginPath(); ctx.ellipse(12, 6, 42, 17, 0, 0, Math.PI * 2); ctx.fill();
+
+  // 3) Hafif rüzgar salınımı
+  const sway = Math.sin((timeNow || 0) * 1.6 + (u + v) * 0.02) * 3.5;
+
+  // 4) Eğrisel Palmiye Gövdesi
   ctx.beginPath();
   ctx.moveTo(-9, 2);
-  ctx.quadraticCurveTo(-20, -48, -6, -98);
-  ctx.lineTo(6, -98);
-  ctx.quadraticCurveTo(-6, -48, 9, 2);
+  ctx.quadraticCurveTo(-22 + sway * 0.5, -48, -6 + sway, -100);
+  ctx.lineTo(6 + sway, -100);
+  ctx.quadraticCurveTo(-6 + sway * 0.5, -48, 9, 2);
   ctx.closePath();
   ctx.fillStyle = "#8c5838"; ctx.fill();
-  ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2.5; ctx.stroke();
-  ctx.strokeStyle = "#693e24"; ctx.lineWidth = 1.8;
-  for (let k = 1; k <= 5; k++) {
-    const ty = -k * 16, tx = -k * 1.6;
-    ctx.beginPath(); ctx.moveTo(tx - 7, ty); ctx.quadraticCurveTo(tx, ty - 3, tx + 7, ty); ctx.stroke();
+  ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2.4; ctx.stroke();
+
+  // Gövde doku halkaları
+  ctx.strokeStyle = "#653a1f"; ctx.lineWidth = 1.8;
+  for (let k = 1; k <= 6; k++) {
+    const ty = -k * 15, tx = (-k * 1.5) + sway * (k / 6);
+    ctx.beginPath(); ctx.moveTo(tx - 7.5, ty); ctx.quadraticCurveTo(tx, ty - 3, tx + 7.5, ty); ctx.stroke();
   }
+
+  // 5) Zengin Katmanlı Palmiye Yaprakları (Derin gölgeli alt katman + Canlı üst katman)
   const fronds = [
-    { ang: -2.55, len: 58, col: "#3d9429" },
-    { ang: -0.55, len: 58, col: "#3d9429" },
-    { ang: -2.05, len: 64, col: "#52b536" },
-    { ang: -1.05, len: 64, col: "#52b536" },
-    { ang: -2.90, len: 52, col: "#68cc49" },
-    { ang: -0.20, len: 52, col: "#68cc49" },
-    { ang: -1.57, len: 46, col: "#74d954" }
+    { ang: -2.55, len: 62, col: "#2f7a1f", w: 1 },
+    { ang: -0.55, len: 62, col: "#2f7a1f", w: 1 },
+    { ang: -2.05, len: 68, col: "#44a62b", w: 1.1 },
+    { ang: -1.05, len: 68, col: "#44a62b", w: 1.1 },
+    { ang: -2.85, len: 54, col: "#5ec93c", w: 0.9 },
+    { ang: -0.25, len: 54, col: "#5ec93c", w: 0.9 },
+    { ang: -1.57, len: 50, col: "#76db4f", w: 1.0 }
   ];
-  ctx.translate(-1, -100);
+
+  ctx.translate(-1 + sway, -102);
   for (const fr of fronds) {
     ctx.save();
-    ctx.rotate(fr.ang + Math.PI * 0.5);
+    ctx.rotate(fr.ang + Math.PI * 0.5 + sway * 0.02);
     ctx.beginPath();
     ctx.moveTo(0, 0);
-    ctx.quadraticCurveTo(fr.len * 0.5, -22, fr.len, 10);
-    ctx.quadraticCurveTo(fr.len * 0.55, 2, 0, 5);
+    ctx.quadraticCurveTo(fr.len * 0.48, -24 * fr.w, fr.len, 12);
+    ctx.quadraticCurveTo(fr.len * 0.52, 3, 0, 6);
     ctx.closePath();
     ctx.fillStyle = fr.col; ctx.fill();
-    ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2.2; ctx.stroke();
+    ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2.0; ctx.stroke();
+
+    // Yaprak omurga çizgisi
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(0, 2); ctx.quadraticCurveTo(fr.len * 0.5, -8, fr.len * 0.9, 10); ctx.stroke();
     ctx.restore();
   }
-  for (const cx of [-5, 4, 0]) {
-    ctx.beginPath(); ctx.arc(cx, 3 + Math.abs(cx) * 0.4, 5, 0, Math.PI * 2);
-    ctx.fillStyle = "#6e4226"; ctx.fill();
+
+  // 6) Hindistan Cevizleri (Coconuts)
+  for (const cx of [-6, 5, 0]) {
+    ctx.beginPath(); ctx.arc(cx, 3 + Math.abs(cx) * 0.4, 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = "#5c371d"; ctx.fill();
     ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.6; ctx.stroke();
   }
   ctx.restore();
+}
+
+// Antika Döküm Sokak Lambası (Victorian Street Lamp) & Gece Sıcak Işık Haleleri
+function drawVictorianStreetLamp(u, v, z, isNight, lampGlowAlpha = 0) {
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+
+  // 1) Gece zemine vuran sıcak sarı ışık halesi
+  if (isNight || lampGlowAlpha > 0.05) {
+    const alpha = lampGlowAlpha || 0.42;
+    const glow = ctx.createRadialGradient(0, 4, 8, 0, 4, 75);
+    glow.addColorStop(0, `rgba(254, 240, 138, ${alpha})`);
+    glow.addColorStop(0.5, `rgba(251, 191, 36, ${alpha * 0.4})`);
+    glow.addColorStop(1, "rgba(251, 191, 36, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.ellipse(0, 4, 75, 34, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 2) Taban döküm gölgesi
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.beginPath(); ctx.ellipse(0, 2, 9, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+
+  // 3) Ferforje Döküm Ayak & Kaide
+  ctx.fillStyle = "#1e293b"; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(-7, 2); ctx.lineTo(-4, -8); ctx.lineTo(4, -8); ctx.lineTo(7, 2);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Altın halka detay
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath(); ctx.roundRect(-4.5, -11, 9, 3, 1); ctx.fill(); ctx.stroke();
+
+  // İnce döküm siyah direk
+  ctx.fillStyle = "#0f172a";
+  ctx.beginPath(); ctx.roundRect(-2.5, -68, 5, 57, 1); ctx.fill(); ctx.stroke();
+
+  // Üst altın bilezik
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath(); ctx.roundRect(-3.5, -69, 7, 3, 1); ctx.fill(); ctx.stroke();
+
+  // 4) Antika Fener Başlığı
+  ctx.fillStyle = "#1e293b";
+  ctx.beginPath(); ctx.moveTo(-9, -70); ctx.lineTo(9, -70); ctx.lineTo(6, -74); ctx.lineTo(-6, -74); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Fener camı & yanan ampul
+  const bulbCol = (isNight || lampGlowAlpha > 0.1) ? "#fef08a" : "#cbd5e1";
+  ctx.fillStyle = (isNight || lampGlowAlpha > 0.1) ? "rgba(254, 240, 138, 0.95)" : "rgba(226, 232, 240, 0.75)";
+  ctx.beginPath();
+  ctx.moveTo(-6, -74); ctx.lineTo(6, -74); ctx.lineTo(8, -86); ctx.lineTo(-8, -86);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Fener ampulü
+  ctx.fillStyle = bulbCol;
+  ctx.beginPath(); ctx.arc(0, -80, 3.5, 0, Math.PI * 2); ctx.fill();
+
+  // Fener tavan kubbesi & sivri altın tepelik
+  ctx.fillStyle = "#1e293b";
+  ctx.beginPath();
+  ctx.moveTo(-10, -86); ctx.lineTo(10, -86); ctx.lineTo(0, -96);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#ffd700";
+  ctx.beginPath(); ctx.arc(0, -97, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  ctx.restore();
+}
+
+// Ahşap Çiçeklik & Çiçek Tarhı (Kaldırım ve Bahçe Süslemesi)
+function drawFlowerPlanterBox(u, v, z, lenU = 45, lenV = 16) {
+  isoBox(u, v, u + lenU, v + lenV, z, z + 9, "#854d0e", "#713f12", "#58310c", OUTLINE_COL, 1.4);
+  isoQuad(u + 2, v + 2, u + lenU - 2, v + lenV - 2, z + 8, "#3f2512", null, 0);
+
+  const flowerCols = ["#ef4444", "#f59e0b", "#ec4899", "#8b5cf6", "#facc15"];
+  for (let fu = u + 6; fu <= u + lenU - 6; fu += 9) {
+    const fv = v + lenV * 0.5;
+    const fp = iso(fu, fv, z + 9);
+    ctx.save();
+    ctx.translate(fp.x, fp.y);
+    ctx.fillStyle = "#22c55e";
+    ctx.beginPath(); ctx.arc(-2, -2, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(2, -2, 3, 0, Math.PI * 2); ctx.fill();
+    const colIdx = Math.floor(fu * 7) % flowerCols.length;
+    ctx.fillStyle = flowerCols[colIdx];
+    ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, -5, 3.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fef08a";
+    ctx.beginPath(); ctx.arc(0, -5, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
 }
 
 function drawResortBush(u, v, z, scale = 1.0) {
@@ -7991,9 +8102,26 @@ function drawWorld() {
   ctx.save();
   ctx.scale(dpr, dpr);
 
-  // 1) Çim Arka Plan (Tam Ekran Tatil Köyü Zemini)
-  const lawnCols = ["#74c447", "#68bd3e", "#b59e45", "#dfeaf5"];
-  ctx.fillStyle = lawnCols[si];
+  // 1) Çim Arka Plan (Güneş Işıklı Zengin Çayır Gradyanı)
+  const lawnGrad = ctx.createLinearGradient(0, 0, cw, ch);
+  if (si === 0) { // İlkbahar: Taze sıcak çayır ve güneş ışıltısı
+    lawnGrad.addColorStop(0, "#82d952");
+    lawnGrad.addColorStop(0.5, "#6fca41");
+    lawnGrad.addColorStop(1, "#5cb832");
+  } else if (si === 1) { // Yaz: Canlı tropik zümrüt
+    lawnGrad.addColorStop(0, "#76cc45");
+    lawnGrad.addColorStop(0.5, "#62bd33");
+    lawnGrad.addColorStop(1, "#4fa826");
+  } else if (si === 2) { // Sonbahar: Sıcak altın sarısı & pas
+    lawnGrad.addColorStop(0, "#c9b354");
+    lawnGrad.addColorStop(0.5, "#b59e45");
+    lawnGrad.addColorStop(1, "#9e8835");
+  } else { // Kış: Kar kristalleri ve buzul mavisi
+    lawnGrad.addColorStop(0, "#edf5fc");
+    lawnGrad.addColorStop(0.5, "#dfeaf5");
+    lawnGrad.addColorStop(1, "#cde0f0");
+  }
+  ctx.fillStyle = lawnGrad;
   ctx.fillRect(0, 0, cw, ch);
 
   ctx.save();
@@ -8009,6 +8137,9 @@ function drawWorld() {
     ctx.fillStyle = patchCol;
     ctx.beginPath(); ctx.ellipse(pt[0], pt[1], pt[2], pt[3], 0, 0, Math.PI * 2); ctx.fill();
   }
+
+  // Çayır detayları: Tatlı çim tutamları ve kır çiçekleri
+  drawLushLawnDetails(si);
 
   // Arka peyzaj ağaçları
   drawResortBush(40, -140, 0, 1.15);
@@ -8055,6 +8186,12 @@ function drawWorld() {
     isoQuad(roadU0 + 82, v, roadU0 + 98, v + 70, -3, "#f5df66", null, 0);
   }
 
+  // 3.1) Otel Girişi Karşısı Stilize Yaya Geçidi (Zebra Crossing)
+  const recSlotForPath = allSlots.find(s => s.type === "Reception" && s.floor.idx === 0) || floors[0].slots[32];
+  const recBox = slotIsoBox(0, recSlotForPath.idx);
+  const recCenterV = (recBox.v0 + recBox.v1) * 0.5;
+  drawZebraCrossing(roadU0, roadU1, recCenterV, 96);
+
   // 3.2) Karşı Kaldırım (u = 1530 .. 1620): Caddenin karşısındaki kaldırım!
   const oppSwU0 = roadU1;             // 1530
   const oppSwU1 = oppSwU0 + 90;       // 1620
@@ -8068,10 +8205,22 @@ function drawWorld() {
   // Yol ile karşı kaldırım arasındaki bordür basamağı (z = -4'ten z = 0'a)
   isoQuad(oppSwU0 - 4, -350, oppSwU0, 1550, -0.5, "#6b7280", OUTLINE_COL, 1.2);
 
+  // 3.3) Kaldırım Üzeri Çiçeklikler ve Ferforje Sokak Lambaları
+  const planterVs = [-80, 240, 720, 1080];
+  for (const pv of planterVs) {
+    if (typeof drawFlowerPlanterBox === "function") {
+      drawFlowerPlanterBox(swU0 + 16, pv, 0, 46, 15);
+    }
+  }
+
+  const lampVs = [-220, 90, 510, 900, 1280];
+  for (const lv of lampVs) {
+    if (typeof drawVictorianStreetLamp === "function") {
+      drawVictorianStreetLamp(swU0 + 20, lv, 0, isNight, (1 - b));
+    }
+  }
+
   // 3.5) Giriş Taş Yolu: Kaldırım (u=1260) ile Resepsiyon girişi (u=1170) arasındaki çim boşluğunu birleştiren taş yol!
-  const recSlotForPath = allSlots.find(s => s.type === "Reception" && s.floor.idx === 0) || floors[0].slots[32];
-  const recBox = slotIsoBox(0, recSlotForPath.idx);
-  const recCenterV = (recBox.v0 + recBox.v1) * 0.5;
   drawEntranceStonePath(recBox.u1, swU0, recCenterV - 50, recCenterV + 50);
 
   // 4) 6x6 Modüler Parselleri + Zemin Kat Yola Paralel 8 Parseli Arkadan Öne Doğru (Painter's Algorithm: sum = 0..11) Çiz
@@ -8182,14 +8331,57 @@ function drawWorld() {
 
   ctx.restore();
 
-  // Mevsim parçacıkları
-  if (si !== 1) {
-    const pRadius = si === 3 ? 4 : si === 2 ? 6 : 5;
-    ctx.fillStyle = PartCol[si];
+  // Mevsim atmosfer parçacıkları (Dönen sakura yaprakları, sonbahar yaprakları veya kar)
+  if (si === 0) {
+    // İlkbahar: Zarif pembe sakura taç yaprakları (hafif dönerek ve salınarak süzülür)
+    for (let i = 0; i < parts.length; i++) {
+      const px = parts[i].x * cw;
+      const py = (1 - parts[i].y) * ch;
+      const rot = (timeNow || 0) * 1.5 + i;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(rot);
+      ctx.fillStyle = i % 2 === 0 ? "rgba(251, 207, 232, 0.88)" : "rgba(244, 114, 182, 0.82)";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 5, 2.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else if (si === 2) {
+    // Sonbahar: Altın-kızıl dökülen yapraklar
+    for (let i = 0; i < parts.length; i++) {
+      const px = parts[i].x * cw;
+      const py = (1 - parts[i].y) * ch;
+      const rot = (timeNow || 0) * 2.0 + i;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(rot);
+      ctx.fillStyle = i % 2 === 0 ? "rgba(217, 119, 6, 0.85)" : "rgba(185, 28, 28, 0.8)";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 5.5, 3.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else if (si === 3) {
+    // Kış: Kar kristalleri
+    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
     for (let i = 0; i < parts.length; i++) {
       ctx.beginPath();
-      ctx.arc(parts[i].x * cw, (1 - parts[i].y) * ch, pRadius, 0, Math.PI * 2);
+      ctx.arc(parts[i].x * cw, (1 - parts[i].y) * ch, 3.5, 0, Math.PI * 2);
       ctx.fill();
+    }
+  } else if (isNight) {
+    // Yaz Gecesi: Yanıp sönen tatlı ateşböcekleri (Fireflies)
+    for (let i = 0; i < 18; i++) {
+      const fx = (Math.sin(i * 12.3 + (timeNow || 0) * 0.4) * 0.45 + 0.5) * cw;
+      const fy = (Math.cos(i * 9.7 + (timeNow || 0) * 0.5) * 0.45 + 0.5) * ch;
+      const glow = Math.sin((timeNow || 0) * 3 + i) * 0.5 + 0.5;
+      if (glow > 0.3) {
+        ctx.fillStyle = `rgba(253, 224, 71, ${glow * 0.85})`;
+        ctx.beginPath();
+        ctx.arc(fx, fy, 2.5 * glow, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -8365,11 +8557,12 @@ function drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, wallCo
   }
 }
 
-// Giriş Taş Yolu (Cadde kaldırımından Resepsiyona uzanan doğal taş döşeli yürüyüş yolu)
+// Giriş Taş Yolu (Cadde kaldırımından Resepsiyona uzanan lüks doğal taş döşeli yürüyüş yolu)
 function drawEntranceStonePath(u0, u1, v0, v1) {
-  // Doğal taş döşeme tabanı
+  // 1) Doğal taş döşeme tabanı
   isoQuad(u0, v0, u1, v1, 0.4, "#e2e8f0", OUTLINE_COL, 1.8);
-  // Doğal taş derzleri ve plakaları
+
+  // 2) İtalyan granit taş derzleri ve plakaları
   const du = (u1 - u0) / 4, dv = (v1 - v0) / 4;
   for (let iu = 0; iu < 4; iu++) {
     for (let iv = 0; iv < 4; iv++) {
@@ -8377,9 +8570,22 @@ function drawEntranceStonePath(u0, u1, v0, v1) {
       isoQuad(u0 + iu * du + 1.5, v0 + iv * dv + 1.5, u0 + (iu + 1) * du - 1.5, v0 + (iv + 1) * dv - 1.5, 0.6, col, "rgba(100,116,139,0.3)", 1);
     }
   }
-  // Yol kenarı gömme zemin aydınlatmaları
-  isoBox(u1 - 8, v0 + 4, u1 - 2, v0 + 10, 0, 4, "#ffd700", "#eab308", "#ca8a04", null, 0);
-  isoBox(u1 - 8, v1 - 10, u1 - 2, v1 - 4, 0, 4, "#ffd700", "#eab308", "#ca8a04", null, 0);
+
+  // 3) Yan granit bordür taşları (sol ve sağ)
+  isoBox(u0, v0 - 5, u1, v0, 0, 3, "#94a3b8", "#64748b", "#475569", OUTLINE_COL, 1.2);
+  isoBox(u0, v1, u1, v1 + 5, 0, 3, "#94a3b8", "#64748b", "#475569", OUTLINE_COL, 1.2);
+
+  // 4) Giriş kenarı şık çiçek tarhları
+  if (typeof drawFlowerPlanterBox === "function") {
+    drawFlowerPlanterBox((u0 + u1) * 0.5 - 20, v0 - 22, 0, 40, 14);
+    drawFlowerPlanterBox((u0 + u1) * 0.5 - 20, v1 + 8, 0, 40, 14);
+  }
+
+  // 5) Yol kenarı pirinç gömme ve sütun aydınlatmaları
+  isoBox(u1 - 8, v0 + 4, u1 - 2, v0 + 10, 0, 6, "#ffd700", "#eab308", "#ca8a04", OUTLINE_COL, 1);
+  isoBox(u1 - 8, v1 - 10, u1 - 2, v1 - 4, 0, 6, "#ffd700", "#eab308", "#ca8a04", OUTLINE_COL, 1);
+  isoBox(u0 + 4, v0 + 4, u0 + 10, v0 + 10, 0, 6, "#ffd700", "#eab308", "#ca8a04", OUTLINE_COL, 1);
+  isoBox(u0 + 4, v1 - 10, u0 + 10, v1 - 4, 0, 6, "#ffd700", "#eab308", "#ca8a04", OUTLINE_COL, 1);
 }
 
 // 7.5) Girişteki Haftalık Gazete Rulosu
@@ -8407,6 +8613,58 @@ function drawIsoNewspaper() {
     play("tap");
     showWeeklyNewspaper(false);
   });
+}
+
+// 7.6) Otel Girişi Karşısı Stilize Yaya Geçidi (Zebra Crossing)
+function drawZebraCrossing(u0, u1, vCenter, widthV = 96) {
+  const v0 = vCenter - widthV * 0.5;
+  const v1 = vCenter + widthV * 0.5;
+  const stripeW = 12;
+  for (let v = v0; v < v1; v += stripeW * 2) {
+    isoQuad(u0 + 6, v, u1 - 6, v + stripeW, -3.2, "rgba(255, 255, 255, 0.92)", null, 0);
+  }
+}
+
+// 7.7) Çayır Zenginleştirmesi: Stilize Çim Tutamları, Kır Çiçekleri ve Çakıl Taşları
+function drawLushLawnDetails(si) {
+  const spots = [
+    { u: -120, v: 240, fl: true }, { u: -180, v: 620, fl: false }, { u: -80, v: 920, fl: true },
+    { u: 220, v: -110, fl: false }, { u: 640, v: -90, fl: true }, { u: 1020, v: -110, fl: false },
+    { u: 1210, v: 120, fl: true }, { u: 1220, v: 340, fl: false }, { u: 1215, v: 780, fl: true }, { u: 1210, v: 1100, fl: true },
+    { u: 420, v: 1220, fl: false }, { u: 820, v: 1230, fl: true }, { u: 1180, v: 1350, fl: false },
+    { u: 1560, v: 140, fl: true }, { u: 1570, v: 640, fl: false }, { u: 1565, v: 1040, fl: true }
+  ];
+
+  const grassCol = si === 3 ? "#94a3b8" : si === 2 ? "#854d0e" : "#22c55e";
+  const flowerCols = ["#ffffff", "#fef08a", "#c084fc", "#f472b6"];
+
+  for (let i = 0; i < spots.length; i++) {
+    const sp = spots[i];
+    const p = iso(sp.u, sp.v, 0);
+
+    // Çim tutamı (3 kavisli ince yeşil yaprak)
+    ctx.strokeStyle = grassCol;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y); ctx.quadraticCurveTo(p.x - 3, p.y - 6, p.x - 5, p.y - 8);
+    ctx.moveTo(p.x, p.y); ctx.quadraticCurveTo(p.x, p.y - 7, p.x, p.y - 10);
+    ctx.moveTo(p.x, p.y); ctx.quadraticCurveTo(p.x + 3, p.y - 6, p.x + 5, p.y - 8);
+    ctx.stroke();
+
+    // Sevimli papatyalar & kır çiçekleri
+    if (sp.fl && si !== 3) {
+      const fc = flowerCols[i % flowerCols.length];
+      ctx.fillStyle = fc;
+      ctx.beginPath();
+      ctx.arc(p.x - 4, p.y - 9, 2.4, 0, Math.PI * 2);
+      ctx.arc(p.x + 4, p.y - 9, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      // Sarı polen merkezi
+      ctx.fillStyle = "#facc15";
+      ctx.beginPath(); ctx.arc(p.x, p.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
 }
 
 // ===== BUNDLED: render/parcel.js =====
@@ -8830,8 +9088,7 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     // Arka Duvar (u = u0)
     const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym") && getRoomDoorWall(backSlot) === "front");
     if (backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
-      // Arkada Koridor veya Asansör varsa geçiş tamamen açık, tavanda zarif tavan kirişi
-      isoBox(u0 - 1, v0, u0 + 4, v1, z1 - 12, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.2);
+      // Arkada Koridor veya Asansör varsa geçiş tamamen açık, kesintisiz hol
     } else if (backHasDoorToCorr) {
       // Arkada WC, Oda veya Tesis var ve kapısı bu koridora bakıyor: Arka duvarda kemerli kapı açıklığı, pervazlar ve kapı!
       const vd0 = v0 + 95, vd1 = v0 + 135;
@@ -8893,14 +9150,7 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     const leftIsElev = leftSlot && leftSlot.type === "Elevator";
     const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym") && getRoomDoorWall(leftSlot) === "right");
     if (leftSlot && leftSlot.type === "Corridor") {
-      // İki koridor yan yana bağlandığında ferah, geniş ve kesintisiz tek bir lüks hol oluşur.
-      isoBox(u0, v0 - 2, u1, v0 + 2, z1 - 16, z1, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.4);
-      isoBox(u0 - 1, v0 - 3, u1 + 1, v0 + 3, z1 - 6, z1 - 3, "#ffd700", "#d4af37", "#a38218", null, 0);
-      isoBox(u0 + 92, v0 - 4, u0 + 103, v0 + 4, z1 - 20, z1 - 12, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1);
-      isoBox(u0 - 1, v0 - 6, u0 + 14, v0 + 6, z0, z1, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.4);
-      isoBox(u0 + 12, v0 - 4, u0 + 14.5, v0 + 4, z0 + 12, z1 - 16, "#faf8f5", "#ddd8ce", "#ccc6ba", null, 0);
-      isoBox(u0 - 2, v0 - 7, u0 + 15, v0 + 7, z0, z0 + 8, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.1);
-      isoBox(u0 - 2, v0 - 7, u0 + 15, v0 + 7, z1 - 20, z1 - 12, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.1);
+      // İki koridor yan yana bağlandığında ferah, geniş ve kesintisiz tek bir lüks hol oluşur (kiriş veya engel kolon çizilmez)
     } else if (leftIsElev) {
       // Solda Asansör var: Asansör kapısına açılan kemerli açıklık (u0 + 45 .. u1 - 45 açık!)
       isoBox(u0, v0, u0 + 45, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
@@ -8929,8 +9179,7 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     const rightIsElev = rightSlot && rightSlot.type === "Elevator";
     const rightHasDoorToCorr = !!(rightSlot && (rightSlot.type === "Toilet" || rightSlot.type === "Room" || rightSlot.type === "Gym") && getRoomDoorWall(rightSlot) === "left");
     if (rightCorr) {
-      // Sağda da koridor varsa geçiş tamamen açık, tavanda zarif tavan kirişi
-      isoBox(u0, v1 - 2, u1, v1 + 2, z1 - 16, z1, "#ffffff", "#ece7dc", "#dad4c7", OUTLINE_COL, 1.4);
+      // Sağda da koridor varsa geçiş tamamen açık, kesintisiz hol
     } else if (rightIsElev) {
       // Sağda Asansör var: Asansör kapısına açılan kemerli açıklık (u0 + 45 .. u1 - 45 açık!)
       isoBox(u0, v1 - 10, u0 + 45, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
@@ -9351,28 +9600,28 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     isoBox(u1 - 5, v0, u1 + 1, v1, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
   }
 
-  // F) 4 Köşe Taşıyıcı Kolonları ve 4 Yöne Bağlantı Kiriş Çerçevesi (Kullanıcı Şeması)
+  // F) 4 Köşe Taşıyıcı Kolonları ve 4 Yöne Bağlantı Çerçevesi (Kullanıcı Şeması)
   if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") {
-    const colSize = 6;
-    const roomCorners = [
+    const colSize = 7;
+    // Arka köşe, sol köşe ve sağ köşe tam boy taşıyıcı kolonlar (duvar birleşim noktaları)
+    const backCorners = [
       [u0, v0],
       [u0, v1 - colSize],
-      [u1 - colSize, v0],
-      [u1 - colSize, v1 - colSize]
+      [u1 - colSize, v0]
     ];
-    for (const [cu, cv] of roomCorners) {
+    for (const [cu, cv] of backCorners) {
       isoBox(cu, cv, cu + colSize, cv + colSize, z0, z1, "#8c583a", "#faf7f2", "#ebe3d5", OUTLINE_COL, 1.1);
       isoBox(cu - 0.5, cv - 0.5, cu + colSize + 0.5, cv + colSize + 0.5, z0, z0 + 5, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
       isoBox(cu - 0.5, cv - 0.5, cu + colSize + 0.5, cv + colSize + 0.5, z1 - 5, z1, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
     }
+    // Ön köşe (u1, v1): Kesit görünümünü ve oda içini engellemeyen alçak şık kaide/baza kolonu
+    isoBox(u1 - colSize, v1 - colSize, u1, v1, z0, z0 + 15, "#8c583a", "#faf7f2", "#ebe3d5", OUTLINE_COL, 1.1);
+    isoBox(u1 - colSize - 0.5, v1 - colSize - 0.5, u1 + 0.5, v1 + 0.5, z0, z0 + 4, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
 
-    // Tavan Kirişleri (Arka, Sol, Sağ ve komşu varsa Ön)
+    // Tavan Taç Çıtaları (Yalnızca kapalı arka ve yan duvarların üzerinde)
     isoBox(u0, v0, u0 + 5, v1, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
     isoBox(u0, v0, u1, v0 + 5, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
     isoBox(u0, v1 - 5, u1, v1, z1 - 5, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.1);
-    if (frontConnected) {
-      isoBox(u1 - 5, v0, u1, v1, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
-    }
   }
 
   if (s.type === "Room") {
