@@ -1,8 +1,8 @@
 {
-  "versionCode": 25,
-  "versionName": "1.9.17-beta",
+  "versionCode": 26,
+  "versionName": "1.9.18-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.17-beta: Otantik retro gazete tasarımı (Otel & Şehir Postası), gazeteci çocuk teslimat animasyonu ve girişe bırakılan dokunulabilir gazete rulosu eklendi. Haftalık dinamik piyasa olayları (ör. 4 gün klimalarda %50 zam gibi ürün bazlı zam/indirimler ve borsa manşetleri) getirildi; olaylar ve seri katil her hafta çıkmak zorunda olmayacak şekilde seyreltildi. Kapasite aşımı (overbooking), kapıda çok bekletme ve uzun kuyruk cezaları eklendi (misafirler sıranın çok uzun veya otelin dolu olduğunu görüp -5 İtibar ile terk edebilir)."
+  "notes": "v1.9.18-beta: Lüks İtalyan mermeri zemin dokusu, sıcak meşe balıksırtı ahşap parke dokusu, altın işlemeli bordo kraliyet koridor halısı ve 3D ortam gölgeleri (Ambient Occlusion) eklendi. Özel odalara 4 köşe mimari taşıyıcı kolonları, tavan çerçevesi ve tek kapı yönü seçebilme özelliği getirildi."
 }

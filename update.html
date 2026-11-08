@@ -6737,8 +6737,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 25;
-const APP_VERSION_NAME = "1.9.17-beta";
+const APP_VERSION_CODE = 26;
+const APP_VERSION_NAME = "1.9.18-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6746,9 +6746,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.18-beta",
+    title: "Lüks İtalyan Mermeri & Meşe Parke Dokuları, Kraliyet Halısı, Köşe Kolonları ve 4 Yöne Bağlantı",
+    latest: true,
+    notes: "• 🏛️ Lüks Zemin Dokuları: Otel odalarına sıcak meşe balıksırtı ahşap parke dokusu; koridor, lobi ve resepsiyona cilalı İtalyan mermer dokusu; koridor yolluklarına altın işlemeli bordo kraliyet halısı deseni entegre edildi.\n• 🌑 Ortam Gölgeleri (Ambient Occlusion): Duvar diplerine ve köşelere yumuşak geçişli gölgeler eklenerek odalara gerçekçi 3D derinlik kazandırıldı.\n• 📐 4 Yöne Bağlantı & Mimari Köşe Kolonları: Özel odaların 4 köşesine taşıyıcı kolonlar ve tavan bağlantı kirişleri eklendi. Özel odalarda kesin olarak tek kapı garantilendi ve çoklu koridor komşuluğunda '🔄 Kapı Yönü' değiştirme seçeneği getirildi."
+  },
+  {
     ver: "v1.9.17-beta",
     title: "Otantik Gazete Tasarımı, Gazeteci Çocuk, Dinamik Piyasa Olayları ve Overbooking Cezaları",
-    latest: true,
+    latest: false,
     notes: "• 📰 Otantik Retro Gazete Tasarımı: Gazete arayüzü 'Otel & Şehir Postası (The Grand Herald)' adıyla otantik vintage gazete baskısına dönüştürüldü; çift çerçeveler, klasik serif manşetler, asayiş/turizm sütunları ve bilanço tablosu eklendi.\n• 🚲 Gazeteci Çocuk & Dokunarak Gazete Alma: Her hafta başında Gazeteci Çocuk kaldırımdan koşarak gelip gazeteyi otel girişine fırlatır. Yerde 3D gazete rulosu belirir ve dokunularak okunur; HUD butonunda bildirim noktası yanar.\n• 📈 Dinamik Piyasa Olayları: Rastgele ürünlerde (ör. klimalarda 4 gün %50 zam) ardışık gün süren piyasa dalgalanmaları ve toptancı indirimleri eklendi; fiyatlar anında güncellenir. Olaylar ve seri katil her hafta çıkmak zorunda olmayacak şekilde seyreltildi.\n• 😡 Kapasite Aşımı & Kuyruk Cezaları: Sırada çok bekletilen misafirler -5 İtibar ile terk eder; otel doluyken uzun kuyruğu gören misafirler kapıdan -5 İtibar ile döner."
   },
   {
