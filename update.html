@@ -1064,7 +1064,7 @@
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">GRAND HOTEL TYCOON</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.5-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.20-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -1109,7 +1109,7 @@
       </div>
     </div>
 
-    <div class="menu-footer">Grand Hotel Tycoon • TheHotel Game v1.9.5-beta</div>
+    <div class="menu-footer">Grand Hotel Tycoon • TheHotel Game v1.9.20-beta</div>
   </div>
   <!-- GÜNCELLEME GEÇMİŞİ MODALI -->
   <div id="changelog-modal">
@@ -6725,8 +6725,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 27;
-const APP_VERSION_NAME = "1.9.19-beta";
+const APP_VERSION_CODE = 28;
+const APP_VERSION_NAME = "1.9.20-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6734,9 +6734,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.20-beta",
+    title: "Kaldırım Yolu Düzeltmesi, Çimler & Çalılar, Karşı Şehir Parkı, Taksi Durağı, Banklar & Kiosk",
+    latest: true,
+    notes: "• 🚶‍♂️ Kaldırım Yürüme Yolu Temizlendi: Kaldırımda yayaların ve misafir kuyruğunun yürüme yolunu kesen çiçek saksıları kaldırıldı; sokak lambaları kaldırımın en dış bordür kenarına çekilerek 78 birim genişliğinde ferah, kesintisiz bir yaya yolu oluşturuldu.\n• 🌿 Bahçe Çalıları & Çimen Zenginleştirmesi: Otel bahçesine ve peyzajına ortanca/gül çiçekli çalıları, yuvarlak süs çalıları, doğal çim tutamları ve kır papatyaları serpildi.\n• 🚏 Yolun Karşısına Şehir Parkı & Transit Durağı: Yaya geçidinin tam karşısına modern Grand Hotel Taksi & Otobüs durağı (Transit Shelter), yol boyunca uzanan altın mızraklı ferforje park çiti ve döküm ahşap park bankları yerleştirildi.\n• ☕ Dondurma & Kahve Kiosku: Karşı kaldırım arkasındaki park alanına kırmızı-beyaz çizgili tenteli dondurma & kahve büfesi kuruldu.\n• 🌳 Gölgelik Ihlamur & Çınar Ağaçları: Caddenin karşısına derin gölgeli, geniş taçlı şehir parkı ağaçları dikilerek cadde atmosferi tamamlandı."
+  },
+  {
     ver: "v1.9.19-beta",
     title: "Gelişmiş Dış Mekan Atmosferi, Viktorya Sokak Lambaları, Çiçek Saksıları, Yaya Geçidi & 4 Köşe Oda Mimarisi",
-    latest: true,
+    latest: false,
     notes: "• 🌳 Zengin Dış Mekan & Bahçe Atmosferi: Kaldırım boyunca dökme demir Viktorya sokak lambaları yerleştirildi; akşam ve gece saatlerinde zemine sıcak amber ışık yayarlar. Kaldırım bordürüne renkli petunyalarla dolu sedir ağacı çiçek tarhları (planter box) eklendi.\n• 🚸 Yaya Geçidi (Zebra Crossing): Otel giriş kapısının tam karşısına cadde boyunca uzanan belirgin beyaz yaya geçidi çizgileri çizildi.\n• 🌴 Rüzgarda Salınan Palmiyeler & Taş Yatakları: Palmiye ağaçlarına rüzgarda organik salınım animasyonu, gövde diplerine koyu organik malç ve dekoratif beyaz peyzaj çakıl taşları eklendi.\n• ✨ Mevsimsel Atmosfer Parçacıkları: İlkbaharda rüzgarda uçuşan pembe sakura yaprakları, yaz gecelerinde dans eden ışıltılı ateş böcekleri, sonbaharda süzülen altın sarısı-kızıl yapraklar ve kışın yumuşak kar taneleri eklendi.\n• 🏛️ 4 Köşe Mimari Kolonları & Tek Kapı: Özel odalarda 4 köşeye taşıyıcı kolonlar eklendi, koridor geçişlerindeki yüzen kirişler kaldırıldı ve odalarda tek giriş kapısı garantilendi."
   },
   {
@@ -8085,6 +8091,245 @@ function drawMiniChibi(u, v, z, skin = "#fcd9b8", hair = "#59331a", shirt = "#4d
   ctx.restore();
 }
 
+// ===== YENİ DIŞ MEKAN PEYZAJ & ŞEHİR PARKI ELEMANLARI (v1.9.20) =====
+
+// 1) Zengin Yuvarlak Çalılar & Çiçekli Çalılar (Lush Bush & Flowering Shrub)
+function drawLushBush(u, v, z, scale = 1.0, type = "normal", season = 0) {
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(scale, scale);
+
+  // Zemin Yumuşak Ambient Occlusion Gölgesi
+  ctx.fillStyle = "rgba(18, 38, 12, 0.28)";
+  ctx.beginPath(); ctx.ellipse(0, 3, 26, 11, 0, 0, Math.PI * 2); ctx.fill();
+
+  let baseCol = "#3a8426", midCol = "#4ea832", topCol = "#6bc947";
+  if (season === 2) { // Sonbahar: Sıcak Altın & Kızıl
+    baseCol = "#9a3412"; midCol = "#c2410c"; topCol = "#f97316";
+  } else if (season === 3) { // Kış: Soğuk Nefti Yeşil
+    baseCol = "#2e4a36"; midCol = "#3d6349"; topCol = "#4e7d5d";
+  }
+
+  // 3 Katmanlı Hacimli Çalı Yaprak Kümeleri
+  const clusters = [
+    { x: -14, y: -8, r: 13, c: baseCol },
+    { x: 14, y: -8, r: 13, c: baseCol },
+    { x: -8, y: -16, r: 14, c: midCol },
+    { x: 9, y: -15, r: 14, c: midCol },
+    { x: 0, y: -22, r: 16, c: topCol }
+  ];
+
+  for (const cl of clusters) {
+    ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI * 2);
+    ctx.fillStyle = cl.c; ctx.fill();
+    ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.8; ctx.stroke();
+    // Işık pırıltısı
+    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.beginPath(); ctx.arc(cl.x - cl.r * 0.35, cl.y - cl.r * 0.35, cl.r * 0.35, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Çiçekli Çalı Türü: Canlı Ortanca / Gül Kümeleri
+  if (type === "flower" && season !== 3) {
+    const flowerSpots = [
+      { x: -11, y: -10, col: "#ec4899" }, { x: 12, y: -11, col: "#f43f5e" },
+      { x: -5, y: -19, col: "#a855f7" }, { x: 7, y: -18, col: "#ec4899" },
+      { x: 0, y: -25, col: "#f472b6" }
+    ];
+    for (const fl of flowerSpots) {
+      for (const pet of [{ dx: -2.5, dy: 0 }, { dx: 2.5, dy: 0 }, { dx: 0, dy: -2.5 }, { dx: 0, dy: 2.5 }]) {
+        ctx.fillStyle = fl.col;
+        ctx.beginPath(); ctx.arc(fl.x + pet.dx, fl.y + pet.dy, 2.2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = "#fef08a";
+      ctx.beginPath(); ctx.arc(fl.x, fl.y, 1.3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // Kışın Çalı Üstü Kar Tepeleri
+  if (season === 3) {
+    ctx.fillStyle = "rgba(248, 250, 252, 0.95)";
+    ctx.beginPath(); ctx.ellipse(0, -32, 10, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-9, -23, 7, 3, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(9, -23, 7, 3, 0.2, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// 2) Ahşap ve Döküm Ferforje Park Bankı (Park Bench)
+function drawParkBench(u, v, z, scale = 1.0) {
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(scale, scale);
+
+  // Zemin gölgesi
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.beginPath(); ctx.ellipse(0, 2, 24, 7, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Dökme demir ayaklar
+  ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 2.2; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-16, 2); ctx.lineTo(-14, -8); ctx.lineTo(-14, -18);
+  ctx.moveTo(16, 2); ctx.lineTo(14, -8); ctx.lineTo(14, -18);
+  ctx.stroke();
+
+  // Ahşap çıtalar (oturak)
+  const woodCol = "#c2410c", woodLight = "#ea580c";
+  for (let oy = -9; oy <= -5; oy += 2) {
+    ctx.fillStyle = woodLight; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(-19, oy, 38, 2.2, 1); ctx.fill(); ctx.stroke();
+  }
+  // Ahşap çıtalar (sırtlık)
+  for (let sy = -19; sy <= -13; sy += 2.5) {
+    ctx.fillStyle = woodCol; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(-19, sy, 38, 2.2, 1); ctx.fill(); ctx.stroke();
+  }
+
+  // Demir kolçaklar
+  ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(-17, -11, 4, Math.PI * 0.8, Math.PI * 1.8);
+  ctx.arc(17, -11, 4, Math.PI * 1.2, Math.PI * 0.2, true);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// 3) Otel Karşısı Modern Taksi & Otobüs Durağı (Grand Hotel Transit Shelter)
+function drawTransitShelter(u, v, z, scale = 1.0, isNight = false) {
+  // Beton durak tabanı
+  isoBox(u, v - 40, u + 52, v + 40, z, z + 4, "#cbd5e1", "#94a3b8", "#64748b", OUTLINE_COL, 1.4);
+
+  // Arka çelik dikmeler ve cam panel
+  isoBox(u + 46, v - 38, u + 50, v + 38, z + 4, z + 56, "rgba(203, 213, 225, 0.45)", "#475569", "#334155", OUTLINE_COL, 1.2);
+  // Cam üstü afiş panosu
+  isoBox(u + 47, v - 32, u + 49, v - 12, z + 18, z + 46, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1);
+  isoLabel("🚌 GRAND HOTEL RESORT", u + 49, v - 22, z + 48, 6.5, "#0f172a", "#fef08a", 4, 1);
+
+  // Durak içi ahşap bekleme bankı
+  isoBox(u + 26, v - 24, u + 42, v + 24, z + 4, z + 16, "#d97706", "#b45309", "#92400e", OUTLINE_COL, 1.3);
+
+  // Şık Kavisli Cam Çatı Saçağı
+  isoBox(u - 4, v - 44, u + 56, v + 44, z + 56, z + 60, "rgba(186, 230, 253, 0.65)", "#38bdf8", "#0284c7", OUTLINE_COL, 1.4);
+
+  // Durak Yan Tabela Direği (🚏 TAKSİ & OTOBÜS Totemi)
+  const tp = iso(u - 2, v + 46, z + 4);
+  ctx.save();
+  ctx.translate(tp.x, tp.y);
+  ctx.scale(scale, scale);
+  // Direk
+  ctx.fillStyle = "#0f172a"; ctx.fillRect(-2, -48, 4, 48);
+  // Yuvarlak tabela
+  ctx.fillStyle = "#facc15"; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(0, -52, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#1e3a8a";
+  ctx.beginPath(); ctx.arc(0, -52, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("🚏", 0, -52);
+  ctx.restore();
+}
+
+// 4) Şehir Parkı Dondurma & Kahve Büfesi (Park Kiosk / Cafe Stand)
+function drawParkKiosk(u, v, z, scale = 1.0) {
+  // Ahşap büfe gövdesi
+  isoBox(u, v - 28, u + 52, v + 28, z, z + 36, "#fef3c7", "#fde68a", "#f59e0b", OUTLINE_COL, 1.6);
+  // Servis tezgahı
+  isoBox(u - 4, v - 24, u + 2, v + 24, z + 16, z + 20, "#92400e", "#78350f", "#451a03", OUTLINE_COL, 1.2);
+
+  // Kırmızı-Beyaz Çizgili Tente Saçağı
+  const awningH = z + 46;
+  isoBox(u - 8, v - 32, u + 56, v + 32, z + 36, awningH, "#ef4444", "#dc2626", "#b91c1c", OUTLINE_COL, 1.5);
+  for (let iv = v - 28; iv < v + 28; iv += 14) {
+    isoQuad(u - 8.5, iv, u + 56.5, iv + 7, awningH + 0.1, "#ffffff", null, 0);
+  }
+
+  // Tabela
+  isoLabel("☕ KAHVE & 🍦 DONDURMA", u - 6, v, z + 52, 7.5, "#78350f", "#fef3c7", 5, 2);
+
+  // Büfeci Chibi
+  drawMiniChibi(u + 24, v, z + 2, "#fcd9b8", "#78350f", "#ef4444", 0.72, 1, "#ffffff");
+}
+
+// 5) Yolun Karşısındaki Görkemli Park Gölgelik Ağacı (Park Avenue Tree - Ihlamur/Çınar)
+function drawParkShadeTree(u, v, z, scale = 1.0, season = 0) {
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(scale, scale);
+
+  // Zemin Büyük Gölgesi
+  ctx.fillStyle = "rgba(15, 35, 10, 0.28)";
+  ctx.beginPath(); ctx.ellipse(0, 4, 38, 15, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Koyu Malç & Çakıl Halkası
+  ctx.fillStyle = "#3f2512";
+  ctx.beginPath(); ctx.ellipse(0, 1, 24, 9, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Sağlam Ağaç Gövdesi
+  ctx.fillStyle = "#5c3d2e"; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(-7, 2); ctx.lineTo(-4, -40); ctx.lineTo(-12, -60); ctx.lineTo(-8, -62);
+  ctx.lineTo(-2, -44); ctx.lineTo(4, -44); ctx.lineTo(10, -62); ctx.lineTo(14, -60);
+  ctx.lineTo(6, -40); ctx.lineTo(8, 2);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  let cBase = "#2d6a1e", cMid = "#438e2d", cTop = "#5cb33f";
+  if (season === 2) { // Sonbahar: Altın sarısı, turuncu ve kızıl
+    cBase = "#9a3412"; cMid = "#c2410c"; cTop = "#eab308";
+  } else if (season === 3) { // Kış: Beyaz kar kaplı dallar
+    cBase = "#334155"; cMid = "#475569"; cTop = "#64748b";
+  }
+
+  // Katmanlı Yuvarlak Taç Yaprak Kümeleri
+  const canopy = [
+    { x: -22, y: -65, r: 24, c: cBase },
+    { x: 22, y: -65, r: 24, c: cBase },
+    { x: -14, y: -88, r: 26, c: cMid },
+    { x: 16, y: -86, r: 26, c: cMid },
+    { x: 0, y: -108, r: 30, c: cTop }
+  ];
+
+  for (const cn of canopy) {
+    ctx.beginPath(); ctx.arc(cn.x, cn.y, cn.r, 0, Math.PI * 2);
+    ctx.fillStyle = cn.c; ctx.fill();
+    ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2.2; ctx.stroke();
+    // Güneş Işığı Pırıltısı
+    ctx.fillStyle = "rgba(255, 255, 255, 0.24)";
+    ctx.beginPath(); ctx.arc(cn.x - cn.r * 0.35, cn.y - cn.r * 0.35, cn.r * 0.38, 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (season === 3) {
+    // Kış Kar Şapkası
+    ctx.fillStyle = "rgba(248, 250, 252, 0.95)";
+    ctx.beginPath(); ctx.ellipse(0, -128, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-16, -100, 12, 4, -0.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(18, -98, 12, 4, 0.2, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// 6) Karşı Park Ferforje Çiti (Wrought Iron Park Railing with Pillars & Open Gate)
+function drawWroughtIronParkFence(u, v0, v1, gateV0, gateV1) {
+  const pillarW = 8, pillarH = 26;
+  for (let v = v0; v <= v1; v += 60) {
+    // Yaya geçidi ve durak girişi için açık kapı aralığı bırak
+    if (v >= gateV0 && v <= gateV1) continue;
+
+    // Ferforje parmaklık paneli
+    isoBox(u - 1, v, u + 1, v + 56, 0, 20, "#1e293b", "#0f172a", "#020617", OUTLINE_COL, 1.2);
+    for (let fv = v + 8; fv <= v + 52; fv += 10) {
+      isoBox(u - 2, fv - 1, u + 2, fv + 1, 20, 25, "#ffd700", "#d4af37", "#a38218", null, 0); // Altın mızrak ucu
+    }
+
+    // Taş/Granit Kaide Kolonu
+    isoBox(u - 3, v - 3, u + pillarW - 3, v + pillarW - 3, 0, pillarH, "#94a3b8", "#64748b", "#475569", OUTLINE_COL, 1.2);
+    isoBox(u - 4, v - 4, u + pillarW - 2, v + pillarW - 2, pillarH, pillarH + 4, "#cbd5e1", "#94a3b8", "#64748b", OUTLINE_COL, 1);
+  }
+}
+
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== ANA DÜNYA ÇİZİMİ (5x5 PARSEL & 4x4 ODA İÇİ SİSTEMİ) =====
@@ -8205,23 +8450,32 @@ function drawWorld() {
   // Yol ile karşı kaldırım arasındaki bordür basamağı (z = -4'ten z = 0'a)
   isoQuad(oppSwU0 - 4, -350, oppSwU0, 1550, -0.5, "#6b7280", OUTLINE_COL, 1.2);
 
-  // 3.3) Kaldırım Üzeri Çiçeklikler ve Ferforje Sokak Lambaları
-  const planterVs = [-80, 240, 720, 1080];
-  for (const pv of planterVs) {
-    if (typeof drawFlowerPlanterBox === "function") {
-      drawFlowerPlanterBox(swU0 + 16, pv, 0, 46, 15);
-    }
-  }
-
+  // 3.3) Kaldırım Üzeri Ferforje Sokak Lambaları (Kaldırımın dış bordür kenarında: u = swU1 - 8)
+  // NOT: Yürüme yolunu ve misafir kuyruğunu kesmemesi için saksılar kaldırımdan kaldırıldı; lambalar bordür çizgisine alındı!
   const lampVs = [-220, 90, 510, 900, 1280];
   for (const lv of lampVs) {
     if (typeof drawVictorianStreetLamp === "function") {
-      drawVictorianStreetLamp(swU0 + 20, lv, 0, isNight, (1 - b));
+      drawVictorianStreetLamp(swU1 - 8, lv, 0, isNight, (1 - b));
+    }
+  }
+
+  // 3.4) Otel Ön Bahçesi Çiçeklikleri (Kaldırımı kesmez, çim tampon bölgede yer alır: u = swU0 - 24 = 1236)
+  const gardenPlanterVs = [-80, 240, 720, 1080];
+  for (const pv of gardenPlanterVs) {
+    if (typeof drawFlowerPlanterBox === "function") {
+      drawFlowerPlanterBox(swU0 - 24, pv, 0, 46, 14);
     }
   }
 
   // 3.5) Giriş Taş Yolu: Kaldırım (u=1260) ile Resepsiyon girişi (u=1170) arasındaki çim boşluğunu birleştiren taş yol!
   drawEntranceStonePath(recBox.u1, swU0, recCenterV - 50, recCenterV + 50);
+
+  // 3.6) Karşı Kaldırım Ferforje Sokak Lambaları (Bordür çizgisi: oppSwU0 + 8)
+  for (const lv of [-160, 200, 620, 1040]) {
+    if (typeof drawVictorianStreetLamp === "function") {
+      drawVictorianStreetLamp(oppSwU0 + 8, lv, 0, isNight, (1 - b));
+    }
+  }
 
   // 4) 6x6 Modüler Parselleri + Zemin Kat Yola Paralel 8 Parseli Arkadan Öne Doğru (Painter's Algorithm: sum = 0..11) Çiz
   const showBuildGrid = (drawerOpen && activeDock === "build") || (sel === "Slot" && selSlot && selSlot.type === "Empty");
@@ -8302,6 +8556,50 @@ function drawWorld() {
   // 9) Caddeden Geçen İzometrik Arabalar ve Kargo Kamyonları
   for (const car of cars) drawIsoCar(car);
   for (const t of trucks) drawIsoTruck(t);
+
+  // 9.5) Caddenin Karşısındaki Şehir Parkı Yapıları (Arabaların Önünde - Painter's Algorithm Derinlik Sıralaması)
+  const oppSwU1 = 1530 + 90; // 1620
+  const oppRecSlot = allSlots.find(s => s.type === "Reception" && s.floor.idx === 0) || floors[0].slots[32];
+  const oppRecBox = slotIsoBox(0, oppRecSlot.idx);
+  const oppRecCenterV = (oppRecBox.v0 + oppRecBox.v1) * 0.5;
+
+  // A) Karşı Park Ferforje Çiti (Yaya geçidi ve durak girişi açık bırakılır)
+  if (typeof drawWroughtIronParkFence === "function") {
+    drawWroughtIronParkFence(oppSwU1 + 2, -350, 1550, oppRecCenterV - 52, oppRecCenterV + 52);
+  }
+
+  // B) Otel Girişi & Yaya Geçidi Karşısı: Grand Hotel Transit & Taksi Durağı
+  if (typeof drawTransitShelter === "function") {
+    drawTransitShelter(oppSwU1 + 10, oppRecCenterV, 0, 1.0, isNight);
+  }
+
+  // C) Karşı Park Ahşap & Döküm Bankları
+  if (typeof drawParkBench === "function") {
+    drawParkBench(oppSwU1 + 14, oppRecCenterV - 190, 0, 1.0);
+    drawParkBench(oppSwU1 + 14, oppRecCenterV + 190, 0, 1.0);
+  }
+
+  // D) Şehir Parkı Dondurma & Kahve Büfesi (Cafe Kiosk)
+  if (typeof drawParkKiosk === "function") {
+    drawParkKiosk(oppSwU1 + 38, oppRecCenterV + 380, 0, 1.0);
+  }
+
+  // E) Karşı Park Görkemli Ihlamur / Çınar Ağaçları
+  if (typeof drawParkShadeTree === "function") {
+    drawParkShadeTree(oppSwU1 + 90, oppRecCenterV - 340, 0, 1.15, si);
+    drawParkShadeTree(oppSwU1 + 100, oppRecCenterV + 40, 0, 1.2, si);
+    drawParkShadeTree(oppSwU1 + 90, oppRecCenterV + 560, 0, 1.15, si);
+    drawParkShadeTree(oppSwU1 + 110, oppRecCenterV - 100, 0, 1.05, si);
+  }
+
+  // F) Karşı Park Çiçekli Çalıları
+  if (typeof drawLushBush === "function") {
+    drawLushBush(oppSwU1 + 14, oppRecCenterV - 110, 0, 1.0, "flower", si);
+    drawLushBush(oppSwU1 + 14, oppRecCenterV + 110, 0, 1.0, "flower", si);
+    drawLushBush(oppSwU1 + 22, oppRecCenterV - 270, 0, 0.95, "normal", si);
+    drawLushBush(oppSwU1 + 22, oppRecCenterV + 270, 0, 0.95, "normal", si);
+    drawLushBush(oppSwU1 + 30, oppRecCenterV + 480, 0, 1.05, "flower", si);
+  }
 
   // 10) Müşteri Konuşma & Süre Doldu Balonları
   for (const g of guests) {
@@ -8625,14 +8923,39 @@ function drawZebraCrossing(u0, u1, vCenter, widthV = 96) {
   }
 }
 
-// 7.7) Çayır Zenginleştirmesi: Stilize Çim Tutamları, Kır Çiçekleri ve Çakıl Taşları
+// 7.7) Çayır Zenginleştirmesi: Stilize Çim Tutamları, Kır Çiçekleri, Bahçe Çalıları ve Çakıl Taşları
 function drawLushLawnDetails(si) {
+  // A) Otel Bahçesi Süs Çalıları (Ön bahçe tamponu ve köşe peyzajı - kaldırımı asla kesmez)
+  if (typeof drawLushBush === "function") {
+    // Ön bahçe çim hattı (u = 1215..1225)
+    drawLushBush(1220, 20, 0, 0.95, "flower", si);
+    drawLushBush(1225, 170, 0, 0.9, "normal", si);
+    drawLushBush(1220, 360, 0, 0.95, "flower", si);
+    drawLushBush(1225, 610, 0, 0.9, "normal", si);
+    drawLushBush(1220, 810, 0, 0.95, "flower", si);
+    drawLushBush(1225, 990, 0, 0.9, "normal", si);
+
+    // Arka ve yan peyzaj çalıları
+    drawLushBush(60, -90, 0, 1.1, "normal", si);
+    drawLushBush(360, -110, 0, 1.0, "flower", si);
+    drawLushBush(740, -100, 0, 1.1, "normal", si);
+    drawLushBush(-90, 480, 0, 1.05, "flower", si);
+    drawLushBush(-100, 820, 0, 1.1, "normal", si);
+    drawLushBush(340, 1220, 0, 1.0, "flower", si);
+    drawLushBush(780, 1230, 0, 1.1, "normal", si);
+  }
+
+  // B) Doğal Çim Tutamları ve Papatyalar
   const spots = [
     { u: -120, v: 240, fl: true }, { u: -180, v: 620, fl: false }, { u: -80, v: 920, fl: true },
     { u: 220, v: -110, fl: false }, { u: 640, v: -90, fl: true }, { u: 1020, v: -110, fl: false },
-    { u: 1210, v: 120, fl: true }, { u: 1220, v: 340, fl: false }, { u: 1215, v: 780, fl: true }, { u: 1210, v: 1100, fl: true },
+    { u: 1210, v: 100, fl: true }, { u: 1225, v: 280, fl: false }, { u: 1215, v: 480, fl: true },
+    { u: 1220, v: 720, fl: false }, { u: 1215, v: 910, fl: true }, { u: 1210, v: 1100, fl: true },
     { u: 420, v: 1220, fl: false }, { u: 820, v: 1230, fl: true }, { u: 1180, v: 1350, fl: false },
-    { u: 1560, v: 140, fl: true }, { u: 1570, v: 640, fl: false }, { u: 1565, v: 1040, fl: true }
+    // Karşı park tarafı çimleri
+    { u: 1570, v: 120, fl: true }, { u: 1580, v: 460, fl: false }, { u: 1575, v: 820, fl: true },
+    { u: 1670, v: -120, fl: false }, { u: 1680, v: 280, fl: true }, { u: 1690, v: 620, fl: false },
+    { u: 1720, v: 940, fl: true }, { u: 1760, v: 400, fl: true }, { u: 1780, v: -80, fl: false }
   ];
 
   const grassCol = si === 3 ? "#94a3b8" : si === 2 ? "#854d0e" : "#22c55e";
