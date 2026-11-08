@@ -1064,7 +1064,7 @@
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">GRAND HOTEL TYCOON</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.20-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.21-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -1109,7 +1109,7 @@
       </div>
     </div>
 
-    <div class="menu-footer">Grand Hotel Tycoon • TheHotel Game v1.9.20-beta</div>
+    <div class="menu-footer">Grand Hotel Tycoon • TheHotel Game v1.9.21-beta</div>
   </div>
   <!-- GÜNCELLEME GEÇMİŞİ MODALI -->
   <div id="changelog-modal">
@@ -6725,8 +6725,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 28;
-const APP_VERSION_NAME = "1.9.20-beta";
+const APP_VERSION_CODE = 29;
+const APP_VERSION_NAME = "1.9.21-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6734,9 +6734,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.21-beta",
+    title: "Yeşil Ekran Donma Hatası Düzeltmesi & Kusursuz Şehir Parkı & Peyzaj",
+    latest: true,
+    notes: "• 🛠️ Yeşil Ekran Donma Hatası Giderildi: Yeni oyun başlatıldığında dünya çizim döngüsünü durduran ve oyunun yeşil ekranda kalmasına sebep olan değişken çakışması tamamen düzeltildi.\n• 🚶‍♂️ Kusursuz Kaldırım Yolu & Ferah Kuyruk: Kaldırımda yayaların yolunu kesen engeller kaldırıldı, sokak lambaları kaldırımın dış bordür çizgisine yerleştirildi.\n• 🚏 Karşı Şehir Parkı & Transit Durağı: Yaya geçidi karşısındaki Grand Hotel Taksi/Otobüs durağı, ferforje mızraklı park çiti, ahşap park bankları, dondurma & kahve büfesi ve ıhlamur/çınar ağaçları 60 FPS akıcılıkla çalışıyor.\n• 🌸 Canlı Çiçekli Çalılar & Çim Tutamları: Otel ön bahçesine ve peyzaj alanlarına mevsimlik ortanca çiçekleri, süs çalıları ve doğal çim tutamları eklendi."
+  },
+  {
     ver: "v1.9.20-beta",
     title: "Kaldırım Yolu Düzeltmesi, Çimler & Çalılar, Karşı Şehir Parkı, Taksi Durağı, Banklar & Kiosk",
-    latest: true,
+    latest: false,
     notes: "• 🚶‍♂️ Kaldırım Yürüme Yolu Temizlendi: Kaldırımda yayaların ve misafir kuyruğunun yürüme yolunu kesen çiçek saksıları kaldırıldı; sokak lambaları kaldırımın en dış bordür kenarına çekilerek 78 birim genişliğinde ferah, kesintisiz bir yaya yolu oluşturuldu.\n• 🌿 Bahçe Çalıları & Çimen Zenginleştirmesi: Otel bahçesine ve peyzajına ortanca/gül çiçekli çalıları, yuvarlak süs çalıları, doğal çim tutamları ve kır papatyaları serpildi.\n• 🚏 Yolun Karşısına Şehir Parkı & Transit Durağı: Yaya geçidinin tam karşısına modern Grand Hotel Taksi & Otobüs durağı (Transit Shelter), yol boyunca uzanan altın mızraklı ferforje park çiti ve döküm ahşap park bankları yerleştirildi.\n• ☕ Dondurma & Kahve Kiosku: Karşı kaldırım arkasındaki park alanına kırmızı-beyaz çizgili tenteli dondurma & kahve büfesi kuruldu.\n• 🌳 Gölgelik Ihlamur & Çınar Ağaçları: Caddenin karşısına derin gölgeli, geniş taçlı şehir parkı ağaçları dikilerek cadde atmosferi tamamlandı."
   },
   {
@@ -8558,7 +8564,7 @@ function drawWorld() {
   for (const t of trucks) drawIsoTruck(t);
 
   // 9.5) Caddenin Karşısındaki Şehir Parkı Yapıları (Arabaların Önünde - Painter's Algorithm Derinlik Sıralaması)
-  const oppSwU1 = 1530 + 90; // 1620
+  // oppSwU1 (1620) yukarıda (3.2 bölümünde) tanımlanmıştır
   const oppRecSlot = allSlots.find(s => s.type === "Reception" && s.floor.idx === 0) || floors[0].slots[32];
   const oppRecBox = slotIsoBox(0, oppRecSlot.idx);
   const oppRecCenterV = (oppRecBox.v0 + oppRecBox.v1) * 0.5;
