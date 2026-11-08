@@ -1409,15 +1409,21 @@ const logLines = [];
 
 // Resepsiyon kuyruk konumlari (Izometrik 3D: Resepsiyon bankosundan dis kapiya ve kaldirima dogru tek sira)
 function getQueueSlotPos(i) {
-  // 6x6 Duzeninde Resepsiyon: Slot 32 (gu=5, gv=2), u: 975..1170, v: 390..585 (Merkez: 487.5)
+  // 6x6 Duzeninde Resepsiyon: Slot 32 (gu=5, gv=2), u: 975..1170, v: 390..585
   // Kaldirim: u = 1260..1350, Yol: u = 1350..1530
   // Giris Tas Yolu: u = 1170..1260 (Cim boslugunu kaldirimdan resepsiyona baglar)
-  if (i === 0) return { u: 1015, v: 425, z: 8 };   // 0: Resepsiyon bankosu onunde pazarlik yapan kisi
-  if (i === 1) return { u: 1075, v: 488, z: 8 };   // 1: Resepsiyon icinde bekleyen kisi
-  if (i === 2) return { u: 1150, v: 488, z: 8 };   // 2: Lobi giris kapisi esiginde bekleyen kisi
-  if (i === 3) return { u: 1215, v: 488, z: 2 };   // 3: Cim boslugundaki Giris Tas Yolu uzerindeki kisi
-  if (i === 4) return { u: 1305, v: 488, z: 0 };   // 4: Kaldirim basindaki kisi
-  return { u: 1305, v: 488 + (i - 4) * 42, z: 0 }; // 5+: Kaldirim boyunca tek sira uzayan kuyruk
+  // 0: Banko onundeki Mavi Yuvarlak Teklif Verme Noktasi
+  if (i === 0) return { u: 1070, v: 472, z: 8 };
+  // 1: Lobi icinde, kirmizi hali uzerinde 2. sira
+  if (i === 1) return { u: 1115, v: 488, z: 8 };
+  // 2: Resepsiyon kapisi esiginde / mermer merdiven basinda bekleyen kisi
+  if (i === 2) return { u: 1165, v: 488, z: 8 };
+  // 3: Cim boslugunu gecen Giris Tas Yolu uzerindeki kisi
+  if (i === 3) return { u: 1215, v: 488, z: 2 };
+  // 4: Tas yol ile kaldirim kesisimindeki kisi
+  if (i === 4) return { u: 1305, v: 488, z: 0 };
+  // 5+: Gelis yolu (kirmizi kesik cizgi) boyunca kaldirimda arkaya (yukariya/sola) dogru uzayan tek sira kuyruk
+  return { u: 1305, v: 488 - (i - 4) * 44, z: 0 };
 }
 
 let parkState = "Locked", parkLeft = 0;
@@ -2745,7 +2751,11 @@ function reflowQueue() {
       // Siradakiler bir adim one kaysin (Sira sira ilerleme)
       g.atSpot = false;
       p.speed = 95;
-      p.isoPath = [ target ];
+      if (i === 0 && p.iso.u > 1150) {
+        p.isoPath = [ { u: 1115, v: 488, z: 8 }, target ];
+      } else {
+        p.isoPath = [ target ];
+      }
       p.onIsoArrive = () => {
         g.atSpot = true;
         if (queue.indexOf(g) === 0) g.pawn.facing = -1;
@@ -2904,8 +2914,8 @@ function spawnGuest() {
   g.patience = g.maxPatience;
 
   const targetSlotIdx = queue.length;
-  const spawnU = 1095;
-  const spawnV = -160 - targetSlotIdx * 25; // Kaldirim uzerinde, pes pese dogarlar
+  const spawnU = 1305; // Kaldırımın tam ortası
+  const spawnV = -260 - targetSlotIdx * 30; // Kaldırım üzerinde, yukarıdan peş peşe doğarlar
 
   if (g.role === "Vampire") {
     g.pawn = makePawn({ x: waitX(), y: floors[0].WalkY }, "#f0ebf5", "#17131c", "#3d1424");
@@ -2919,27 +2929,38 @@ function spawnGuest() {
     g.pawn = makeRandomPawn({ x: waitX(), y: floors[0].WalkY });
   }
 
-  // Izometrik 3D konum ve kaldirimdan otele yurus rotasi
+  // İzometrik 3D konum ve kaldırımdan otele yürüyüş rotası (Kırmızı kesik çizgi)
   g.pawn.iso = { u: spawnU, v: spawnV, z: 0 };
   g.pawn.facing = 1;
   g.pawn.speed = 95;
 
   const slotPos = getQueueSlotPos(targetSlotIdx);
   const arrPath = [];
-  // 1) Kaldırım boyunca (u=1305) giriş taş yolu kavşağına (v=488) kadar yürü
-  arrPath.push({ u: 1305, v: 488, z: 0 });
   if (targetSlotIdx >= 4) {
+    // 4+ sıradakiler doğrudan kaldırım üzerindeki sıralarına yürür
     arrPath.push(slotPos);
   } else {
+    // 1) Kaldırım boyunca (u=1305) giriş taş yolu kavşağına (v=488) kadar yürü
+    arrPath.push({ u: 1305, v: 488, z: 0 });
     // 2) Çim boşluğunu geçen Giriş Taş Yolu'na dön (u=1215)
-    arrPath.push({ u: 1215, v: 488, z: 2 });
     if (targetSlotIdx === 3) {
       arrPath.push(slotPos);
     } else {
-      // 3) Resepsiyon kapısından içeri gir (u=1150)
-      arrPath.push({ u: 1150, v: 488, z: 8 });
-      // 4) Sıradaki kendi yerine geç
-      arrPath.push(slotPos);
+      arrPath.push({ u: 1215, v: 488, z: 2 });
+      // 3) Resepsiyon kapısı eşiğine adım at (u=1165)
+      if (targetSlotIdx === 2) {
+        arrPath.push(slotPos);
+      } else {
+        arrPath.push({ u: 1165, v: 488, z: 8 });
+        // 4) Lobi içi kırmızı yolluk halısına gir (u=1115)
+        if (targetSlotIdx === 1) {
+          arrPath.push(slotPos);
+        } else {
+          arrPath.push({ u: 1115, v: 488, z: 8 });
+          // 5) Banko önündeki Mavi Yuvarlak Teklif Verme Noktasına yerleş (u=1070, v=472)
+          arrPath.push(slotPos);
+        }
+      }
     }
   }
 
@@ -3220,7 +3241,7 @@ function startLeaving(g, fromRoom = null) {
         }
       }
       exitPath.push({ u: 975, v: 505, z: 8 });
-      exitPath.push({ u: 940, v: 505, z: 8 });
+      exitPath.push({ u: 1070, v: 488, z: 8 });
     }
   }
 
@@ -3229,15 +3250,23 @@ function startLeaving(g, fromRoom = null) {
     p.iso = { u: curUvz.u, v: curUvz.v, z: curUvz.z };
   }
 
-  // Resepsiyon ön çıkış kapısı ve kaldırımdan uzaklaşma
-  if (leaveRoom || (p.iso && p.iso.u < 1030)) {
-    exitPath.push({ u: 1035, v: 525, z: 8 });
-    exitPath.push({ u: 1065, v: 525, z: 4 });
-  } else if (p.iso && p.iso.u < 1060) {
-    exitPath.push({ u: 1065, v: 525, z: 4 });
+  // Resepsiyon ön çıkış kapısı, giriş taş yolu ve sarı kesik çizgi kaldırım gidiş rotası
+  if (leaveRoom || (p.iso && p.iso.u <= 1170)) {
+    // 1) Lobi içinden ön çıkış kapısına adım at
+    exitPath.push({ u: 1165, v: 488, z: 8 });
+    // 2) Mermer basamaklardan çim arası Giriş Taş Yolu'na in
+    exitPath.push({ u: 1215, v: 488, z: 2 });
+    // 3) Kaldırım kavşağına ulaş
+    exitPath.push({ u: 1305, v: 488, z: 0 });
+  } else if (p.iso && p.iso.u < 1260) {
+    // Taş yolu üzerinde bekleyen biri ayrılıyorsa doğrudan kaldırıma iner
+    exitPath.push({ u: 1305, v: 488, z: 0 });
+  } else if (p.iso && p.iso.v < 488) {
+    // Kaldırımda sıranın gerisinde bekleyen biri ayrılıyorsa önce kavşağa doğru yürür
+    exitPath.push({ u: 1305, v: 488, z: 0 });
   }
-  exitPath.push({ u: 1095, v: 525, z: 0 });
-  exitPath.push({ u: 1095, v: 1150, z: 0 });
+  // 4) Sarı kesik çizgi: Kaldırım boyunca (u=1305) caddeyi takip ederek aşağıya doğru çıkıp gider
+  exitPath.push({ u: 1305, v: 1180, z: 0 });
 
   p.isoPath = exitPath;
   p.onIsoArrive = () => {
@@ -6044,8 +6073,8 @@ function refreshGuest() {
 }
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 21;
-const APP_VERSION_NAME = "1.9.13-beta";
+const APP_VERSION_CODE = 22;
+const APP_VERSION_NAME = "1.9.14-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6053,9 +6082,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.14-beta",
+    title: "Mavi Teklif Noktasi, Gelis/Gidis Rotalari, Kapi/Kaldirim Kuyrugu & Karsi Kaldirim",
+    latest: true,
+    notes: "\u2022 \ud83d\udd35 Mavi Teklif Verme Noktasi: Resepsiyon bankosu onune ozel mavi dairesel check-in alani eklendi. Siranin basindaki musteri tam bu noktada durup teklif verir ve pazarlik yapar.\n\u2022 \ud83d\udd34 Kirmizi Gelis Rotasi & Sira: Musteriler kaldirimdan giris tas yoluna, oradan kapiya ve bankoya adim atar. Bekleyen diger misafirler teklif noktasinin arkasindan kapi esigine, tas yola ve kaldirima dogru tek sira dizilir.\n\u2022 \ud83d\udfe1 Sari Gidis Rotasi: Otelden ayrilan veya teklifi reddedilen konuklar lobiden cikip tas yolu ve kaldirim boyunca cadde asagisina dogru yuruyerek uzaklasir.\n\u2022 \ud83e\uddf1 Karsi Kaldirim: Caddenin karsisina, yol boyunca uzanan bordurlu ve kaplamali yeni karsi kaldirim insa edildi."
+  },
+  {
     ver: "v1.9.13-beta",
     title: "FPS Drop & Kasma Cozumu, Mobil DPR & Cop Toplayici Optimizasyonu",
-    latest: true,
+    latest: false,
     notes: "\u2022 \u26a1 Ani Kasma / FPS Dususunu Giderildi: Gunler ilerledikce otelden ayrilan musterilerin bellekte ve sahnede birikmesine yol acan dongu giderildi; ayrilan konuklar icin otomatik cop toplayici (Garbage Collector) eklendi.\n\u2022 \ud83d\udcf1 Mobil DPR & Piksel Yuku Optimizasyonu: Yuksek cozunurluklu telefon ekranlarinda (3x-3.5x Retina) GPU'yu asiri zorlayan tuval boyutu dengelendi ve 60 FPS akicilik saglandi.\n\u2022 \ud83c\udfc3 Hizli Cikis Rotasi: Ayrilan konuklar gereksiz lobi turlarini atlayarak dogrudan cikis kapisina yonlendirildi ve yuruyus hizlari artirildi.\n\u2022 \ud83c\udfaf Parsel Dongusu Hafifletildi: Her karede 1200'den fazla kez calisan bos parsel insa edilebilirlik taramasi yalnizca insaat cekmecesi acikken calisacak sekilde optimize edildi."
   },
   {
@@ -6215,6 +6250,38 @@ btnStartGame.onclick = () => {
     play("tap");
   }
 };
+
+if (new URLSearchParams(window.location.search).has("autostart")) {
+  setTimeout(() => {
+    btnStartGame.click();
+    isOpen = true;
+    if (new URLSearchParams(window.location.search).has("demo")) {
+      floors[0].slots[26].type = 'Corridor';
+      floors[0].slots[26].parcelBuilt = true;
+      floors[0].slots[25].type = 'Corridor';
+      floors[0].slots[25].parcelBuilt = true;
+      const r1 = floors[0].slots[31];
+      r1.type = 'Room';
+      r1.parcelBuilt = true;
+      r1.hasDoor = true;
+      r1.items[0] = true;
+      r1.items[4] = true;
+
+      spawnGuest();
+      spawnGuest();
+      spawnGuest();
+      for (let i = 0; i < queue.length; i++) {
+        const g = queue[i];
+        const pos = getQueueSlotPos(i);
+        g.pawn.iso = { u: pos.u, v: pos.v, z: pos.z };
+        g.atSpot = true;
+        g.arrivedOnce = true;
+        if (i === 0) g.pawn.facing = -1;
+        setBubbleText(g, i);
+      }
+    }
+  }, 100);
+}
 
 btnToggleSfx.onclick = () => {
   sfxEnabled = !sfxEnabled;
@@ -6658,10 +6725,10 @@ function logicalToIsoUVZ(wx, wy, pawn = null) {
     };
   }
 
-  // Kaldırımda yürüyenler (sol-ön cadde boyunca: u = 1090)
+  // Kaldırımda yürüyenler (sol-ön cadde boyunca: u = 1305)
   const sideT = clamp((wx - wX0) / 900, -1, 1);
   return {
-    u: 1090,
+    u: 1305,
     v: clamp(lobbyB.v0 + 105 + sideT * 520, -250, 1350),
     z: 0,
     inPool: false
@@ -7104,6 +7171,19 @@ function drawWorld() {
   for (let v = -280; v <= 1480; v += 140) {
     isoQuad(roadU0 + 82, v, roadU0 + 98, v + 70, -3, "#f5df66", null, 0);
   }
+
+  // 3.2) Karşı Kaldırım (u = 1530 .. 1620): Caddenin karşısındaki kaldırım!
+  const oppSwU0 = roadU1;             // 1530
+  const oppSwU1 = oppSwU0 + 90;       // 1620
+  isoQuad(oppSwU0, -350, oppSwU1, 1550, 0, SidewalkCol[si], OUTLINE_COL, 2);
+  for (let v = -300; v <= 1500; v += 90) {
+    const p1 = iso(oppSwU0, v, 0), p2 = iso(oppSwU1, v, 0);
+    ctx.strokeStyle = "rgba(90,75,60,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  }
+  // Yol ile karşı kaldırım arasındaki bordür basamağı (z = -4'ten z = 0'a)
+  isoQuad(oppSwU0 - 4, -350, oppSwU0, 1550, -0.5, "#6b7280", OUTLINE_COL, 1.2);
 
   // 3.5) Giriş Taş Yolu: Kaldırım (u=1260) ile Resepsiyon girişi (u=1170) arasındaki çim boşluğunu birleştiren taş yol!
   const recSlotForPath = allSlots.find(s => s.type === "Reception" && s.floor.idx === 0) || floors[0].slots[32];
@@ -7559,6 +7639,25 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     }
     isoBox(u0 + 58, v0 + 26, u0 + 142, v0 + 66, z0, z0 + 32, "#fff8eb", "#c78852", "#9e6637", OUTLINE_COL, 2);
     isoBox(u0 + 78, v0 + 32, u0 + 112, v0 + 52, z0 + 32, z0 + 45, "#36414d", "#242c36", "#1a2029", OUTLINE_COL, 1.4);
+
+    // F2) Mavi Yuvarlak Teklif Verme Noktası (Kullanıcının çizdiği pazarlık/teklif verme noktası)
+    const offerPt = iso(u0 + 95, v0 + 82, z0 + 0.35); // u: 1070, v: 472
+    ctx.save();
+    ctx.fillStyle = "rgba(37, 99, 235, 0.22)"; // Şık yarı şeffaf mavi zemin
+    ctx.strokeStyle = "#2563eb";                // Canlı mavi dış dairesel kenarlık
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.ellipse(offerPt.x, offerPt.y, 18, 9.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // İç altın pirinç halka
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.ellipse(offerPt.x, offerPt.y, 13, 6.8, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
 
     // G) Lobi Bekleme Köşesi: Turkuaz Halı, Krem Deri Koltuk & Ahşap Sehpa
     isoQuad(u0 + 95, v0 + 95, u1 - 25, v1 - 25, z0 + 0.6, "#3a8f8a", OUTLINE_COL, 1.5);
