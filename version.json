@@ -1,8 +1,8 @@
 {
-  "versionCode": 24,
-  "versionName": "1.9.16-beta",
+  "versionCode": 25,
+  "versionName": "1.9.17-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.16-beta: Zemin katta yola paralel ilk kısım 8 kareye genişletildi (sol yol parseli, 6 otel sütunu ve sağ yol parseli). Yol kenarındaki ağaçlar dokunup kesilebilir (+1 Alet) ve parsel inşaata açılabilir. Depo binası artık otel binasına yapışık olmak zorunda değildir; zemin kattaki herhangi bir boş parsele bağımsız kurulabilir veya taşınabilir. Depo yol cephesine kurulduğunda beton mal kabul rampası ve otomatik kepenk açılır; kargo kamyonu caddeden doğrudan Depo önüne yanaşarak sipariş kolilerini Depo rampasına teslim eder."
+  "notes": "v1.9.17-beta: Otantik retro gazete tasarımı (Otel & Şehir Postası), gazeteci çocuk teslimat animasyonu ve girişe bırakılan dokunulabilir gazete rulosu eklendi. Haftalık dinamik piyasa olayları (ör. 4 gün klimalarda %50 zam gibi ürün bazlı zam/indirimler ve borsa manşetleri) getirildi; olaylar ve seri katil her hafta çıkmak zorunda olmayacak şekilde seyreltildi. Kapasite aşımı (overbooking), kapıda çok bekletme ve uzun kuyruk cezaları eklendi (misafirler sıranın çok uzun veya otelin dolu olduğunu görüp -5 İtibar ile terk edebilir)."
 }

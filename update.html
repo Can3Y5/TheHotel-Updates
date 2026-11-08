@@ -424,33 +424,139 @@
   }
   #log-text:empty { display: none; }
 
-  /* MODALLAR */
+  /* OTANTİK GAZETE TASARIMI */
   #day-modal {
-    position: absolute; inset: 0; background: rgba(10, 12, 20, 0.75);
-    display: none; align-items: center; justify-content: center; z-index: 26; padding: 4%;
+    position: absolute; inset: 0; background: rgba(15, 12, 10, 0.82);
+    display: none; align-items: center; justify-content: center; z-index: 26; padding: 3.5%;
+    backdrop-filter: blur(2px);
   }
-  .ds-box {
-    width: 100%; max-width: 420px; max-height: 88%; overflow-y: auto; background: #fcf7e8; border: 3px solid #3a281f;
-    border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px;
-    box-shadow: 0 10px 28px rgba(0,0,0,0.48);
+  .ds-box.newspaper-card {
+    width: 100%; max-width: 440px; max-height: 90%; overflow-y: auto;
+    background: #fbf7ec;
+    border: 3px double #2b2118;
+    border-radius: 4px;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.65), inset 0 0 40px rgba(180, 150, 110, 0.15);
+    color: #1a1612;
+    font-family: "Georgia", "Times New Roman", serif;
   }
-  .news-banner {
-    background: #3a281f; color: #fffcf2; text-align: center; padding: 6px 8px;
-    border-radius: 8px; font-weight: 900; font-size: clamp(13px, 3.6vw, 16px); letter-spacing: 0.5px;
+  .ds-box.newspaper-card::-webkit-scrollbar { width: 5px; }
+  .ds-box.newspaper-card::-webkit-scrollbar-thumb { background: #baa991; border-radius: 3px; }
+  .newspaper-header {
+    border-bottom: 2px solid #2b2118;
+    padding-bottom: 6px;
+    text-align: center;
   }
-  .news-alert {
-    background: #ffe3e0; border: 2px solid #b32424; border-radius: 8px; padding: 8px 10px;
-    font-size: clamp(11.5px, 3.1vw, 13.5px); color: #3b1111; line-height: 1.35;
+  .newspaper-top-bar {
+    display: flex; justify-content: space-between;
+    font-size: 10px; font-weight: 700; color: #5a4a3a;
+    border-bottom: 1px solid #c4b69c; padding-bottom: 2px;
+    letter-spacing: 0.5px; text-transform: uppercase;
   }
-  .news-subbox {
-    background: #f2ead5; border: 1.5px solid #8c7f65; border-radius: 8px; padding: 7px 9px;
-    font-size: clamp(11px, 2.9vw, 13px); color: #2b261f; line-height: 1.3;
+  .newspaper-title {
+    font-size: clamp(20px, 5.8vw, 26px);
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    color: #1a140e;
+    margin: 4px 0 1px 0;
+    text-transform: uppercase;
+    font-family: "Georgia", "Times New Roman", serif;
   }
-  .ds-row { display: flex; justify-content: space-between; gap: 10px; font-size: clamp(12px, 3.3vw, 14.5px); padding: 3px 0; border-bottom: 1px dashed #c9c3b0; }
-  .ds-sep { height: 2px; background: #3a281f; margin: 4px 0; }
-  #btn-close-ds {
-    margin-top: 8px; background: #8be08f; border: 2px solid #3a281f; border-radius: 8px;
-    padding: 10px; font-size: clamp(14px, 3.6vw, 17px); font-weight: 900; color: #3a281f; cursor: pointer;
+  .newspaper-tagline {
+    font-size: 9.5px; font-weight: 700; letter-spacing: 1px; color: #6d5b47;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .newspaper-meta-bar {
+    display: flex; justify-content: space-between;
+    font-size: 10.5px; font-style: italic; color: #3b3127;
+    border-top: 1px solid #2b2118; border-bottom: 2px double #2b2118;
+    padding: 3px 0; margin-top: 2px;
+  }
+  .news-headline-box {
+    background: #f3ecd8;
+    border: 2px solid #2b2118;
+    padding: 9px 11px;
+    border-radius: 2px;
+    margin-top: 2px;
+  }
+  .news-headline-tag {
+    display: inline-block;
+    color: #fbf7ec;
+    font-size: 9.5px; font-weight: 900; letter-spacing: 0.5px;
+    padding: 2px 6px; text-transform: uppercase; margin-bottom: 4px;
+    border-radius: 2px;
+  }
+  .news-headline-title {
+    font-size: clamp(13.5px, 3.8vw, 16.5px);
+    font-weight: 900;
+    line-height: 1.25;
+    margin-bottom: 5px;
+  }
+  .news-headline-desc {
+    font-size: clamp(11px, 2.9vw, 12.5px);
+    color: #2b2118;
+    line-height: 1.4;
+  }
+  .news-columns-row {
+    display: flex; gap: 8px; margin: 2px 0;
+  }
+  .news-column {
+    flex: 1; background: #fffcf4; border: 1px solid #d2c6af;
+    padding: 7px 9px; border-radius: 2px;
+  }
+  .news-col-title {
+    font-size: 10.5px; font-weight: 900; text-transform: uppercase;
+    border-bottom: 1px solid #2b2118; padding-bottom: 3px; margin-bottom: 4px;
+    color: #2b2118; display: flex; align-items: center; gap: 4px;
+  }
+  .news-col-body {
+    font-size: 10.5px; line-height: 1.35; color: #382e24;
+  }
+  .news-financial-sheet {
+    background: #fffcf5;
+    border: 1.5px solid #3d3126;
+    padding: 8px 10px;
+    margin-top: 2px;
+  }
+  .news-sheet-title {
+    font-size: 11px; font-weight: 900; letter-spacing: 0.5px;
+    text-transform: uppercase; border-bottom: 1px solid #3d3126;
+    padding-bottom: 3px; margin-bottom: 5px; color: #231b14;
+    text-align: center;
+  }
+  .ds-row {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: clamp(11.5px, 3.1vw, 13px); padding: 2.5px 0;
+    border-bottom: 1px dotted #baa991;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+  }
+  .ds-sep { height: 1.5px; background: #3a281f; margin: 4px 0; }
+  .newspaper-close-btn {
+    margin-top: 8px;
+    background: #2b2118; color: #fbf7ec;
+    border: 1px solid #1a140e;
+    padding: 10px; font-size: clamp(13px, 3.5vw, 15px);
+    font-weight: 900; font-family: "Georgia", serif;
+    letter-spacing: 0.5px; cursor: pointer; text-transform: uppercase;
+    border-radius: 3px; box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+  .newspaper-close-btn:hover {
+    background: #453628;
+  }
+  #news-notif-dot {
+    display: none;
+    position: absolute; top: -3px; right: -3px;
+    background: #e63946; color: #fff;
+    width: 18px; height: 18px; border-radius: 50%;
+    font-size: 12px; font-weight: 900; line-height: 18px; text-align: center;
+    border: 2px solid #fff;
+    animation: pulse-dot 1.2s infinite;
+  }
+  @keyframes pulse-dot {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.22); }
+    100% { transform: scale(1); }
   }
 
   #guestbook-modal {
@@ -818,10 +924,10 @@
   <!-- SOL ÜST YUVARLAK İKONLAR -->
   <div id="left-hud-top">
     <div class="left-top-row">
-      <div class="round-hud-btn" id="btn-news" title="Haftalık Gazete & Görevler">
-        <div class="rhb-circle">📋</div>
-        <div class="notif-dot">!</div>
-        <div class="rhb-label">Görevler</div>
+      <div class="round-hud-btn" id="btn-news" title="Haftalık Gazete & Rapor">
+        <div class="rhb-circle">📰</div>
+        <div class="notif-dot" id="news-notif-dot">!</div>
+        <div class="rhb-label">Gazete</div>
       </div>
       <div class="round-hud-btn" id="btn-ach" title="Başarımlar">
         <div class="rhb-circle">🏆</div>
@@ -930,12 +1036,24 @@
       <div id="gb-content"></div>
     </div>
   </div>
-  <!-- HAFTALIK GAZETE & RAPOR -->
+  <!-- HAFTALIK GAZETE & RAPOR (OTANTİK GAZETE TASARIMI) -->
   <div id="day-modal">
-    <div class="ds-box">
-      <div class="news-banner" id="ds-title">📰 HAFTALIK OTEL GAZETESİ</div>
+    <div class="ds-box newspaper-card">
+      <div class="newspaper-header">
+        <div class="newspaper-top-bar">
+          <span>★★★ HAFTALIK BASKI ★★★</span>
+          <span id="news-vol">YIL: 1980 • BASKI: #1</span>
+          <span>FİYATI: 50 KURUŞ</span>
+        </div>
+        <div class="newspaper-title">OTEL & ŞEHİR POSTASI</div>
+        <div class="newspaper-tagline">THE GRAND HOTEL HERALD & FINANCIAL CHRONICLE</div>
+        <div class="newspaper-meta-bar">
+          <span id="news-date">Hafta 1 • İlkbahar</span>
+          <span>BÖLGE EKONOMİSİ, ASAYİŞ VE BİLANÇO</span>
+        </div>
+      </div>
       <div id="ds-content"></div>
-      <button id="btn-close-ds">✔ Okudum, Devam Et</button>
+      <button id="btn-close-ds" class="newspaper-close-btn">🗞️ Gazeteyi Katla ve Devam Et</button>
     </div>
   </div>
   <!-- OYUN GİRİŞ EKRANI -->
@@ -1389,10 +1507,14 @@ const dormWorkers = [];
 let kitchenState = "Locked", kitchenLeft = 0, cookLevel = 0, cookPawn = null;
 const kitchenWorkers = [];
 let towerOrder = [];
-// Haftalık Gazete & Muhasebe Raporu + Seri Katil + Etkinlikler (v1.9.0)
+// Haftalık Gazete & Muhasebe Raporu + Seri Katil + Etkinlikler + Piyasa Olayları (v1.9.17)
 let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0 };
 let summaryOpen = false;
+let killerActiveThisWeek = false;
 let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
+let marketEvent = { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 0 };
+let unreadNewspaper = false;
+let paperboyPawn = null;
 let activeEvent = "", eventDaysLeft = 0, nextEventDay = 0, nextEventType = "VIP", vipSpawnedThisEvent = false;
 // Faz 2 Personeller: Resepsiyonist & Güvenlik
 let receptionistLevel = 0, recNoKids = false, recMinPrice = 0, recAllowFree = true, recAutoPlace = true, recAutoTimer = 0;
@@ -1807,7 +1929,7 @@ function saveGame() {
       dormState,
       dormLeft,
       dormLevel, kitchenState, kitchenLeft, cookLevel, towerOrder: towerOrder.slice(),
-      killerLetter, killerCaughtWeek, weekMurders, v181KillerRandomized: true, dayStats,
+      killerActiveThisWeek, killerLetter, killerCaughtWeek, weekMurders, marketEvent, unreadNewspaper, v181KillerRandomized: true, dayStats,
       activeEvent, eventDaysLeft, nextEventDay, nextEventType, vipSpawnedThisEvent,
       receptionistLevel,
       recNoKids,
@@ -1927,11 +2049,14 @@ function loadGame() {
     towerOrder = Array.isArray(data.towerOrder) ? data.towerOrder.filter(t => t === "Dorm" || t === "Kitchen") : [];
     if (dormState !== "Locked" && !towerOrder.includes("Dorm")) towerOrder.unshift("Dorm");
     if (kitchenState !== "Locked" && !towerOrder.includes("Kitchen")) towerOrder.push("Kitchen");
+    killerActiveThisWeek = (data.killerActiveThisWeek !== undefined) ? !!data.killerActiveThisWeek : (data.killerCaughtWeek === 0);
     killerLetter = (data.v181KillerRandomized && data.killerLetter && KillerLetters.includes(data.killerLetter))
       ? data.killerLetter
       : pick(KillerLetters.filter(l => l !== "S"));
     killerCaughtWeek = data.killerCaughtWeek || 0;
     weekMurders = data.weekMurders || 0;
+    marketEvent = (data.marketEvent && typeof data.marketEvent === "object") ? data.marketEvent : { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 0 };
+    unreadNewspaper = !!data.unreadNewspaper;
     if (data.dayStats && typeof data.dayStats === "object") {
       dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation }, data.dayStats);
     }
@@ -2185,9 +2310,13 @@ function startNewGameClean() {
   recAutoPlace = true;
   recAutoTimer = 0;
   securityLevel = 0;
-  killerLetter = pick(KillerLetters);
+  killerActiveThisWeek = Math.random() < 0.35;
+  killerLetter = killerActiveThisWeek ? pick(KillerLetters) : "";
   killerCaughtWeek = 0;
   weekMurders = 0;
+  marketEvent = { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 1 };
+  unreadNewspaper = false;
+  paperboyPawn = null;
   activeEvent = "";
   eventDaysLeft = 0;
   nextEventDay = 0;
@@ -2278,7 +2407,8 @@ function startNewGameClean() {
   resetSpawn();
   log("🆕 Yeni oyun başlatıldı! 1. Adım: Resepsiyon arkasındaki 1. Koridoru kur (60 TL).");
   log("💡 Adımlar: 1) 1. Koridoru kur, 2) 2. Koridoru kur, 3) 1. Odanı kur, 4) Kapısını tak ve Oteli Aç!");
-  log("📰 Haftalık Gazete: Şehirde '" + killerLetter + "' harfiyle başlayan bir seri katil aranıyor! Sağdaki 📰 Gazete butonuna bakabilirsin.");
+  if (typeof prepareWeeklyNewspaper === "function") prepareWeeklyNewspaper(true);
+  if (typeof spawnPaperboy === "function") spawnPaperboy();
   saveGame();
   refresh();
   fitView();
@@ -2308,6 +2438,15 @@ function gasCost() { return CostGas + CostRoomStep * builtRooms; }
 function gymUpgradeCost(lv) { return lv <= 1 ? 200 : 350; }
 
 function maintCost(s) { return CostMaint + Math.round((100 - s.maintenance) * 0.5); }
+
+function getItemCost(k) {
+  if (k < 0 || k >= ItemCount) return 0;
+  const base = ItemCosts[k];
+  if (marketEvent && marketEvent.active && marketEvent.itemKey === k && marketEvent.daysLeft > 0) {
+    return Math.max(5, Math.round(base * marketEvent.mult));
+  }
+  return base;
+}
 
 function round5(v) { return Math.max(5, Math.round(v / 5) * 5); }
 
@@ -2510,11 +2649,11 @@ function spawnGuest() {
       : "Yan odalarımda gürültülü aktivite (Spor/Tuvalet) veya çocuklu aile istemiyorum, kafamı dinleyeceğim!";
   }
 
-  // Gizli Roller: Gece Vampir (%24), Seri Katil (%16 - Gazetedeki baş harfle başlar, ipucu vermez), Hırsız (%14)
+  // Gizli Roller: Gece Vampir (%24), Seri Katil (Sadece bu hafta aktifse, %16), Hırsız (%14)
   if (g.type === "Normal" && !g.chinese && !g.isVip) {
     const nightNow = isNight || brightness() < 0.45;
     const activeKiller = guests.some(x => x.role === "Killer" && x.state !== "Leaving");
-    if (!activeKiller && killerCaughtWeek === 0 && Math.random() < 0.16) {
+    if (!activeKiller && killerActiveThisWeek && killerCaughtWeek === 0 && Math.random() < 0.16) {
       g.role = "Killer";
       g.hint = ""; // Seri katil normal konuşur, sadece gazetedeki baş harften anlaşılır!
       const matching = FirstNames.filter(fn => fn.startsWith(killerLetter));
@@ -2647,6 +2786,20 @@ function spawnGuest() {
     kid.iso = { u: spawnU + 14 * (k + 1), v: spawnV - 20 * (k + 1), z: 0 };
     g.kidPawns.push(kid);
   }
+
+  // Kapasite Aşımı (Overbooking) & Uzun Kuyruk Cezası:
+  // Eğer otelde hazır ve boş HİÇ oda yoksa ve sırada zaten 3+ kişi bekliyorsa:
+  const vacantRooms = allSlots.filter(s => s.type === "Room" && s.floor.state === "Built" && s.Ready && !s.guest && !s.onFire).length;
+  if (vacantRooms === 0 && queue.length >= 3 && Math.random() < 0.65) {
+    reputation = Math.max(0, reputation - 5);
+    applyRating(LeaveRating);
+    play("reject");
+    log("⚠️ [Kapasite Aşımı] " + g.name + " otelde boş yer kalmadığını ve sıranın taştığını görüp öfkeyle ayrıldı (-5 İtibar).");
+    floatText(waitX() - 30, floors[0].WalkY + 145, "😡 Sıra çok uzun / Yer yok! (-5 İtibar)", "#bf2626");
+    startLeaving(g);
+    return;
+  }
+
   queue.push(g);
   guests.push(g);
   reflowQueue();
@@ -2724,11 +2877,14 @@ function queueTimeout(g) {
   if (idx >= 0) queue.splice(idx, 1);
   if (pending === g) pending = null;
   applyRating(LeaveRating);
-  log(g.name + " sırada çok bekledi, hizmet almadan gitti! (" + LeaveRating + "/5)");
-  floatText(g.pawn.pos.x, g.pawn.pos.y + 150, LeaveRating + "/5 Çok bekledi", "#bf2626");
+  reputation = Math.max(0, reputation - 5);
+  play("reject");
+  log("⚠️ [Müşteri Kaybı] " + g.name + " sırada çok bekletildiği için öfkeyle oteli terk etti (-5 İtibar)!");
+  floatText(g.pawn.pos.x, g.pawn.pos.y + 150, "😡 Çok bekledim! (-5 İtibar)", "#bf2626");
   startLeaving(g);
   reflowQueue();
   refresh();
+  saveGame();
 }
 
 function dismissFront(g, msg) {
@@ -2806,7 +2962,15 @@ function onReject() {
   if (!g) return;
   if (g.type === "Threat") { threatDamage(g); return; }
   play("reject");
-  dismissFront(g, g.name + " geri çevrildi.");
+  const vacantRooms = allSlots.filter(s => s.type === "Room" && s.floor.state === "Built" && s.Ready && !s.guest && !s.onFire).length;
+  if (g.type === "Normal" && g.role === "None" && vacantRooms > 0) {
+    reputation = Math.max(0, reputation - 2);
+    log(g.name + ' haksız yere geri çevrildi: "Boş odanız varken beni almadınız!" (-2 İtibar)');
+    floatText(g.pawn.pos.x, g.pawn.pos.y + 140, "Geri Çevrildi (-2 İtibar)", "#bf2626");
+  } else {
+    log(g.name + " geri çevrildi.");
+  }
+  dismissFront(g);
 }
 
 // ===== BUNDLED: logic/guests.js =====
@@ -3713,13 +3877,15 @@ function tryPlacePendingBodyguards() {
 // [logic/housekeeping.js] Kir, temizlik, bakım ve eşya kurulumu
 function installItem(s, k) {
   if (s.items[k]) return;
+  const cost = (typeof getItemCost === "function") ? getItemCost(k) : ItemCosts[k];
   if (stock[k] > 0) {
     stock[k]--; s.items[k] = true; play("build");
     log(s.roomNo + ". oda: " + ItemNames[k] + " depodan takıldı.");
     saveGame();
-  } else if (pay(ItemCosts[k])) {
+  } else if (pay(cost)) {
     s.items[k] = true; play("build");
-    log(s.roomNo + ". oda: " + ItemNames[k] + " eklendi.");
+    const hikeTag = (marketEvent && marketEvent.active && marketEvent.itemKey === k && marketEvent.daysLeft > 0) ? (marketEvent.isHike ? " (Zamlı)" : " (İndirimli)") : "";
+    log(s.roomNo + ". oda: " + ItemNames[k] + " eklendi (" + cost + " TL" + hikeTag + ").");
     saveGame();
   }
 }
@@ -4237,7 +4403,10 @@ function storageCap() { return hasStorage() ? StorageCap[storageLevel] : 0; }
 
 function storageUsed() { return sumArr(stock) + sumArr(crateItems) + sumArr(cart) + shipments.reduce((t, sh) => t + sumArr(sh.items), 0); }
 
-function orderCost(k) { return Math.round(ItemCosts[k] * OrderDiscount); }
+function orderCost(k) {
+  const base = (typeof getItemCost === "function") ? getItemCost(k) : ItemCosts[k];
+  return Math.round(base * OrderDiscount);
+}
 
 function cartCost() { let t = 0; for (let k = 0; k < ItemCount; k++) t += cart[k] * orderCost(k); return t; }
 
@@ -4595,67 +4764,249 @@ function newDay() {
   }
   tryPlacePendingBodyguards();
 
+  // Günlük Piyasa Dalgalanması Sayacı
+  if (marketEvent && marketEvent.active && marketEvent.daysLeft > 0) {
+    marketEvent.daysLeft--;
+    if (marketEvent.daysLeft <= 0) {
+      marketEvent.active = false;
+      log("📢 [Piyasa Normalleşti] " + marketEvent.itemName + " üzerindeki piyasa dalgalanması sona erdi, fiyatlar normale döndü.");
+    } else {
+      log("📢 [Piyasa Hatırlatması] " + marketEvent.itemName + " " + (marketEvent.isHike ? "zamlı" : "indirimli") + " fiyatı devam ediyor (Kalan: " + marketEvent.daysLeft + " gün).");
+    }
+  }
+
   if (paid) play("coin");
-  // Haftalık Gazete & Rapor: Her 7 günde bir (Gün 8, 15, 22...) otomatik açılır; oyunu her gün bölmez!
+  // Haftalık Gazete & Rapor: Her 7 günde bir (Gün 1, Gün 8, Gün 15...) Gazeteci çocuk gelir ve gazeteyi girişe bırakır!
   if ((day - 1) % 7 === 0) {
-    showWeeklyNewspaper(true);
+    prepareWeeklyNewspaper(true);
+    spawnPaperboy();
   }
   refresh();
 }
 
-function showWeeklyNewspaper(isWeekEnd = false) {
-  const weekNo = Math.max(1, Math.floor((day - 1) / 7) + (isWeekEnd ? 0 : 1));
+function spawnPaperboy() {
+  if (paperboyPawn && !paperboyPawn.dead) return;
+  const p = makePawn({ x: waitX(), y: floors[0].WalkY }, "#ffd9b8", "#2c6ecb", "#223355");
+  p.isPaperboy = true;
+  p.speed = 135;
+  p.iso = { u: 1305, v: -280, z: 0 };
+  p.facing = 1;
+  paperboyPawn = p;
+
+  p.isoPath = [
+    { u: 1305, v: 488, z: 0 },
+    { u: 1305, v: 1450, z: 0 }
+  ];
+
+  p.onIsoWaypoint = (wpt, remaining) => {
+    if (remaining === 1) { // 1. noktaya (giriş taş yolu kavşağı) ulaştı: Gazeteyi kapıya fırlatır!
+      unreadNewspaper = true;
+      play("tap");
+      floatText(waitX(), floors[0].WalkY + 140, "🗞️ Gazete Geldi!", "#2d5fa1");
+      log("🗞️ [Otel Postası] Gazeteci haftalık gazeteyi kapıya bıraktı! Okumak için yerdeki gazeteye dokun veya sol üstteki Gazete butonuna bas.");
+      refresh();
+      saveGame();
+    }
+  };
+
+  p.onIsoArrive = () => {
+    p.dead = true;
+    paperboyPawn = null;
+  };
+}
+
+function prepareWeeklyNewspaper(isWeekEnd = false) {
   if (isWeekEnd) {
-    // Yeni hafta için yeni Seri Katil eşkali belirle
-    const others = KillerLetters.filter(l => l !== killerLetter);
-    killerLetter = pick(others.length > 0 ? others : KillerLetters);
-    killerCaughtWeek = 0;
+    // 1) Seri Katil Durumu: Her hafta olmak zorunda değil! (~%35 ihtimal)
+    const killerRoll = Math.random();
+    if (killerRoll < 0.35) {
+      killerActiveThisWeek = true;
+      const others = KillerLetters.filter(l => l !== killerLetter);
+      killerLetter = pick(others.length > 0 ? others : KillerLetters);
+      killerCaughtWeek = 0;
+    } else {
+      killerActiveThisWeek = false;
+      killerLetter = "";
+      killerCaughtWeek = 0;
+    }
+
+    // 2) Piyasa Dalgalanması (Zam / İndirim): Her hafta olmak zorunda değil! (~%55 ihtimal)
+    const marketRoll = Math.random();
+    if (marketRoll < 0.55) {
+      const candidates = [IKlima, ITV, IBuzdolabi, IYatak, IDolap, IMasa, IAmpul, IKamera];
+      const targetItem = pick(candidates);
+      const isHike = Math.random() < 0.8; // %80 zam, %20 indirim
+      const mult = isHike ? pick([1.3, 1.4, 1.5, 1.6, 1.75]) : pick([0.7, 0.75, 0.8]);
+      const daysTotal = rndInt(2, 6); // 2 ile 5 gün arası
+      const pct = Math.round(Math.abs(mult - 1) * 100);
+
+      let title = "";
+      let desc = "";
+      const iname = ItemNames[targetItem];
+
+      if (targetItem === IKlima) {
+        title = isHike ? "AŞIRI SICAK DALGASI & KLİMA KITLIĞI" : "BÖLGE DİSTRİBÜTÖRÜ KLİMA KAMPANYASI";
+        desc = isHike
+          ? ("Meteoroloji rekor sıcaklık uyarısı yaptı! Şehir genelinde klima talebi patladı; toptancılar klimalarda " + daysTotal + " günlüğüne %" + pct + " zam uyguluyor.")
+          : ("Yaz sezonu öncesi distribütör firma toplu alımlara özel " + daysTotal + " gün boyunca klimalarda %" + pct + " indirim başlattı.");
+      } else if (targetItem === ITV) {
+        title = isHike ? "KÜRESEL ÇİP KRİZİ ELEKTRONİĞİ VURDU" : "TEKNOLOJİ FUARI İNDİRİMİ";
+        desc = isHike
+          ? ("Entegre devre ve panel ithalatındaki aksama televizyon fiyatlarını fırlattı. Televizyonlar " + daysTotal + " gün boyunca %" + pct + " zamlı.")
+          : ("Şehir fuarı vesilesiyle otel tipi televizyonlarda " + daysTotal + " gün %" + pct + " indirim fırsatı sunuldu.");
+      } else if (targetItem === IBuzdolabi) {
+        title = isHike ? "SOĞUTMA GAZI TEDARİK SIKINTISI" : "BEYAZ EŞYA KAMPANYASI";
+        desc = isHike
+          ? ("Kompresör üreticilerindeki aksama nedeniyle minibar ve buzdolabı fiyatları " + daysTotal + " gün boyunca %" + pct + " zamlandı.")
+          : ("Beyaz eşya toptancısı otel minibarları için " + daysTotal + " günlük %" + pct + " indirim ilan etti.");
+      } else if (targetItem === IYatak) {
+        title = isHike ? "TEKSTİL FABRİKASINDA GREV" : "YATAK ÜRETİCİLERİ KAMPANYASI";
+        desc = isHike
+          ? ("Büyük pamuk ve tekstil fabrikasında başlayan grev otel tipi ortopedik yatak fiyatlarını " + daysTotal + " gün boyunca %" + pct + " artırdı.")
+          : ("Fabrika doğrudan satışla " + daysTotal + " gün boyunca yataklarda %" + pct + " indirim uyguluyor.");
+      } else if (targetItem === IDolap || targetItem === IMasa) {
+        title = isHike ? "KERESTE VE AHŞAP KITLIĞI" : "MARANGOZLAR ODASI KAMPANYASI";
+        desc = isHike
+          ? ("Kereste ithalatındaki kısıtlama ahşap mobilya maliyetlerini artırdı. " + iname + " fiyatları " + daysTotal + " gün %" + pct + " zamlandı.")
+          : ("Mobilyacılar sitesi toplu alımlarda " + iname + " için " + daysTotal + " günlük %" + pct + " indirim açıkladı.");
+      } else if (targetItem === IAmpul) {
+        title = isHike ? "AYDINLATMA FABRİKASINDA REVİZYON" : "ENERJİ TASARRUFU DESTEĞİ";
+        desc = isHike
+          ? ("Büyük aydınlatma fabrikasında çıkan arıza ampul fiyatlarını " + daysTotal + " gün boyunca %" + pct + " yükseltti.")
+          : ("Enerji tasarrufu haftası nedeniyle ampullerde " + daysTotal + " gün %" + pct + " indirim başladı.");
+      } else { // IKamera
+        title = isHike ? "GÜVENLİK SİSTEMLERİNDE TALEP PATLAMASI" : "GÜVENLİK EKİPMANLARI İNDİRİMİ";
+        desc = isHike
+          ? ("Şehirdeki kamu binalarının güvenlik ihaleleri nedeniyle kameralar " + daysTotal + " gün boyunca %" + pct + " zamlandı.")
+          : ("Güvenlik firmaları otel işletmelerine özel " + daysTotal + " gün %" + pct + " kamera indirimi yaptı.");
+      }
+
+      marketEvent = {
+        active: true,
+        title: title,
+        desc: desc,
+        itemKey: targetItem,
+        itemName: iname,
+        mult: mult,
+        isHike: isHike,
+        daysTotal: daysTotal,
+        daysLeft: daysTotal,
+        startDay: day
+      };
+    } else {
+      marketEvent = {
+        active: false,
+        title: "PİYASALARDA SAKİN HAFTA",
+        desc: "Toptancılar ve üreticiler birliği tüm otel donanımları, beyaz eşya ve mobilya sevkiyatlarının olağan seyrinde ilerlediğini duyurdu. Fiyatlarda herhangi bir dalgalanma beklenmiyor.",
+        itemKey: -1,
+        itemName: "",
+        mult: 1.0,
+        isHike: false,
+        daysTotal: 0,
+        daysLeft: 0,
+        startDay: day
+      };
+    }
   }
+}
+
+function showWeeklyNewspaper(isWeekEnd = false) {
+  unreadNewspaper = false;
+  const notif = document.getElementById("news-notif-dot");
+  if (notif) notif.style.display = "none";
+
+  const weekNo = Math.max(1, Math.floor((day - 1) / 7) + (isWeekEnd ? 0 : 1));
   const st = dayStats;
   const net = money - (st.money0 !== undefined ? st.money0 : money);
   const known = st.income + st.meals - st.mealCost - st.wage - st.gas - st.spent;
   const other = net - known;
   const avg = st.rCnt > 0 ? (st.rSum / st.rCnt).toFixed(1) : "-";
   const repD = reputation - st.rep0;
-  const row = (lbl, val, col) => "<div class='ds-row'><span>" + lbl + "</span><b style='color:" + (col || "#1f1f26") + "'>" + val + "</b></div>";
+  const row = (lbl, val, col) => "<div class='ds-row'><span>" + lbl + "</span><b style='color:" + (col || "#261d15") + "'>" + val + "</b></div>";
   const sg = v => (v >= 0 ? "+" : "-") + Math.abs(Math.round(v)) + " TL";
+
   let h = "";
-  const killerStatus = killerCaughtWeek
-    ? "✅ <b>SON DAKİKA:</b> Bu hafta aranan Seri Katil otelinizdeki başarılı ihbar sayesinde yakalandı! Şehir güvende."
-    : ("🚨 <b>EMNİYET UYARISI:</b> Şehirde tehlikeli bir <b>Seri Katil</b> aranıyor! Polis, zanlının isminin <b>'" + killerLetter + "'</b> harfiyle başladığını tahmin ediyor. Normal bir müşteri gibi davranıp geceleri diğer odalardaki müşterileri öldürüyor! Şüpheliyi odasından çıkarıp ihbar edene <b>+200 TL</b> ödül var.");
-  h += "<div class='news-alert'>" + killerStatus + "</div>";
-  let evTxt = "";
-  if (activeEvent) {
-    evTxt = "🎉 <b>AKTİF ETKİNLİK:</b> Şu anda şehirde <b>" + EventTitles[activeEvent] + "</b> devam ediyor! (Kalan: <b>" + eventDaysLeft + " gün</b>).";
-  } else if (stars() >= 1 && nextEventDay > day) {
-    evTxt = "📅 <b>YAKLAŞAN ETKİNLİK DUYURUSU:</b> <b>" + (nextEventDay - day) + " gün sonra (Gün " + nextEventDay + ")</b> şehirde <b>" + EventTitles[nextEventType] + "</b> başlayacak! (Ünlüler yan odada koruma veya sessiz oda, turistler balkonlu oda ister).";
+
+  // 1) BÜYÜK MANŞET: Piyasa Olayı (Zam / İndirim) veya Sakin Piyasa Raporu
+  h += "<div class='news-headline-box'>";
+  if (marketEvent && marketEvent.active) {
+    const pct = Math.round(Math.abs(marketEvent.mult - 1) * 100);
+    const badgeTxt = marketEvent.isHike ? "🚨 PİYASA ALARMI • FİYAT ARTIŞI" : "✨ TİCARET BORSASI • İNDİRİM FIRSATI";
+    const titleCol = marketEvent.isHike ? "#991b1b" : "#166534";
+    const effCost = (typeof getItemCost === "function") ? getItemCost(marketEvent.itemKey) : ItemCosts[marketEvent.itemKey];
+    h += "<span class='news-headline-tag' style='background:" + (marketEvent.isHike ? "#991b1b" : "#166534") + "'>" + badgeTxt + "</span>";
+    h += "<div class='news-headline-title' style='color:" + titleCol + "'>" + marketEvent.title + ": " + marketEvent.itemName.toUpperCase() + " FİYATLARINDA %" + pct + " " + (marketEvent.isHike ? "ZAM!" : "İNDİRİM!") + "</div>";
+    h += "<div class='news-headline-desc'>" + marketEvent.desc + " Liste fiyatı " + ItemCosts[marketEvent.itemKey] + " TL olan " + marketEvent.itemName + ", önümüzdeki <b>" + marketEvent.daysLeft + " gün boyunca " + effCost + " TL</b> üzerinden işlem görecektir.</div>";
   } else {
-    evTxt = "⭐ <b>ETKİNLİK TAKVİMİ:</b> Oteliniz <b>1 Yıldız (250 İtibar)</b> olduğunda 8–10 günde bir özel etkinlikler (Ünlü Konuk ve Korumaları, Sosyete Düğünü, Festival) başlayacak ve burada duyurulacak!";
+    h += "<span class='news-headline-tag' style='background:#3b3127'>📰 TİCARET & PİYASALAR</span>";
+    h += "<div class='news-headline-title' style='color:#2b2118'>PİYASALARDA SAKİN HAFTA: TEDARİK ZİNCİRİ STABİL</div>";
+    h += "<div class='news-headline-desc'>Toptancılar ve üreticiler birliği tüm otel donanımları, beyaz eşya ve mobilya sevkiyatlarının olağan seyrinde ilerlediğini duyurdu. Herhangi bir fiyat artışı veya tedarik sıkıntısı bulunmuyor.</div>";
   }
-  h += "<div class='news-subbox' style='background:#eef6ff;border-color:#5b8def'>" + evTxt + "</div>";
+  h += "</div>";
+
+  // 2) İKİ SÜTUN: Asayiş & Emniyet + Turizm & Etkinlikler
+  h += "<div class='news-columns-row'>";
+
+  // Sol Sütun: Şehir Asayişi & Seri Katil
+  h += "<div class='news-column'>";
+  h += "<div class='news-col-title'>🏛️ Emniyet & Asayiş</div>";
+  h += "<div class='news-col-body'>";
+  if (killerActiveThisWeek) {
+    if (killerCaughtWeek) {
+      h += "<b style='color:#166534'>✅ EMNİYET MÜJDESİ:</b> Aranan Seri Katil otelinizin başarılı ihbarıyla yakalandı! Şehir normale döndü.";
+    } else {
+      h += "<b style='color:#991b1b'>🚨 SERİ KATİL UYARISI:</b> Polis zanlının isminin <b>'" + killerLetter + "'</b> harfiyle başladığını bildirdi! Otellere müşteri gibi sızıyor. Şüpheliyi ihbar edene <b>+200 TL</b> ödül!";
+    }
+  } else {
+    h += "<b style='color:#1e3a8a'>🕊️ ASAYİŞ BERKEMAL:</b> Emniyet Müdürlüğü şehir genelinde suç oranlarının en düşük seviyede olduğunu açıkladı. Huzurlu bir hafta bekleniyor.";
+  }
   const corpseCount = allSlots.filter(s => s.hasCorpse).length;
-  h += "<div class='news-subbox'>📌 <b>Şehir & Otel Gündemi:</b> Mevsim <b>" + SeasonNames[seasonIdx()] + "</b>. " +
-    (corpseCount > 0 ? ("⚠️ Otelde <b>" + corpseCount + " olay yeri (ceset)</b> var! Odayı seçip polise bildir.") : "Otelde asayiş kontrol altında.") +
-    " Hırsızların gece <b>güvenlik kameralarını sabote edebildiği</b> bildirildi (Sv.2+ Güvenlik kesin çözüm).</div>";
+  if (corpseCount > 0) {
+    h += "<br><span style='color:#991b1b'>⚠️ Otelde <b>" + corpseCount + " olay yeri (ceset)</b> var! Polise bildir.</span>";
+  }
+  h += "</div></div>";
+
+  // Sağ Sütun: Turizm, Kültür & Etkinlikler
+  h += "<div class='news-column'>";
+  h += "<div class='news-col-title'>🎭 Şehir & Turizm</div>";
+  h += "<div class='news-col-body'>";
+  if (activeEvent) {
+    h += "🎉 <b>AKTİF ETKİNLİK:</b> Şehirde <b>" + EventTitles[activeEvent] + "</b> devam ediyor! (Kalan: <b>" + eventDaysLeft + " gün</b>).";
+  } else if (stars() >= 1 && nextEventDay > day) {
+    h += "📅 <b>YAKLAŞAN ETKİNLİK:</b> <b>" + (nextEventDay - day) + " gün sonra (Gün " + nextEventDay + ")</b> şehirde <b>" + EventTitles[nextEventType] + "</b> başlayacak!";
+  } else {
+    h += "⭐ <b>TURİZM TAKVİMİ:</b> Mevsim <b>" + SeasonNames[seasonIdx()] + "</b>. 1 Yıldız (250 İtibar) olduğunda şehirde büyük festivaller ve ünlü konuklar başlayacak.";
+  }
+  h += "</div></div>";
+  h += "</div>";
+
+  // 3) FİNANSAL BİLANÇO TABLOSU
+  h += "<div class='news-financial-sheet'>";
+  h += "<div class='news-sheet-title'>📊 HAFTALIK BİLANÇO VE MUHASEBE RAPORU (Gün " + Math.max(1, day - (isWeekEnd ? 7 : ((day - 1) % 7))) + " – Gün " + day + ")</div>";
+  h += row("🛏️ Oda gelirleri", "+" + st.income + " TL", "#166534");
+  if (st.meals > 0) h += row("🍳 Yemek geliri (net)", sg(st.meals - st.mealCost), "#166534");
+  if (st.wage > 0) h += row("👷 Personel maaşları", "-" + st.wage + " TL", "#991b1b");
+  if (st.gas > 0) h += row("🔥 Doğalgaz faturası", "-" + st.gas + " TL", "#991b1b");
+  if (st.orders > 0) h += row("📦 Depo siparişleri", "-" + st.orders + " TL", "#991b1b");
+  if (st.spent - st.orders > 0) h += row("🏗️ Yapı, eşya ve bakım", "-" + (st.spent - st.orders) + " TL", "#991b1b");
+  if (Math.abs(other) >= 1) h += row("🎁 Diğer (ödül / ceza)", sg(other), other >= 0 ? "#166534" : "#991b1b");
   h += "<div class='ds-sep'></div>";
-  h += "<div style='font-weight:900;font-size:13px;color:#1f1f26;margin:2px 0'>📊 Haftalık Muhasebe Raporu (Gün " + Math.max(1, day - (isWeekEnd ? 7 : ((day - 1) % 7))) + " – Gün " + day + ")</div>";
-  h += row("🛏️ Oda gelirleri", "+" + st.income + " TL", "#1a8c26");
-  if (st.meals > 0) h += row("🍳 Yemek geliri (net)", sg(st.meals - st.mealCost), "#1a8c26");
-  if (st.wage > 0) h += row("👷 Personel maaşları", "-" + st.wage + " TL", "#b33333");
-  if (st.gas > 0) h += row("🔥 Doğalgaz faturası", "-" + st.gas + " TL", "#b33333");
-  if (st.orders > 0) h += row("📦 Depo siparişleri", "-" + st.orders + " TL", "#b33333");
-  if (st.spent - st.orders > 0) h += row("🏗️ Yapı, eşya ve bakım", "-" + (st.spent - st.orders) + " TL", "#b33333");
-  if (Math.abs(other) >= 1) h += row("🎁 Diğer (ödül / soygun)", sg(other), other >= 0 ? "#1a8c26" : "#b33333");
-  h += "<div class='ds-sep'></div>";
-  h += row("💰 Haftalık net kâr/zarar", sg(net), net >= 0 ? "#1a8c26" : "#b33333");
+  h += row("💰 Haftalık net kâr/zarar", sg(net), net >= 0 ? "#166534" : "#991b1b");
   h += row("👥 Ağırlanan müşteri", String(st.served || 0));
   h += row("⭐ Haftalık yorum ortalaması", avg + (st.rCnt > 0 ? " (" + st.rCnt + " yorum)" : ""));
-  h += row("🏆 İtibar değişimi", (repD >= 0 ? "+" : "") + Math.round(repD), repD >= 0 ? "#1a8c26" : "#b33333");
-  h += row("💵 Güncel Kasa", money + " TL");
-  document.getElementById("ds-title").textContent = "📰 HAFTALIK GAZETE & RAPOR (" + weekNo + ". Hafta)";
+  h += row("🏆 İtibar değişimi", (repD >= 0 ? "+" : "") + Math.round(repD), repD >= 0 ? "#166534" : "#991b1b");
+  h += row("💵 Güncel Kasa", money + " TL", "#1e3a8a");
+  h += "</div>";
+
+  const dateBar = document.getElementById("news-date");
+  if (dateBar) dateBar.textContent = "Hafta " + weekNo + " • " + SeasonNames[seasonIdx()] + " • Gün " + day;
+  const volBar = document.getElementById("news-vol");
+  if (volBar) volBar.textContent = "YIL: 1980 • BASKI: #" + weekNo;
+
   document.getElementById("ds-content").innerHTML = h;
   document.getElementById("day-modal").style.display = "flex";
   summaryOpen = true;
+
   if (isWeekEnd) {
     weekMurders = 0;
     dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: reputation, bonus: 0, money0: money };
@@ -5547,6 +5898,9 @@ refreshHud = function() {
   if (satBarFill) satBarFill.style.width = Math.round(satPct) + "%";
   if (satSmileyIco) satSmileyIco.textContent = satPct >= 70 ? "😊" : satPct >= 45 ? "🙂" : "😟";
 
+  const newsNotif = document.getElementById("news-notif-dot");
+  if (newsNotif) newsNotif.style.display = unreadNewspaper ? "block" : "none";
+
   for (const btn of floorTabBtns) {
     const fIdx = Number(btn.getAttribute("data-floor")) || 0;
     const fl = floors[fIdx];
@@ -5882,9 +6236,14 @@ function refreshPanel() {
         const hasIt = cur.items[k];
         const fp = ITEM_FOOTPRINTS[k];
         const sizeTag = fp.wall ? "" : (" (" + fp.w + "x" + fp.h + ")");
+        const effectiveCost = (typeof getItemCost === "function") ? getItemCost(k) : ItemCosts[k];
+        let hikeTag = "";
+        if (marketEvent && marketEvent.active && marketEvent.itemKey === k && marketEvent.daysLeft > 0) {
+          hikeTag = marketEvent.isHike ? " 🔺" : " 🔻";
+        }
         const buyLbl = stock[k] > 0
           ? (ItemIcons[k] + " " + ItemNames[k] + sizeTag + "\n📦 Depodan (" + stock[k] + ")")
-          : (ItemIcons[k] + " " + ItemNames[k] + sizeTag + "\n" + ItemCosts[k] + " TL");
+          : (ItemIcons[k] + " " + ItemNames[k] + sizeTag + "\n" + effectiveCost + " TL" + hikeTag);
         const ownedLbl = "✅ " + ItemNames[k] + sizeTag + "\n(Taşı / Seç)";
         // Kurulu eşyaların da butonunu aktif bırakıyoruz ki oyuncu tıklayıp 4x4 ızgarada taşıyabilsin!
         setAct(k + 1, hasIt ? ownedLbl : buyLbl, true, readyOnce, hasIt, furnSelectedKey === k);
@@ -6528,6 +6887,7 @@ if (new URLSearchParams(window.location.search).has("autostart")) {
       storageLevel = 1;
       stock[0] = 3; stock[1] = 2; stock[4] = 4;
       crateItems[0] = 2; crateItems[4] = 1; // Depo önünde teslimat kolisi!
+      unreadNewspaper = true; // Girişte okunmayı bekleyen haftalık gazete rulosu!
 
       spawnGuest();
       spawnGuest();
@@ -6540,6 +6900,24 @@ if (new URLSearchParams(window.location.search).has("autostart")) {
         g.arrivedOnce = true;
         if (i === 0) g.pawn.facing = -1;
         setBubbleText(g, i);
+      }
+      fitView();
+      if (new URLSearchParams(window.location.search).has("testevent")) {
+        marketEvent = {
+          active: true,
+          title: "AŞIRI SICAK DALGASI & KLİMA KITLIĞI",
+          desc: "Meteoroloji rekor sıcaklık uyarısı yaptı! Şehir genelinde klima talebi patladı; toptancılar klimalarda 4 günlüğüne %50 zam uyguluyor.",
+          itemKey: IKlima,
+          itemName: "Klima",
+          mult: 1.5,
+          isHike: true,
+          daysTotal: 4,
+          daysLeft: 4,
+          startDay: 1
+        };
+      }
+      if (new URLSearchParams(window.location.search).has("opennews")) {
+        showWeeklyNewspaper(false);
       }
     }
   }, 100);
@@ -7526,6 +7904,11 @@ function drawWorld() {
   // 7) Kaldırımdaki Teslimat Kolileri
   drawIsoCrates();
 
+  // 7.5) Girişteki Haftalık Gazete Rulosu
+  if (unreadNewspaper) {
+    drawIsoNewspaper();
+  }
+
   // 8) Gerçek Kişiler (Pawns) - Derinliğe Göre Sıralı
   const visPawns = pawns.filter(p => !p.dead && p.visible);
   const mappedPawns = visPawns.map(p => {
@@ -7748,6 +8131,33 @@ function drawEntranceStonePath(u0, u1, v0, v1) {
   // Yol kenarı gömme zemin aydınlatmaları
   isoBox(u1 - 8, v0 + 4, u1 - 2, v0 + 10, 0, 4, "#ffd700", "#eab308", "#ca8a04", null, 0);
   isoBox(u1 - 8, v1 - 10, u1 - 2, v1 - 4, 0, 4, "#ffd700", "#eab308", "#ca8a04", null, 0);
+}
+
+// 7.5) Girişteki Haftalık Gazete Rulosu
+function drawIsoNewspaper() {
+  const u = 1175, v = 488, z = 2;
+  const bob = Math.sin((timeNow || 0) * 4) * 2.5;
+
+  // Zemin gölgesi
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  const shP = iso(u, v, z);
+  ctx.beginPath();
+  ctx.ellipse(shP.x, shP.y, 14, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Gazete Rulosu (Izometrik katlanmış rulo/paket)
+  isoBox(u - 10, v - 16, u + 10, v + 16, z + 2, 8, "#fdfcf7", "#eae5d8", "#d3ccbe", OUTLINE_COL, 1.8);
+  // Gazete başlık çizgileri
+  isoBox(u - 8, v - 13, u + 8, v - 8, z + 10, 1, "#261f18", "#261f18", "#261f18", OUTLINE_COL, 0.8);
+  // Kırmızı bağlama kurdelesi
+  isoBox(u - 11, v - 3, u + 11, v + 3, z + 1, 9, "#c0392b", "#a93226", "#922b21", OUTLINE_COL, 1.5);
+
+  // Üstünde zıplayan dokunma etiketi
+  const poly = isoLabel("📰 GAZETE GELDİ\n(Dokun Oku!)", u, v, z + 28 + bob, 11, "#2b2118", "#ffe875", 6, 3);
+  addHitPoly(poly, () => {
+    play("tap");
+    showWeeklyNewspaper(false);
+  });
 }
 
 // ===== BUNDLED: render/parcel.js =====
@@ -9106,6 +9516,17 @@ function drawIsoPawn(p, pt, uvz) {
   } else if (p.isVip) {
     ctx.fillStyle = "#ffd700";
     ctx.beginPath(); ctx.roundRect(-9, -58, 18, 6, 2); ctx.fill(); ctx.stroke();
+  } else if (p.isPaperboy) {
+    // Gazeteci Çocuk Kasketi (Kasket şapkası ve siperliği)
+    ctx.fillStyle = "#3a414e";
+    ctx.beginPath(); ctx.roundRect(-13, -53, 26, 8, 3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(5, -50, 7, 3, 0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Omuzda asılı deri gazete çantası
+    ctx.fillStyle = "#a87532";
+    ctx.beginPath(); ctx.roundRect(-12, -22, 10, 14, 3); ctx.fill(); ctx.stroke();
+    // Çantadan görünen beyaz rulo gazeteler
+    ctx.fillStyle = "#fcfbfa";
+    ctx.beginPath(); ctx.roundRect(-10, -26, 7, 6, 2); ctx.fill(); ctx.stroke();
   }
 
   ctx.restore();
@@ -9210,7 +9631,8 @@ function loop(now) {
     for (let i = queue.length - 1; i >= 0; i--) {
       const g = queue[i];
       if (!g.arrivedOnce) continue;
-      g.patience -= dt;
+      const rate = 1 + i * 0.15;
+      g.patience -= dt * rate;
       if (g.patience <= 0) queueTimeout(g);
     }
   }
@@ -9353,6 +9775,7 @@ function loop(now) {
         p.iso.v = target.v;
         p.iso.z = targetZ;
         p.isoPath.shift();
+        if (p.onIsoWaypoint) p.onIsoWaypoint(target, p.isoPath.length);
         if (p.isoPath.length === 0 && p.onIsoArrive) {
           const cb = p.onIsoArrive;
           p.onIsoArrive = null;
@@ -9476,7 +9899,8 @@ if (hadSavedGame) {
   log("💾 Kayıtlı otelin (" + hotelName + ") kaldığın yerden yüklendi!");
 } else {
   log("🏨 Grand Hotel Tycoon'a Hoş Geldin! Sırasıyla: 1) Resepsiyon arkasına 1. Koridoru kur (60 TL), 2) 2. Koridoru kur (60 TL), 3) 1. Odanı kur ve kapısını takarak otelini aç!");
-  log("📰 Haftalık Gazete: Şehirde '" + killerLetter + "' harfiyle başlayan bir seri katil aranıyor! Sağdaki 📰 Gazete butonuna bakabilirsin.");
+  if (typeof prepareWeeklyNewspaper === "function") prepareWeeklyNewspaper(true);
+  if (typeof spawnPaperboy === "function") spawnPaperboy();
 }
 refresh();
 fitView();
