@@ -1346,11 +1346,14 @@ for (let f = 0; f < FloorCount; f++) {
     get BaseY() { return this.idx * FloorH; },
     get WalkY() { return this.idx * FloorH + SlabH; }
   };
-  for (let i = 0; i < 36; i++) {
+  const slotCount = (f === 0) ? 38 : 36;
+  for (let i = 0; i < slotCount; i++) {
     const isInitRec = (f === 0 && i === 32);
     const isInitStarter = (f === 0 && (i === 32 || i === 26 || i === 25 || i === 31));
+    const isTreeSlot = (f === 0 && (i === 36 || i === 37));
     const s = {
       floor: fl, idx: i, type: isInitRec ? "Reception" : "Empty", parcelBuilt: isInitStarter, hasEnsuite: false, furnLayout: {}, roomNo: 0, hasDoor: false, hasBalcony: false,
+      hasTree: isTreeSlot,
       items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
       hasCorpse: false, corpseName: "", corpseSkin: "#fcd9b8", corpseHair: "#1a1412", corpseShirt: "#d94d4d",
       gymLevel: 1, gymBusy: [false, false, false], toiletBusy: [false, false], level: 1,
@@ -1677,8 +1680,10 @@ function autoArrangeRoom(s) {
   if (s.items[IKlima]) s.furnLayout[IKlima] = { ru: 0, rv: 3, rot: 0 };
 }
 
-// 6x6 Parsel Komşuluk & İnşa Edilebilirlik Kontrolleri
+// 6x6 Parsel Komşuluk & İnşa Edilebilirlik Kontrolleri (Zemin Kat Yola Paralel 8 Parsel: gv = -1..6, gu = 5)
 function parcelCoords(idx) {
+  if (idx === 36) return { gu: 5, gv: -1 };
+  if (idx === 37) return { gu: 5, gv: 6 };
   return { gu: Math.floor(idx / 6), gv: idx % 6 };
 }
 
@@ -1755,7 +1760,8 @@ function isParcelBuildable(fIdx, idx) {
   if (!s || s.type !== "Empty") return false;
   if (s.parcelBuilt) return true; // Zaten açılmış boş temel (örn. başlangıçtaki 1. oda temeli)
   if (fIdx === 0) {
-    // Zemin katta mevcut inşa edilmiş herhangi bir parsele dikey/yatay komşu olan her çim parsel inşa edilebilir!
+    // Yol kenarındaki 8 parsel veya mevcut inşa edilmiş herhangi bir parsele dikey/yatay komşu olan her çim parsel inşa edilebilir!
+    if ((idx === 36 || idx === 37) && !s.hasTree) return true;
     const { gu, gv } = parcelCoords(idx);
     return fl.slots.some(other => {
       if (!other.parcelBuilt && other.type === "Empty") return false;
@@ -1818,6 +1824,7 @@ function saveGame() {
         slots: fl.slots.map(s => ({
           type: s.type,
           parcelBuilt: !!s.parcelBuilt,
+          hasTree: !!s.hasTree,
           hasEnsuite: !!s.hasEnsuite,
           furnLayout: s.furnLayout || {},
           roomNo: s.roomNo,
@@ -1964,7 +1971,7 @@ function loadGame() {
         fl.buildTotal = flData.buildTotal || FloorBuildSec[f];
         if (Array.isArray(flData.slots)) {
           const isOld5x5 = (flData.slots.length <= 25);
-          for (let i = 0; i < flData.slots.length && i < 36; i++) {
+          for (let i = 0; i < flData.slots.length && i < fl.slots.length; i++) {
             const sd = flData.slots[i];
             // 5x5'ten 6x6'ya kusursuz koordinat dönüşümü: gu_new = gu_old + 1, gv_new = gv_old
             let targetIdx = i;
@@ -1972,9 +1979,16 @@ function loadGame() {
               const gu5 = Math.floor(i / 5), gv5 = i % 5;
               targetIdx = (gu5 + 1) * 6 + gv5;
             }
-            if (targetIdx >= 36) continue;
+            if (targetIdx >= fl.slots.length) continue;
             const s = fl.slots[targetIdx];
 
+            if (sd.hasTree !== undefined) {
+              s.hasTree = !!sd.hasTree;
+            } else if (f === 0 && (targetIdx === 36 || targetIdx === 37)) {
+              s.hasTree = true;
+            } else {
+              s.hasTree = false;
+            }
             if (sd.type === "Storage") {
               storageState = "Built";
               storageLevel = sd.level || 1;
@@ -2206,7 +2220,8 @@ function startNewGameClean() {
     fl.buildLeft = 0;
     fl.buildTotal = 0;
     fl.workers.length = 0;
-    for (let i = 0; i < 36; i++) {
+    const count = (f === 0) ? 38 : 36;
+    for (let i = 0; i < count; i++) {
       const s = fl.slots[i];
       let t = "Empty";
       if (f === 0) {
@@ -2215,6 +2230,7 @@ function startNewGameClean() {
       }
       s.type = t;
       s.parcelBuilt = (f === 0 && (i === 32 || i === 31 || i === 26 || i === 25));
+      s.hasTree = (f === 0 && (i === 36 || i === 37));
       s.hasEnsuite = false;
       s.furnLayout = {};
       s.roomNo = 0;
@@ -2629,6 +2645,25 @@ function focusBuilding(mode) {
   if (typeof focusIsoTarget === "function") focusIsoTarget(mode);
   applyCam();
 }
+function getStorageDeliveryPos() {
+  const dep = allSlots.find(s => s.type === "Storage" && s.floor && s.floor.idx === 0);
+  if (dep) {
+    const { gu, gv } = parcelCoords(dep.idx);
+    const box = (typeof slotIsoBox === "function") ? slotIsoBox(0, dep.idx) : { v0: gv * 195, v1: (gv + 1) * 195 };
+    const centerV = (box.v0 + box.v1) * 0.5;
+    const prog = clamp((centerV + 300) / 1700, 0.05, 0.95);
+    const totalW = (typeof TotalW !== "undefined") ? TotalW : 4000;
+    const stopX = prog * (totalW + 4200) - 2100;
+    return {
+      stopX,
+      centerV,
+      crateU: 1280,
+      crateV: centerV
+    };
+  }
+  return { stopX: TruckStopX, centerV: 350, crateU: 1280, crateV: 350 };
+}
+
 function spawnTruck(sh) {
   trucks.push({ x: -2100, y: -102, dir: 1, state: "driving", timer: 0, wheelRot: 0, speed: 380, sh });
   play("bell");
@@ -2640,20 +2675,26 @@ function updateDeliveries(dt) {
     sh.left -= dt;
     if (sh.left <= 0) { shipments.splice(i, 1); spawnTruck(sh); }
   }
+  const dPos = getStorageDeliveryPos();
   for (let i = trucks.length - 1; i >= 0; i--) {
     const t = trucks[i];
     t.wheelRot += t.speed * 0.05 * dt;
     if (t.state === "driving") {
       t.x += t.speed * dt;
-      if (t.x >= TruckStopX) { t.x = TruckStopX; t.state = "unloading"; t.timer = 3; }
+      if (t.x >= dPos.stopX) {
+        t.x = dPos.stopX;
+        t.state = "unloading";
+        t.timer = 3;
+        log("🚚 Kargo kamyonu Depo önüne yanaştı! Sipariş kolileri teslimat rampasına bırakılıyor...");
+      }
     } else if (t.state === "unloading") {
       t.timer -= dt;
       if (t.timer <= 0) {
         for (let k = 0; k < ItemCount; k++) crateItems[k] += t.sh.items[k];
         t.sh = null; t.state = "leaving";
         play("done");
-        floatText(CrateX + 40, SlabH + 140, "📦 Teslimat geldi! Dokun", "#1a5ccc");
-        log("📦 Koliler Depo binası önüne bırakıldı. Depoya almak için kolilere dokun.");
+        floatText(dPos.stopX + 40, SlabH + 140, "📦 Teslimat Depo Önünde! Dokun", "#1a5ccc");
+        log("📦 Sipariş kolileri Depo teslimat rampasına bırakıldı. Depoya aktarmak için dokun.");
         saveGame();
       }
     } else {
@@ -2668,8 +2709,9 @@ function collectCrate() {
   if (!hasStorage()) { log("Kolileri koyacak bir Depo yok!"); return; }
   for (let k = 0; k < ItemCount; k++) { stock[k] += crateItems[k]; crateItems[k] = 0; }
   play("coin");
-  floatText(CrateX + 40, SlabH + 140, "+" + n + " eşya depoya alındı", "#1a8c26");
-  log("📦 " + n + " eşya Depo binasına taşındı.");
+  const dPos = getStorageDeliveryPos();
+  floatText(dPos.stopX + 40, SlabH + 140, "+" + n + " eşya Depoya alındı", "#1a8c26");
+  log("📦 " + n + " eşya Depo stoklarına yerleştirildi.");
   refresh(); saveGame();
 }
 function installItem(s, k) {
@@ -5540,6 +5582,15 @@ function refreshPanel() {
     const coordStr = "(" + (cur.floor.idx + 1) + ". Kat • Parsel " + (gu + 1) + "," + (gv + 1) + ")";
 
     if (cur.type === "Empty") {
+      if (cur.hasTree) {
+        infoText.textContent = "🌴 Ağaçlı Yol Kenarı Parseli  •  Üzerindeki palmiye ağacını keserek parseli Depo veya tesis inşaatına açabilirsin (+1 Alet kazanırsın).";
+        setAct(0, "🪓 Ağacı Kes\n(+1 Alet)", true, true);
+        const existingStorage = allSlots.find(sl => sl.type === "Storage");
+        const storageLbl = existingStorage ? "⚠️ Önce Ağacı Kes\n(Taşımak İçin)" : "⚠️ Önce Ağacı Kes\n(Depo İçin)";
+        setAct(5, storageLbl, false, false);
+        return;
+      }
+
       const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
       const canBuildHere = isParcelBuildable(cur.floor.idx, cur.idx);
       if (cur.floor.idx === 0 && cur.idx === 26) {
@@ -5553,12 +5604,14 @@ function refreshPanel() {
         infoText.textContent = corrBuilt ?
           ("🛏️ 1. Oda Temeli • 100 TL " + coordStr + "\n👉 3. Adım: '🛏️ 1. Odayı Kur' butonuna basarak odanı inşa et!") :
           ("🛏️ 1. Oda Temeli • 100 TL " + coordStr + "\n💡 Önce arkasındaki 2. Koridoru (60 TL) kurarak odaya kapı yolu aç!");
+      } else if (cur.floor.idx === 0 && (cur.idx === 36 || cur.idx === 37)) {
+        infoText.textContent = "🛣️ Yol Kenarı Parseli (" + (cur.idx === 36 ? "Sol" : "Sağ") + ")  •  Depo binasını doğrudan yola bağlantılı olarak buraya kurabilir veya taşıyabilirsin (kargo araçları tam buraya teslimat yapar).";
       } else if (!readyOnce) {
         infoText.textContent = anyRoomBuilt
           ? "⚠️ Başlangıç Adımı: 1. Odaya tıklayıp Kapı al (50 TL) ve oteli aç!"
           : ("💡 Başlangıç Adımı: Önce 1. ve 2. Koridoru (60 TL), ardından 1. Odanı kur! " + coordStr);
       } else if (!canBuildHere) {
-        infoText.textContent = "🔒 " + coordStr + "  •  Bu parsele inşaat yapmak için önce yanındaki bir parsele (veya üst kattaysan altındaki parsele) bina kurmalısın.";
+        infoText.textContent = "🔒 " + coordStr + "  •  Otel odası kurmak için binaya bitişik olmalıdır. Ancak Depo binası binaya yapışık olmadan bağımsız kurulabilir!";
       } else {
         infoText.textContent = "🟢 İnşa Edilebilir Parsel " + coordStr + "  •  Bu parsel üzerine istediğin odayı veya tesisi kurabilirsin:";
       }
@@ -5578,9 +5631,10 @@ function refreshPanel() {
         setAct(3, hasKitchen() ? "✅ Restoran Var" : ("🍳 Restoran & Mutfak\n" + CostKitchen + " TL"), true, canBuildHere && readyOnce && !hasKitchen(), hasKitchen());
         setAct(4, parkState === "Built" ? "✅ Havuz Var" : ("🏊 Açık Havuz & Park\n" + ParkCost + " TL"), true, canBuildHere && readyOnce && parkState === "Locked", parkState === "Built");
 
+        // Depo Binası: Binaya yapışık olmak zorunda DEĞİLDİR! Zemin kattaki herhangi bir boş parsele kurulabilir.
         const existingStorage = allSlots.find(sl => sl.type === "Storage");
         const storageLbl = existingStorage ? "🔄 Depoyu Buraya Taşı\n(Ücretsiz)" : (storageState === "Built" ? "📍 Depoyu Buraya Kur\n(Ücretsiz)" : ("📦 Depo Binası\n" + CostStorage + " TL"));
-        setAct(5, storageLbl, true, canBuildHere && readyOnce);
+        setAct(5, storageLbl, true, readyOnce && !cur.hasTree);
 
         const existingDorm = allSlots.find(sl => sl.type === "Dorm");
         const dormLbl = existingDorm ? "🔄 Lojmanı Buraya Taşı\n(Ücretsiz)" : (dormState === "Built" ? "📍 Lojmanı Buraya Kur\n(Ücretsiz)" : ("🏠 Lojman Binası\n" + CostDorm + " TL"));
@@ -5758,6 +5812,51 @@ onAction = function(i) {
   if (sel === "Slot" && selSlot) {
     const s = selSlot;
     if (s.type === "Empty" && i !== ActCount - 1) {
+      // 0) AĞAÇ KESME
+      if (s.hasTree) {
+        if (i === 0) {
+          s.hasTree = false;
+          tools++;
+          play("build");
+          log("🪓 Yol kenarındaki palmiye ağacı kesildi! Parsel temizlendi ve Depo/tesis inşaatına açıldı (+1 Alet).");
+          selectSlot(s);
+          refresh(); saveGame();
+        }
+        return;
+      }
+
+      // BAĞIMSIZ DEPO İNŞAATI / TAŞIMA (i === 5): Binaya yapışık olmak zorunda DEĞİLDİR!
+      if (s.floor.idx === 0 && i === 5) {
+        const existingStorage = allSlots.find(sl => sl.type === "Storage");
+        if (existingStorage) {
+          existingStorage.type = "Empty";
+          existingStorage.parcelBuilt = false;
+          s.type = "Storage";
+          s.parcelBuilt = true;
+          storageState = "Built";
+          play("done");
+          log("📦 Depo Binası yeni parsele taşındı! Kargo araçları artık buraya teslimat yapacak.");
+          selectSlot(s);
+          refresh(); saveGame(); return;
+        } else if (storageState === "Built") {
+          s.type = "Storage";
+          s.parcelBuilt = true;
+          play("done");
+          log("📦 Depo Binası bu parsele yerleştirildi! Kargo araçları doğrudan buraya yanaşacak.");
+          selectSlot(s);
+          refresh(); saveGame(); return;
+        } else if (pay(CostStorage)) {
+          s.type = "Storage";
+          s.parcelBuilt = true;
+          storageState = "Built";
+          play("done");
+          log("📦 Depo Binası seçtiğin parsele kuruldu! Yoldan gelen kargo kamyonu siparişleri tam buraya teslim edecek.");
+          selectSlot(s);
+          refresh(); saveGame(); return;
+        }
+        return;
+      }
+
       if (!isParcelBuildable(s.floor.idx, s.idx)) {
         play("reject");
         log("Önce bu parselin yanındaki (veya altındaki) parsele bina kurmalısın!");
@@ -6073,8 +6172,8 @@ function refreshGuest() {
 }
 
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 23;
-const APP_VERSION_NAME = "1.9.15-beta";
+const APP_VERSION_CODE = 24;
+const APP_VERSION_NAME = "1.9.16-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6082,9 +6181,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.16-beta",
+    title: "Yola Paralel 8 Parsel, Bağımsız Depo İnşaatı, Ağaç Kesme & Yoldan Kamyon Teslimatı",
+    latest: true,
+    notes: "\u2022 \ud83d\udee3\ufe0f Yola Paralel 8 Parsel: Zemin katta cadde boyunca uzanan ilk k\u0131s\u0131m 8 kareye geni\u015fletildi (sol yol parseli, 6 otel s\u00fctunu ve sa\u011f yol parseli). \u00dcst katlar ve otel g\u00f6vdesi 6x6 d\u00fczenini korur.\n\u2022 \ud83e\ude93 A\u011fa\u00e7 Kesme: Yol kenar\u0131ndaki parsellerde yer alan palmiye a\u011fa\u00e7lar\u0131na dokunup '\ud83e\ude93 A\u011fac\u0131 Kes' ile a\u011fa\u00e7 kesilebilir (+1 Alet kazan\u0131l\u0131r) ve parsel temizlenerek in\u015faata a\u00e7\u0131l\u0131r.\n\u2022 \ud83d\udce6 Ba\u011f\u0131ms\u0131z Depo \u0130n\u015faat\u0131: Depo binas\u0131 art\u0131k otel binas\u0131na yap\u0131\u015f\u0131k olmak zorunda de\u011fildir; yol kenar\u0131ndaki veya zemin kattaki herhangi bir bo\u015f parsele ba\u011f\u0131ms\u0131z olarak kurulabilir veya ta\u015f\u0131nabilir.\n\u2022 \ud83d\ude9a Yola Ba\u011flant\u0131l\u0131 Depo & Nokta Kamyon Teslimat\u0131: Depo yol cephesine kuruldu\u011funda otomatik beton mal kabul rampas\u0131 ve kepenkli y\u00fckleme kap\u0131s\u0131 a\u00e7\u0131l\u0131r. Kargo kamyonu caddeden gelip do\u011frudan Depo'nun tam \u00f6n\u00fcne yana\u015f\u0131r ve sipari\u015f kolilerini Depo teslimat rampas\u0131na b\u0131rak\u0131r."
+  },
+  {
     ver: "v1.9.15-beta",
     title: "Koridor-WC Bağlantı Kapısı, Resepsiyon Tek Duvar & Sade Koridor Görünümü",
-    latest: true,
+    latest: false,
     notes: "\u2022 \ud83d\udeaa Koridor & WC Kap\u0131s\u0131: Koridor ile Genel WC aras\u0131ndaki ba\u011flant\u0131 duvar\u0131na \u015f\u0131k beyaz banyo kap\u0131s\u0131, krom kap\u0131 kolu ve mavi 'WC \ud83d\udebd' tabelas\u0131 eklendi.\n\u2022 \ud83e\uddf1 Resepsiyon & Oda Tek Duvar\u0131: Resepsiyon ile yan\u0131ndaki otel odalar\u0131 aras\u0131ndaki \u00e7ift duvar kal\u0131nl\u0131\u011f\u0131 ve \u00e7ift \u00e7izgi kald\u0131r\u0131ld\u0131; ortak alanlar\u0131 ay\u0131ran tek ve temiz bir b\u00f6lme duvar\u0131 olu\u015fturuldu.\n\u2022 \ud83c\udff7\ufe0f Koridor \u0130sim Etiketleri Sadele\u015ftirildi: Koridor ve hol parselleri \u00fczerindeki g\u00f6z yoran 'KOR\u0130DOR & HOL' isim kutucuklar\u0131 kald\u0131r\u0131larak l\u00fcks \u0130talyan mermeri ve k\u0131rm\u0131z\u0131 yolluk ferah bir g\u00f6r\u00fcn\u00fcme kavu\u015fturuldu."
   },
   {
@@ -6283,6 +6388,17 @@ if (new URLSearchParams(window.location.search).has("autostart")) {
       const wc = floors[0].slots[20];
       wc.type = 'Toilet';
       wc.parcelBuilt = true;
+
+      // Yola Paralel 8 Parsel & Bağımsız Yol Deposu Demosu:
+      floors[0].slots[36].hasTree = true; // Sol yol parseli: Kesilebilir palmiye ağacı!
+      const depSlot = floors[0].slots[37]; // Sağ yol parseli: Yola bağlantılı bağımsız Depo!
+      depSlot.type = 'Storage';
+      depSlot.parcelBuilt = true;
+      depSlot.hasTree = false;
+      storageState = 'Built';
+      storageLevel = 1;
+      stock[0] = 3; stock[1] = 2; stock[4] = 4;
+      crateItems[0] = 2; crateItems[4] = 1; // Depo önünde teslimat kolisi!
 
       spawnGuest();
       spawnGuest();
@@ -6553,8 +6669,7 @@ function iso(u, v, z = 0) {
 
 // 6x6 Arsadaki her parselin (fIdx: 0..3, sIdx: 0..35) 3D izometrik kutusu
 function slotIsoBox(fIdx, sIdx) {
-  const gu = Math.floor(clamp(sIdx, 0, 35) / 6);
-  const gv = clamp(sIdx, 0, 35) % 6;
+  const { gu, gv } = parcelCoords(sIdx);
   const u0 = gu * PARCEL_SIZE;
   const v0 = gv * PARCEL_SIZE;
   const z0 = 4 + fIdx * FLOOR_Z;
@@ -7154,10 +7269,14 @@ function drawWorld() {
   drawPalmTree(280, -160, 0, 1.1, -1);
   drawPalmTree(-160, 280, 0, 1.1, 1);
 
-  // 2) 6x6 Arsa Çim Parsel Izgarası (Zemin Katta İnşa Edilmemiş Parsellerin Hafif Çim Çizgileri)
+  // 2) Zemin Katta İnşa Edilmemiş Parsellerin Hafif Çim Çizgileri (Yola Paralel 8 Parsel Dahil: gv = -1..6, gu = 5)
   for (let gu = 0; gu < 6; gu++) {
-    for (let gv = 0; gv < 6; gv++) {
-      const idx = gu * 6 + gv;
+    const vMin = (gu === 5) ? -1 : 0;
+    const vMax = (gu === 5) ? 6 : 5;
+    for (let gv = vMin; gv <= vMax; gv++) {
+      let idx = gu * 6 + gv;
+      if (gv === -1) idx = 36;
+      else if (gv === 6) idx = 37;
       const s0 = floors[0].slots[idx];
       const u0 = gu * PARCEL_SIZE, v0 = gv * PARCEL_SIZE;
       if (s0 && !s0.parcelBuilt && s0.type === "Empty") {
@@ -7208,17 +7327,22 @@ function drawWorld() {
   const recCenterV = (recBox.v0 + recBox.v1) * 0.5;
   drawEntranceStonePath(recBox.u1, swU0, recCenterV - 50, recCenterV + 50);
 
-  // 4) 6x6 Modüler Parselleri Arkadan Öne Doğru (Painter's Algorithm: gu + gv = 0..10) ve Kat Kat Çiz
+  // 4) 6x6 Modüler Parselleri + Zemin Kat Yola Paralel 8 Parseli Arkadan Öne Doğru (Painter's Algorithm: sum = 0..11) Çiz
   const showBuildGrid = (drawerOpen && activeDock === "build") || (sel === "Slot" && selSlot && selSlot.type === "Empty");
-  for (let sum = 0; sum <= 10; sum++) {
+  for (let sum = 0; sum <= 11; sum++) {
     for (let gu = 0; gu < 6; gu++) {
       const gv = sum - gu;
-      if (gv < 0 || gv >= 6) continue;
-      const idx = gu * 6 + gv;
+      const isRoadFront = (gu === 5 && (gv === -1 || gv === 6));
+      if (!isRoadFront && (gv < 0 || gv >= 6)) continue;
+      let idx = gu * 6 + gv;
+      if (gv === -1) idx = 36;
+      else if (gv === 6) idx = 37;
       for (let f = 0; f <= viewFloor; f++) {
         if (floors[f].state !== "Built") continue;
+        if (f > 0 && isRoadFront) continue; // Yol parselleri sadece zemin kattadır
         const s = floors[f].slots[idx];
-        const isBuilt = (s.type !== "Empty" || s.parcelBuilt);
+        if (!s) continue;
+        const isBuilt = (s.type !== "Empty" || s.parcelBuilt || s.hasTree);
         const isSel = (sel === "Slot" && selSlot === s);
         if (isBuilt || (f === viewFloor && (showBuildGrid || isSel))) {
           const canB = isBuilt ? true : isParcelBuildable(f, idx);
@@ -7232,8 +7356,6 @@ function drawWorld() {
 
   // 5) Ön & Yan Palmiye Ağaçları (Arsa Çevresinde)
   const palmSpots = [
-    { u: 1035, v: -60, flip: -1, sc: 1.1 },
-    { u: 1035, v: 1120, flip: 1, sc: 1.15 },
     { u: 520, v: 1120, flip: 1, sc: 1.2 },
     { u: 140, v: 1120, flip: -1, sc: 1.15 },
     { u: 820, v: -90, flip: -1, sc: 1.08 }
@@ -7510,6 +7632,17 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
 
   // 1) Boş veya İnşa Edilebilir Parsel
   if (s.type === "Empty") {
+    if (s.hasTree) {
+      // Ağaçlı Parsel (Kesilebilir Palmiye Ağacı)
+      const poly = isoQuad(u0 + 6, v0 + 6, u1 - 6, v1 - 6, z0, isSel ? "rgba(255, 210, 80, 0.45)" : "rgba(34, 197, 94, 0.2)", isSel ? "#ff8c00" : "rgba(34, 197, 94, 0.4)", isSel ? 3.5 : 1.8);
+      drawPalmTree((u0 + u1) * 0.5, (v0 + v1) * 0.5, z0, 1.15, sIdx === 36 ? -1 : 1);
+      isoLabel("🪓 AĞACI KES", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 36, 10, "#78350f", "#fef3c7", 6, 2.5);
+      addHitPoly(poly, () => {
+        selectSlot(s);
+        if (queue.length > 0) { syncFront(); refreshGuest(); }
+      });
+      return;
+    }
     if (s.parcelBuilt) {
       // Başlangıçtaki hazır beton temel (1. Koridor, 2. Koridor veya 1. Oda Temeli)
       isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#e3d9c8", "#c4b59d", "#ab9b82", isSel ? "#ff8c00" : "#2ecc40", isSel ? 4 : 2.8);
@@ -7534,17 +7667,18 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
           refreshGuest();
         }
       });
-    } else if (canBuildHere && (showBuildGrid || isSel)) {
-      // Yeşil İnşa Edilebilir Parsel Izgarası
+    } else if ((canBuildHere || (fIdx === 0 && !s.hasTree)) && (showBuildGrid || isSel)) {
+      // Yeşil İnşa Edilebilir Parsel Izgarası (Depo veya Tesis İnşaatı)
       const poly = isoQuad(u0 + 6, v0 + 6, u1 - 6, v1 - 6, z0, isSel ? "rgba(255, 210, 80, 0.55)" : "rgba(72, 228, 92, 0.38)", isSel ? "#ff8c00" : "#1f7a2e", isSel ? 3.8 : 2.4);
-      isoLabel("➕ İNŞA ET\n(" + (gu + 1) + "," + (gv + 1) + ")", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 18, 11, "#12401b", "rgba(230, 255, 235, 0.92)", 6, 3);
+      const posLabel = (sIdx === 36) ? "YOL SOL" : (sIdx === 37 ? "YOL SAĞ" : (gu + 1) + "," + (gv + 1));
+      isoLabel("➕ İNŞA ET\n(" + posLabel + ")", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 18, 11, "#12401b", "rgba(230, 255, 235, 0.92)", 6, 3);
       addHitPoly(poly, () => {
-      selectSlot(s);
-      if (queue.length > 0) {
-        syncFront();
-        refreshGuest();
-      }
-    });
+        selectSlot(s);
+        if (queue.length > 0) {
+          syncFront();
+          refreshGuest();
+        }
+      });
     }
     return;
   }
@@ -7740,11 +7874,38 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     return;
   }
 
-  // 5) Depo Binası Parseli (Storage)
+  // 5) Depo Binası Parseli (Storage - Yola Bağlantılı Lojistik & Mal Kabul Binası)
   if (s.type === "Storage") {
-    const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#d9c3a5", "#b8a386", "#9c886c", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
-    drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, "#6e473b", "#e8d8c0", "#cbb698", false, false, 0);
-    isoBox(u0, v0, u0 + 12, v1, z0, z1, "#6e473b", "#cbb698", "#e8d8c0", OUTLINE_COL, 2);
+    const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#d1d5db", "#9ca3af", "#6b7280", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+
+    // Yola Bağlantı Rampası (Depo yola bakan sırada - gu === 5)
+    if (gu === 5) {
+      const swU0 = 6 * PARCEL_SIZE + FRONT_GAP; // 1260
+      // Kaldırıma ve Caddeye uzanan sağlam beton mal kabul rampası
+      isoQuad(u1, v0 + 25, swU0, v1 - 25, 0, "#e5e7eb", "#9ca3af", 1.8);
+      // Sarı-Siyah Yükleme Alanı Güvenlik Çizgisi
+      isoQuad(u1 + 2, v0 + 30, u1 + 8, v1 - 30, 0.4, "#facc15", "#eab308", 0.8);
+      isoQuad(swU0 - 8, v0 + 30, swU0 - 2, v1 - 30, 0.4, "#facc15", "#eab308", 0.8);
+    }
+
+    // Sağlam Dış Duvarlar (Sanayi Tipi Çelik & Yalıtımlı Panel Duvarlar)
+    isoBox(u0, v0, u0 + 12, v1, z0, z1, "#475569", "#cbd5e1", "#e2e8f0", OUTLINE_COL, 2); // Arka Duvar
+    isoBox(u0, v0, u1, v0 + 10, z0, z1, "#475569", "#cbd5e1", "#e2e8f0", OUTLINE_COL, 1.8); // Sol Yan Duvar
+    isoBox(u0, v1 - 10, u1, v1, z0, z1, "#475569", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.8); // Sağ Yan Duvar
+
+    // Ön Cephe: Yola Açılan Motorlu Otomatik Kepenk / Teslimat Kapısı
+    if (gu === 5) {
+      // Yola Açılan Büyük Metal Kepenk Kapı (u = u1)
+      isoBox(u1 - 4, v0 + 35, u1, v1 - 35, z0, z0 + 58, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.6);
+      for (let sz = z0 + 10; sz < z0 + 54; sz += 10) {
+        isoBox(u1 - 4.5, v0 + 37, u1 + 0.5, v1 - 37, sz, sz + 2, "#475569", "#334155", "#1e293b", null, 0);
+      }
+      // Kepenk Üstü Işıklı Tabela Paneli
+      isoBox(u1 - 5, (v0 + v1) * 0.5 - 38, u1 + 1, (v0 + v1) * 0.5 + 38, z0 + 64, z0 + 76, "#1e293b", "#0f172a", "#020617", OUTLINE_COL, 1.2);
+      isoLabel("📦 MAL KABUL & DEPO", u1, (v0 + v1) * 0.5, z0 + 70, 7.5, "#ffd700", null, 0, 0);
+    }
+
+    // Depo İçi Paletler ve Koliler
     const total = sumArr(stock);
     for (let i = 0; i < Math.min(6, Math.max(2, total)); i++) {
       const bu = u0 + 32 + (i % 3) * 52, bv = v0 + 36 + Math.floor(i / 3) * 62;
@@ -8810,7 +8971,8 @@ function drawIsoPawn(p, pt, uvz) {
 function drawIsoCrates() {
   const n = sumArr(crateItems);
   if (n === 0) return;
-  const u = 1085, v = 320;
+  const dPos = (typeof getStorageDeliveryPos === "function") ? getStorageDeliveryPos() : { crateU: 1280, crateV: 350 };
+  const u = dPos.crateU, v = dPos.crateV - 30;
   for (let i = 0; i < Math.min(4, n); i++) {
     isoBox(u - 18, v + i * 26, u + 12, v + 22 + i * 26, 0, 20, "#e0ad63", "#c98f42", "#a8732d", OUTLINE_COL, 1.8);
   }
