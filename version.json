@@ -1,8 +1,8 @@
 {
-  "versionCode": 30,
-  "versionName": "1.9.22-beta",
+  "versionCode": 31,
+  "versionName": "1.9.23-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.22-beta: Çevre dünyası baştan aşağı zenginleştirildi! Yolun başına Havalimanı & Şehir Tüneli, bitimine Sahil Yolu & Marina Tüneli eklendi (arabalar artık tünelden çıkıp tünele giriyor). Otelin soluna Misafir & VIP Otoparkı, arabalar, EV şarj istasyonu ve güvenlik bariyeri; sağına açık Resort Tenis Kulübü; arkasına taş çevre duvarı, İtalyan selvileri ve büyük mermer süs havuzu; yolun karşısına ise nilüferli şehir parkı göleti ve fıskiyesi inşa edildi. Ufukta dağ silüeti eklendi ve kamera sınırlandırılarak boşluğa kayma engellendi."
+  "notes": "v1.9.23-beta: Kat seçici butonları mobilde düzeltilerek tüm katlar (1, 2, 3, 4. Kat) görünür ve seçilebilir hale getirildi; kilitli katlara dokunarak inşaat başlatılabilir. Havuz ve Park iki bağımsız tesise ayrıldı: Açık Yüzme Havuzu (traverten zemin, su parıltısı, şezlonglar, şemsiye) ve Yeşil Dinlenme Parkı & Çocuk Bahçesi (kadife çim, taş yol, ahşap salıncak, kaydırak, park bankı). Koridor ile Havuz veya Park birleştiğinde kör duvar kalkarak iki yan sütun, pergola kemeri ve mermer eşikli ferah 'Geniş Açık Teras Girişi' oluşturuldu. Depo binası sadece yola paralel ön cepheye (1. sıraya) kurulabilecek şekilde sınırlandırıldı. Seri Katil ve Vampir artık cinayeti uzaktan işlemiyor; koridorlardan yürüyüp kurbanın odasına giriyor, tam yatağının başına kadar gidip cinayeti yatak başında işliyor ve odasına geri dönüyor!"
 }

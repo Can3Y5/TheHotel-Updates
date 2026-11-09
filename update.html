@@ -848,9 +848,9 @@
     .sat-smiley { width: 16px; height: 16px; font-size: 10px; left: -8px; top: -4px; border-width: 1.5px; }
 
     .floor-tabs { gap: 3px; }
-    .fl-tab-btn { padding: 2px 6px; font-size: 9px; border-radius: 6px; }
-    /* Kilitli katlar mobilde ekran kaplamasin */
-    .fl-tab-btn.locked { display: none; }
+    .fl-tab-btn { padding: 3px 6px; font-size: 9px; border-radius: 6px; display: flex; align-items: center; }
+    /* Kilitli katlar da mobilde gorunur ve tiklandiginda kat insaatini acar */
+    .fl-tab-btn.locked { display: flex !important; opacity: 0.88; background: rgba(226, 232, 240, 0.92); color: #64748b; }
 
     .cam-mini-row { gap: 3px; }
     .vp-btn { width: 25px; height: 23px; font-size: 11px; border-radius: 6px; }
@@ -1064,7 +1064,7 @@
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">GRAND HOTEL TYCOON</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.22-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.23-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -1109,7 +1109,7 @@
       </div>
     </div>
 
-    <div class="menu-footer">Grand Hotel Tycoon • TheHotel Game v1.9.22-beta</div>
+    <div class="menu-footer">Grand Hotel Tycoon • TheHotel Game v1.9.23-beta</div>
   </div>
   <!-- GÜNCELLEME GEÇMİŞİ MODALI -->
   <div id="changelog-modal">
@@ -1172,7 +1172,7 @@ const StartMoney = 600, DayLength = 60, SeasonDays = 8;
 const Star1 = 250, Star2 = 500, Star3 = 750;
 const CostRoom = 100, CostRoomStep = 25, CostGym = 150, CostToilet = 120, CostGas = 250;
 const CostReception = 200, CostDoor = 50, CostMaint = 20, CostBalcony = 140;
-const ParkCost = 300, ParkSec = 25, TreeCost = 40;
+const ParkCost = 200, ParkSec = 20, PoolCost = 250, PoolSec = 22, TreeCost = 40;
 const CleanerHire = 150, CleanerWage = 15, MaxCleaners = 5;
 // Dış Binalar: Depo & Personel Lojmanı + Faz 2 Personeller (v1.6.0)
 const CostStorage = 220, StorageSec = 18, CostDorm = 260, DormSec = 20;
@@ -1553,6 +1553,7 @@ function getQueueSlotPos(i) {
 }
 
 let parkState = "Locked", parkLeft = 0;
+let poolState = "Locked", poolLeft = 0;
 const parkWorkers = [];
 const treePlanted = [true, false, false, false, true, false, false];
 const clouds = [];
@@ -1955,6 +1956,8 @@ function saveGame() {
       gasLeakLeft,
       parkState,
       parkLeft,
+      poolState,
+      poolLeft,
       storageState,
       storageLeft,
       storageLevel,
@@ -2070,6 +2073,8 @@ function loadGame() {
     gasLeakLeft = data.gasLeakLeft || 0;
     parkState = data.parkState || "Locked";
     parkLeft = data.parkLeft || 0;
+    poolState = data.poolState || "Locked";
+    poolLeft = data.poolLeft || 0;
     storageState = data.storageState || "Locked";
     storageLeft = data.storageLeft || 0;
     storageLevel = data.storageLevel || 1;
@@ -2248,6 +2253,9 @@ function loadGame() {
       }
     }
 
+    if (allSlots.some(s => s.type === "Pool")) poolState = "Built";
+    if (allSlots.some(s => s.type === "Park")) parkState = "Built";
+
     // Otomatik Lojman Kurtarma (Daha önceki kayıtlarda lojman inşa edilmiş ama parseli silinmiş veya atanmamışsa)
     if (dormState === "Built" && !allSlots.some(s => s.type === "Dorm")) {
       const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
@@ -2257,7 +2265,7 @@ function loadGame() {
       }
     }
     if (storageState === "Built" && !allSlots.some(s => s.type === "Storage")) {
-      const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+      const cand = floors[0].slots.find(s => s.type === "Empty" && parcelCoords(s.idx).gu === 5 && !s.hasTree && isParcelBuildable(0, s.idx));
       if (cand) {
         cand.type = "Storage";
         cand.parcelBuilt = true;
@@ -2327,6 +2335,8 @@ function startNewGameClean() {
   gasLeakLeft = 0;
   parkState = "Locked";
   parkLeft = 0;
+  poolState = "Locked";
+  poolLeft = 0;
   storageState = "Locked";
   storageLeft = 0;
   storageLevel = 1;
@@ -3623,6 +3633,89 @@ function triggerThiefAction(g) {
   saveGame();
 }
 
+function getRoomBedIso(room) {
+  if (!room) return { u: 0, v: 0, z: 0 };
+  if (typeof ensureRoomFurnLayout === "function") ensureRoomFurnLayout(room);
+  const bedPos = (room.furnLayout && room.furnLayout[4]) || { ru: 0, rv: 2, rot: 0 };
+  const b = typeof slotIsoBox === "function" ? slotIsoBox(room.floor.idx, room.idx) : null;
+  if (!b) return { u: room.X0 + SlotW * 0.5, v: 0, z: 8 };
+  const cellU = PARCEL_SIZE / 4, cellV = PARCEL_SIZE / 4;
+  return {
+    u: b.u0 + (bedPos.ru + 0.5) * cellU,
+    v: b.v0 + (bedPos.rv + 0.5) * cellV,
+    z: b.z0 + 8
+  };
+}
+
+function buildIsoPathBetweenRooms(fromRoom, toRoom, targetAtBed = true) {
+  const path = [];
+  if (!fromRoom || !toRoom) return path;
+  const fromDoorPts = typeof getRoomDoorPoints === "function" ? getRoomDoorPoints(fromRoom) : null;
+  const toDoorPts = typeof getRoomDoorPoints === "function" ? getRoomDoorPoints(toRoom) : null;
+  if (!fromDoorPts || !toDoorPts) return path;
+
+  const fromCorr = (typeof getRoomCorridorSlot === "function" ? getRoomCorridorSlot(fromRoom) : null) || fromRoom;
+  const toCorr = (typeof getRoomCorridorSlot === "function" ? getRoomCorridorSlot(toRoom) : null) || toRoom;
+
+  path.push(fromDoorPts.inside);
+  path.push(fromDoorPts.outside);
+
+  const fFrom = fromRoom.floor.idx;
+  const fTo = toRoom.floor.idx;
+
+  if (fFrom === fTo) {
+    if (typeof findCorridorSlotPath === "function") {
+      const slotPath = findCorridorSlotPath(fFrom, fromCorr.idx, toCorr.idx);
+      for (const sIdx of slotPath) {
+        path.push(getSlotCenterIso(fFrom, sIdx));
+      }
+    }
+  } else {
+    const elevFrom = floors[fFrom].slots.find(s => s.type === "Elevator");
+    const elevTo = floors[fTo].slots.find(s => s.type === "Elevator");
+    if (elevFrom && elevTo && typeof findCorridorSlotPath === "function") {
+      const p1 = findCorridorSlotPath(fFrom, fromCorr.idx, elevFrom.idx);
+      for (const sIdx of p1) path.push(getSlotCenterIso(fFrom, sIdx));
+      path.push(getSlotCenterIso(fFrom, elevFrom.idx));
+      path.push(getSlotCenterIso(fTo, elevTo.idx));
+      const p2 = findCorridorSlotPath(fTo, elevTo.idx, toCorr.idx);
+      for (const sIdx of p2) path.push(getSlotCenterIso(fTo, sIdx));
+    } else {
+      path.push(getSlotCenterIso(fFrom, fromCorr.idx));
+      path.push(getSlotCenterIso(fTo, toCorr.idx));
+    }
+  }
+
+  path.push(toDoorPts.outside);
+  path.push(toDoorPts.inside);
+  if (targetAtBed) {
+    path.push(getRoomBedIso(toRoom));
+  } else {
+    path.push(toDoorPts.roomTarget);
+  }
+  return path;
+}
+
+function returnCriminalToRoom(g, homeRoom, currentRoom) {
+  const p = g.pawn;
+  if (!p || !homeRoom) return;
+  g.state = "ReturningToRoom";
+  p.speed = WalkSpeed * 1.1;
+  p.path = [];
+  addPath(p, currentRoom.floor.idx, homeRoom.floor.idx, homeRoom.X0 + SlotW * 0.5);
+  p.isoPath = buildIsoPathBetweenRooms(currentRoom, homeRoom, true);
+  const onReturned = () => {
+    p.sleeping = true;
+    g.state = "Sleeping";
+    p.onIsoArrive = null;
+    p.onArrive = null;
+  };
+  p.onIsoArrive = onReturned;
+  p.onArrive = () => {
+    if (!p.isoPath || p.isoPath.length === 0) onReturned();
+  };
+}
+
 function triggerKillerHunt(g) {
   const s = g.room;
   if (!s) return;
@@ -3637,14 +3730,17 @@ function triggerKillerHunt(g) {
   const p = g.pawn;
   p.sleeping = false;
   p.wander = false;
-  p.speed = WalkSpeed * 1.1;
+  p.speed = WalkSpeed * 1.15;
+  p.iso = p.iso || getRoomBedIso(s);
   p.path = [];
   addPath(p, floorOf(p.pos.y), vSlot.floor.idx, vSlot.X0 + SlotW * 0.5);
-  p.onArrive = () => {
+  p.isoPath = buildIsoPathBetweenRooms(s, vSlot, true);
+
+  const executeKillAtBedside = () => {
     if (g.state !== "KillerHunt" || !g.room) return;
     const victim = vSlot.guest;
     if (!victim || victim.state === "Leaving") {
-      returnToRoom(g);
+      returnCriminalToRoom(g, s, vSlot);
       return;
     }
     // Yan odada Koruma varsa Ünlü konuğu korur ve Seri Katili yakalar!
@@ -3654,7 +3750,7 @@ function triggerKillerHunt(g) {
       money += 200;
       play("done");
       floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🕶️ KORUMA SERİ KATİLİ YAKALADI! +200 TL", "#1a8c26");
-      log("🕶️ KAHRAMAN KORUMA! Yan odadaki koruma, " + victim.name + " odasına sızan Seri Katil " + g.name + " adlı kişiyi suçüstü yakaladı! (+200 TL ödül, +25 İtibar)");
+      log("🕶️ KAHRAMAN KORUMA! " + victim.name + " odasına sızan Seri Katil " + g.name + " yatağın başında suçüstü yakalandı! (+200 TL ödül, +25 İtibar)");
       if (g.room) g.room.guest = null;
       g.room = null;
       startLeaving(g);
@@ -3662,7 +3758,7 @@ function triggerKillerHunt(g) {
       saveGame();
       return;
     }
-    // Seri katil sessizce kurbanı öldürür, kurban olduğu yerde kalır ve katil kendi odasına döner!
+    // Seri katil kurbanın yatağının tam yanına ulaştı: Cinayeti işler!
     play("alarm");
     weekMurders++;
     reputation = Math.max(0, reputation - 30);
@@ -3672,17 +3768,24 @@ function triggerKillerHunt(g) {
     vSlot.corpseSkin = victim.pawn ? victim.pawn.skin : "#fcd9b8";
     vSlot.corpseHair = victim.pawn ? victim.pawn.hair : "#1a1412";
     vSlot.corpseShirt = victim.pawn ? victim.pawn.shirt : "#d94d4d";
-    floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🔪 CİNAYET! " + victim.name + " Öldürüldü!", "#cc1a1a");
-    log("🔪 KORKUNÇ CİNAYET! " + vSlot.roomNo + ". odadaki " + victim.name + " gece Seri Katil tarafından öldürüldü! Katil hâlâ otelde (Gazetedeki '" + killerLetter + "' harfine dikkat et)!");
+    floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🔪 CİNAYET! " + victim.name + " Yatağında Öldürüldü!", "#cc1a1a");
+    log("🔪 KORKUNÇ CİNAYET! Seri Katil " + g.name + ", koridordan " + vSlot.roomNo + ". odaya sızıp " + victim.name + " adlı konuğu yatağının başında öldürdü! Katil hâlâ otelde (Gazetedeki '" + killerLetter + "' harfine dikkat et)!");
     destroyPawn(victim.pawn);
     for (const kp of victim.kidPawns) destroyPawn(kp);
     const vi = guests.indexOf(victim);
     if (vi >= 0) guests.splice(vi, 1);
     vSlot.guest = null;
     victim.room = null;
-    returnToRoom(g);
+
+    // Cinayetten sonra katil sessizce kendi odasına ve yatağına geri yürür
+    returnCriminalToRoom(g, s, vSlot);
     refresh();
     saveGame();
+  };
+
+  p.onIsoArrive = executeKillAtBedside;
+  p.onArrive = () => {
+    if (!p.isoPath || p.isoPath.length === 0) executeKillAtBedside();
   };
 }
 
@@ -3712,15 +3815,18 @@ function triggerVampireHunt(g) {
   const p = g.pawn;
   p.sleeping = false;
   p.wander = false;
-  p.speed = WalkSpeed * 1.15;
+  p.speed = WalkSpeed * 1.2;
+  p.iso = p.iso || getRoomBedIso(s);
   p.path = [];
   addPath(p, floorOf(p.pos.y), vSlot.floor.idx, vSlot.X0 + SlotW * 0.5);
-  log("🌙 Gece koridorda gizemli ayak sesleri duyuluyor...");
-  p.onArrive = () => {
+  p.isoPath = buildIsoPathBetweenRooms(s, vSlot, true);
+  log("🌙 Gece koridorda gizemli ayak sesleri yankılanıyor... Vampir avına doğru ilerliyor!");
+
+  const executeVampireAttack = () => {
     if (g.state !== "VampireHunt" || !g.room) return;
     const victim = vSlot.guest;
     if (!victim || victim.state === "Leaving") {
-      returnToRoom(g);
+      returnCriminalToRoom(g, s, vSlot);
       return;
     }
     if ((vSlot.items[IKamera] && vSlot.items[IAmpul]) || securityLevel >= 3) {
@@ -3729,9 +3835,9 @@ function triggerVampireHunt(g) {
       reputation += bonusRep;
       floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🧛 Vampir Kaçtı! +" + bonusRep + " İtibar", "#1a8c26");
       if (securityLevel >= 3) {
-        log("🛡️ Sv.3 Güvenlik Görevlisi, Vampir " + g.name + " " + vSlot.roomNo + ". odaya saldırırken müdahale edip otelden kovdu! (+20 İtibar)");
+        log("🛡️ Sv.3 Güvenlik Görevlisi, Vampir " + g.name + " " + vSlot.roomNo + ". odada yatağın başında saldırırken müdahale edip otelden kovdu! (+20 İtibar)");
       } else {
-        log("🧛 Vampir " + g.name + ", " + vSlot.roomNo + ". odaya saldırdı ama Kamera ve Ampul ışığı sayesinde panikleyip otelden kaçtı!");
+        log("🧛 Vampir " + g.name + ", " + vSlot.roomNo + ". odaya sızıp yatağın yanına kadar gitti ama Kamera ve Ampul ışığı sayesinde panikleyip kaçtı!");
       }
       if (g.room) g.room.guest = null;
       g.room = null;
@@ -3740,18 +3846,25 @@ function triggerVampireHunt(g) {
       play("alarm");
       reputation = Math.max(0, reputation - 35);
       vSlot.maintenance = Math.max(0, vSlot.maintenance - 50);
-      floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🧛 ÇIĞLIK! Müşteri Öldürüldü!", "#cc1a1a");
-      log("😱 KORKUNÇ OLAY! " + vSlot.roomNo + ". odadaki " + victim.name + " gece Vampir tarafından öldürüldü! (-35 İtibar)");
+      floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🧛 ÇIĞLIK! " + victim.name + " Isırıldı!", "#cc1a1a");
+      log("😱 KORKUNÇ GECE! Vampir " + g.name + ", " + vSlot.roomNo + ". odaya gizlice girip " + victim.name + " adlı konuğu yatağının başında ısırarak öldürdü! (-35 İtibar)");
       destroyPawn(victim.pawn);
       for (const kp of victim.kidPawns) destroyPawn(kp);
       const vi = guests.indexOf(victim);
       if (vi >= 0) guests.splice(vi, 1);
       vSlot.guest = null;
       victim.room = null;
-      returnToRoom(g);
+
+      // Saldırıdan sonra vampir sessizce kendi odasına geri döner
+      returnCriminalToRoom(g, s, vSlot);
     }
     refresh();
     saveGame();
+  };
+
+  p.onIsoArrive = executeVampireAttack;
+  p.onArrive = () => {
+    if (!p.isoPath || p.isoPath.length === 0) executeVampireAttack();
   };
 }
 
@@ -4287,7 +4400,7 @@ function finishStorage() {
   for (const w of storageWorkers) destroyPawn(w);
   storageWorkers.length = 0;
   if (!allSlots.some(s => s.type === "Storage")) {
-    const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+    const cand = floors[0].slots.find(s => s.type === "Empty" && parcelCoords(s.idx).gu === 5 && !s.hasTree && isParcelBuildable(0, s.idx));
     if (cand) {
       cand.type = "Storage";
       cand.parcelBuilt = true;
@@ -4317,7 +4430,7 @@ function finishDorm() {
   for (const w of dormWorkers) destroyPawn(w);
   dormWorkers.length = 0;
   if (!allSlots.some(s => s.type === "Dorm")) {
-    const cand = floors[0].slots.find(s => s.type === "Empty" && isParcelBuildable(0, s.idx));
+    const cand = floors[0].slots.find(s => s.type === "Empty" && parcelCoords(s.idx).gu === 5 && !s.hasTree && isParcelBuildable(0, s.idx));
     if (cand) {
       cand.type = "Dorm";
       cand.parcelBuilt = true;
@@ -6140,16 +6253,25 @@ function refreshPanel() {
       setAct(2, "🚽 Genel Tuvalet\n" + toiletCost() + " TL", true, canBuildHere && readyOnce);
       if (cur.floor.idx === 0) {
         setAct(3, hasKitchen() ? "✅ Restoran Var" : ("🍳 Restoran & Mutfak\n" + CostKitchen + " TL"), true, canBuildHere && readyOnce && !hasKitchen(), hasKitchen());
-        setAct(4, parkState === "Built" ? "✅ Havuz Var" : ("🏊 Açık Havuz & Park\n" + ParkCost + " TL"), true, canBuildHere && readyOnce && parkState === "Locked", parkState === "Built");
+        // 4) Açık Yüzme Havuzu (Pool)
+        setAct(4, poolState === "Built" ? "✅ Havuz Var" : ("🏊 Açık Havuz\n" + PoolCost + " TL"), true, canBuildHere && readyOnce && poolState === "Locked", poolState === "Built");
 
-        // Depo Binası: Binaya yapışık olmak zorunda DEĞİLDİR! Zemin kattaki herhangi bir boş parsele kurulabilir.
+        // 5) Depo Binası: SADECE YOLA PARALEL İLK SIRADA (gu === 5) OLABİLİR!
+        const { gu } = parcelCoords(cur.idx);
+        const isRoadFront = (gu === 5);
         const existingStorage = allSlots.find(sl => sl.type === "Storage");
-        const storageLbl = existingStorage ? "🔄 Depoyu Buraya Taşı\n(Ücretsiz)" : (storageState === "Built" ? "📍 Depoyu Buraya Kur\n(Ücretsiz)" : ("📦 Depo Binası\n" + CostStorage + " TL"));
-        setAct(5, storageLbl, true, readyOnce && !cur.hasTree);
+        if (isRoadFront) {
+          const storageLbl = existingStorage ? "🔄 Depoyu Buraya Taşı\n(Ücretsiz)" : (storageState === "Built" ? "📍 Depoyu Buraya Kur\n(Ücretsiz)" : ("📦 Depo Binası\n" + CostStorage + " TL"));
+          setAct(5, storageLbl, true, readyOnce && !cur.hasTree);
+        } else {
+          setAct(5, "⚠️ Depo Yola Bakmalı\n(1. Sıra)", false, false);
+        }
 
         const existingDorm = allSlots.find(sl => sl.type === "Dorm");
         const dormLbl = existingDorm ? "🔄 Lojmanı Buraya Taşı\n(Ücretsiz)" : (dormState === "Built" ? "📍 Lojmanı Buraya Kur\n(Ücretsiz)" : ("🏠 Lojman Binası\n" + CostDorm + " TL"));
         setAct(6, dormLbl, true, canBuildHere && readyOnce);
+        // 10) Yeşil Dinlenme Parkı & Çocuk Bahçesi (Park)
+        setAct(10, parkState === "Built" ? "✅ Park Var" : ("🌳 Dinlenme Parkı\n" + ParkCost + " TL"), true, canBuildHere && readyOnce && parkState === "Locked", parkState === "Built");
       } else {
         setAct(3, "🏖️ Çatı Terası & Bar\n" + CostRoofTerrace + " TL", true, canBuildHere && readyOnce);
         const nextFl = floors.find(f => f.state === "Locked");
@@ -6178,8 +6300,10 @@ function refreshPanel() {
       if (cookLevel < 3) setAct(0, (cookLevel === 0 ? "🍳 Aşçı Al\n" : "⬆️ Aşçı Sv." + (cookLevel + 1) + "\n") + CookHireCost[cookLevel + 1] + " TL", true, readyOnce && (cookLevel > 0 || totalStaffCount() < staffCap()));
       else setAct(0, "✅ Aşçı Sv.3", true, false, true);
       setAct(1, "👋 Aşçıyı Çıkar", true, cookLevel > 0);
+    } else if (cur.type === "Pool") {
+      infoText.textContent = "🏊 Açık Yüzme Havuzu & Güneşlenme Terası " + coordStr + "\nKonaklayan misafirler burada yüzüp şezlonglarda güneşlenir.";
     } else if (cur.type === "Park") {
-      infoText.textContent = "🏊 Açık Yüzme Havuzu & Güneşlenme Terası " + coordStr + "\nKonaklayan müşteriler ve çocuklar burada yüzüp eğlenir.";
+      infoText.textContent = "🌳 Dinlenme Bahçesi & Çocuk Parkı " + coordStr + "\nÇocuklu aileler ve konuklar doğanın tadını çıkarıp salıncakta oynar.";
     } else if (cur.type === "Storage") {
       infoText.textContent = "📦 Depo Binası Sv." + storageLevel + " " + coordStr + "  •  Stok: " + storageUsed() + "/" + storageCap();
       setAct(0, "🛒 Sipariş Ekranını Aç", true, true);
@@ -6362,8 +6486,14 @@ onAction = function(i) {
         return;
       }
 
-      // BAĞIMSIZ DEPO İNŞAATI / TAŞIMA (i === 5): Binaya yapışık olmak zorunda DEĞİLDİR!
+      // DEPO İNŞAATI / TAŞIMA (i === 5): SADECE YOLA PARALEL İLK SIRADA (gu === 5) OLABİLİR!
       if (s.floor.idx === 0 && i === 5) {
+        const { gu } = parcelCoords(s.idx);
+        if (gu !== 5) {
+          play("reject");
+          log("⚠️ Depo ve mal kabul alanı, kargo kamyonlarının yanaşabilmesi için sadece yola paralel ilk sıraya (ön cepheye) kurulabilir!");
+          return;
+        }
         const existingStorage = allSlots.find(sl => sl.type === "Storage");
         if (existingStorage) {
           existingStorage.type = "Empty";
@@ -6372,14 +6502,14 @@ onAction = function(i) {
           s.parcelBuilt = true;
           storageState = "Built";
           play("done");
-          log("📦 Depo Binası yeni parsele taşındı! Kargo araçları artık buraya teslimat yapacak.");
+          log("📦 Depo Binası yola bakan yeni parsele taşındı! Kargo araçları doğrudan buraya yanaşacak.");
           selectSlot(s);
           refresh(); saveGame(); return;
         } else if (storageState === "Built") {
           s.type = "Storage";
           s.parcelBuilt = true;
           play("done");
-          log("📦 Depo Binası bu parsele yerleştirildi! Kargo araçları doğrudan buraya yanaşacak.");
+          log("📦 Depo Binası yola bakan bu parsele yerleştirildi! Kargo araçları doğrudan buraya yanaşacak.");
           selectSlot(s);
           refresh(); saveGame(); return;
         } else if (pay(CostStorage)) {
@@ -6387,7 +6517,7 @@ onAction = function(i) {
           s.parcelBuilt = true;
           storageState = "Built";
           play("done");
-          log("📦 Depo Binası seçtiğin parsele kuruldu! Yoldan gelen kargo kamyonu siparişleri tam buraya teslim edecek.");
+          log("📦 Depo Binası ön cepheye kuruldu! Yoldan gelen kargo kamyonu siparişleri doğrudan buraya teslim edecek.");
           selectSlot(s);
           refresh(); saveGame(); return;
         }
@@ -6474,12 +6604,23 @@ onAction = function(i) {
           play("done"); log("🍳 Restoran & Mutfak seçtiğin parsele kuruldu! Artık Aşçı işe alabilirsin.");
           refresh(); saveGame(); return;
         }
-        if (i === 4 && parkState === "Locked" && pay(ParkCost)) {
+        if (i === 4 && poolState === "Locked" && pay(PoolCost)) {
+          s.type = "Pool"; s.parcelBuilt = true; poolState = "Built";
+          play("done"); log("🏊 Açık Yüzme Havuzu seçtiğin parsele kuruldu! Konuklar burada yüzüp şezlonglarda dinlenecek.");
+          refresh(); saveGame(); return;
+        }
+        if (i === 10 && parkState === "Locked" && pay(ParkCost)) {
           s.type = "Park"; s.parcelBuilt = true; parkState = "Built";
-          play("done"); log("🏊 Açık Yüzme Havuzu & Park seçtiğin parsele kuruldu!");
+          play("done"); log("🌳 Dinlenme Parkı & Çocuk Bahçesi seçtiğin parsele kuruldu! Aileler ve çocuklar burada vakit geçirecek.");
           refresh(); saveGame(); return;
         }
         if (i === 5) {
+          const { gu } = parcelCoords(s.idx);
+          if (gu !== 5) {
+            play("reject");
+            log("⚠️ Depo ve mal kabul alanı, kargo kamyonlarının yanaşabilmesi için sadece yola paralel ilk sıraya (ön cepheye) kurulabilir!");
+            return;
+          }
           const existingStorage = allSlots.find(sl => sl.type === "Storage");
           if (existingStorage) {
             existingStorage.type = "Empty";
@@ -6488,14 +6629,14 @@ onAction = function(i) {
             s.parcelBuilt = true;
             storageState = "Built";
             play("done");
-            log("📦 Depo Binası yeni parsele taşındı!");
+            log("📦 Depo Binası yola bakan yeni parsele taşındı!");
             selectSlot(s);
             refresh(); saveGame(); return;
           } else if (storageState === "Built") {
             s.type = "Storage";
             s.parcelBuilt = true;
             play("done");
-            log("📦 Depo Binası bu parsele yerleştirildi!");
+            log("📦 Depo Binası yola bakan bu parsele yerleştirildi!");
             selectSlot(s);
             refresh(); saveGame(); return;
           } else if (pay(CostStorage)) {
@@ -6503,7 +6644,7 @@ onAction = function(i) {
             s.parcelBuilt = true;
             storageState = "Built";
             play("done");
-            log("📦 Depo Binası seçtiğin parsele kuruldu!");
+            log("📦 Depo Binası ön cepheye kuruldu!");
             selectSlot(s);
             refresh(); saveGame(); return;
           }
@@ -6725,8 +6866,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 30;
-const APP_VERSION_NAME = "1.9.22-beta";
+const APP_VERSION_CODE = 31;
+const APP_VERSION_NAME = "1.9.23-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6734,9 +6875,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.23-beta",
+    title: "Tüm Katlar Mobilde Açık, Bağımsız Havuz & Park, Geniş Açık Teras Girişi, Yola Paralel Depo & Yatak Başı Cinayet",
+    latest: true,
+    notes: "• 🏢 Tüm Katlar Mobilde Açık (1., 2., 3., 4. Kat): Mobilde kilitli kat butonlarının gizlenmesine yol açan stil kuralı kaldırıldı; artık 4 katın tamamı hem mobilde hem masaüstünde net şekilde görünür. Kilitli üst kat butonuna dokunarak doğrudan kat inşaatı başlatılabilir.\n• 🏊 Bağımsız Açık Yüzme Havuzu (Pool): Havuz ve Park iki ayrı tesise bölündü. Havuz; traverten güneşlenme güvertesi, beyaz mermer bordür, turkuaz su parıltısı, krom merdiven, şezlonglar ve kokteyl sehpası ile lüks bir yüzme alanına dönüştü.\n• 🌳 Yeşil Dinlenme Bahçesi & Çocuk Parkı (Park): Kadife çim zemin, kıvrımlı taş bahçe yolu, ahşap çocuk salıncağı, kaydırak, döküm park bankı ve pembe ortancalarla çocuklu ailelerin keyifli vakit geçirdiği bir rekreasyon alanı oldu.\n• 🏛️ Koridor & Havuz/Park Geniş Açık Teras Girişi: Koridor bir havuz veya parka bağlandığında kör duvar tamamen ortadan kalkar; iki yan mermer sütun, açık pergola kirişi, beyaz mermer eşik ve ferah açık portal ile dış terasa kesintisiz geçiş sağlanır.\n• 📦 Depo Binası Yola Paralel Ön Cephe Kuralı (1. Sıra): Depo ve mal kabul alanı, kargo kamyonlarının kaldırımdan doğrudan yanaşabilmesi için yalnızca yola paralel ilk sıraya kurulabilir veya taşınabilir.\n• 🔪 Katil ve Vampir Yatak Başına Yürüme Mekaniği: Seri Katil ve Vampir artık cinayeti uzaktan işlemiyor! Kendi odasından çıkıp 3D izometrik koridorlar boyunca yürür, kurbanın kapısından içeri girip tam yatağın başına kadar gider, cinayeti/ısırığı yatak başında yüz yüze gerçekleştirir ve ardından kendi odasına geri döner."
+  },
+  {
     ver: "v1.9.22-beta",
     title: "Otoyol Tünelleri, VIP Otopark, Tenis Kortu, Park Göleti, Mermer Fıskiye & Dağ Silüeti",
-    latest: true,
+    latest: false,
     notes: "• 🚇 Yolun Başına ve Sonuna Otoyol Dağ Tünelleri: Yol artık boşlukta kesilmiyor! Yolun başında dev taş kemerli 'Havalimanı & Şehir Merkezi Tüneli', bitiminde 'Sahil Yolu & Marina Tüneli' inşa edildi. Arabalar ve kamyonlar tünellerin içinden çıkıp seyreder.\n• 🅿️ Misafir & VIP Otoparkı: Otelin sol tarafına asfalt zeminli, park çizgili, 5 adet renkli spor/SUV aracı, yeşil LED ekranlı EV şarj istasyonu, güvenlik kulübesi ve otomatik bariyeri olan açık otopark eklendi.\n• 🎾 Resort Tenis Kulübü: Otelin sağ tarafına çift renkli (mavi & yeşil akrilik zeminli), beyaz çizgili, filesi, hakem yüksek koltuğu ve tel örgüleri olan şampiyona tenis kortu kuruldu.\n• 🌊 Şehir Parkı Göleti & Nilüferler: Caddenin karşısına granit kıyı bordürlü, nilüfer çiçekleri yüzen ve merkezinden su fışkıran büyük bir park göleti eklendi.\n• 🏛️ Arka Bahçe, Mermer Fıskiye & İtalyan Selvileri: Otel arsasının arkasına taş çevre duvarı, boylu İtalyan selvi ağaçları, 3 kademeli büyük mermer süs havuzu ve beyaz ahşap çardak (gazebo) yerleştirildi.\n• ⛰️ Ufukta Dağ Silüeti & Kamera Sınırı: Sonsuz boş yeşil alan hissi kaldırıldı; ufukta katmanlı dağ/orman silüetleri çizildi ve kamera sınırlandırılarak boşluğa kayma engellendi."
   },
   {
@@ -9821,15 +9968,97 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     return;
   }
 
-  // 4) Açık Yüzme Havuzu & Park Parseli (Park)
+  // 4) Lüks Açık Yüzme Havuzu Parseli (Pool)
+  if (s.type === "Pool") {
+    // A) Traverten Havuz Terası Zemin Kaplaması
+    const poly = isoQuad(u0, v0, u1, v1, z0, "#f8f5ee", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+    // Zarif Taş Döşeme Derz Çizgileri
+    const poolSteps = 4, pdu = (u1 - u0) / poolSteps, pdv = (v1 - v0) / poolSteps;
+    for (let iu = 0; iu < poolSteps; iu++) {
+      for (let iv = 0; iv < poolSteps; iv++) {
+        isoQuad(u0 + iu * pdu, v0 + iv * pdv, u0 + (iu + 1) * pdu, v0 + (iv + 1) * pdv, z0, ((iu + iv) % 2 === 0 ? "#fdfbf7" : "#f1ede2"), "rgba(203,213,225,0.4)", 0.8);
+      }
+    }
+    // B) Havuz Mermer Bordürü (Coping)
+    isoQuad(u0 + 20, v0 + 48, u1 - 15, v1 - 15, z0 + 1, "#ffffff", OUTLINE_COL, 2.2);
+    // Su Hattı Mozaik Bordürü
+    isoQuad(u0 + 26, v0 + 54, u1 - 21, v1 - 21, z0 + 1.2, "#0284c7", "#0369a1", 1.2);
+    // Turkuaz Berrak Havuz Suyu
+    isoQuad(u0 + 28, v0 + 56, u1 - 23, v1 - 23, z0 + 1.5, "#0ea5e9", "#0284c7", 1.5);
+    // Canlı Su Yüzeyi Parıltısı ve Dalgalanması
+    isoQuad(u0 + 38, v0 + 66, u1 - 33, v1 - 33, z0 + 1.8, "#38bdf8", null, 0);
+    isoQuad(u0 + 48, v0 + 76, u1 - 43, v1 - 43, z0 + 2.0, "rgba(224, 242, 254, 0.7)", null, 0);
+
+    // C) Krom Havuz Merdiveni (Sol Üst Köşe)
+    isoBox(u0 + 32, v0 + 54, u0 + 36, v0 + 64, z0 + 1, z0 + 18, "#94a3b8", "#cbd5e1", "#f1f5f9", OUTLINE_COL, 1);
+    isoBox(u0 + 44, v0 + 54, u0 + 48, v0 + 64, z0 + 1, z0 + 18, "#94a3b8", "#cbd5e1", "#f1f5f9", OUTLINE_COL, 1);
+    isoBox(u0 + 32, v0 + 56, u0 + 48, v0 + 60, z0 + 6, z0 + 8, "#e2e8f0", "#94a3b8", "#64748b", null, 0);
+    isoBox(u0 + 32, v0 + 56, u0 + 48, v0 + 60, z0 + 12, z0 + 14, "#e2e8f0", "#94a3b8", "#64748b", null, 0);
+
+    // D) Şezlonglar & Güneş Şemsiyesi
+    drawSunLounger(u0 + 28, v0 + 14, z0 + 1, isOpen && activeCount >= 1, "#fff3c4");
+    drawSunLounger(u0 + 92, v0 + 14, z0 + 1, isOpen && activeCount >= 2, "#d4f0ff");
+    drawIsoUmbrella(u0 + 165, v0 + 25, z0 + 2, "#0284c7", 0.9);
+
+    // E) Kokteyl Sehpası & Can Simidi
+    isoBox(u0 + 76, v0 + 18, u0 + 88, v0 + 30, z0 + 1, z0 + 12, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1);
+    isoBox(u0 + 80, v0 + 22, u0 + 84, v0 + 26, z0 + 12, z0 + 18, "#ef4444", "#f87171", "#b91c1c", null, 0);
+    // Can Simidi Direği
+    isoBox(u1 - 12, v0 + 30, u1 - 8, v0 + 34, z0 + 1, z0 + 35, "#ffffff", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1);
+    isoBox(u1 - 14, v0 + 28, u1 - 6, v0 + 36, z0 + 22, z0 + 32, "#ef4444", "#ffffff", "#dc2626", OUTLINE_COL, 1);
+
+    isoLabel("🏊 AÇIK YÜZME HAVUZU", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 11, "#0284c7", "#f0f9ff", 6, 2.5);
+    addHitPoly(poly, () => {
+      selectSlot(s);
+      if (queue.length > 0) {
+        syncFront();
+        refreshGuest();
+      }
+    });
+    return;
+  }
+
+  // 4.5) Yeşil Dinlenme Parkı & Çocuk Bahçesi Parseli (Park)
   if (s.type === "Park") {
-    const poly = isoQuad(u0, v0, u1, v1, z0, "#f2e7d3", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
-    isoQuad(u0 + 24, v0 + 52, u1 - 18, v1 - 18, z0 + 1, "#ffffff", OUTLINE_COL, 2);
-    isoQuad(u0 + 32, v0 + 60, u1 - 26, v1 - 26, z0 + 1.5, "#36b9eb", OUTLINE_COL, 1.6);
-    drawSunLounger(u0 + 28, v0 + 16, z0 + 1, isOpen && activeCount >= 1, "#fff3c4");
-    drawSunLounger(u0 + 92, v0 + 16, z0 + 1, isOpen && activeCount >= 2, "#d4f0ff");
-    drawIsoUmbrella(u0 + 165, v0 + 28, z0 + 2, "#f5b82e", 0.88);
-    isoLabel("🏊 AÇIK HAVUZ & PARK", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 11, "#0d47a1", "#e3f2fd", 6, 2.5);
+    // A) Bakımlı Kadife Çim Zemin
+    const poly = isoQuad(u0, v0, u1, v1, z0, "#5ea218", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+    isoQuad(u0 + 10, v0 + 10, u1 - 10, v1 - 10, z0 + 0.3, "#65a91d", null, 0);
+
+    // B) Kıvrımlı Doğal Bahçe Yürüyüş Yolu (Flagstone Path)
+    isoQuad(u0 + 15, v0 + 90, u0 + 65, v0 + 130, z0 + 0.5, "#e2e8f0", "#94a3b8", 1.2);
+    isoQuad(u0 + 60, v0 + 115, u0 + 125, v0 + 155, z0 + 0.5, "#e2e8f0", "#94a3b8", 1.2);
+    isoQuad(u0 + 120, v0 + 140, u1 - 15, v1 - 35, z0 + 0.5, "#e2e8f0", "#94a3b8", 1.2);
+
+    // C) Ahşap Çocuk Salıncağı (A-Frame Timber Swing Set)
+    const swU = u0 + 45, swV = v0 + 35;
+    isoBox(swU, swV, swU + 6, swV + 8, z0, z0 + 44, "#78350f", "#92400e", "#b45309", OUTLINE_COL, 1.2);
+    isoBox(swU, swV + 65, swU + 6, swV + 73, z0, z0 + 44, "#78350f", "#92400e", "#b45309", OUTLINE_COL, 1.2);
+    isoBox(swU - 2, swV - 4, swU + 8, swV + 77, z0 + 42, z0 + 48, "#92400e", "#b45309", "#d97706", OUTLINE_COL, 1.3);
+    // Salıncak 1
+    isoBox(swU + 2, swV + 18, swU + 4, swV + 20, z0 + 14, z0 + 42, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    isoBox(swU + 2, swV + 32, swU + 4, swV + 34, z0 + 14, z0 + 42, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    isoBox(swU - 2, swV + 16, swU + 8, swV + 34, z0 + 11, z0 + 14, "#ef4444", "#dc2626", "#b91c1c", OUTLINE_COL, 1);
+    // Salıncak 2
+    isoBox(swU + 2, swV + 44, swU + 4, swV + 46, z0 + 14, z0 + 42, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    isoBox(swU + 2, swV + 58, swU + 4, swV + 60, z0 + 14, z0 + 42, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    isoBox(swU - 2, swV + 42, swU + 8, swV + 60, z0 + 11, z0 + 14, "#eab308", "#ca8a04", "#a16207", OUTLINE_COL, 1);
+
+    // D) Renkli Çocuk Kaydırağı (Mini Slide)
+    const slU = u0 + 120, slV = v0 + 45;
+    isoBox(slU, slV, slU + 16, slV + 16, z0, z0 + 26, "#3b82f6", "#2563eb", "#1d4ed8", OUTLINE_COL, 1.2);
+    isoBox(slU + 16, slV + 2, slU + 48, slV + 14, z0 + 1, z0 + 24, "#ef4444", "#f87171", "#dc2626", OUTLINE_COL, 1.2);
+
+    // E) Ferforje & Ahşap Park Bankı
+    drawParkBench(u0 + 135, v0 + 145, z0, 0.9);
+
+    // F) Çiçekli Çalılar & Ortancalar (Hydrangeas & Flowerbeds)
+    if (typeof drawLushBush === "function") {
+      drawLushBush(u0 + 25, v1 - 35, z0, 0.9, "normal", 0);
+      drawLushBush(u0 + 45, v1 - 25, z0, 0.85, "flower", 0);
+      drawLushBush(u0 + 160, v0 + 110, z0, 0.85, "flower", 0);
+    }
+
+    isoLabel("🌳 DİNLENME PARKI", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 11, "#15803d", "#f0fdf4", 6, 2.5);
     addHitPoly(poly, () => {
       selectSlot(s);
       if (queue.length > 0) {
@@ -9981,18 +10210,31 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
       }
     }
     if (typeof drawRoomFloorAO === "function") drawRoomFloorAO(u0, v0, u1, v1, z0);
-    const leftCorr = !!(leftSlot && (leftSlot.type === "Corridor" || leftSlot.type === "Elevator"));
-    const rightCorr = !!(rightSlot && (rightSlot.type === "Corridor" || rightSlot.type === "Elevator"));
-    const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym"));
-    const frontCorr = !!(frontSlot && (frontSlot.type === "Corridor" || frontSlot.type === "Elevator" || (fIdx === 0 && frontSlot.type === "Reception")));
+    const leftCorr = !!(leftSlot && (leftSlot.type === "Corridor" || leftSlot.type === "Elevator" || leftSlot.type === "Pool" || leftSlot.type === "Park"));
+    const rightCorr = !!(rightSlot && (rightSlot.type === "Corridor" || rightSlot.type === "Elevator" || rightSlot.type === "Pool" || rightSlot.type === "Park"));
+    const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Pool" || backSlot.type === "Park"));
+    const frontCorr = !!(frontSlot && (frontSlot.type === "Corridor" || frontSlot.type === "Elevator" || (fIdx === 0 && frontSlot.type === "Reception") || frontSlot.type === "Pool" || frontSlot.type === "Park"));
 
     // Lüks Kırmızı & Altın Koridor Yolluğu (L-Dönüş, T-Kavşak, + ve Düz Koridor)
     drawCorridorRunnerCarpet(u0, v0, u1, v1, z0, leftCorr, rightCorr, backCorr, frontCorr);
 
     // Arka Duvar (u = u0)
     const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym") && getRoomDoorWall(backSlot) === "front");
+    const backIsOutdoorAmenity = !!(backSlot && (backSlot.type === "Pool" || backSlot.type === "Park"));
     if (backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
       // Arkada Koridor veya Asansör varsa geçiş tamamen açık, kesintisiz hol
+    } else if (backIsOutdoorAmenity) {
+      // Arkada Havuz veya Park var: GENİŞ AÇIK TERAS GİRİŞİ (Açık Geçiş Portali)
+      isoBox(u0, v0, u0 + 12, v0 + 24, z0, z1, "#475569", "#cbd5e1", "#f1f5f9", OUTLINE_COL, 1.8);
+      isoBox(u0, v1 - 24, u0 + 12, v1, z0, z1, "#475569", "#cbd5e1", "#f1f5f9", OUTLINE_COL, 1.8);
+      // Üst kemer / pergola kirişi (Ferah yüksek açıklık)
+      isoBox(u0 - 2, v0, u0 + 14, v1, z0 + 66, z1, "#334155", "#cbd5e1", "#e2e8f0", OUTLINE_COL, 1.6);
+      isoBox(u0 - 3, v0 - 2, u0 + 15, v1 + 2, z0 + 64, z0 + 68, "#ffffff", "#ede8de", "#cbd5e1", OUTLINE_COL, 1.1);
+      // Beyaz Mermer Giriş Eşiği Basamağı
+      isoQuad(u0 - 6, v0 + 24, u0 + 12, v1 - 24, z0 + 0.35, "#ffffff", "#94a3b8", 1.4);
+      // Yan Sütunlarda Lüks Teras Fenerleri
+      isoBox(u0 + 10, v0 + 10, u0 + 15, v0 + 18, z0 + 44, z0 + 56, "#fef08a", "#eab308", "#ca8a04", OUTLINE_COL, 1);
+      isoBox(u0 + 10, v1 - 18, u0 + 15, v1 - 10, z0 + 44, z0 + 56, "#fef08a", "#eab308", "#ca8a04", OUTLINE_COL, 1);
     } else if (backHasDoorToCorr) {
       // Arkada WC, Oda veya Tesis var ve kapısı bu koridora bakıyor: Arka duvarda kemerli kapı açıklığı, pervazlar ve kapı!
       const vd0 = v0 + 95, vd1 = v0 + 135;
@@ -10053,8 +10295,21 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     // Sol Bölme Duvarı (v = v0)
     const leftIsElev = leftSlot && leftSlot.type === "Elevator";
     const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym") && getRoomDoorWall(leftSlot) === "right");
+    const leftIsOutdoorAmenity = !!(leftSlot && (leftSlot.type === "Pool" || leftSlot.type === "Park"));
     if (leftSlot && leftSlot.type === "Corridor") {
       // İki koridor yan yana bağlandığında ferah, geniş ve kesintisiz tek bir lüks hol oluşur (kiriş veya engel kolon çizilmez)
+    } else if (leftIsOutdoorAmenity) {
+      // Solda Havuz veya Park var: GENİŞ AÇIK TERAS GİRİŞİ!
+      isoBox(u0, v0, u0 + 24, v0 + 12, z0, z1, "#475569", "#f1f5f9", "#cbd5e1", OUTLINE_COL, 1.8);
+      isoBox(u1 - 24, v0, u1, v0 + 12, z0, z1, "#475569", "#f1f5f9", "#cbd5e1", OUTLINE_COL, 1.8);
+      // Üst kemer / pergola kirişi
+      isoBox(u0, v0 - 2, u1, v0 + 14, z0 + 66, z1, "#334155", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.6);
+      isoBox(u0 - 2, v0 - 3, u1 + 2, v0 + 15, z0 + 64, z0 + 68, "#ffffff", "#ede8de", "#cbd5e1", OUTLINE_COL, 1.1);
+      // Mermer Eşik
+      isoQuad(u0 + 24, v0 - 6, u1 - 24, v0 + 12, z0 + 0.35, "#ffffff", "#94a3b8", 1.4);
+      // Fenerler
+      isoBox(u0 + 10, v0 + 10, u0 + 18, v0 + 15, z0 + 44, z0 + 56, "#fef08a", "#eab308", "#ca8a04", OUTLINE_COL, 1);
+      isoBox(u1 - 18, v0 + 10, u1 - 10, v0 + 15, z0 + 44, z0 + 56, "#fef08a", "#eab308", "#ca8a04", OUTLINE_COL, 1);
     } else if (leftIsElev) {
       // Solda Asansör var: Asansör kapısına açılan kemerli açıklık (u0 + 45 .. u1 - 45 açık!)
       isoBox(u0, v0, u0 + 45, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
@@ -10082,8 +10337,21 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     // Sağ Bölme Duvarı (v = v1)
     const rightIsElev = rightSlot && rightSlot.type === "Elevator";
     const rightHasDoorToCorr = !!(rightSlot && (rightSlot.type === "Toilet" || rightSlot.type === "Room" || rightSlot.type === "Gym") && getRoomDoorWall(rightSlot) === "left");
+    const rightIsOutdoorAmenity = !!(rightSlot && (rightSlot.type === "Pool" || rightSlot.type === "Park"));
     if (rightCorr) {
       // Sağda da koridor varsa geçiş tamamen açık, kesintisiz hol
+    } else if (rightIsOutdoorAmenity) {
+      // Sağda Havuz veya Park var: GENİŞ AÇIK TERAS GİRİŞİ!
+      isoBox(u0, v1 - 12, u0 + 24, v1, z0, z1, "#475569", "#f1f5f9", "#cbd5e1", OUTLINE_COL, 1.8);
+      isoBox(u1 - 24, v1 - 12, u1, v1, z0, z1, "#475569", "#f1f5f9", "#cbd5e1", OUTLINE_COL, 1.8);
+      // Üst kemer / pergola kirişi
+      isoBox(u0, v1 - 14, u1, v1 + 2, z0 + 66, z1, "#334155", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.6);
+      isoBox(u0 - 2, v1 - 15, u1 + 2, v1 + 3, z0 + 64, z0 + 68, "#ffffff", "#ede8de", "#cbd5e1", OUTLINE_COL, 1.1);
+      // Mermer Eşik
+      isoQuad(u0 + 24, v1 - 12, u1 - 24, v1 + 6, z0 + 0.35, "#ffffff", "#94a3b8", 1.4);
+      // Fenerler
+      isoBox(u0 + 10, v1 - 15, u0 + 18, v1 - 10, z0 + 44, z0 + 56, "#fef08a", "#eab308", "#ca8a04", OUTLINE_COL, 1);
+      isoBox(u1 - 18, v1 - 15, u1 - 10, v1 - 10, z0 + 44, z0 + 56, "#fef08a", "#eab308", "#ca8a04", OUTLINE_COL, 1);
     } else if (rightIsElev) {
       // Sağda Asansör var: Asansör kapısına açılan kemerli açıklık (u0 + 45 .. u1 - 45 açık!)
       isoBox(u0, v1 - 10, u0 + 45, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
@@ -10114,7 +10382,7 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     }
 
     // Koridor Mobilyaları: Yürüyüş yolunu ve kapı açıklığını kapatmayacak şekilde
-    if (!backHasDoorToCorr) {
+    if (!backHasDoorToCorr && !backIsOutdoorAmenity) {
       isoBox(u0 + 16, v0 + 35, u0 + 46, v0 + 75, z0, z0 + 18, "#831843", "#6b1236", "#500727", OUTLINE_COL, 1.5);
       isoBox(u0 + 16, v0 + 35, u0 + 22, v0 + 75, z0 + 18, z0 + 32, "#9f1239", "#831843", "#6b1236", OUTLINE_COL, 1.3);
       // Altın Bank Ayakları
