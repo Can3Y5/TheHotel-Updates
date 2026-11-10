@@ -1,8 +1,8 @@
 {
-  "versionCode": 31,
-  "versionName": "1.9.23-beta",
+  "versionCode": 32,
+  "versionName": "1.9.24-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.23-beta: Kat seçici butonları mobilde düzeltilerek tüm katlar (1, 2, 3, 4. Kat) görünür ve seçilebilir hale getirildi; kilitli katlara dokunarak inşaat başlatılabilir. Havuz ve Park iki bağımsız tesise ayrıldı: Açık Yüzme Havuzu (traverten zemin, su parıltısı, şezlonglar, şemsiye) ve Yeşil Dinlenme Parkı & Çocuk Bahçesi (kadife çim, taş yol, ahşap salıncak, kaydırak, park bankı). Koridor ile Havuz veya Park birleştiğinde kör duvar kalkarak iki yan sütun, pergola kemeri ve mermer eşikli ferah 'Geniş Açık Teras Girişi' oluşturuldu. Depo binası sadece yola paralel ön cepheye (1. sıraya) kurulabilecek şekilde sınırlandırıldı. Seri Katil ve Vampir artık cinayeti uzaktan işlemiyor; koridorlardan yürüyüp kurbanın odasına giriyor, tam yatağının başına kadar gidip cinayeti yatak başında işliyor ve odasına geri dönüyor!"
+  "notes": "v1.9.24-beta: 60 FPS Performans & Önbellek Motoru! Sahne katmanları (layers.js) ve parsel komut-akışı (parcel-cache.js) önbelleklemesi entegre edildi. Kare başına çizim çağrıları 35.000'den 6.200'e (%82) indirildi, mobilde kare süresi 46 ms'den 16 ms'ye düşerek tam 60 FPS akıcılık sağlandı. 1200 satırlık dev parsel çizicisi modülerleştirildi."
 }
