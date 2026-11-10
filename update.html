@@ -806,15 +806,28 @@
 
     /* Orta Baslik: Mobilde sadece gun bilgisi kompakt rozet olarak gorunur */
     #hud-center-banner {
-      min-width: auto; padding: 5px 14px 6px 14px; border-radius: 0 0 14px 14px;
-      border-width: 2px; border-top: 2px solid #c9a66b;
-      top: calc(3px + var(--sat));
+      min-width: auto;
+      padding: 4px 13px 5px 13px;
+      border-radius: 14px;
+      border: 2px solid #c9a66b;
+      top: max(8px, calc(6px + var(--sat)));
+      box-shadow: 0 4px 10px rgba(0,0,0,0.45);
     }
     #hud-hotel-title { display: none; }
-    #top-mid { font-size: 10px; margin-top: 0; line-height: 1.25; }
-    /* Dar ekranda gün etiketi iki satır olur (Gün 12 / Yaz 🌙): yıldız ve para hapları ile çakışmaz */
-    #top-mid .tm-day, #top-mid .tm-season { display: block; }
-    #top-mid .tm-sep, #top-mid .tm-ev-txt { display: none; }
+    #top-mid {
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 0;
+      line-height: 1.2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+    #top-mid .tm-day, #top-mid .tm-season { display: inline; }
+    #top-mid .tm-sep { display: inline; opacity: 0.75; }
+    #top-mid .tm-ev-txt { display: inline; }
 
     /* Sag Para & Elmas */
     .hud-top-right { gap: 3px; }
@@ -1643,6 +1656,13 @@ function seasonIdx() { return Math.floor((day - 1) / SeasonDays) % 4; }
 function brightness() {
   const t = dayTimer / DayLength;
   return clamp(Math.sin(t * 2 * Math.PI) * 1.6 + 0.4, 0, 1);
+}
+function shadowIntensity() {
+  if (typeof isNight !== "undefined" && isNight) return 0;
+  const b = brightness();
+  if (b < 0.2) return 0;
+  if (b >= 0.7) return 1.0;
+  return (b - 0.2) / 0.5;
 }
 function updateDayNight() {
   const b = brightness();
@@ -6947,8 +6967,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 35;
-const APP_VERSION_NAME = "1.9.27-beta";
+const APP_VERSION_CODE = 36;
+const APP_VERSION_NAME = "1.9.28-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -8254,9 +8274,16 @@ function _shadowSlotIdx(gu, gv) {
 }
 
 function drawBuildingShadows() {
+  // Günün ışık şiddetine göre yönsel gölgeleri ölçekle:
+  // Gündüz tam belirgin, akşamüstü yumuşar, gece (b < 0.2 veya isNight) tamamen söner.
+  const shInt = (typeof shadowIntensity === "function") ? shadowIntensity() : 1.0;
+  // Sabit ve kararlı önbellek için 5 kademeye nicemle (0: kapalı, 1..4: yumuşak geçiş)
+  const shLevel = Math.round(shInt * 4);
+  const effInt = shLevel / 4;
+
   // Her zemin parselinin kat sayısı (yalnızca çatılı yapılar gölge düşürür)
   const heights = [];
-  let key = viewFloor + "|";
+  let key = viewFloor + "|" + shLevel + "|";
   for (let idx = 0; idx < 38; idx++) {
     let h = 0;
     const s0 = floors[0].slots[idx];
@@ -8273,48 +8300,71 @@ function drawBuildingShadows() {
   }
 
   drawCachedLayer("bldShadow", key, () => {
-    for (let idx = 0; idx < 38; idx++) {
-      const h = heights[idx];
-      if (!h) continue;
-      const b = slotIsoBox(0, idx);
-      const L = SHADOW_KAT_UZUNLUK * h + 24;
-      // İki kademeli yumuşak yönsel gölge (çekirdek + yarı gölge)
-      // Arka duvardan arkaya (-u: ekran sağ-üst çim alanına) ve sağ duvardan sağa (+v: ekran sağ-altına)
-      const backN = _shadowSlotIdx(b.gu - 1, b.gv);
-      const rightN = _shadowSlotIdx(b.gu, b.gv + 1);
+    // 1) Yönsel Bina Gölgeleri: gece tamamen kapatılır, gündüz yumuşatılmış / kademeli kenarla çizilir
+    if (effInt > 0.05) {
+      for (let idx = 0; idx < 38; idx++) {
+        const h = heights[idx];
+        if (!h) continue;
+        const b = slotIsoBox(0, idx);
+        const L = SHADOW_KAT_UZUNLUK * h + 24;
+        const backN = _shadowSlotIdx(b.gu - 1, b.gv);
+        const rightN = _shadowSlotIdx(b.gu, b.gv + 1);
 
-      for (const [k, a] of [[1.0, 0.16], [0.65, 0.16]]) {
-        const l = L * k, sh = l * 0.45;
-        // 1) Arka çim alana düşen ana bina gölgesi (arkasında komşu bina yoksa çime düşer)
-        if (!(backN >= 0 && heights[backN])) {
-          drawPoly2D([
-            iso(b.u0, b.v0, 0.3),
-            iso(b.u0, b.v1, 0.3),
-            iso(b.u0 - l, b.v1 + sh, 0.3),
-            iso(b.u0 - l, b.v0 + sh, 0.3)
-          ], "rgba(10,26,12," + a + ")", null, 0);
-        }
-        // 2) Sağ duvardan çime/zemine düşen gölge
-        if (!(rightN >= 0 && heights[rightN])) {
-          drawPoly2D([
-            iso(b.u0, b.v1, 0.3),
-            iso(b.u1, b.v1, 0.3),
-            iso(b.u1 + sh, b.v1 + l, 0.3),
-            iso(b.u0 - l * 0.3, b.v1 + l, 0.3)
-          ], "rgba(10,26,12," + a + ")", null, 0);
+        // Üç kademeli yumuşak geçiş: çekirdek (koyu) -> orta gölge -> dış tüylü (hafif) kenar
+        // Böylece sağ alt köşedeki sert üçgen sivrilik yerine çimle doğal kaynaşan yumuşak kenar oluşur.
+        const passes = [
+          [1.0, 0.04 * effInt],
+          [0.72, 0.08 * effInt],
+          [0.46, 0.12 * effInt]
+        ];
+
+        for (const [k, a] of passes) {
+          const l = L * k, sh = l * 0.42;
+          const aStr = a.toFixed(3);
+
+          // A) Arka çim alana (-u) düşen bina gölgesi
+          if (!(backN >= 0 && heights[backN])) {
+            drawPoly2D([
+              iso(b.u0, b.v0, 0.3),
+              iso(b.u0, b.v1, 0.3),
+              iso(b.u0 - l, b.v1 + sh, 0.3),
+              iso(b.u0 - l, b.v0 + sh * 0.8, 0.3)
+            ], "rgba(10,26,12," + aStr + ")", null, 0);
+          }
+
+          // B) Sağ duvardan (+v) çime/zemine düşen gölge:
+          // Sert köşe noktası yerine yumuşak geçişli kavisli zarf kullanılır
+          if (!(rightN >= 0 && heights[rightN])) {
+            const p0 = iso(b.u0, b.v1, 0.3);
+            const p1 = iso(b.u1, b.v1, 0.3);
+            const p2 = iso(b.u1 + sh * 0.7, b.v1 + l, 0.3);
+            const p3 = iso(b.u0 - l * 0.2, b.v1 + l * 0.9, 0.3);
+
+            ctx.fillStyle = "rgba(10,26,12," + aStr + ")";
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.lineTo(p1.x, p1.y);
+            ctx.quadraticCurveTo((p1.x + p2.x) * 0.5, (p1.y + p2.y) * 0.5, p2.x, p2.y);
+            ctx.quadraticCurveTo((p2.x + p3.x) * 0.5, (p2.y + p3.y) * 0.5, p3.x, p3.y);
+            ctx.closePath();
+            ctx.fill();
+          }
         }
       }
     }
-    // Duvar dibi temas gölgesi (bina çevresinde koyu temas çizgisi)
+
+    // 2) Temas Gölgeleri (Bina diplerindeki zemin temas çizgisi - ortam kapalılığı / Ambient Occlusion)
+    // Gündüz net zemin teması verir, gece ise binanın havada yüzmesini önleyecek yumuşaklıkta kalır
+    const aoAlpha = (0.10 + 0.14 * effInt).toFixed(3);
     for (let idx = 0; idx < 38; idx++) {
       if (!heights[idx]) continue;
       const b = slotIsoBox(0, idx);
       const backN = _shadowSlotIdx(b.gu - 1, b.gv);
       const rightN = _shadowSlotIdx(b.gu, b.gv + 1);
       const frontN = _shadowSlotIdx(b.gu + 1, b.gv);
-      if (!(backN >= 0 && heights[backN])) isoQuad(b.u0 - 8, b.v0 + 3, b.u0, b.v1 - 3, 0.35, "rgba(10,26,12,0.24)", null, 0);
-      if (!(rightN >= 0 && heights[rightN])) isoQuad(b.u0 + 3, b.v1, b.u1 - 3, b.v1 + 8, 0.35, "rgba(10,26,12,0.24)", null, 0);
-      if (!(frontN >= 0 && heights[frontN])) isoQuad(b.u1, b.v0 + 3, b.u1 + 8, b.v1 - 3, 0.35, "rgba(10,26,12,0.18)", null, 0);
+      if (!(backN >= 0 && heights[backN])) isoQuad(b.u0 - 8, b.v0 + 3, b.u0, b.v1 - 3, 0.35, "rgba(10,26,12," + aoAlpha + ")", null, 0);
+      if (!(rightN >= 0 && heights[rightN])) isoQuad(b.u0 + 3, b.v1, b.u1 - 3, b.v1 + 8, 0.35, "rgba(10,26,12," + aoAlpha + ")", null, 0);
+      if (!(frontN >= 0 && heights[frontN])) isoQuad(b.u1, b.v0 + 3, b.u1 + 8, b.v1 - 3, 0.35, "rgba(10,26,12," + (aoAlpha * 0.75).toFixed(3) + ")", null, 0);
     }
   });
 }
@@ -8731,10 +8781,13 @@ function drawPalmTree(u, v, z, scale = 1.0, flip = 1) {
   }
 
   // 2) Zemin yönsel gölgesi (bina gölgeleriyle aynı açı: sağ-aşağı uzanan taç ve gövde gölgesi)
-  ctx.fillStyle = "rgba(10, 30, 12, 0.25)";
-  ctx.beginPath(); ctx.ellipse(22, 12, 48, 18, 0.24, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "rgba(10, 30, 12, 0.16)";
-  ctx.beginPath(); ctx.ellipse(36, 18, 32, 13, 0.3, 0, Math.PI * 2); ctx.fill();
+  const shInt = (typeof shadowIntensity === "function") ? shadowIntensity() : 1.0;
+  if (shInt > 0.04) {
+    ctx.fillStyle = "rgba(10, 30, 12, " + (0.25 * shInt).toFixed(3) + ")";
+    ctx.beginPath(); ctx.ellipse(22, 12, 48, 18, 0.24, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(10, 30, 12, " + (0.16 * shInt).toFixed(3) + ")";
+    ctx.beginPath(); ctx.ellipse(36, 18, 32, 13, 0.3, 0, Math.PI * 2); ctx.fill();
+  }
 
   // 3) Hafif rüzgar salınımı
   const sway = Math.sin((timeNow || 0) * 1.6 + (u + v) * 0.02) * 3.5;
@@ -9033,9 +9086,11 @@ function drawLushBush(u, v, z, scale = 1.0, type = "normal", season = 0) {
     ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI * 2);
     ctx.fillStyle = cl.c; ctx.fill();
     ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.8; ctx.stroke();
-    // Işık pırıltısı
-    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
-    ctx.beginPath(); ctx.arc(cl.x - cl.r * 0.35, cl.y - cl.r * 0.35, cl.r * 0.35, 0, Math.PI * 2); ctx.fill();
+    // Işık pırıltısı (Kışın beyaz yuvarlak parıltılar kaldırılır - göz gibi durmasını engeller)
+    if (season !== 3) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+      ctx.beginPath(); ctx.arc(cl.x - cl.r * 0.35, cl.y - cl.r * 0.35, cl.r * 0.35, 0, Math.PI * 2); ctx.fill();
+    }
   }
 
   // Çiçekli Çalı Türü: Canlı Ortanca / Gül Kümeleri
@@ -9055,12 +9110,43 @@ function drawLushBush(u, v, z, scale = 1.0, type = "normal", season = 0) {
     }
   }
 
-  // Kışın Çalı Üstü Kar Tepeleri
+  // Kışın Çalı Üstü Doğal ve Kabarık Kar Örtüsü (Fluffy Snow Blanket)
   if (season === 3) {
-    ctx.fillStyle = "rgba(248, 250, 252, 0.95)";
-    ctx.beginPath(); ctx.ellipse(0, -32, 10, 4, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(-9, -23, 7, 3, -0.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(9, -23, 7, 3, 0.2, 0, Math.PI * 2); ctx.fill();
+    // 1) Kar tabanının soğuk gölgesi
+    ctx.fillStyle = "rgba(148, 163, 184, 0.45)";
+    ctx.beginPath();
+    ctx.ellipse(0, -18, 17, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2) Dolgun ve organik kar kubbesi (üst üste yumuşak kar öbekleri)
+    ctx.fillStyle = "#f8fafc";
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1.3;
+
+    // Tepe ana kar katmanı
+    ctx.beginPath();
+    ctx.arc(-8, -26, 9.5, 0, Math.PI * 2);
+    ctx.arc(0, -30, 11, 0, Math.PI * 2);
+    ctx.arc(8, -26, 9.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Yan omuzlara oturan taze kar kümeleri
+    ctx.beginPath();
+    ctx.ellipse(-13, -15, 7, 4.5, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(13, -15, 7, 4.5, 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Üst taze kar ışıltısı / kabarıklık vurgusu
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.ellipse(-2, -32, 6.5, 3, -0.1, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   ctx.restore();
@@ -9169,10 +9255,13 @@ function drawParkShadeTree(u, v, z, scale = 1.0, season = 0) {
   ctx.scale(scale, scale);
 
   // Zemin Yönsel Büyük Gölgesi (bina gölgeleriyle uyumlu sağ-aşağı uzanan taç gölgesi)
-  ctx.fillStyle = "rgba(10, 30, 12, 0.26)";
-  ctx.beginPath(); ctx.ellipse(22, 12, 50, 20, 0.24, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "rgba(10, 30, 12, 0.16)";
-  ctx.beginPath(); ctx.ellipse(36, 18, 34, 15, 0.28, 0, Math.PI * 2); ctx.fill();
+  const shInt = (typeof shadowIntensity === "function") ? shadowIntensity() : 1.0;
+  if (shInt > 0.04) {
+    ctx.fillStyle = "rgba(10, 30, 12, " + (0.26 * shInt).toFixed(3) + ")";
+    ctx.beginPath(); ctx.ellipse(22, 12, 50, 20, 0.24, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "rgba(10, 30, 12, " + (0.16 * shInt).toFixed(3) + ")";
+    ctx.beginPath(); ctx.ellipse(36, 18, 34, 15, 0.28, 0, Math.PI * 2); ctx.fill();
+  }
 
   // Koyu Malç & Çakıl Halkası
   ctx.fillStyle = "#3f2512";
@@ -10169,7 +10258,8 @@ function drawWorld() {
   }
 
   // KATMAN E (önbellekli): durak, banklar, büfe, çınar ağaçları, çiçekli çalılar (göl ve tünel animasyonlu olduğundan canlı kalır)
-  drawCachedLayer("parkProps", `${si}|${isNight}|${oppRecCenterV}`, () => {
+  const parkShKey = isNight ? 0 : Math.round(((typeof shadowIntensity === "function") ? shadowIntensity() : 1) * 4);
+  drawCachedLayer("parkProps", `${si}|${isNight}|${parkShKey}|${oppRecCenterV}`, () => {
     // C) Otel Girişi & Yaya Geçidi Karşısı: Grand Hotel Transit & Taksi Durağı
     if (typeof drawTransitShelter === "function") {
       drawTransitShelter(oppSwU1 + 10, oppRecCenterV, 0, 1.0, isNight);
