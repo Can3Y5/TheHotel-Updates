@@ -1,8 +1,8 @@
 {
-  "versionCode": 32,
-  "versionName": "1.9.24-beta",
+  "versionCode": 33,
+  "versionName": "1.9.25-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.24-beta: 60 FPS Performans & Önbellek Motoru! Sahne katmanları (layers.js) ve parsel komut-akışı (parcel-cache.js) önbelleklemesi entegre edildi. Kare başına çizim çağrıları 35.000'den 6.200'e (%82) indirildi, mobilde kare süresi 46 ms'den 16 ms'ye düşerek tam 60 FPS akıcılık sağlandı. 1200 satırlık dev parsel çizicisi modülerleştirildi."
+  "notes": "v1.9.25-beta: Işık, gölge ve arayüz yenilendi! Akşam turuncu, gece mavi-mor renk tonu; yanan odalarda ve lambaların çevresinde sıcak sarı ışık, havuzda turkuaz ışıma, kenarlarda hafif karartma (vignette). Binaların zemine düşen yumuşak gölgeleri ve odalardaki mobilya gölgeleri eklendi. Arayüzde gün etiketi yıldız ve para hapları ile çakışmıyor, misafir isim etiketleri yalnızca yakınlaşınca veya dokununca görünüyor, para ve elmas sayıları akarak değişiyor, ödeme anında HUD'da altın parçacıklar saçılıyor. Çentikli ekranlarda üstteki siyah şerit için güvenli alan desteği eklendi (APK yeniden derlenince etkin olur)."
 }
