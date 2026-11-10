@@ -1,8 +1,8 @@
 {
-  "versionCode": 34,
-  "versionName": "1.9.26-beta",
+  "versionCode": 35,
+  "versionName": "1.9.27-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.26-beta: Gölgeler ve aydınlatma belirginleştirildi! Çim ve zemin üzerine düşen bina ve palmiye/park ağacı yönsel gölgeleri güçlendirildi. Üst 'Gün / Mevsim' asılı tabelası dar ekranlarda kırpılmayacak şekilde kenarlık ve dolguyla optimize edildi. Işık ve vinyet motoruna gradyan önbelleği eklenerek kare çizim süresi optimize edildi."
+  "notes": "v1.9.27-beta: 4 Aşamalı Görsel & Performans Yükseltmesi:\n1. Zemin Dokuları: Çimen tutamları, kışın kar lekeleri, asfalt dokusu, yol çatlakları ve yıpranmış şeritler statik önbellekte çizildi.\n2. Canlı Karakterler: Yürürken doğal sekme, kol salınımı, 7 ten, 10 saç, 15 kıyafet rengi ve gülen/mutsuz yüz mimikleri eklendi.\n3. Oda Seviyeleri (Sv.1-3): Halı (Pers saray halısı/madalyon), tablo (altın varaklı yağlı boya), perde (ipek & kadife drapery) ve yatak örtüsü (jakarlı saten runner) seviyeye göre zenginleştirildi.\n4. Frustum Kırpma (Culling): Ekranda görünmeyen parseller otomatik kırpılarak kare süresi korundu."
 }

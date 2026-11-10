@@ -1296,9 +1296,16 @@ const TreeX = [-780, -1000, -1220, -1440, TotalW + 1140, TotalW + 1360, TotalW +
 const Pencil = "#1f1f26", Orange = "#ff8c00", Green = "#33cc4d", GhostLine = "rgba(77,89,115,0.9)";
 const WallColors = ["#fad9cc", "#d9edfa", "#e0f7d9", "#faf2c7", "#eddbf7", "#ccf2ed"];
 const PictureColors = ["#e66666", "#4d99e6", "#f2bf33", "#66bf73"];
-const Skins = ["#fcd9b8", "#e6b38c", "#b38059", "#805438"];
-const Hairs = ["#1a1412", "#59331a", "#e6bf59", "#b3401a", "#a6a6ad"];
-const Shirts = ["#d94d4d", "#4d8cd9", "#59b366", "#e6b333", "#a666cc", "#40b3b3"];
+const Skins = [
+  "#ffebe0", "#fcd9b8", "#f0be8e", "#d99f6c", "#b37947", "#805438", "#5a3622"
+];
+const Hairs = [
+  "#141010", "#2b1d12", "#59331a", "#7a4120", "#a6421d", "#d48246", "#e6bf59", "#edd48a", "#9ea3ab", "#f0f2f5"
+];
+const Shirts = [
+  "#e65151", "#d94d4d", "#2e63a8", "#4d8cd9", "#3a9c5c", "#59b366", "#d99b26", "#e6b333",
+  "#8a4fba", "#a666cc", "#26a69a", "#40b3b3", "#2c3038", "#e07b96", "#7d1d32"
+];
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const rndInt = (a, b) => Math.floor(rnd(a, b));
@@ -5534,6 +5541,25 @@ function onAction(i) {
           return;
         }
       }
+      if (i === ItemCount + 2) {
+        const curLvl = (typeof getRoomLevel === "function") ? getRoomLevel(s) : (s.level || 1);
+        if (curLvl < 3) {
+          const upCost = curLvl === 1 ? 120 : 250;
+          if (pay(upCost)) {
+            s.level = curLvl + 1;
+            play("build");
+            reputation += 15;
+            if (typeof floatText === "function") {
+              floatText(camCenter.x, camCenter.y, "⭐ Oda Sv." + s.level + " Yükseltildi! (+15 İtibar)", "#f59e0b");
+            }
+            log("🌟 " + s.roomNo + ". oda Seviye " + s.level + "'e yükseltildi! Özel halı, saray tablosu, lüks perdeler ve şık yatak örtüsü eklendi.");
+            saveGame();
+            refresh();
+            return;
+          }
+        }
+        return;
+      }
     }
   }
   onActionBase(i);
@@ -6819,6 +6845,13 @@ function refreshPanel() {
       } else {
         setAct(ItemCount + 1, maintLabel, true, cur.maintenance < 99.5);
       }
+      const rLvl = (typeof getRoomLevel === "function") ? getRoomLevel(cur) : (cur.level || 1);
+      if (rLvl < 3) {
+        const upCost = rLvl === 1 ? 120 : 250;
+        setAct(ItemCount + 2, "⬆️ Oda Sv." + (rLvl + 1) + "\n" + upCost + " TL", true, cur.Ready && money >= upCost);
+      } else {
+        setAct(ItemCount + 2, "👑 Kral Dairesi (Sv.3)", true, false, true);
+      }
     }
   } else {
     infoText.textContent = "👆 İşlem yapmak için oteldeki bir parsele/odaya veya alttaki 🔨 İnşa et butonuna dokunun.";
@@ -6914,8 +6947,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 34;
-const APP_VERSION_NAME = "1.9.26-beta";
+const APP_VERSION_CODE = 35;
+const APP_VERSION_NAME = "1.9.27-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -7181,12 +7214,15 @@ if (new URLSearchParams(window.location.search).has("autostart")) {
       r1.hasDoor = true;
       r1.items[0] = true;
       r1.items[4] = true;
+      r1.level = 1;
       const r2 = floors[0].slots[33];
       r2.type = 'Room';
       r2.parcelBuilt = true;
       r2.hasDoor = true;
       r2.items[0] = true;
       r2.items[4] = true;
+      r2.items[6] = true;
+      r2.level = 3;
       const wc = floors[0].slots[20];
       wc.type = 'Toilet';
       wc.parcelBuilt = true;
@@ -7545,6 +7581,45 @@ function slotIsoBox(fIdx, sIdx) {
     z0,
     z1: z0 + FLOOR_Z
   };
+}
+
+// Görünüm Kırpma (Frustum / Viewport Culling): Ekranda görünmeyen parselleri tespit eder
+function isParcelInViewport(fIdx, sIdx, cw, ch) {
+  if (typeof slotIsoBox !== "function") return true;
+  const b = slotIsoBox(fIdx, sIdx);
+  if (!b) return true;
+  const curDpr = (typeof dpr !== "undefined" ? dpr : Math.min(window.devicePixelRatio || 1, 2.0));
+  const cW = cw || (typeof viewport !== "undefined" && viewport.clientWidth) || (typeof canvas !== "undefined" && canvas.width ? canvas.width / curDpr : 800);
+  const cH = ch || (typeof viewport !== "undefined" && viewport.clientHeight) || (typeof canvas !== "undefined" && canvas.height ? canvas.height / curDpr : 600);
+  const halfW = cW * 0.5;
+  const halfH = cH * 0.5;
+  const zBot = b.z0 - 6;
+  const zTop = b.z1 + 75;
+  const corners = [
+    iso(b.u0, b.v0, zBot),
+    iso(b.u1, b.v0, zBot),
+    iso(b.u0, b.v1, zBot),
+    iso(b.u1, b.v1, zBot),
+    iso(b.u0, b.v0, zTop),
+    iso(b.u1, b.v0, zTop),
+    iso(b.u0, b.v1, zTop),
+    iso(b.u1, b.v1, zTop)
+  ];
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < 8; i++) {
+    const pt = corners[i];
+    const sx = halfW + (pt.x - camCenter.x) * zoom;
+    const sy = halfH + (pt.y + camCenter.y) * zoom;
+    if (sx < minX) minX = sx;
+    if (sx > maxX) maxX = sx;
+    if (sy < minY) minY = sy;
+    if (sy > maxY) maxY = sy;
+  }
+  const pad = 75;
+  if (maxX < -pad || minX > cW + pad || maxY < -pad || minY > cH + pad) {
+    return false; // Ekranın tamamen dışında -> Kırp
+  }
+  return true;
 }
 
 function focusIsoSlot(s) {
@@ -8491,6 +8566,10 @@ function pcBuild(e, rec, m, fIdx, sIdx) {
 
 // Bir parseli önbellekle çiz. Çağrı imzası drawIsoModularParcel ile aynıdır.
 function drawParcelCached(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
+  // Ekranda görünmeyen parselleri kırp (Viewport Culling)
+  if (typeof isParcelInViewport === "function" && !(typeof sel === "string" && sel === "Slot" && selSlot === s)) {
+    if (!isParcelInViewport(fIdx, sIdx)) return;
+  }
   if (!PARCEL_CACHE_ON || ctx === PC_REC) { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); return; }
   const real = ctx, rec = PC_REC;
   rec.reset(real);
@@ -9673,6 +9752,38 @@ function drawDistantMountainBackdrop(si) {
 
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
+// ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
+const _GRASS_TUFTS = [
+  [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
+  [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
+  [80, 1150], [220, 1180], [380, 1200], [540, 1160], [700, 1190],
+  [-520, -40], [-440, 180], [-600, 360], [-480, 560], [-560, 740],
+  [200, 480], [350, 320], [150, 720], [380, 800], [520, 640],
+  [-300, 920], [-220, 1080], [450, 1020], [620, 980], [750, 820],
+  [920, -60], [1050, 120], [980, 340], [1120, 520], [1040, 760],
+  [1240, -200], [1250, 140], [1240, 520], [1245, 960], [1250, 1380]
+];
+
+function drawGrassTuft(u, v, col, sz = 1.0) {
+  const p = iso(u, v, 0);
+  ctx.strokeStyle = col;
+  ctx.lineWidth = 1.5 * sz;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 0.5, p.y - 6.5 * sz);
+  ctx.moveTo(p.x - 2, p.y); ctx.lineTo(p.x - 4.5 * sz, p.y - 5.2 * sz);
+  ctx.moveTo(p.x + 2, p.y); ctx.lineTo(p.x + 5.0 * sz, p.y - 4.8 * sz);
+  ctx.stroke();
+}
+
+const _ROAD_CRACKS = [
+  { u: 1390, v: -140, pts: [[0,0], [14, 8], [22, 5], [38, 14], [46, 22]] },
+  { u: 1470, v: 280, pts: [[0,0], [-10, 12], [-18, 16], [-28, 30]] },
+  { u: 1410, v: 640, pts: [[0,0], [12, -6], [24, -2], [36, 6], [42, 16]] },
+  { u: 1480, v: 1120, pts: [[0,0], [-8, 10], [-20, 14], [-30, 24]] },
+  { u: 1430, v: 1560, pts: [[0,0], [16, 6], [28, 18], [40, 22]] }
+];
+
 // ===== ANA DÜNYA ÇİZİMİ (5x5 PARSEL & 4x4 ODA İÇİ SİSTEMİ) =====
 function drawWorld() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
@@ -9729,6 +9840,27 @@ function drawWorld() {
     ]) {
       ctx.fillStyle = patchCol;
       ctx.beginPath(); ctx.ellipse(pt[0], pt[1], pt[2], pt[3], 0, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Çimen tutamları ve ince benekler (mevsime göre renk alır, önbellekte çizilir)
+    const tuftCol = si === 3 ? "#93b4ce" : si === 2 ? "#826521" : si === 1 ? "#328212" : "#3f8a1f";
+    for (let i = 0; i < _GRASS_TUFTS.length; i++) {
+      const g = _GRASS_TUFTS[i];
+      drawGrassTuft(g[0], g[1], tuftCol, 0.9 + (i % 3) * 0.15);
+    }
+    // İnce çim gürültü benekleri
+    ctx.fillStyle = si === 3 ? "rgba(255,255,255,0.4)" : "rgba(30,80,15,0.12)";
+    for (let i = 0; i < _GRASS_TUFTS.length; i++) {
+      const g = _GRASS_TUFTS[i];
+      const p = iso(g[0] + 25, g[1] - 15, 0);
+      ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+    }
+    // Kışın (si === 3) çim üzerinde kar birikintileri
+    if (si === 3) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+      for (const sp of [[-200, 300, 70, 24], [300, -80, 80, 28], [500, 800, 95, 32], [-400, 600, 65, 22], [800, 200, 85, 30]]) {
+        ctx.beginPath(); ctx.ellipse(sp[0], sp[1], sp[2], sp[3], 0.2, 0, Math.PI * 2); ctx.fill();
+      }
     }
 
     // 1.1) Ufukta Görkemli Dağ & Orman Silüeti (Distant Mountain Backdrop - sonsuz boşluk hissini yok eder)
@@ -9835,22 +9967,53 @@ function drawWorld() {
 
     // Asfalt Cadde / Otoyol (u = 1350 .. 1530, v = -1150 .. 2250)
     isoQuad(roadU0, roadV0, roadU1, roadV1, -4, "#575c69", OUTLINE_COL, 2.5);
-    // Sarı Kesikli Orta Şerit Çizgisi
+    // İnce asfalt gürültü benekleri
+    for (let v = roadV0 + 40; v <= roadV1 - 40; v += 65) {
+      const p = iso(roadU0 + 45 + ((Math.abs(v) * 7) % 80), v, -3.8);
+      ctx.fillStyle = (v % 2 === 0) ? "rgba(255,255,255,0.08)" : "rgba(20,22,28,0.22)";
+      ctx.fillRect(p.x, p.y, 2, 1.5);
+    }
+    // Yol Çatlakları
+    ctx.strokeStyle = "#383c48";
+    ctx.lineWidth = 1.3;
+    ctx.lineCap = "round";
+    for (const ck of _ROAD_CRACKS) {
+      const p0 = iso(ck.u, ck.v, -3.8);
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      for (const d of ck.pts) {
+        const pd = iso(ck.u + d[0], ck.v + d[1], -3.8);
+        ctx.lineTo(pd.x, pd.y);
+      }
+      ctx.stroke();
+    }
+    // Sarı Kesikli Orta Şerit Çizgisi (yıpranmış / aşınmış şerit boyası)
     for (let v = roadV0 + 80; v <= roadV1 - 80; v += 140) {
       isoQuad(roadU0 + 82, v, roadU0 + 98, v + 70, -3, "#f5df66", null, 0);
+      isoQuad(roadU0 + 86, v + 25, roadU0 + 94, v + 35, -2.8, "#575c69", null, 0);
     }
     // Beyaz Kenar Emniyet Şeritleri
     isoQuad(roadU0 + 6, roadV0 + 40, roadU0 + 10, roadV1 - 40, -3.5, "rgba(255,255,255,0.65)", null, 0);
     isoQuad(roadU1 - 10, roadV0 + 40, roadU1 - 6, roadV1 - 40, -3.5, "rgba(255,255,255,0.65)", null, 0);
+    if (si === 3) {
+      isoQuad(roadU0 + 1, roadV0 + 20, roadU0 + 7, roadV1 - 20, -3.2, "rgba(240,248,255,0.7)", null, 0);
+      isoQuad(roadU1 - 7, roadV0 + 20, roadU1 - 1, roadV1 - 20, -3.2, "rgba(240,248,255,0.7)", null, 0);
+    }
 
     // Otel Önü Kaldırımı (u = 1260 .. 1350, v = -600 .. 1800)
     const swPoly = isoQuad(swU0, -600, swU1, 1800, 0, SidewalkCol[si], OUTLINE_COL, 2);
     addHitPoly(swPoly, () => selectMode("Garden"));
     for (let v = -550; v <= 1750; v += 90) {
+      if ((v / 90) % 2 === 0) {
+        isoQuad(swU0 + 2, v - 86, swU1 - 2, v - 4, 0.15, "rgba(255,255,255,0.07)", null, 0);
+      }
       const p1 = iso(swU0, v, 0), p2 = iso(swU1, v, 0);
       ctx.strokeStyle = "rgba(90,75,60,0.35)";
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+    }
+    if (si === 3) {
+      isoQuad(swU0, -600, swU0 + 6, 1800, 0.3, "rgba(245,250,255,0.85)", null, 0);
     }
 
     // 3.1) Otel Girişi Karşısı Stilize Yaya Geçidi (Zebra Crossing)
@@ -9859,10 +10022,16 @@ function drawWorld() {
     // 3.2) Karşı Kaldırım (u = 1530 .. 1620, v = -800 .. 2000): Caddenin karşısındaki park gezinti kaldırımı!
     isoQuad(oppSwU0, -800, oppSwU1, 2000, 0, SidewalkCol[si], OUTLINE_COL, 2);
     for (let v = -750; v <= 1950; v += 90) {
+      if ((v / 90) % 2 === 0) {
+        isoQuad(oppSwU0 + 2, v - 86, oppSwU1 - 2, v - 4, 0.15, "rgba(255,255,255,0.07)", null, 0);
+      }
       const p1 = iso(oppSwU0, v, 0), p2 = iso(oppSwU1, v, 0);
       ctx.strokeStyle = "rgba(90,75,60,0.35)";
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+    }
+    if (si === 3) {
+      isoQuad(oppSwU1 - 6, -800, oppSwU1, 2000, 0.3, "rgba(245,250,255,0.85)", null, 0);
     }
     // Yol ile karşı kaldırım arasındaki bordür basamağı (z = -4'ten z = 0'a)
     isoQuad(oppSwU0 - 4, -800, oppSwU0, 2000, -0.5, "#6b7280", OUTLINE_COL, 1.2);
@@ -9916,6 +10085,10 @@ function drawWorld() {
         if (isBuilt || (f === viewFloor && (showBuildGrid || isSel))) {
           const canB = isBuilt ? true : isParcelBuildable(f, idx);
           if (isBuilt || canB) {
+            // Ekranda görünmeyen parselleri hiç çizme (Kırpma / Frustum Culling)
+            if (!isSel && typeof isParcelInViewport === "function" && !isParcelInViewport(f, idx, cw, ch)) {
+              continue;
+            }
             drawParcelCached(s, f, idx, canB, showBuildGrid);
           }
         }
@@ -11302,6 +11475,130 @@ function drawParcelElevator(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftConnecte
 
 // ===== BUNDLED: render/parcel-room.js =====
 // [render/parcel-room.js] Oda / Tuvalet / Spor odası parseli (ve diğer tüm türlerin ortak zemini)
+
+// Oda Seviyesi Hesaplama (1: Standart, 2: Delüks, 3: Kral Dairesi / Suit)
+function getRoomLevel(s) {
+  if (!s || s.type !== "Room") return 1;
+  let lvl = s.level || 1;
+  let count = 0;
+  if (s.items) for (let i = 0; i < s.items.length; i++) if (s.items[i]) count++;
+  if (s.hasEnsuite) count += 2;
+  if (s.hasBalcony) count += 1;
+  if (count >= 5 && lvl < 3) lvl = 3;
+  else if (count >= 2 && lvl < 2) lvl = 2;
+  return lvl;
+}
+
+// 1. HALI: Oda Seviyesine Göre Zemin Halısı
+function drawRoomLevelCarpet(u0, v0, u1, v1, z0, lvl) {
+  if (lvl <= 1) {
+    // Seviye 1: Sade Minimalist Yatak Önü Paspası
+    isoQuad(u0 + 65, v0 + 80, u0 + 135, v0 + 130, z0 + 0.35, "#e2e8f0", "rgba(100,116,139,0.35)", 0.8);
+    isoQuad(u0 + 69, v0 + 83, u0 + 131, v0 + 127, z0 + 0.38, "#f1f5f9", null, 0);
+  } else if (lvl === 2) {
+    // Seviye 2: Bordo & Altın Bordürlü Otel Halısı
+    const ru0 = u0 + 44, rv0 = v0 + 38, ru1 = u1 - 44, rv1 = v1 - 38;
+    isoQuad(ru0, rv0, ru1, rv1, z0 + 0.35, "#881337", "#4c0519", 1.3);
+    isoQuad(ru0 + 4, rv0 + 4, ru1 - 4, rv1 - 4, z0 + 0.38, null, "#d4af37", 1.5);
+    isoQuad(ru0 + 9, rv0 + 9, ru1 - 9, rv1 - 9, z0 + 0.40, "#9f1239", "#fbbf24", 0.9);
+  } else {
+    // Seviye 3: Görkemli Saray / Oryantal Pers Halısı (Madalyonlu, Saçaklı, Çift Altın Bordürlü)
+    const ru0 = u0 + 34, rv0 = v0 + 30, ru1 = u1 - 34, rv1 = v1 - 30;
+    // Saçaklar (Fringes)
+    isoQuad(ru0 - 3, rv0 + 6, ru0, rv1 - 6, z0 + 0.32, "#fef3c7", null, 0);
+    isoQuad(ru1, rv0 + 6, ru1 + 3, rv1 - 6, z0 + 0.32, "#fef3c7", null, 0);
+    // Zengin Yakut Kırmızı Halı Gövdesi
+    isoQuad(ru0, rv0, ru1, rv1, z0 + 0.35, "#6b0f1a", "#3f070f", 1.5);
+    // 1. Dış Altın Nakış Bordürü
+    isoQuad(ru0 + 4, rv0 + 4, ru1 - 4, rv1 - 4, z0 + 0.38, null, "#d4af37", 1.8);
+    // 2. İç Gece Mavisi & Altın Çerçeve
+    isoQuad(ru0 + 8, rv0 + 8, ru1 - 8, rv1 - 8, z0 + 0.40, "#1e293b", "#f59e0b", 1.0);
+    // İç Ana Kırmızı Göbek
+    isoQuad(ru0 + 12, rv0 + 12, ru1 - 12, rv1 - 12, z0 + 0.42, "#881337", null, 0);
+    // Merkez Altın Madalyon
+    const mcu = (ru0 + ru1) * 0.5, mcv = (rv0 + rv1) * 0.5;
+    isoQuad(mcu - 14, mcv - 14, mcu + 14, mcv + 14, z0 + 0.45, "#b45309", "#fbbf24", 1.2);
+    isoQuad(mcu - 7, mcv - 7, mcu + 7, mcv + 7, z0 + 0.47, "#f59e0b", "#fef3c7", 0.9);
+  }
+}
+
+// 2. TABLO: Oda Seviyesine Göre Duvarda Sanat Eseri
+function drawRoomLevelPainting(uWall, vA, vB, z0, lvl) {
+  const vMid = (vA + vB) * 0.5;
+  if (lvl <= 1) {
+    // Seviye 1: Sade Ahşap Çerçeveli Modern Tablo
+    isoBox(uWall, vA, uWall + 2.5, vB, z0 + 52, z0 + 72, "#785233", "#5c3d26", "#422a18", OUTLINE_COL, 1.1);
+    isoQuad(uWall + 2.7, vA + 3, uWall + 2.7, vB - 3, z0 + 54, "#38bdf8", null, 0);
+    isoQuad(uWall + 2.8, vA + 5, uWall + 2.8, vB - 5, z0 + 56, "#93c5fd", null, 0);
+  } else if (lvl === 2) {
+    // Seviye 2: Varaklı Altın Çerçeve + Gün Batımı Manzarası + Pirinç Aplik Lambası
+    isoBox(uWall, vA, uWall + 3.2, vB, z0 + 50, z0 + 75, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
+    isoQuad(uWall + 3.4, vA + 3.5, uWall + 3.4, vB - 3.5, z0 + 52.5, "#ea580c", null, 0);
+    isoQuad(uWall + 3.5, vA + 5, uWall + 3.5, vB - 5, z0 + 59, "#f97316", null, 0);
+    isoQuad(uWall + 3.6, vMid - 5, uWall + 3.6, vMid + 5, z0 + 63, "#fef08a", null, 0);
+    // Üstte pirinç resim aydınlatma aplik lambası
+    isoBox(uWall + 1, vMid - 8, uWall + 4.5, vMid + 8, z0 + 76, z0 + 78.5, "#ffd700", "#d4af37", "#9c7c1b", null, 0);
+  } else {
+    // Seviye 3: Saray Tipi Oyma Altın Çerçeve + Klasik Yağlı Boya + Çift Sıcak Duvar Apliği
+    isoBox(uWall - 0.5, vA - 2, uWall + 4.2, vB + 2, z0 + 48, z0 + 77, "#f59e0b", "#d97706", "#b45309", OUTLINE_COL, 1.5);
+    isoBox(uWall + 1, vA + 1, uWall + 4.4, vB - 1, z0 + 50, z0 + 75, "#fef3c7", "#fde68a", "#f59e0b", null, 0);
+    // Yağlı boya göl & orman manzarası
+    isoQuad(uWall + 4.5, vA + 4, uWall + 4.5, vB - 4, z0 + 52, "#1e3a8a", null, 0);
+    isoQuad(uWall + 4.6, vA + 4, uWall + 4.6, vB - 4, z0 + 60, "#047857", null, 0);
+    isoQuad(uWall + 4.7, vA + 6, uWall + 4.7, vB - 6, z0 + 66, "#fef08a", null, 0);
+    // Lüks pirinç aydınlatma armatürü
+    isoBox(uWall + 1.5, vMid - 12, uWall + 6, vMid + 12, z0 + 78, z0 + 81, "#ffd700", "#d4af37", "#b45309", OUTLINE_COL, 1);
+    // Duvara vuran sıcak ışık parıltısı
+    ctx.fillStyle = "rgba(254, 240, 138, 0.28)";
+    const pt = iso(uWall + 5, vMid, z0 + 62);
+    ctx.beginPath(); ctx.ellipse(pt.x, pt.y, 20, 14, 0, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// 3. PERDE: Oda Seviyesine Göre Pencere & Kumaş Perdeler
+function drawRoomLevelCurtains(uWall, vA, vB, z0, z1, lvl) {
+  const vMid = (vA + vB) * 0.5;
+  const wGlass = vB - vA;
+  if (lvl <= 1) {
+    // Seviye 1: Sade Minimalist Stor Perde
+    isoBox(uWall, vA, uWall + 2, vB, z0 + 44, z1 - 8, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.1);
+    isoQuad(uWall + 2.2, vA + 2, uWall + 2.2, vB - 2, z0 + 48, "#f8fafc", "rgba(148,163,184,0.4)", 0.8);
+    // Stor perde alt çıtası ve çekme kordonu
+    isoBox(uWall + 0.5, vA - 1, uWall + 2.5, vB + 1, z0 + 43, z0 + 45, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+  } else if (lvl === 2) {
+    // Seviye 2: Zarif Krem/İpek Dökümlü Kumaş Perdeler + Altın Kordon Bağları
+    // Pencere camı
+    isoQuad(uWall + 0.5, vA + 6, uWall + 0.5, vB - 6, z0 + 38, "rgba(186, 230, 253, 0.55)", "#38bdf8", 1.2);
+    // Ortada beyaz tül
+    isoQuad(uWall + 1.2, vA + 8, uWall + 1.2, vB - 8, z0 + 40, "rgba(255, 255, 255, 0.72)", null, 0);
+    // Üstte ahşap perde kornişi
+    isoBox(uWall - 0.5, vA - 2, uWall + 3, vB + 2, z1 - 10, z1 - 6, "#c98b56", "#ba7d48", "#945c2b", OUTLINE_COL, 1.1);
+    // Sol ve sağ perde kanatları
+    isoBox(uWall + 1, vA - 2, uWall + 3.5, vA + 12, z0 + 34, z1 - 10, "#fef3c7", "#fde68a", "#f59e0b", OUTLINE_COL, 1.1);
+    isoBox(uWall + 1, vB - 12, uWall + 3.5, vB + 2, z0 + 34, z1 - 10, "#fef3c7", "#fde68a", "#f59e0b", OUTLINE_COL, 1.1);
+    // Perde altın bağlama kordonları
+    isoBox(uWall + 0.5, vA - 2.5, uWall + 4, vA + 12.5, z0 + 48, z0 + 51, "#ffd700", "#d4af37", "#9c7c1b", null, 0);
+    isoBox(uWall + 0.5, vB - 12.5, uWall + 4, vB + 2.5, z0 + 48, z0 + 51, "#ffd700", "#d4af37", "#9c7c1b", null, 0);
+  } else {
+    // Seviye 3: Görkemli Kraliyet Bordo Kadife Perdeleri + Altın Taç Korniş + Püsküllü Bağlar
+    // Pencere derin camı
+    isoQuad(uWall + 0.5, vA + 7, uWall + 0.5, vB - 7, z0 + 36, "rgba(186, 230, 253, 0.65)", "#0284c7", 1.3);
+    // Lüks pileli dantel tül
+    isoQuad(uWall + 1.4, vA + 8, uWall + 1.4, vB - 8, z0 + 38, "rgba(255, 255, 255, 0.82)", "rgba(254, 240, 138, 0.4)", 0.8);
+    // Üstte altın oymalı korniş kutusu (Valance / Pelmet Cornice)
+    isoBox(uWall - 1, vA - 4, uWall + 4.5, vB + 4, z1 - 12, z1 - 5, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
+    isoBox(uWall + 1, vA - 2, uWall + 4.8, vB + 2, z1 - 14, z1 - 11, "#881337", "#4c0519", "#3f070f", null, 0);
+    // Sol ve sağ dökümlü zengin kadife perdeler (3D katlanma tonları)
+    isoBox(uWall + 1.2, vA - 3, uWall + 4.2, vA + 15, z0 + 30, z1 - 12, "#881337", "#9f1239", "#4c0519", OUTLINE_COL, 1.2);
+    isoBox(uWall + 1.2, vB - 15, uWall + 4.2, vB + 3, z0 + 30, z1 - 12, "#881337", "#9f1239", "#4c0519", OUTLINE_COL, 1.2);
+    // Altın sarısı kordonlar ve sarkan lüks püsküller (Tassel tiebacks)
+    isoBox(uWall + 0.8, vA - 3.5, uWall + 4.8, vA + 15.5, z0 + 46, z0 + 49, "#ffd700", "#f59e0b", "#b45309", OUTLINE_COL, 1);
+    isoBox(uWall + 0.8, vB - 15.5, uWall + 4.8, vB + 3.5, z0 + 46, z0 + 49, "#ffd700", "#f59e0b", "#b45309", OUTLINE_COL, 1);
+    isoBox(uWall + 2, vA + 12, uWall + 4.5, vA + 15, z0 + 39, z0 + 46, "#fbbf24", "#d4af37", "#9c7c1b", null, 0);
+    isoBox(uWall + 2, vB - 15, uWall + 4.5, vB - 12, z0 + 39, z0 + 46, "#fbbf24", "#d4af37", "#9c7c1b", null, 0);
+  }
+}
+
 // 8) Kesit Oda, Spor Odası, Genel Tuvalet veya Doğalgaz
 // Zemin, duvarlar ve kapı; çizilen oda zemin poligonunu (roomPoly) döndürür
 function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall) {
@@ -11312,7 +11609,9 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
   // A) Oda Tabanı: Sıcak Meşe Ahşap Parke Zemin
   const roomPoly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 6), z0, floorCol, "#b89f82", "#9e866b", isSel ? "#ff8c00" : avail ? "#2ecc40" : OUTLINE_COL, isSel || avail ? 4 : 2.2);
 
-  // Doğal Ahşap Parke Doku & Gölge
+  const rLvl = (s.type === "Room") ? getRoomLevel(s) : 1;
+
+  // Doğal Ahşap Parke Doku & Halı & Gölge
   if (s.type === "Room") {
     if (typeof drawIsoTexturedFloor === "function") {
       drawIsoTexturedFloor(u0, v0, u1, v1, z0, "parquet", "#dfb17b");
@@ -11325,6 +11624,9 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
         }
       }
     }
+    // Oda Seviyesine Göre Zemin Halısı
+    drawRoomLevelCarpet(u0, v0, u1, v1, z0, rLvl);
+
     if (typeof drawRoomFloorAO === "function") drawRoomFloorAO(u0, v0, u1, v1, z0);
   } else if (s.type === "Toilet") {
     if (typeof drawIsoTexturedFloor === "function") {
@@ -11343,14 +11645,24 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
     isoBox(u0, v0, u0 + wallThick, vd0, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
     isoBox(u0 + wallThick - 1, v0, u0 + wallThick + 2, vd0, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
     isoBox(u0 + wallThick - 1, v0, u0 + wallThick + 2, vd0, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
-    // Sol Duvarda Tablo
-    isoBox(u0 + wallThick, v0 + 25, u0 + wallThick + 3, v0 + 70, z0 + 52, z0 + 74, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.2);
-    isoQuad(u0 + wallThick + 3.2, v0 + 28, u0 + wallThick + 3.2, v0 + 67, z0 + 55, "#38bdf8", null, 0);
 
-    // 2) Sağ Duvar Bölümü (vd1 .. v1 = 60 birim sağlam duvar)
+    // Sol Duvarda Tablo (Oda Seviyesine Göre)
+    if (s.type === "Room") {
+      drawRoomLevelPainting(u0 + wallThick, v0 + 22, v0 + 72, z0, rLvl);
+    } else {
+      isoBox(u0 + wallThick, v0 + 25, u0 + wallThick + 3, v0 + 70, z0 + 52, z0 + 74, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.2);
+      isoQuad(u0 + wallThick + 3.2, v0 + 28, u0 + wallThick + 3.2, v0 + 67, z0 + 55, "#38bdf8", null, 0);
+    }
+
+    // 2) Sağ Duvar Bölümü (vd1 .. v1 = 75 birim sağlam duvar)
     isoBox(u0, vd1, u0 + wallThick, v1, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.8);
     isoBox(u0 + wallThick - 1, vd1, u0 + wallThick + 2, v1, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
     isoBox(u0 + wallThick - 1, vd1, u0 + wallThick + 2, v1, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
+
+    // Sağ Duvarda Perde & Pencere (Oda Seviyesine Göre)
+    if (s.type === "Room") {
+      drawRoomLevelCurtains(u0 + wallThick, vd1 + 10, v1 - 10, z0, z1, rLvl);
+    }
 
     // 3) Kapı Üstü Duvar ve Kemer Başlığı (vd0 .. vd1, z0 + 64 .. z1)
     isoBox(u0, vd0, u0 + wallThick, vd1, z0 + 64, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.6);
@@ -11387,9 +11699,16 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
     isoBox(u0, v0, u0 + wallThick, v1, z0, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 2);
     isoBox(u0 + wallThick - 1, v0, u0 + wallThick + 2, v1, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.2);
     isoBox(u0 + wallThick - 1, v0, u0 + wallThick + 2, v1, z0 + 40, z0 + 43, "#c98b56", "#8a5426", "#a86e3b", null, 0);
-    // Duvarda Tablo
-    isoBox(u0 + wallThick, v0 + 70, u0 + wallThick + 3, v0 + 120, z0 + 52, z0 + 76, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
-    isoQuad(u0 + wallThick + 3.2, v0 + 74, u0 + wallThick + 3.2, v0 + 116, z0 + 56, "#38bdf8", null, 0);
+
+    if (s.type === "Room") {
+      // Duvarda Tablo (Sol Bölüm)
+      drawRoomLevelPainting(u0 + wallThick, v0 + 35, v0 + 85, z0, rLvl);
+      // Duvarda Perde & Pencere (Sağ Bölüm)
+      drawRoomLevelCurtains(u0 + wallThick, v0 + 125, v1 - 25, z0, z1, rLvl);
+    } else {
+      isoBox(u0 + wallThick, v0 + 70, u0 + wallThick + 3, v0 + 120, z0 + 52, z0 + 76, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
+      isoQuad(u0 + wallThick + 3.2, v0 + 74, u0 + wallThick + 3.2, v0 + 116, z0 + 56, "#38bdf8", null, 0);
+    }
   }
 
   // C) Sol Yan Duvar (v = v0)
@@ -11613,7 +11932,8 @@ function drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, room
     }
 
     // Oda Durum Rozeti (Kapı kemerinin üzerine monteli)
-    let badgeTxt = "🚪 " + s.roomNo + ". Oda";
+    const rLvlBadge = getRoomLevel(s);
+    let badgeTxt = "🚪 " + s.roomNo + ". Oda" + (rLvlBadge > 1 ? (" (Sv." + rLvlBadge + ")") : "");
     let badgeBg = "#fffdf5";
     let badgeFg = "#3a281f";
     if (s.onFire) { badgeTxt = "🔥 YANGIN!"; badgeBg = "#ffebee"; badgeFg = "#c62828"; }
@@ -11744,8 +12064,11 @@ function drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV) {
     const bx1 = u0 + (bedPos.ru + sp.du) * cellU - 5, by1 = v0 + (bedPos.rv + sp.dv) * cellV - 5;
     const hi = furnSelectedKey === 4 ? "#ff8c00" : OUTLINE_COL;
     const hasLuxBed = !!s.items[IYatak];
-    const blanketCol = hasLuxBed ? (s.roomNo % 2 === 1 ? "#3b82f6" : "#e11d48") : "#94a3b8";
-    const blanketSide = hasLuxBed ? (s.roomNo % 2 === 1 ? "#1d4ed8" : "#be123c") : "#64748b";
+    const rLvl = (typeof getRoomLevel === "function") ? getRoomLevel(s) : (hasLuxBed ? 2 : 1);
+    const blanketCol = rLvl >= 3 ? (s.roomNo % 2 === 1 ? "#1e1b4b" : "#6b0f1a") :
+                       rLvl === 2 ? (s.roomNo % 2 === 1 ? "#2563eb" : "#be123c") : "#94a3b8";
+    const blanketSide = rLvl >= 3 ? (s.roomNo % 2 === 1 ? "#0f172a" : "#4c0519") :
+                        rLvl === 2 ? (s.roomNo % 2 === 1 ? "#1d4ed8" : "#9f1239") : "#64748b";
 
     // A) Ahşap Baza (Alçak zarif taban)
     isoBox(bx0, by0, bx1, by1, z0, z0 + 5, "#c98b56", "#a36836", "#875225", hi, furnSelectedKey === 4 ? 3 : 1.4);
@@ -11755,19 +12078,45 @@ function drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV) {
 
     if (!bedPos.rot) {
       // Yatak u boyunca uzanıyor (bx0: Baş ucu, bx1: Ayak ucu)
-      // C) Zarif Ahşap Başlık (Yatağın üzerinde dev kütük DEĞİL, şık ve alçak)
-      isoBox(bx0 - 1, by0, bx0 + 5, by1, z0, z0 + 21, "#c98b56", "#ba7d48", "#945c2b", hi, 1.5);
+      // C) Zarif Ahşap Başlık (Seviye 3'te altın oymalı taç başlık)
+      isoBox(bx0 - 1, by0, bx0 + 5, by1, z0, z0 + (rLvl >= 3 ? 24 : 21), "#c98b56", "#ba7d48", "#945c2b", hi, 1.5);
       isoQuad(bx0 + 5.2, by0 + 3, bx0 + 5.2, by1 - 3, z0 + 7, "#fdf8f0", "#a36836", 1);
+      if (rLvl >= 3) {
+        // Altın Taç Başlık Çıtası
+        isoBox(bx0 - 1.5, by0 - 1, bx0 + 5.5, by1 + 1, z0 + 23, z0 + 25.5, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
+      }
 
-      // D) Kabarık Beyaz Çift Yastık
-      isoBox(bx0 + 6, by0 + 3, bx0 + 18, by1 - 3, z0 + 13, z0 + 17, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
-      isoBox(bx0 + 6, (by0 + by1) * 0.5 - 1, bx0 + 18, (by0 + by1) * 0.5 + 1, z0 + 13, z0 + 17.2, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+      // D) Yastıklar (Seviye 1: 1 yastık; Seviye 2: 2 yastık; Seviye 3: 4 yastık + dekoratif saten kırlentler)
+      if (rLvl <= 1) {
+        isoBox(bx0 + 6, by0 + 4, bx0 + 18, by1 - 4, z0 + 13, z0 + 16.5, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
+      } else {
+        // Çift kabarık yastık
+        isoBox(bx0 + 6, by0 + 3, bx0 + 18, by1 - 3, z0 + 13, z0 + 17, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
+        isoBox(bx0 + 6, (by0 + by1) * 0.5 - 1, bx0 + 18, (by0 + by1) * 0.5 + 1, z0 + 13, z0 + 17.2, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+        if (rLvl >= 3) {
+          // Ön dekoratif saten kırlentler (Altın & Bordo)
+          isoBox(bx0 + 13, by0 + 5, bx0 + 20, (by0 + by1) * 0.5 - 3, z0 + 13.5, z0 + 18, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
+          isoBox(bx0 + 13, (by0 + by1) * 0.5 + 3, bx0 + 20, by1 - 5, z0 + 13.5, z0 + 18, "#881337", "#4c0519", "#3f070f", OUTLINE_COL, 1);
+        }
+      }
 
       // E) Katlanmış Beyaz Çarşaf Ucu
       isoBox(bx0 + 18, by0 + 2, bx0 + 24, by1 - 2, z0 + 11.5, z0 + 15, "#ffffff", "#f1f5f9", "#e2e8f0", OUTLINE_COL, 1.2);
 
       // F) Renkli Otel Nevresimi / Yorganı
       isoBox(bx0 + 24, by0 + 1, bx1 - 1, by1 - 1, z0 + 11, z0 + 14.8, blanketCol, blanketSide, blanketSide, OUTLINE_COL, 1.4);
+
+      // 4. YATAK ÖRTÜSÜ / RUNNER: Ayak ucunda kontrast saten şal (Seviye 2 ve 3)
+      if (rLvl === 2) {
+        // Seviye 2: Altın Saten Yatak Runner'ı
+        isoBox(bx1 - 13, by0 + 0.8, bx1 - 4, by1 - 0.8, z0 + 11.2, z0 + 15.2, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.2);
+        isoQuad(bx1 - 11, by0 + 2, bx1 - 6, by1 - 2, z0 + 15.3, "#fef08a", "#b45309", 0.8);
+      } else if (rLvl >= 3) {
+        // Seviye 3: Görkemli Jakarlı Çift Katmanlı Yatak Runner'ı ve Altın Püsküller
+        isoBox(bx1 - 16, by0 + 0.5, bx1 - 3, by1 - 0.5, z0 + 11.2, z0 + 15.3, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
+        isoBox(bx1 - 13, by0 + 1.2, bx1 - 6, by1 - 1.2, z0 + 15.3, z0 + 15.6, "#881337", "#4c0519", "#3f070f", null, 0);
+        isoQuad(bx1 - 12, by0 + 2.5, bx1 - 7, by1 - 2.5, z0 + 15.7, "#fbbf24", "#d4af37", 0.8);
+      }
 
       // G) Başucu Komodini & Minik Abajur
       if (by0 > v0 + 16) {
@@ -11780,18 +12129,39 @@ function drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV) {
     } else {
       // Yatak v boyunca uzanıyor (by0: Baş ucu, by1: Ayak ucu)
       // C) Zarif Ahşap Başlık
-      isoBox(bx0, by0 - 1, bx1, by0 + 5, z0, z0 + 21, "#c98b56", "#ba7d48", "#945c2b", hi, 1.5);
+      isoBox(bx0, by0 - 1, bx1, by0 + 5, z0, z0 + (rLvl >= 3 ? 24 : 21), "#c98b56", "#ba7d48", "#945c2b", hi, 1.5);
       isoQuad(bx0 + 3, by0 + 5.2, bx1 - 3, by0 + 5.2, z0 + 7, "#fdf8f0", "#a36836", 1);
+      if (rLvl >= 3) {
+        isoBox(bx0 - 1, by0 - 1.5, bx1 + 1, by0 + 5.5, z0 + 23, z0 + 25.5, "#ffd700", "#d4af37", "#9c7c1b", OUTLINE_COL, 1);
+      }
 
-      // D) Kabarık Beyaz Çift Yastık
-      isoBox(bx0 + 3, by0 + 6, bx1 - 3, by0 + 18, z0 + 13, z0 + 17, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
-      isoBox((bx0 + bx1) * 0.5 - 1, by0 + 6, (bx0 + bx1) * 0.5 + 1, by0 + 18, z0 + 13, z0 + 17.2, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+      // D) Yastıklar
+      if (rLvl <= 1) {
+        isoBox(bx0 + 4, by0 + 6, bx1 - 4, by0 + 18, z0 + 13, z0 + 16.5, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
+      } else {
+        isoBox(bx0 + 3, by0 + 6, bx1 - 3, by0 + 18, z0 + 13, z0 + 17, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
+        isoBox((bx0 + bx1) * 0.5 - 1, by0 + 6, (bx0 + bx1) * 0.5 + 1, by0 + 18, z0 + 13, z0 + 17.2, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+        if (rLvl >= 3) {
+          isoBox(bx0 + 5, by0 + 13, (bx0 + bx1) * 0.5 - 3, by0 + 20, z0 + 13.5, z0 + 18, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
+          isoBox((bx0 + bx1) * 0.5 + 3, by0 + 13, bx1 - 5, by0 + 20, z0 + 13.5, z0 + 18, "#881337", "#4c0519", "#3f070f", OUTLINE_COL, 1);
+        }
+      }
 
       // E) Katlanmış Beyaz Çarşaf Ucu
       isoBox(bx0 + 2, by0 + 18, bx1 - 2, by0 + 24, z0 + 11.5, z0 + 15, "#ffffff", "#f1f5f9", "#e2e8f0", OUTLINE_COL, 1.2);
 
       // F) Renkli Otel Nevresimi / Yorganı
       isoBox(bx0 + 1, by0 + 24, bx1 - 1, by1 - 1, z0 + 11, z0 + 14.8, blanketCol, blanketSide, blanketSide, OUTLINE_COL, 1.4);
+
+      // 4. YATAK ÖRTÜSÜ / RUNNER
+      if (rLvl === 2) {
+        isoBox(bx0 + 0.8, by1 - 13, bx1 - 0.8, by1 - 4, z0 + 11.2, z0 + 15.2, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.2);
+        isoQuad(bx0 + 2, by1 - 11, bx1 - 2, by1 - 6, z0 + 15.3, "#fef08a", "#b45309", 0.8);
+      } else if (rLvl >= 3) {
+        isoBox(bx0 + 0.5, by1 - 16, bx1 - 0.5, by1 - 3, z0 + 11.2, z0 + 15.3, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1.3);
+        isoBox(bx0 + 1.2, by1 - 13, bx1 - 1.2, by1 - 6, z0 + 15.3, z0 + 15.6, "#881337", "#4c0519", "#3f070f", null, 0);
+        isoQuad(bx0 + 2.5, by1 - 12, bx1 - 2.5, by1 - 7, z0 + 15.7, "#fbbf24", "#d4af37", 0.8);
+      }
 
       // G) Başucu Komodini & Minik Abajur
       if (bx0 > u0 + 16) {
@@ -11999,7 +12369,8 @@ function drawIsoPawn(p, pt, uvz) {
 
   const s = Math.sin(p.animT);
   const walk = p.moving && !p.climbing;
-  const bob = walk ? Math.abs(s) * 3.5 : 0;
+  // Yürürken ritmik sekme; dururken hafif doğal soluk animasyonu
+  const bob = walk ? Math.abs(Math.sin(p.animT * 1.25)) * 4.0 : Math.sin((timeNow || 0) * 2.8 + (p.animT || 0)) * 0.7;
   ctx.translate(0, -bob);
 
   ctx.fillStyle = "#403028"; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2;
@@ -12009,9 +12380,10 @@ function drawIsoPawn(p, pt, uvz) {
   ctx.fillStyle = p.shirt || "#4d8cd9";
   ctx.beginPath(); ctx.roundRect(-12, -27, 24, 23, 8); ctx.fill(); ctx.stroke();
 
+  // Yürürken kolların ritmik salınımı
   ctx.fillStyle = p.skin || "#fcd9b8";
-  ctx.beginPath(); ctx.arc(-14, -15 + (walk ? s * 3 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(14, -15 - (walk ? s * 3 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(-14, -15 + (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(14, -15 - (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
   ctx.fillStyle = p.hair || "#2b1d12";
   ctx.beginPath(); ctx.arc(0, -43, 15.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -12021,10 +12393,40 @@ function drawIsoPawn(p, pt, uvz) {
   ctx.fillStyle = p.hair || "#2b1d12";
   ctx.beginPath(); ctx.arc(0, -46, 13.5, Math.PI * 1.08, Math.PI * 1.92); ctx.closePath(); ctx.fill(); ctx.stroke();
 
+  // Yüz İfadesi (Memnun / Memnuniyetsiz / Normal)
+  const isSad = p.mood === "sad" || (p.guest && (p.guest.patience < 12 || p.guest.isAngry));
+  const isHappy = p.mood === "happy" || p.isVip || (p.guest && p.guest.state === "InRoom") || (!isSad && Math.sin((p.animT || 0) * 0.4) > 0.1);
+
   ctx.fillStyle = OUTLINE_COL;
-  ctx.beginPath(); ctx.arc(-4.5, -38, 2, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(4.5, -38, 2, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(0, -34, 2.8, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  ctx.strokeStyle = OUTLINE_COL;
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = "round";
+
+  if (isHappy) {
+    // Sevimli gülen gözler (^ ^)
+    ctx.beginPath(); ctx.arc(-4.5, -38, 2.5, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(4.5, -38, 2.5, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke();
+    // Gülümseyen kavisli ağız
+    ctx.beginPath(); ctx.arc(0, -35.5, 3.0, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+    // Yanak allığı
+    ctx.fillStyle = "rgba(244, 63, 94, 0.32)";
+    ctx.beginPath(); ctx.arc(-6.5, -36, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6.5, -36, 1.8, 0, Math.PI * 2); ctx.fill();
+  } else if (isSad) {
+    // Endişeli gözler
+    ctx.beginPath(); ctx.arc(-4.5, -38, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4.5, -38, 2, 0, Math.PI * 2); ctx.fill();
+    // Aşağı kıvrık mutsuz ağız
+    ctx.beginPath(); ctx.arc(0, -32.5, 2.8, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke();
+    // Çatık kaşlar
+    ctx.beginPath(); ctx.moveTo(-6, -41.5); ctx.lineTo(-2.5, -40); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6, -41.5); ctx.lineTo(2.5, -40); ctx.stroke();
+  } else {
+    // Sakin / standart gözler ve minik tebessüm
+    ctx.beginPath(); ctx.arc(-4.5, -38, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4.5, -38, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -34.5, 2.4, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  }
 
   if (p.isCook) {
     ctx.fillStyle = "#ffffff";
