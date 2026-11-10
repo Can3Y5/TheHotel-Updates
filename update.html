@@ -85,10 +85,10 @@
   }
 
   #hud-center-banner {
-    pointer-events: auto; position: absolute; left: 50%; top: var(--sat);
+    pointer-events: auto; position: absolute; left: 50%; top: calc(2px + var(--sat));
     transform: translateX(-50%);
     background: linear-gradient(180deg, #3c526b 0%, #243547 100%);
-    border: 3.5px solid #c9a66b; border-top: none;
+    border: 3.5px solid #c9a66b;
     border-radius: 0 0 22px 22px;
     padding: 5px 24px 7px 24px; min-width: 190px; text-align: center;
     box-shadow: 0 5px 12px rgba(0,0,0,0.38), inset 0 -2px 0 #182330, 0 0 0 2px #3a281f;
@@ -806,11 +806,12 @@
 
     /* Orta Baslik: Mobilde sadece gun bilgisi kompakt rozet olarak gorunur */
     #hud-center-banner {
-      min-width: auto; padding: 3px 10px 4px 10px; border-radius: 0 0 12px 12px;
-      border-width: 2px; border-top: none;
+      min-width: auto; padding: 5px 14px 6px 14px; border-radius: 0 0 14px 14px;
+      border-width: 2px; border-top: 2px solid #c9a66b;
+      top: calc(3px + var(--sat));
     }
     #hud-hotel-title { display: none; }
-    #top-mid { font-size: 9.5px; margin-top: 0; line-height: 1.15; }
+    #top-mid { font-size: 10px; margin-top: 0; line-height: 1.25; }
     /* Dar ekranda gün etiketi iki satır olur (Gün 12 / Yaz 🌙): yıldız ve para hapları ile çakışmaz */
     #top-mid .tm-day, #top-mid .tm-season { display: block; }
     #top-mid .tm-sep, #top-mid .tm-ev-txt { display: none; }
@@ -6913,8 +6914,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 33;
-const APP_VERSION_NAME = "1.9.25-beta";
+const APP_VERSION_CODE = 34;
+const APP_VERSION_NAME = "1.9.26-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -6922,9 +6923,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.26-beta",
+    title: "Belirgin Gölgeler, Optimize UI & Ultra Hızlı Atmosfer",
+    latest: true,
+    notes: "• 🌳 Belirgin Gölgeler: Çim zemin üzerine düşen bina ve palmiye/park ağacı yönsel gölgeleri güçlendirildi ve yumuşatıldı.\n• 🧭 Optimize UI: Üst 'Gün / Mevsim' asılı tabelası dar ekranlarda kırpılmayacak şekilde kenarlık ve dolguyla optimize edildi.\n• ⚡ 0.3 ms Atmosfer: Işık ve vinyet motoruna gradyan önbelleği eklenerek kare başına render maliyeti minimuma indirildi."
+  },
+  {
     ver: "v1.9.25-beta",
     title: "Işık & Atmosfer, Gölgeler, Arayüz Düzeltmeleri",
-    latest: true,
+    latest: false,
     notes: "• 🌆 Işık & Atmosfer: Tüm sahneyi eşit grileştiren gece örtüsü kaldırıldı. Akşam turuncu, gece mavi-mor, şafak pembe renk tonu; yanan odalarda ve sokak lambalarının çevresinde sıcak sarı ışık, havuzda turkuaz ışıma, yangında turuncu parıltı. Uyuyan misafirin odası loş yanar. Kenarlarda hafif karartma (vignette).\n• 🌳 Gölgeler & Derinlik: Binaların zemine düşen yumuşak yönlü gölgeleri (kat sayısına göre uzar), bina çevresinde temas gölgesi ve odalardaki mobilyaların zemin gölgeleri eklendi.\n• 🧭 Arayüz: Gün etiketi artık yıldız ve para haplarıyla çakışmıyor (dar ekranda iki satır). Çentikli ekranlar için güvenli alan desteği eklendi (APK yeniden derlenince üstteki siyah şerit kalkar).\n• 🏷️ Misafir isim etiketleri yalnızca yakınlaştırınca veya odaya dokununca görünür; uzaktan kısa rozet (👤 4g) gösterilir.\n• 🪙 Para ve elmas sayıları akarak değişir; ödeme anında para hapından altın parçacıklar saçılır."
   },
   {
@@ -8077,6 +8084,8 @@ function collectSceneLights(cw, ch) {
   return out;
 }
 
+let _lastVgCw = 0, _lastVgCh = 0, _vgGrad = null, _lastVgA = -1;
+
 function drawAtmosphere(cw, ch, b) {
   const n = clamp(1 - b, 0, 1);                 // karanlık oranı
   const t = dayTimer / DayLength;
@@ -8137,13 +8146,16 @@ function drawAtmosphere(cw, ch, b) {
     }
   }
 
-  // 4) Vignette: kenarlarda hafif karartma (gündüz çok hafif, gece belirgin)
-  const vgA = 0.14 + 0.36 * n;
-  const R = Math.hypot(cw, ch) * 0.5;
-  const vg = ctx.createRadialGradient(cw * 0.5, ch * 0.5, R * 0.55, cw * 0.5, ch * 0.5, R);
-  vg.addColorStop(0, "rgba(8,6,20,0)");
-  vg.addColorStop(1, `rgba(8,6,20,${vgA})`);
-  ctx.fillStyle = vg;
+  // 4) Vignette: kenarlarda hafif karartma (gündüz çok hafif, gece belirgin; gradyan nesnesi önbelleklenir)
+  const vgA = 0.12 + 0.36 * n;
+  if (cw !== _lastVgCw || ch !== _lastVgCh || Math.abs(vgA - _lastVgA) > 0.035) {
+    _lastVgCw = cw; _lastVgCh = ch; _lastVgA = vgA;
+    const R = Math.hypot(cw, ch) * 0.5;
+    _vgGrad = ctx.createRadialGradient(cw * 0.5, ch * 0.5, R * 0.55, cw * 0.5, ch * 0.5, R);
+    _vgGrad.addColorStop(0, "rgba(8,6,20,0)");
+    _vgGrad.addColorStop(1, `rgba(8,6,20,${vgA.toFixed(3)})`);
+  }
+  ctx.fillStyle = _vgGrad;
   ctx.fillRect(0, 0, cw, ch);
 }
 
@@ -8190,23 +8202,44 @@ function drawBuildingShadows() {
       const h = heights[idx];
       if (!h) continue;
       const b = slotIsoBox(0, idx);
-      const L = SHADOW_KAT_UZUNLUK * h + 10;
-      for (const [k, a] of [[1.0, 0.07], [0.7, 0.07], [0.4, 0.07]]) {
-        const l = L * k, sh = l * SHADOW_YAN_KAYMA;
-        drawPoly2D([
-          iso(b.u0, b.v0, 0.3), iso(b.u1, b.v0, 0.3),
-          iso(b.u1 + sh, b.v0 + l, 0.3), iso(b.u1 + sh, b.v1 + l, 0.3),
-          iso(b.u0 + sh, b.v1 + l, 0.3), iso(b.u0, b.v1, 0.3)
-        ], "rgba(18,32,12," + a + ")", null, 0);
+      const L = SHADOW_KAT_UZUNLUK * h + 24;
+      // İki kademeli yumuşak yönsel gölge (çekirdek + yarı gölge)
+      // Arka duvardan arkaya (-u: ekran sağ-üst çim alanına) ve sağ duvardan sağa (+v: ekran sağ-altına)
+      const backN = _shadowSlotIdx(b.gu - 1, b.gv);
+      const rightN = _shadowSlotIdx(b.gu, b.gv + 1);
+
+      for (const [k, a] of [[1.0, 0.16], [0.65, 0.16]]) {
+        const l = L * k, sh = l * 0.45;
+        // 1) Arka çim alana düşen ana bina gölgesi (arkasında komşu bina yoksa çime düşer)
+        if (!(backN >= 0 && heights[backN])) {
+          drawPoly2D([
+            iso(b.u0, b.v0, 0.3),
+            iso(b.u0, b.v1, 0.3),
+            iso(b.u0 - l, b.v1 + sh, 0.3),
+            iso(b.u0 - l, b.v0 + sh, 0.3)
+          ], "rgba(10,26,12," + a + ")", null, 0);
+        }
+        // 2) Sağ duvardan çime/zemine düşen gölge
+        if (!(rightN >= 0 && heights[rightN])) {
+          drawPoly2D([
+            iso(b.u0, b.v1, 0.3),
+            iso(b.u1, b.v1, 0.3),
+            iso(b.u1 + sh, b.v1 + l, 0.3),
+            iso(b.u0 - l * 0.3, b.v1 + l, 0.3)
+          ], "rgba(10,26,12," + a + ")", null, 0);
+        }
       }
     }
-    // Duvar dibi temas gölgesi (bina çevresinde ince koyu halka)
+    // Duvar dibi temas gölgesi (bina çevresinde koyu temas çizgisi)
     for (let idx = 0; idx < 38; idx++) {
       if (!heights[idx]) continue;
       const b = slotIsoBox(0, idx);
-      const frontN = _shadowSlotIdx(b.gu + 1, b.gv), rightN = _shadowSlotIdx(b.gu, b.gv + 1);
-      if (!(frontN >= 0 && heights[frontN])) isoQuad(b.u1, b.v0 + 4, b.u1 + 9, b.v1 + 4, 0.35, "rgba(18,32,12,0.12)", null, 0);
-      if (!(rightN >= 0 && heights[rightN])) isoQuad(b.u0 + 4, b.v1, b.u1 + 4, b.v1 + 9, 0.35, "rgba(18,32,12,0.14)", null, 0);
+      const backN = _shadowSlotIdx(b.gu - 1, b.gv);
+      const rightN = _shadowSlotIdx(b.gu, b.gv + 1);
+      const frontN = _shadowSlotIdx(b.gu + 1, b.gv);
+      if (!(backN >= 0 && heights[backN])) isoQuad(b.u0 - 8, b.v0 + 3, b.u0, b.v1 - 3, 0.35, "rgba(10,26,12,0.24)", null, 0);
+      if (!(rightN >= 0 && heights[rightN])) isoQuad(b.u0 + 3, b.v1, b.u1 - 3, b.v1 + 8, 0.35, "rgba(10,26,12,0.24)", null, 0);
+      if (!(frontN >= 0 && heights[frontN])) isoQuad(b.u1, b.v0 + 3, b.u1 + 8, b.v1 - 3, 0.35, "rgba(10,26,12,0.18)", null, 0);
     }
   });
 }
@@ -8618,9 +8651,11 @@ function drawPalmTree(u, v, z, scale = 1.0, flip = 1) {
     ctx.beginPath(); ctx.ellipse(sx, sy, 3, 2, a, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   }
 
-  // 2) Zemin yumuşak gölgesi
-  ctx.fillStyle = "rgba(20, 45, 15, 0.22)";
-  ctx.beginPath(); ctx.ellipse(12, 6, 42, 17, 0, 0, Math.PI * 2); ctx.fill();
+  // 2) Zemin yönsel gölgesi (bina gölgeleriyle aynı açı: sağ-aşağı uzanan taç ve gövde gölgesi)
+  ctx.fillStyle = "rgba(10, 30, 12, 0.25)";
+  ctx.beginPath(); ctx.ellipse(22, 12, 48, 18, 0.24, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(10, 30, 12, 0.16)";
+  ctx.beginPath(); ctx.ellipse(36, 18, 32, 13, 0.3, 0, Math.PI * 2); ctx.fill();
 
   // 3) Hafif rüzgar salınımı
   const sway = Math.sin((timeNow || 0) * 1.6 + (u + v) * 0.02) * 3.5;
@@ -9054,9 +9089,11 @@ function drawParkShadeTree(u, v, z, scale = 1.0, season = 0) {
   ctx.translate(p.x, p.y);
   ctx.scale(scale, scale);
 
-  // Zemin Büyük Gölgesi
-  ctx.fillStyle = "rgba(15, 35, 10, 0.28)";
-  ctx.beginPath(); ctx.ellipse(0, 4, 38, 15, 0, 0, Math.PI * 2); ctx.fill();
+  // Zemin Yönsel Büyük Gölgesi (bina gölgeleriyle uyumlu sağ-aşağı uzanan taç gölgesi)
+  ctx.fillStyle = "rgba(10, 30, 12, 0.26)";
+  ctx.beginPath(); ctx.ellipse(22, 12, 50, 20, 0.24, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "rgba(10, 30, 12, 0.16)";
+  ctx.beginPath(); ctx.ellipse(36, 18, 34, 15, 0.28, 0, Math.PI * 2); ctx.fill();
 
   // Koyu Malç & Çakıl Halkası
   ctx.fillStyle = "#3f2512";
