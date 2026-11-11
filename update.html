@@ -7103,8 +7103,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 39;
-const APP_VERSION_NAME = "1.9.31-beta";
+const APP_VERSION_CODE = 40;
+const APP_VERSION_NAME = "1.9.32-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -10850,20 +10850,36 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
   const doorWall = (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") ? getRoomDoorWall(s) : null;
 
   // Bina türüne göre çizim: her tür kendi dosyasındaki fonksiyona devredilir (render/parcel-*.js)
-  if (s.type === "Empty") { drawParcelEmpty(s, fIdx, sIdx, canBuildHere, showBuildGrid, gu, gv, u0, v0, u1, v1, z0, isSel); return; }
-  if (s.type === "Reception") { drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlot, rightSlot, backSlot); return; }
-  if (s.type === "Kitchen") { drawParcelKitchen(s, u0, v0, u1, v1, z0, z1, isSel, activeCount, leftConnected); return; }
-  if (s.type === "Pool") { drawParcelPool(s, u0, v0, u1, v1, z0, isSel, activeCount); return; }
-  if (s.type === "Park") { drawParcelPark(s, u0, v0, u1, v1, z0, isSel); return; }
-  if (s.type === "Storage") { drawParcelStorage(s, gu, u0, v0, u1, v1, z0, z1, isSel); return; }
-  if (s.type === "Dorm") { drawParcelDorm(s, u0, v0, u1, v1, z0, z1, isSel, leftConnected); return; }
-  if (s.type === "RoofTerrace") { drawParcelRoofTerrace(s, u0, v0, u1, v1, z0, isSel, activeCount); return; }
-  if (s.type === "Corridor") { drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, leftConnected, rightSlot, rightConnected, backSlot, frontSlot); return; }
-  if (s.type === "Elevator") { drawParcelElevator(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftConnected, rightConnected, backConnected); return; }
+  if (s.type === "Empty") {
+    drawParcelEmpty(s, fIdx, sIdx, canBuildHere, showBuildGrid, gu, gv, u0, v0, u1, v1, z0, isSel);
+  } else if (s.type === "Reception") {
+    drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlot, rightSlot, backSlot);
+  } else if (s.type === "Kitchen") {
+    drawParcelKitchen(s, u0, v0, u1, v1, z0, z1, isSel, activeCount, leftConnected);
+  } else if (s.type === "Pool") {
+    drawParcelPool(s, u0, v0, u1, v1, z0, isSel, activeCount);
+  } else if (s.type === "Park") {
+    drawParcelPark(s, u0, v0, u1, v1, z0, isSel);
+  } else if (s.type === "Storage") {
+    drawParcelStorage(s, gu, u0, v0, u1, v1, z0, z1, isSel);
+  } else if (s.type === "Dorm") {
+    drawParcelDorm(s, u0, v0, u1, v1, z0, z1, isSel, leftConnected);
+  } else if (s.type === "RoofTerrace") {
+    drawParcelRoofTerrace(s, u0, v0, u1, v1, z0, isSel, activeCount);
+  } else if (s.type === "Corridor") {
+    drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, leftConnected, rightSlot, rightConnected, backSlot, frontSlot);
+  } else if (s.type === "Elevator") {
+    drawParcelElevator(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftConnected, rightConnected, backConnected);
+  } else {
+    // Oda, Tuvalet, Spor odası ve diğer tüm türler
+    const roomPoly = drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
+    drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, roomPoly);
+  }
 
-  // Oda, Tuvalet, Spor odası ve diğer tüm türler
-  const roomPoly = drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
-  drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, roomPoly);
+  // Üst kat açıkken alt kattaki çatılı yapıların üstünü beton çatı döşemesiyle kapat
+  if (typeof drawParcelRoofSlab === "function") {
+    drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1);
+  }
 }
 
 // ===== BUNDLED: render/parcel-empty.js =====
@@ -12217,6 +12233,86 @@ function drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, room
         }
         selectSlot(s);
       });
+  }
+}
+
+/**
+ * Üst kat görüntülenirken (viewFloor > fIdx) üstü boş kalan çatılı alt kat
+ * yapılarının tavanını beton plaka, hafif karo çizgileri ve çevre parapetle kapatır.
+ */
+function drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1) {
+  if (typeof viewFloor !== "number" || viewFloor <= fIdx) return;
+  if (!s || !isRoofedStructure(s.type) || s.type === "Elevator") return;
+  const aboveFl = (typeof floors !== "undefined" && floors[fIdx + 1]) ? floors[fIdx + 1] : null;
+  const aboveSlot = (aboveFl && aboveFl.slots) ? aboveFl.slots[sIdx] : null;
+  if (aboveSlot && aboveSlot.type !== "Empty") return;
+
+  const thickness = 5;
+  const zTop = z1;
+  const zBot = Math.max(0, zTop - thickness);
+
+  // Üst kat taban yüksekliğinde (üst kat z0 = z1) 5 birimlik açık beton plaka
+  isoBox(u0, v0, u1, v1, zBot, zTop, "#e3d9c8", "#c4b59d", "#ab9b82", OUTLINE_COL, 1.8);
+
+  // Üst yüzeyde hafif karo derz çizgileri
+  const steps = 4;
+  ctx.save();
+  ctx.strokeStyle = "rgba(138, 120, 96, 0.35)";
+  ctx.lineWidth = 1.0;
+  ctx.beginPath();
+  for (let i = 1; i < steps; i++) {
+    const u = u0 + (u1 - u0) * (i / steps);
+    const a = iso(u, v0 + 2, zTop);
+    const b = iso(u, v1 - 2, zTop);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+
+    const v = v0 + (v1 - v0) * (i / steps);
+    const c = iso(u0 + 2, v, zTop);
+    const d = iso(u1 - 2, v, zTop);
+    ctx.moveTo(c.x, c.y);
+    ctx.lineTo(d.x, d.y);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // Çevrede kısa parapet kenarı (komşu çatı ve üst kat yapılarıyla çakışmaz)
+  const { gu, gv } = parcelCoords(sIdx);
+  const fl = floors[fIdx];
+  const isEdgeClosed = (du, dv) => {
+    const nGu = gu + du, nGv = gv + dv;
+    if (nGu < 0 || nGu > 5 || nGv < 0 || nGv > 5) return false;
+    const nIdx = nGu * 6 + nGv;
+    const nAbove = (aboveFl && aboveFl.slots) ? aboveFl.slots[nIdx] : null;
+    if (nAbove && nAbove.type !== "Empty") return true;
+    const nSlot = (fl && fl.slots) ? fl.slots[nIdx] : null;
+    return !!(nSlot && isRoofedStructure(nSlot.type) && nSlot.type !== "Elevator");
+  };
+
+  const drawBack = !isEdgeClosed(-1, 0);
+  const drawLeft = !isEdgeClosed(0, -1);
+  const drawRight = !isEdgeClosed(0, 1);
+  const drawFront = !isEdgeClosed(1, 0);
+
+  const pW = 4;
+  const pH = 2.5;
+  const pTop = zTop + pH;
+
+  if (drawBack) {
+    isoBox(u0, v0, u0 + pW, v1, zTop, pTop, "#ede5d6", "#cfc1aa", "#b8a88f", OUTLINE_COL, 1.3);
+  }
+  if (drawLeft) {
+    const lu0 = drawBack ? u0 + pW : u0;
+    isoBox(lu0, v0, u1, v0 + pW, zTop, pTop, "#ede5d6", "#cfc1aa", "#b8a88f", OUTLINE_COL, 1.3);
+  }
+  if (drawRight) {
+    const ru0 = drawBack ? u0 + pW : u0;
+    isoBox(ru0, v1 - pW, u1, v1, zTop, pTop, "#ede5d6", "#cfc1aa", "#b8a88f", OUTLINE_COL, 1.3);
+  }
+  if (drawFront) {
+    const fv0 = drawLeft ? v0 + pW : v0;
+    const fv1 = drawRight ? v1 - pW : v1;
+    isoBox(u1 - pW, fv0, u1, fv1, zTop, pTop, "#ede5d6", "#cfc1aa", "#b8a88f", OUTLINE_COL, 1.3);
   }
 }
 
