@@ -42,12 +42,12 @@
     position: relative; display: flex; align-items: center;
     background: linear-gradient(180deg, #2b3c4e 0%, #1d2936 100%);
     border: 2.5px solid #3a281f; border-radius: 20px;
-    height: 36px; min-width: 104px; padding: 3px 12px 3px 34px;
+    height: 36px; min-width: 112px; padding: 3px 12px 3px 36px;
     box-shadow: 0 3px 0 rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.2);
     cursor: pointer;
   }
   .lv-fill {
-    position: absolute; left: 16px; top: 3px; bottom: 3px; width: 58%;
+    position: absolute; left: 16px; top: 3px; bottom: 3px; width: 0%;
     background: linear-gradient(180deg, #5cc9f5 0%, #2a8fde 100%);
     border-radius: 14px; z-index: 0; transition: width 0.25s;
   }
@@ -56,13 +56,14 @@
     background: radial-gradient(circle at 35% 35%, #8ce6ff 0%, #3ab0e8 70%, #1d7db3 100%);
     border: 2.5px solid #3a281f; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 900; color: #163247; text-shadow: 0 1px 0 #b8f2ff;
+    font-size: 18px; font-weight: 900; color: #163247; text-shadow: 0 1px 0 #b8f2ff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 2;
   }
   .lv-num {
     position: relative; z-index: 1; width: 100%; text-align: center;
-    font-size: 16px; font-weight: 900; color: #ffffff;
+    font-size: 13.5px; font-weight: 900; color: #ffffff;
     text-shadow: 0 1.5px 0 #16202b, -1px -1px 0 #16202b, 1px -1px 0 #16202b;
+    white-space: nowrap;
   }
   .star-pill {
     position: relative; display: flex; align-items: center; gap: 3px;
@@ -79,9 +80,29 @@
     font-size: 12px; font-weight: 900; color: #3a2208; text-shadow: 0 1px 0 #fff7b8;
     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   }
+  .star-lbl-ort {
+    font-size: 11px; font-weight: 800; color: #ffd426;
+    text-shadow: 0 1px 0 #3a281f; margin-left: 2px; margin-right: 2px;
+  }
   .star-icons {
     font-size: 16px; letter-spacing: 1px; color: #ffd426;
     text-shadow: 0 1.5px 0 #3a281f;
+  }
+
+  #hud-rep-balloon {
+    position: fixed; z-index: 100; max-width: 260px;
+    background: rgba(20, 30, 42, 0.96);
+    border: 1.5px solid #38bdf8; border-radius: 10px;
+    padding: 6px 10px; font-size: 11px; font-weight: 700; color: #f0f9ff;
+    line-height: 1.35; box-shadow: 0 4px 14px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.15);
+    pointer-events: none; opacity: 0; transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  #hud-rep-balloon.show { opacity: 1; transform: translateY(0); }
+  #hud-rep-balloon::before {
+    content: ""; position: absolute; top: -6px; left: 20px; width: 0; height: 0;
+    border-left: 6px solid transparent; border-right: 6px solid transparent;
+    border-bottom: 6px solid #38bdf8;
   }
 
   #hud-center-banner {
@@ -793,15 +814,16 @@
     
     .hud-top-left { gap: 4px; }
     .lv-pill {
-      height: 28px; min-width: 66px; padding: 2px 6px 2px 24px; font-size: 11px; border-width: 2px;
+      height: 28px; min-width: 74px; padding: 2px 6px 2px 25px; font-size: 11px; border-width: 2px;
     }
-    .lv-star-icon { width: 28px; height: 28px; font-size: 9.5px; left: -4px; top: -2px; border-width: 2px; }
-    .lv-num { font-size: 13px; }
+    .lv-star-icon { width: 28px; height: 28px; font-size: 13.5px; left: -4px; top: -2px; border-width: 2px; }
+    .lv-num { font-size: 11px; font-weight: 800; white-space: nowrap; letter-spacing: -0.3px; }
     
     .star-pill {
       height: 28px; padding: 2px 6px 2px 22px; border-width: 2px; gap: 2px;
     }
     .star-badge-num { width: 26px; height: 26px; font-size: 9.5px; left: -4px; top: -2px; border-width: 2px; }
+    .star-lbl-ort { display: none; }
     .star-icons { font-size: 11px; letter-spacing: 0.5px; }
 
     /* Orta Baslik: Mobilde sadece gun bilgisi kompakt rozet olarak gorunur */
@@ -911,13 +933,14 @@
   <div id="top-bar">
     <div id="top-left"></div>
     <div class="hud-top-left">
-      <div class="lv-pill" id="hud-lv-pill" title="Otel Seviyesi ve Gün">
+      <div class="lv-pill" id="hud-lv-pill" title="Otel İtibarı ve Yıldız İlerlemesi">
         <div class="lv-fill" id="hud-lv-fill"></div>
-        <div class="lv-star-icon">Lv</div>
-        <div class="lv-num" id="hud-lv-num">1</div>
+        <div class="lv-star-icon">🏅</div>
+        <div class="lv-num" id="hud-lv-num">0 / 250</div>
       </div>
-      <div class="star-pill" id="hud-star-pill" title="Otel Yıldızı ve Puanı">
+      <div class="star-pill" id="hud-star-pill" title="Misafir Ortalama Puanı">
         <div class="star-badge-num" id="hud-star-avg">0.0</div>
+        <span class="star-lbl-ort">Ort.</span>
         <div class="star-icons" id="hud-star-icons">☆☆☆☆</div>
       </div>
     </div>
@@ -2319,9 +2342,15 @@ function loadGame() {
     floors[0].slots[31].parcelBuilt = true;
 
     const cCount = Math.min(MaxCleaners, data.cleanerCount || 0);
+    const recSlot = floors[0].slots.find(s => s.type === "Reception") || floors[0].slots[32];
+    const recIdx = recSlot ? recSlot.idx : 32;
+    const recCenter = getSlotCenterIso(0, recIdx);
     for (let i = 0; i < cCount; i++) {
       const p = makePawn({ x: ElevX + 110 + i * 45, y: floors[0].WalkY }, pick(Skins), pick(Hairs), "#338c99");
-      p.speed = 70;
+      p.speed = 95;
+      p.isStaff = true;
+      p.isCleaner = true;
+      p.iso = { u: recCenter.u + (i % 3) * 15, v: recCenter.v + Math.floor(i / 3) * 10, z: recCenter.z };
       cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
     }
     syncStaffPawns();
@@ -3079,53 +3108,12 @@ function startLeaving(g, fromRoom = null) {
   // Müşteri odadaysa: Duvarlardan geçmeden, kapıdan çıkıp koridorları takip ederek resepsiyona yürü
   if (leaveRoom) {
     const doorPts = getRoomDoorPoints(leaveRoom);
-    const corrSlot = getRoomCorridorSlot(leaveRoom);
     if (!p.iso) {
       p.iso = { u: doorPts.roomTarget.u, v: doorPts.roomTarget.v, z: doorPts.roomTarget.z };
     }
-    // 1) Oda içinden kapı eşiğine
-    exitPath.push(doorPts.inside);
-    // 2) Kapıdan geçerek koridora çık
-    exitPath.push(doorPts.outside);
-
-    if (leaveRoom.floor.idx === 0) {
-      if (corrSlot) {
-        const revPath = findCorridorSlotPath(0, corrSlot.idx, 26);
-        for (const sIdx of revPath) {
-          exitPath.push(getSlotCenterIso(0, sIdx));
-        }
-      }
-      // 26. Koridordan Resepsiyon kemerli geçişine
-      exitPath.push({ u: 975, v: 505, z: 8 });
-      // Resepsiyon merkezine
-      exitPath.push({ u: 940, v: 505, z: 8 });
-    } else {
-      // Üst kat: Koridordan o kattaki asansöre yürü
-      const elevF = floors[leaveRoom.floor.idx].slots.find(s => s.type === "Elevator");
-      const elevCorrF = getElevatorCorridorSlot(elevF);
-      if (corrSlot && elevCorrF) {
-        const toElevPath = findCorridorSlotPath(leaveRoom.floor.idx, corrSlot.idx, elevCorrF.idx);
-        for (const sIdx of toElevPath) {
-          exitPath.push(getSlotCenterIso(leaveRoom.floor.idx, sIdx));
-        }
-      }
-      const elev0 = floors[0].slots.find(s => s.type === "Elevator");
-      if (elev0) {
-        const elevB0 = slotIsoBox(0, elev0.idx);
-        const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: getSlotCenterIso(leaveRoom.floor.idx, 0).z };
-        const elevPt0 = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: 8 };
-        exitPath.push(elevPtF);
-        exitPath.push(elevPt0);
-        const elevCorr0 = getElevatorCorridorSlot(elev0);
-        if (elevCorr0) {
-          const fromElevPath = findCorridorSlotPath(0, elevCorr0.idx, 26);
-          for (const sIdx of fromElevPath) {
-            exitPath.push(getSlotCenterIso(0, sIdx));
-          }
-        }
-      }
-      exitPath.push({ u: 975, v: 505, z: 8 });
-      exitPath.push({ u: 1070, v: 488, z: 8 });
+    const rPath = buildIsoRouteFromRoomToReception(leaveRoom);
+    for (const pt of rPath) {
+      exitPath.push(pt);
     }
   }
 
@@ -3172,63 +3160,8 @@ function placeGuestIntoRoom(g, room, price, byAuto = false) {
   const p = g.pawn;
   p.pos = { x: room.X0 + SlotW * 0.5, y: room.floor.WalkY };
   if (!p.iso) p.iso = { u: 940, v: 505, z: 8 };
-  const rIso = slotIsoBox(room.floor.idx, room.idx);
-  const roomTarget = { u: rIso.u0 + 105, v: rIso.v0 + 105, z: rIso.z0 + 8 };
-
-  const toRoomPath = [];
-  const doorPts = getRoomDoorPoints(room);
-  const corrSlot = getRoomCorridorSlot(room);
-
-  // Resepsiyon bankosundan arka kemerli koridor geçişine adım at
-  toRoomPath.push({ u: 975, v: 505, z: 8 });
-
-  if (room.floor.idx === 0) {
-    // 0. Kat: 26. koridordan odanın kapısının baktığı koridora kadar koridor merkezlerini takip et
-    if (corrSlot) {
-      const slotPath = findCorridorSlotPath(0, 26, corrSlot.idx);
-      for (const sIdx of slotPath) {
-        toRoomPath.push(getSlotCenterIso(0, sIdx));
-      }
-    }
-    // Koridordan kapı önüne gel
-    toRoomPath.push(doorPts.outside);
-    // Kapıdan geçerek odaya gir
-    toRoomPath.push(doorPts.inside);
-    // Oda içine / yatağa yürü
-    toRoomPath.push(doorPts.roomTarget);
-  } else {
-    // Üst Kat: Resepsiyon koridorundan 0. kat asansörüne yürü
-    const elev0 = floors[0].slots.find(s => s.type === "Elevator");
-    const elevCorr0 = getElevatorCorridorSlot(elev0);
-    if (elevCorr0) {
-      const toElevPath = findCorridorSlotPath(0, 26, elevCorr0.idx);
-      for (const sIdx of toElevPath) {
-        toRoomPath.push(getSlotCenterIso(0, sIdx));
-      }
-    }
-    if (elev0) {
-      const elevB0 = slotIsoBox(0, elev0.idx);
-      const elevPt0 = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: 8 };
-      const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: rIso.z0 + 8 };
-      toRoomPath.push(elevPt0);
-      toRoomPath.push(elevPtF);
-    }
-    // Hedef katta asansörden oda koridoruna geç
-    const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator");
-    const elevCorrF = getElevatorCorridorSlot(elevF);
-    if (elevCorrF && corrSlot) {
-      const fPath = findCorridorSlotPath(room.floor.idx, elevCorrF.idx, corrSlot.idx);
-      for (const sIdx of fPath) {
-        toRoomPath.push(getSlotCenterIso(room.floor.idx, sIdx));
-      }
-    }
-    toRoomPath.push(doorPts.outside);
-    toRoomPath.push(doorPts.inside);
-    toRoomPath.push(doorPts.roomTarget);
-  }
-
   p.speed = 95;
-  p.isoPath = toRoomPath;
+  p.isoPath = buildIsoRouteToRoom(p.iso, room);
   p.onIsoArrive = () => {
     p.iso = null;
     onGuestInRoom(g);
@@ -4091,12 +4024,15 @@ function cleanDirt(d) {
   if (sel === "Slot") refreshPanel();
 }
 
+let lastCleanerNoToolLog = -999;
+
 function pickCleanTarget() {
   let best = null;
   for (const s of allSlots) {
     if (s.floor.state !== "Built" || s.onFire) continue;
     if (s.type !== "Room" && s.type !== "Toilet") continue;
     if (s.maintenance >= 85) continue;
+    if (!s.hasDoor || !getRoomDoorWall(s) || !getRoomCorridorSlot(s)) continue;
     if (cleaners.some(c => c.target === s)) continue;
     if (!best || s.maintenance < best.maintenance) best = s;
   }
@@ -4113,25 +4049,75 @@ function updateCleaners(dt) {
       if (!t) { c.idleTimer = 2; continue; }
       if (tools < 1) {
         c.idleTimer = 3.5;
+        const nowSec = (typeof timeNow === "number" ? timeNow : Date.now() / 1000);
+        if (nowSec - lastCleanerNoToolLog >= 30) {
+          lastCleanerNoToolLog = nowSec;
+          log("Temizlikçi alet bekliyor, Mağaza'dan alet al.");
+        }
         floatText(p.pos.x, p.pos.y + 125, "Alet yok!", "#cc2929");
+        continue;
+      }
+      const route = buildIsoRouteToRoom(p.iso, t);
+      if (!route || route.length === 0) {
+        c.idleTimer = 2;
         continue;
       }
       tools--;
       floatText(p.pos.x, p.pos.y + 125, "-1 Alet (Temizlik)", "#2666cc");
       refreshHud();
-      c.target = t; c.state = 1; p.path = [];
-      addPath(p, floorOf(p.pos.y), t.floor.idx, t.X0 + SlotW * 0.5 + rnd(-50, 50));
-      p.onArrive = () => {
-        c.state = 2; c.cleanLeft = 3 + (100 - c.target.maintenance) / 14;
-        c.pawn.exercise = true;
+      c.target = t;
+      c.state = 1;
+      p.path = [];
+      p.onArrive = null;
+      p.speed = 95;
+      p.isoPath = route;
+      p.onIsoArrive = () => {
+        c.state = 2;
+        c.cleanLeft = 3 + (100 - c.target.maintenance) / 14;
+        p.exercise = true;
       };
+    } else if (c.state === 1) {
+      if (c.target && c.target.onFire) {
+        p.exercise = false;
+        const prevTarget = c.target;
+        c.target = null;
+        c.state = 3;
+        p.speed = 95;
+        p.isoPath = buildIsoRouteFromRoomToReception(prevTarget);
+        p.onIsoArrive = () => {
+          c.state = 0;
+          c.idleTimer = 1.5;
+        };
+      }
     } else if (c.state === 2) {
+      if (!c.target || c.target.onFire) {
+        p.exercise = false;
+        const finishedTarget = c.target;
+        c.target = null;
+        c.state = 3;
+        p.speed = 95;
+        p.isoPath = finishedTarget ? buildIsoRouteFromRoomToReception(finishedTarget) : [{ u: 940, v: 505, z: 8 }];
+        p.onIsoArrive = () => {
+          c.state = 0;
+          c.idleTimer = 1.5;
+        };
+        continue;
+      }
       c.cleanLeft -= dt;
       c.target.maintenance = Math.min(100, c.target.maintenance + 14 * dt);
       if (c.cleanLeft <= 0) {
-        p.exercise = false; c.state = 0; c.idleTimer = 1.5; c.target = null;
+        p.exercise = false;
+        const finishedTarget = c.target;
+        c.target = null;
         if (sel === "Slot") refreshPanel();
         saveGame();
+        c.state = 3;
+        p.speed = 95;
+        p.isoPath = buildIsoRouteFromRoomToReception(finishedTarget);
+        p.onIsoArrive = () => {
+          c.state = 0;
+          c.idleTimer = 1.5;
+        };
       }
     }
   }
@@ -4360,8 +4346,14 @@ function hireCleaner() {
     return;
   }
   if (!pay(CleanerHire)) return;
+  const recSlot = floors[0].slots.find(s => s.type === "Reception") || floors[0].slots[32];
+  const recIdx = recSlot ? recSlot.idx : 32;
+  const spawnPt = getSlotCenterIso(0, recIdx);
   const p = makePawn({ x: ElevW + 40, y: floors[0].WalkY }, pick(Skins), "#f2f2f2", "#3373cc");
-  p.speed = 70;
+  p.speed = 95;
+  p.isStaff = true;
+  p.isCleaner = true;
+  p.iso = { u: spawnPt.u + (cleaners.length % 3) * 15, v: spawnPt.v + Math.floor(cleaners.length / 3) * 10, z: spawnPt.z };
   cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
   play("build"); log("Temizlikçi işe alındı (Bakım yaparken 1 Alet kullanır).");
   saveGame();
@@ -4816,6 +4808,117 @@ function findCorridorSlotPath(fIdx, fromSlotIdx, toSlotIdx) {
   }
 
   return [fromSlotIdx, toSlotIdx];
+}
+
+// Resepsiyondan veya başlangıç noktasından hedef odaya izometrik rota oluşturur
+function buildIsoRouteToRoom(startPoint, room) {
+  if (!room || !room.floor) return [];
+  const doorPts = getRoomDoorPoints(room);
+  const corrSlot = getRoomCorridorSlot(room);
+  if (!doorPts) return [];
+  const rIso = slotIsoBox(room.floor.idx, room.idx);
+  const toRoomPath = [];
+
+  // Resepsiyon bankosundan arka kemerli koridor geçişine adım at
+  toRoomPath.push({ u: 975, v: 505, z: 8 });
+
+  if (room.floor.idx === 0) {
+    // 0. Kat: 26. koridordan odanın kapısının baktığı koridora kadar koridor merkezlerini takip et
+    if (corrSlot) {
+      const slotPath = findCorridorSlotPath(0, 26, corrSlot.idx);
+      for (const sIdx of slotPath) {
+        toRoomPath.push(getSlotCenterIso(0, sIdx));
+      }
+    }
+    toRoomPath.push(doorPts.outside);
+    toRoomPath.push(doorPts.inside);
+    toRoomPath.push(doorPts.roomTarget);
+  } else {
+    // Üst Kat: Resepsiyon koridorundan 0. kat asansörüne yürü
+    const elev0 = floors[0].slots.find(s => s.type === "Elevator");
+    const elevCorr0 = getElevatorCorridorSlot(elev0);
+    if (elevCorr0) {
+      const toElevPath = findCorridorSlotPath(0, 26, elevCorr0.idx);
+      for (const sIdx of toElevPath) {
+        toRoomPath.push(getSlotCenterIso(0, sIdx));
+      }
+    }
+    if (elev0) {
+      const elevB0 = slotIsoBox(0, elev0.idx);
+      const elevPt0 = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: 8 };
+      const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: rIso.z0 + 8 };
+      toRoomPath.push(elevPt0);
+      toRoomPath.push(elevPtF);
+    }
+    // Hedef katta asansörden oda koridoruna geç
+    const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator");
+    const elevCorrF = getElevatorCorridorSlot(elevF);
+    if (elevCorrF && corrSlot) {
+      const fPath = findCorridorSlotPath(room.floor.idx, elevCorrF.idx, corrSlot.idx);
+      for (const sIdx of fPath) {
+        toRoomPath.push(getSlotCenterIso(room.floor.idx, sIdx));
+      }
+    }
+    toRoomPath.push(doorPts.outside);
+    toRoomPath.push(doorPts.inside);
+    toRoomPath.push(doorPts.roomTarget);
+  }
+  return toRoomPath;
+}
+
+// Odadan resepsiyona geri dönüş izometrik rotası oluşturur
+function buildIsoRouteFromRoomToReception(room) {
+  if (!room || !room.floor) return [];
+  const exitPath = [];
+  const doorPts = getRoomDoorPoints(room);
+  const corrSlot = getRoomCorridorSlot(room);
+  if (!doorPts) return [];
+
+  // 1) Oda içinden kapı eşiğine
+  exitPath.push(doorPts.inside);
+  // 2) Kapıdan geçerek koridora çık
+  exitPath.push(doorPts.outside);
+
+  if (room.floor.idx === 0) {
+    if (corrSlot) {
+      const revPath = findCorridorSlotPath(0, corrSlot.idx, 26);
+      for (const sIdx of revPath) {
+        exitPath.push(getSlotCenterIso(0, sIdx));
+      }
+    }
+    // 26. Koridordan Resepsiyon kemerli geçişine
+    exitPath.push({ u: 975, v: 505, z: 8 });
+    // Resepsiyon merkezine
+    exitPath.push({ u: 940, v: 505, z: 8 });
+  } else {
+    // Üst kat: Koridordan o kattaki asansöre yürü
+    const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator");
+    const elevCorrF = getElevatorCorridorSlot(elevF);
+    if (corrSlot && elevCorrF) {
+      const toElevPath = findCorridorSlotPath(room.floor.idx, corrSlot.idx, elevCorrF.idx);
+      for (const sIdx of toElevPath) {
+        exitPath.push(getSlotCenterIso(room.floor.idx, sIdx));
+      }
+    }
+    const elev0 = floors[0].slots.find(s => s.type === "Elevator");
+    if (elev0) {
+      const elevB0 = slotIsoBox(0, elev0.idx);
+      const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: getSlotCenterIso(room.floor.idx, 0).z };
+      const elevPt0 = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: 8 };
+      exitPath.push(elevPtF);
+      exitPath.push(elevPt0);
+      const elevCorr0 = getElevatorCorridorSlot(elev0);
+      if (elevCorr0) {
+        const fromElevPath = findCorridorSlotPath(0, elevCorr0.idx, 26);
+        for (const sIdx of fromElevPath) {
+          exitPath.push(getSlotCenterIso(0, sIdx));
+        }
+      }
+    }
+    exitPath.push({ u: 975, v: 505, z: 8 });
+    exitPath.push({ u: 1070, v: 488, z: 8 });
+  }
+  return exitPath;
 }
 
 // ===== BUNDLED: logic/day.js =====
@@ -5493,8 +5596,9 @@ function onAction(i) {
       return;
     }
 
-    // Oda Eşyası Satın Alma / 4x4 Izgarada Seçme & Taşıma
-    if (s.type === "Room" && i !== ActCount - 1) {
+    // Oda Eşyası Satın Alma / 4x4 Izgarada Seçme & Taşıma / Oda Yükseltme
+    const isSpecialRoomAct = (i === ActCount - 1) && (s.onFire || s.hasCorpse || (s.guest && s.guest.room === s) || pending);
+    if (s.type === "Room" && !isSpecialRoomAct) {
       ensureRoomFurnLayout(s);
       if (i === ItemCount + 1 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1 && (!s.hasDoor || s.maintenance >= 99.5)) {
         cycleRoomDoorWall(s);
@@ -5568,9 +5672,8 @@ function onAction(i) {
           if (pay(upCost)) {
             s.level = curLvl + 1;
             play("build");
-            reputation += 15;
             if (typeof floatText === "function") {
-              floatText(camCenter.x, camCenter.y, "⭐ Oda Sv." + s.level + " Yükseltildi! (+15 İtibar)", "#f59e0b");
+              floatText(camCenter.x, camCenter.y, "⭐ Oda Sv." + s.level + " Yükseltildi!", "#f59e0b");
             }
             log("🌟 " + s.roomNo + ". oda Seviye " + s.level + "'e yükseltildi! Özel halı, saray tablosu, lüks perdeler ve şık yatak örtüsü eklendi.");
             saveGame();
@@ -5860,14 +5963,60 @@ function hudCoinBurst(n) {
   }
 }
 
+let _repBalloonTimer = null;
+function showReputationBalloon() {
+  const pill = document.getElementById("hud-lv-pill");
+  if (!pill) return;
+  const st = stars();
+  const target = st === 0 ? Star1 : st === 1 ? Star2 : Star3;
+  const rep = Math.floor(reputation);
+  let text = "";
+  if (st >= 3) {
+    text = "İtibar: " + rep + " (Maksimum 3 yıldıza ulaşıldı!). Misafir memnuniyeti ve özel misafirlerle artar.";
+  } else {
+    const rem = Math.max(0, target - rep);
+    text = "İtibar: sonraki yıldıza " + rem + " puan kaldı. Misafir memnuniyeti ve özel misafirlerle artar.";
+  }
+
+  let balloon = document.getElementById("hud-rep-balloon");
+  if (!balloon) {
+    balloon = document.createElement("div");
+    balloon.id = "hud-rep-balloon";
+    document.body.appendChild(balloon);
+  }
+
+  balloon.textContent = text;
+
+  const rect = pill.getBoundingClientRect();
+  const leftPos = Math.max(8, Math.min(window.innerWidth - 240, rect.left));
+  balloon.style.left = leftPos + "px";
+  balloon.style.top = (rect.bottom + 6) + "px";
+
+  balloon.classList.remove("show");
+  void balloon.offsetWidth;
+  balloon.classList.add("show");
+
+  if (_repBalloonTimer) clearTimeout(_repBalloonTimer);
+  _repBalloonTimer = setTimeout(() => {
+    if (balloon) balloon.classList.remove("show");
+  }, 3000);
+}
+
 function refreshHud() {
   const st = stars();
   const target = st === 0 ? Star1 : st === 1 ? Star2 : Star3;
   const prevTarget = st === 0 ? 0 : st === 1 ? Star1 : st === 2 ? Star2 : Star3;
-  const lv = Math.max(1, 1 + builtRooms + st * 3 + Math.floor((day - 1) / 2));
-  const repPct = clamp(((reputation - prevTarget) / Math.max(1, target - prevTarget)) * 100, 12, 100);
-  if (hudLvNum) hudLvNum.textContent = String(lv);
-  if (hudLvFill) hudLvFill.style.width = Math.round(repPct) + "%";
+  const repPct = st >= 3 ? 100 : clamp(((reputation - prevTarget) / Math.max(1, target - prevTarget)) * 100, 0, 100);
+  if (hudLvNum) {
+    if (st >= 3) {
+      hudLvNum.textContent = String(Math.floor(reputation));
+    } else {
+      hudLvNum.textContent = Math.floor(reputation) + " / " + target;
+    }
+  }
+  if (hudLvFill) {
+    hudLvFill.style.width = (repPct > 0 ? clamp(Math.round(repPct), 8, 100) : 0) + "%";
+  }
 
   const avgNum = ratingCount > 0 ? (ratingSum / ratingCount) : (st > 0 ? (3.0 + st * 0.5) : 0.0);
   if (hudStarAvg) hudStarAvg.textContent = ratingCount > 0 ? avgNum.toFixed(1) : (st > 0 ? String(st) + ".0" : "0.0");
@@ -6340,22 +6489,9 @@ document.getElementById("hud-center-banner").onclick = () => {
 };
 document.getElementById("hud-lv-pill").onclick = () => {
   play("tap");
-  const st = stars();
-  const target = st === 0 ? Star1 : st === 1 ? Star2 : Star3;
-  const prevTarget = st === 0 ? 0 : st === 1 ? Star1 : st === 2 ? Star2 : Star3;
-  const curLv = Math.max(1, 1 + builtRooms + st * 3 + Math.floor((day - 1) / 2));
-  const repPct = Math.round(clamp(((reputation - prevTarget) / Math.max(1, target - prevTarget)) * 100, 0, 100));
-  
-  alert(
-    "🏨 OTEL SEVİYESİ: Lv. " + curLv + "\n" +
-    "════════════════════════════\n" +
-    "Seviyeniz otelinizin büyüklüğünü ve prestijini temsil eder:\n" +
-    "• İnşa Edilen Odalar: +" + builtRooms + " Seviye\n" +
-    "• Otel Yıldız Derecesi: +" + (st * 3) + " Seviye\n" +
-    "• İşletilen Gün Sayısı: +" + Math.floor((day - 1) / 2) + " Seviye\n\n" +
-    "⭐ Yıldız İlerlemesi: %" + repPct + " (" + reputation + "/" + target + " İtibar)\n\n" +
-    "💡 İPUCU: Seviyeniz arttıkça şehirden daha zengin misafirler ve VIP müşteriler otelinize akın eder!"
-  );
+  if (typeof showReputationBalloon === "function") {
+    showReputationBalloon();
+  }
 };
 document.getElementById("hud-star-pill").onclick = () => { play("tap"); selectMode("Ach"); openDrawer("upgrade"); };
 document.getElementById("satisfaction-card").onclick = () => { play("tap"); openGuestBook(); };
@@ -6967,8 +7103,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 36;
-const APP_VERSION_NAME = "1.9.28-beta";
+const APP_VERSION_CODE = 37;
+const APP_VERSION_NAME = "1.9.29-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -12763,7 +12899,7 @@ function loop(now) {
   // Kisi Hareketleri & Olulerin / Uzanmislarin Temizligi
   for (let i = pawns.length - 1; i >= 0; i--) {
     const p = pawns[i];
-    if (p.dead || (p.iso && p.iso.v >= 1140)) {
+    if (p.dead || (!p.isStaff && !p.isCleaner && p.iso && p.iso.v >= 1140)) {
       pawns.splice(i, 1);
       continue;
     }
