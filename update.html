@@ -4109,6 +4109,10 @@ function updateCleaners(dt) {
         p.exercise = false;
         const finishedTarget = c.target;
         c.target = null;
+        if (finishedTarget && typeof floatText === "function") {
+          floatText(finishedTarget.X0 + SlotW * 0.5, finishedTarget.floor.BaseY + FloorH * 0.65, "✨ Oda temizlendi", "#10b981");
+        }
+        p.cleanSparkleEndT = (typeof timeNow === "number" ? timeNow : 0) + 1.0;
         if (sel === "Slot") refreshPanel();
         saveGame();
         c.state = 3;
@@ -7099,8 +7103,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 38;
-const APP_VERSION_NAME = "1.9.30-beta";
+const APP_VERSION_CODE = 39;
+const APP_VERSION_NAME = "1.9.31-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -12581,6 +12585,9 @@ function drawIsoPawn(p, pt, uvz) {
     drawSleepingCharacter(p, pt, uvz);
     return;
   }
+  const cleanerObj = (p.isCleaner && typeof cleaners !== "undefined" && Array.isArray(cleaners)) ? cleaners.find(c => c && c.pawn === p) : null;
+  const isCleaning = cleanerObj && cleanerObj.state === 2;
+
   ctx.save();
   ctx.translate(pt.x, pt.y);
   const sc = (p.scale || 1) * 0.84;
@@ -12602,10 +12609,43 @@ function drawIsoPawn(p, pt, uvz) {
   ctx.fillStyle = p.shirt || "#4d8cd9";
   ctx.beginPath(); ctx.roundRect(-12, -27, 24, 23, 8); ctx.fill(); ctx.stroke();
 
-  // Yürürken kolların ritmik salınımı
-  ctx.fillStyle = p.skin || "#fcd9b8";
-  ctx.beginPath(); ctx.arc(-14, -15 + (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(14, -15 - (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  if (p.isCleaner) {
+    // Açık mavi temizlikçi önlüğü ve askıları
+    ctx.fillStyle = "#38bdf8";
+    ctx.strokeStyle = OUTLINE_COL;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.roundRect(-10, -25, 20, 21, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    // Askılar
+    ctx.fillStyle = "#0284c7";
+    ctx.fillRect(-9, -27, 3.5, 4);
+    ctx.fillRect(5.5, -27, 3.5, 4);
+
+    // Beyaz önlük cebi
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#0284c7";
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.roundRect(-5.5, -16, 11, 8, 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Cepte sarı temizlik bezi ucu
+    ctx.fillStyle = "#fbbf24";
+    ctx.beginPath();
+    ctx.arc(0, -16, 2.8, 0, Math.PI);
+    ctx.fill();
+  }
+
+  // Yürürken kolların ritmik salınımı (temizlik yaparken eller paspası tutacak şekilde özelleştirilir)
+  if (!p.isCleaner || !isCleaning) {
+    ctx.fillStyle = p.skin || "#fcd9b8";
+    ctx.beginPath(); ctx.arc(-14, -15 + (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(14, -15 - (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  }
 
   ctx.fillStyle = p.hair || "#2b1d12";
   ctx.beginPath(); ctx.arc(0, -43, 15.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -12670,6 +12710,225 @@ function drawIsoPawn(p, pt, uvz) {
     // Çantadan görünen beyaz rulo gazeteler
     ctx.fillStyle = "#fcfbfa";
     ctx.beginPath(); ctx.roundRect(-10, -26, 7, 6, 2); ctx.fill(); ctx.stroke();
+  } else if (p.isCleaner) {
+    // Açık mavi temizlik bandanası (alında kafa bandı ve yan fiyonk)
+    ctx.fillStyle = "#38bdf8";
+    ctx.strokeStyle = OUTLINE_COL;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.roundRect(-14, -48, 28, 6.5, 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(-13.5, -45, 3.5, 2.5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    if (isCleaning) {
+      // 2) Temizlik Animasyonu (state === 2): paspas ile düzenli süpürme hareketi (~2 tur/sn)
+      const sweep = Math.sin((timeNow || 0) * Math.PI * 4);
+
+      // Yere bırakılmış sarı temizlik kovası
+      ctx.fillStyle = "#eab308";
+      ctx.strokeStyle = OUTLINE_COL;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-20, -11);
+      ctx.lineTo(-12, -11);
+      ctx.lineTo(-13.5, 1);
+      ctx.lineTo(-18.5, 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fde047";
+      ctx.beginPath(); ctx.ellipse(-16, -11, 4.2, 1.8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#7dd3fc";
+      ctx.beginPath(); ctx.ellipse(-16, -11, 3.2, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(-16, -11, 4.5, Math.PI, 0); ctx.stroke();
+
+      // Paspas sapı
+      ctx.strokeStyle = "#92400e";
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(3 - sweep * 2, -26);
+      ctx.lineTo(12 + sweep * 12, 1);
+      ctx.stroke();
+
+      // Paspas ucu (yerde süpüren püskül)
+      ctx.save();
+      ctx.translate(12 + sweep * 12, 1);
+      ctx.rotate(sweep * 0.22);
+      ctx.fillStyle = "#f1f5f9";
+      ctx.strokeStyle = OUTLINE_COL;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.roundRect(-6.5, -4, 13, 6, 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-4, -2); ctx.lineTo(-4, 2);
+      ctx.moveTo(0, -2); ctx.lineTo(0, 2);
+      ctx.moveTo(4, -2); ctx.lineTo(4, 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Paspası tutan eller
+      ctx.fillStyle = p.skin || "#fcd9b8";
+      ctx.strokeStyle = OUTLINE_COL;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(4 - sweep * 2, -18, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(8 + sweep * 4, -12, 3.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+      // 3) Efektler: Yükselen 5 sabun köpüğü (deterministik, Math.random yok)
+      for (let bi = 0; bi < 5; bi++) {
+        const seed = (p.id ? (p.id * 73) : 19) + bi * 31.7;
+        const bPhase = (((timeNow || 0) * 0.6 + bi * 0.22) % 1.0);
+        const bx = Math.sin(seed + bPhase * 2.2) * 22 + (bi % 2 === 0 ? 8 : -8);
+        const by = -2 - bPhase * 44 + Math.cos(seed * 1.5) * 4;
+        const br = 2.0 + (bi % 3) * 0.9;
+        const bAlpha = Math.sin(bPhase * Math.PI) * 0.85;
+        ctx.fillStyle = "rgba(186, 230, 253, " + (bAlpha * 0.45) + ")";
+        ctx.strokeStyle = "rgba(125, 211, 252, " + bAlpha + ")";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(255, 255, 255, " + bAlpha + ")";
+        ctx.beginPath(); ctx.arc(bx - br * 0.35, by - br * 0.35, br * 0.32, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // 3) Efektler: Ara sıra yerde beliren ✨ parıltı yıldızları (deterministik)
+      for (let si = 0; si < 2; si++) {
+        const sSeed = (p.id ? (p.id * 43) : 29) + si * 53.1;
+        const sPhase = (((timeNow || 0) * 1.15 + si * 0.52) % 1.0);
+        if (sPhase < 0.45) {
+          const sAlpha = Math.sin((sPhase / 0.45) * Math.PI);
+          const sx = Math.sin(sSeed) * 20 + (si === 0 ? 10 : -6);
+          const sy = 0 - Math.abs(Math.cos(sSeed)) * 8;
+          const ss = sAlpha * 3.8;
+          ctx.fillStyle = "rgba(254, 240, 138, " + sAlpha + ")";
+          ctx.beginPath();
+          ctx.moveTo(sx, sy - ss);
+          ctx.lineTo(sx + ss * 0.32, sy);
+          ctx.lineTo(sx + ss, sy);
+          ctx.lineTo(sx + ss * 0.32, sy);
+          ctx.lineTo(sx, sy + ss);
+          ctx.lineTo(sx - ss * 0.32, sy);
+          ctx.lineTo(sx - ss, sy);
+          ctx.lineTo(sx - ss * 0.32, sy);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      // 4) İlerleme çubuğu (odanın bakım/temizlik yüzdesi %0 - %100)
+      const roomMaint = (cleanerObj && cleanerObj.target && typeof cleanerObj.target.maintenance === "number") ? cleanerObj.target.maintenance : 100;
+      const pct = Math.round(Math.min(100, Math.max(0, roomMaint)));
+      ctx.save();
+      ctx.translate(0, -68);
+      if (p.facing < 0) ctx.scale(-1, 1);
+      const barW = 34, barH = 5.5;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(-barW / 2, -barH / 2, barW, barH, 2.5);
+      ctx.fill();
+      ctx.stroke();
+
+      const fillW = Math.max(1, (barW - 2) * (pct / 100));
+      ctx.fillStyle = pct >= 80 ? "#10b981" : (pct >= 50 ? "#06b6d4" : "#f59e0b");
+      ctx.beginPath();
+      ctx.roundRect(-barW / 2 + 1, -barH / 2 + 1, fillW, barH - 2, 1.5);
+      ctx.fill();
+
+      ctx.font = "bold 8px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+      ctx.shadowBlur = 2;
+      ctx.fillText("%" + pct, 0, -barH / 2 - 1);
+      ctx.restore();
+
+    } else {
+      // 1) Yürürken / beklemede alet taşıma pozisyonu (kova sol elde, paspas sağ elde)
+      // Sarı temizlik kovası
+      ctx.save();
+      ctx.translate(-15, -12 + (walk ? s * 3.5 : 0));
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 3.5, 0.15 * Math.PI, 0.85 * Math.PI, true);
+      ctx.stroke();
+      ctx.fillStyle = "#eab308";
+      ctx.strokeStyle = OUTLINE_COL;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(-4, 3);
+      ctx.lineTo(4, 3);
+      ctx.lineTo(3.2, 12);
+      ctx.lineTo(-3.2, 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fde047";
+      ctx.beginPath(); ctx.ellipse(0, 3, 4, 1.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+
+      // Paspas (omuzda / elde dik tutulur)
+      ctx.save();
+      ctx.translate(14, -13 - (walk ? s * 3.5 : 0));
+      ctx.rotate(0.25);
+      ctx.strokeStyle = "#92400e";
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-2, 14);
+      ctx.lineTo(3, -24);
+      ctx.stroke();
+      ctx.fillStyle = "#f1f5f9";
+      ctx.strokeStyle = OUTLINE_COL;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(-2, -30, 9, 7, 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // 5) Bitiş: 1 saniyelik ✨ parıltı patlaması (state 2 -> 3 geçişi sonrasında)
+  if (p.cleanSparkleEndT && (timeNow || 0) < p.cleanSparkleEndT) {
+    const elapsed = 1.0 - (p.cleanSparkleEndT - (timeNow || 0));
+    if (elapsed >= 0 && elapsed <= 1.0) {
+      ctx.save();
+      ctx.translate(0, -28);
+      for (let k = 0; k < 10; k++) {
+        const ang = k * (Math.PI / 5) + elapsed * 1.5;
+        const rad = 8 + elapsed * 38;
+        const kx = Math.cos(ang) * rad * 1.2;
+        const ky = Math.sin(ang) * rad * 0.7;
+        const kAlpha = Math.max(0, 1.0 - elapsed);
+        const kSize = (1.0 - elapsed * 0.4) * 5.0;
+        ctx.fillStyle = "rgba(254, 240, 138, " + kAlpha + ")";
+        ctx.beginPath();
+        ctx.moveTo(kx, ky - kSize);
+        ctx.lineTo(kx + kSize * 0.32, ky);
+        ctx.lineTo(kx + kSize, ky);
+        ctx.lineTo(kx + kSize * 0.32, ky);
+        ctx.lineTo(kx, ky + kSize);
+        ctx.lineTo(kx - kSize * 0.32, ky);
+        ctx.lineTo(kx - kSize, ky);
+        ctx.lineTo(kx - kSize * 0.32, ky);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
   }
 
   ctx.restore();

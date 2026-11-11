@@ -1,8 +1,8 @@
 {
-  "versionCode": 38,
-  "versionName": "1.9.30-beta",
+  "versionCode": 39,
+  "versionName": "1.9.31-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.30-beta:\n1. Oyun İsmi: Oyunun ismi 'TheHotel' olarak güncellendi.\n2. Arayüz & HUD: HUD otel başlığı, ana menü ve sistem bildirimleri yeni isme uyarlandı."
+  "notes": "v1.9.31-beta:\n1. Temizlikçi Görseli: Temizlikçi üniforması (açık mavi önlük, bandana) ve alet taşıma pozisyonu (kova, paspas).\n2. Temizlik Animasyonu: İzometrik süpürme hareketi, sabun köpükleri ve ara sıra beliren parıltı efektleri.\n3. İlerleme & Bitiş: Baş üstünde bakım ilerleme çubuğu ve oda temizlendiğinde parıltı patlaması."
 }
