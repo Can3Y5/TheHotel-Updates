@@ -1,8 +1,8 @@
 {
-  "versionCode": 37,
-  "versionName": "1.9.29-beta",
+  "versionCode": 38,
+  "versionName": "1.9.30-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.29-beta:\n1. İtibar ve HUD: Oda yükseltmesinden itibar verme kaldırıldı, HUD'a dinamik itibar madalyası ve dokunmatik bilgi balonu eklendi.\n2. Temizlikçi İzometrik Hareketi: Temizlikçi hareketi 3D izometrik koridor ve asansör rotasına taşındı, alet bekleme uyarısı optimize edildi.\n3. Oda Yükseltme Mantığı: Oda yükseltme butonu aktifleştirildi, kademeli seviye artışı güvenceye alındı."
+  "notes": "v1.9.30-beta:\n1. Oyun İsmi: Oyunun ismi 'TheHotel' olarak güncellendi.\n2. Arayüz & HUD: HUD otel başlığı, ana menü ve sistem bildirimleri yeni isme uyarlandı."
 }
