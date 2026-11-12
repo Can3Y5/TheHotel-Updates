@@ -7103,8 +7103,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 42;
-const APP_VERSION_NAME = "1.9.34-beta";
+const APP_VERSION_CODE = 43;
+const APP_VERSION_NAME = "1.9.35-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -11461,22 +11461,25 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
     isoBox(u0 + 45, v0, u1 - 45, v0 + 10, z0 + 68, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
     isoBox(u0 + 43, v0 - 1, u1 - 43, v0 + 11, z0 + 66, z0 + 70, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
   } else if (leftHasDoorToCorr) {
-    // Sol komşu WC veya Odanın kapısı bu koridora bakıyor: Kapı açıklığını bırak, üstüne kemer kirişi çiz
+    // Sol komşu WC, Oda veya Spor odasının kapısı bu koridora bakıyor: alçak kesit süpürgelik (oda içi görünsün)
     const ud0 = u0 + 95, ud1 = u0 + 135;
-    isoBox(u0, v0, ud0, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(ud1, v0, u1, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(ud0, v0, ud1, v0 + 10, z0 + 64, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
-    isoBox(ud0 - 2, v0 - 1, ud1 + 2, v0 + 11, z0 + 63, z0 + 67, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+    isoBox(u0, v0, ud0, v0 + 10, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(u0, v0 + 9, ud0, v0 + 12, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+    isoBox(ud1, v0, u1, v0 + 10, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(ud1, v0 + 9, u1, v0 + 12, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
   } else if (!leftConnected) {
     // Dış cephe: Sağlam kapalı duvar & lambri
     isoBox(u0, v0, u1, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
     isoBox(u0, v0 + 9, u1, v0 + 12, z0, z0 + 7, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
     isoBox(u0, v0 + 9, u1, v0 + 12, z0 + 40, z0 + 43, "#c98b56", "#a86e3b", "#8a5426", null, 0);
   } else {
-    // Komşu bir oda/tesis ise sağlam bölme duvarı
-    isoBox(u0, v0, u1, v0 + 10, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(u0, v0 + 9, u1, v0 + 12, z0, z0 + 7, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+    // Komşu bir oda/tesis ise alçak kesit bölme süpürgeliği
+    isoBox(u0, v0, u1, v0 + 10, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(u0, v0 + 9, u1, v0 + 12, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
   }
+
+  // Saksı Palmiye Ağacı (Sağ duvar çiziminden önce: dolu dış/asansör duvarının önünde havada kalmasın)
+  drawPottedPlant(u0 + 25, v0 + 155, z0, 0.95);
 
   // Sağ Bölme Duvarı (v = v1)
   const rightIsElev = rightSlot && rightSlot.type === "Elevator";
@@ -11503,12 +11506,12 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
     isoBox(u0 + 45, v1 - 10, u1 - 45, v1, z0 + 68, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
     isoBox(u0 + 43, v1 - 11, u1 - 43, v1 + 1, z0 + 66, z0 + 70, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
   } else if (rightHasDoorToCorr) {
-    // Sağ komşu WC veya Odanın kapısı bu koridora bakıyor: Kapı açıklığını bırak, üstüne kemer kirişi çiz
+    // Sağ komşu WC, Oda veya Spor odasının kapısı bu koridora bakıyor: alçak kesit süpürgelik (oda içi görünsün)
     const ud0 = u0 + 95, ud1 = u0 + 135;
-    isoBox(u0, v1 - 10, ud0, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(ud1, v1 - 10, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(ud0, v1 - 10, ud1, v1, z0 + 64, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
-    isoBox(ud0 - 2, v1 - 11, ud1 + 2, v1 + 1, z0 + 63, z0 + 67, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+    isoBox(u0, v1 - 10, ud0, v1, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(u0, v1 - 12, ud0, v1 - 9, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+    isoBox(ud1, v1 - 10, u1, v1, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(ud1, v1 - 12, u1, v1 - 9, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
   } else if (!rightConnected) {
     // Dış cephe: Sağlam kapalı duvar & pencereli hol sonu
     isoBox(u0, v1 - 10, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
@@ -11520,9 +11523,9 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
     // Pencere Denizliği & Ahşap Çerçeve Çıtası
     isoBox(u0 + 58, v1 - 14, u0 + 137, v1 - 8, z0 + 36, z0 + 39, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
   } else {
-    // Komşu oda/tesis varsa sağlam bölme duvarı
-    isoBox(u0, v1 - 10, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(u0, v1 - 12, u1, v1 - 9, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
+    // Komşu oda/tesis varsa alçak kesit bölme süpürgeliği
+    isoBox(u0, v1 - 10, u1, v1, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(u0, v1 - 12, u1, v1 - 9, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
   }
 
   // Koridor Mobilyaları: Yürüyüş yolunu ve kapı açıklığını kapatmayacak şekilde
@@ -11535,9 +11538,6 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
     isoBox(u0 + 18, v0 + 70, u0 + 21, v0 + 73, z0, z0 + 4, "#ffd700", "#d4af37", "#a38218", null, 0);
     isoBox(u0 + 41, v0 + 70, u0 + 44, v0 + 73, z0, z0 + 4, "#ffd700", "#d4af37", "#a38218", null, 0);
   }
-
-  // Saksı Palmiye Ağacı (Arka sağ köşe)
-  drawPottedPlant(u0 + 25, v0 + 155, z0, 0.95);
 
   // Tavandan Sarkan Kristal Avize (Merkez yolluğun üstünde)
   isoBox(u0 + 94, v0 + 94, u0 + 101, v0 + 101, z1 - 18, z1, "#ffd700", "#d4af37", "#a38218", null, 0);
