@@ -1812,63 +1812,183 @@ function itemSpan(k, rot) {
   return rot ? { du: fp.h, dv: fp.w } : { du: fp.w, dv: fp.h };
 }
 
-function canPlaceFurnAt(s, key, ru, rv, rot) {
+function rectsOverlap(ru1, rv1, du1, dv1, ru2, rv2, du2, dv2) {
+  return ru1 < ru2 + du2 && ru1 + du1 > ru2 && rv1 < rv2 + dv2 && rv1 + dv1 > rv2;
+}
+
+function canPlaceInLayout(layout, isKeyActive, key, ru, rv, rot) {
   const { du, dv } = itemSpan(key, rot);
   // Oda derinliği 3 kare (ru: 0..2), genişliği 4 kare (rv: 0..3). Ön 2 kare koridordur!
   if (ru < 0 || rv < 0 || ru + du > 3 || rv + dv > 4) return false;
   const fp = ITEM_FOOTPRINTS[key];
   if (fp && fp.wall) return true; // Duvar/tavan eşyaları zemindeki mobilyalarla çakışmaz
-  ensureRoomFurnLayout(s);
   for (let k = 0; k <= 9; k++) {
-    if (k === key) continue;
-    const isPresent = (k === 9) ? s.hasEnsuite : (k === 4 ? true : !!s.items[k]);
-    if (!isPresent) continue;
+    if (k === key || !isKeyActive(k)) continue;
     const otherFp = ITEM_FOOTPRINTS[k];
     if (otherFp && otherFp.wall) continue;
-    const pos = s.furnLayout[k];
+    const pos = layout[k];
     if (!pos) continue;
     const osp = itemSpan(k, pos.rot || 0);
-    const overlapU = ru < pos.ru + osp.du && ru + du > pos.ru;
-    const overlapV = rv < pos.rv + osp.dv && rv + dv > pos.rv;
-    if (overlapU && overlapV) return false;
+    if (rectsOverlap(ru, rv, du, dv, pos.ru, pos.rv, osp.du, osp.dv)) return false;
   }
   return true;
 }
 
-function findFirstFreeFurnSpot(s, key, preferRot = 0) {
-  for (const r of [preferRot, 1 - preferRot]) {
+function canPlaceFurnAt(s, key, ru, rv, rot) {
+  ensureRoomFurnLayout(s);
+  return canPlaceInLayout(
+    s.furnLayout,
+    (k) => (k === 9) ? s.hasEnsuite : (k === 4 ? true : !!s.items[k]),
+    key, ru, rv, rot
+  );
+}
+
+function findSpotInLayout(layout, isKeyActive, key, preferRot = 0) {
+  const pRot = preferRot ? 1 : 0;
+  const fp = ITEM_FOOTPRINTS[key];
+  if (fp && fp.wall) {
+    const wu = Math.min(2, Math.max(0, fp.defU || 0));
+    const wv = Math.min(3, Math.max(0, fp.defV || 0));
+    return { ru: wu, rv: wv, rot: pRot };
+  }
+  for (const r of [pRot, 1 - pRot]) {
     for (let rv = 0; rv < 4; rv++) {
       for (let ru = 0; ru < 3; ru++) {
-        if (canPlaceFurnAt(s, key, ru, rv, r)) return { ru, rv, rot: r };
+        if (canPlaceInLayout(layout, isKeyActive, key, ru, rv, r)) return { ru, rv, rot: r };
       }
     }
   }
-  const fp = ITEM_FOOTPRINTS[key] || { defU: 0, defV: 0 };
-  return { ru: fp.defU, rv: fp.defV, rot: 0 };
+  return null;
+}
+
+function findFirstFreeFurnSpot(s, key, preferRot = 0) {
+  ensureRoomFurnLayout(s);
+  return findSpotInLayout(
+    s.furnLayout,
+    (k) => (k === 9) ? s.hasEnsuite : (k === 4 ? true : !!s.items[k]),
+    key, preferRot
+  );
 }
 
 function autoArrangeRoom(s) {
   if (!s || s.type !== "Room") return;
-  s.furnLayout = {};
-  // 3x4 Oda İçi Düzen (Ön 2 kare doğrudan koridordur! Mobilyalar 3x4 odaya yerleşir)
-  // 1) Özel Banyo (2x2) -> sol-arka köşe (0,0)
-  if (s.hasEnsuite) s.furnLayout[9] = { ru: 0, rv: 0, rot: 0 };
-  // 2) Yatak (2x1) -> sağ-arka (ru: 0, rv: 2)
-  s.furnLayout[4] = { ru: 0, rv: 2, rot: 0 };
-  // 3) Dolap (2x1) -> sol-orta (ru: 1, rv: 0) veya (ru: 0, rv: 1)
-  if (s.items[IDolap]) s.furnLayout[IDolap] = s.hasEnsuite ? { ru: 2, rv: 0, rot: 1 } : { ru: 1, rv: 0, rot: 0 };
-  // 4) Masa (2x1) -> sağ-ön (ru: 1, rv: 3)
-  if (s.items[IMasa]) s.furnLayout[IMasa] = { ru: 1, rv: 3, rot: 0 };
-  // 5) Çocuk Yatağı / Beşik (1x1) -> (ru: 2, rv: 2)
-  if (s.items[IBebek]) s.furnLayout[IBebek] = { ru: 2, rv: 2, rot: 0 };
-  // 6) Mini Buzdolabı (1x1) -> (ru: 2, rv: 0)
-  if (s.items[IBuz]) s.furnLayout[IBuz] = { ru: 2, rv: 0, rot: 0 };
-  // 7) TV (1x1) -> masanın üzeri veya komodin (ru: 2, rv: 3)
-  if (s.items[ITv]) s.furnLayout[ITv] = { ru: 2, rv: 3, rot: 0 };
-  // 8) Duvar/Tavan eşyaları
-  if (s.items[IAmpul]) s.furnLayout[IAmpul] = { ru: 1, rv: 1, rot: 0 };
-  if (s.items[IKamera]) s.furnLayout[IKamera] = { ru: 0, rv: 0, rot: 0 };
-  if (s.items[IKlima]) s.furnLayout[IKlima] = { ru: 0, rv: 3, rot: 0 };
+  const prev = (s.furnLayout && typeof s.furnLayout === "object") ? s.furnLayout : {};
+  const placed = {};
+  const isPlaced = (k) => !!placed[k];
+
+  // 1) İki derinlikli kolonlar (ru: 0..1, rot: 0) — yüksekten alçağa soldan sağa (rv: 0..3)
+  const colKeys = [];
+  if (s.hasEnsuite) colKeys.push(IBanyo);
+  if (s.items[IDolap]) colKeys.push(IDolap);
+  colKeys.push(4); // Yatak her zaman odada bulunur
+  if (s.items[IMasa]) colKeys.push(IMasa);
+
+  for (let i = 0; i < colKeys.length; i++) {
+    const key = colKeys[i];
+    let spot = (i < 4 && canPlaceInLayout(placed, isPlaced, key, 0, i, 0))
+      ? { ru: 0, rv: i, rot: 0 }
+      : null;
+    if (!spot) spot = findSpotInLayout(placed, isPlaced, key, 0);
+    if (spot) placed[key] = spot;
+  }
+
+  // 2) Ön sıra (ru: 2) 1x1 eşyalar — yüksek Buzdolabı en sağda (rv: 3..0), alçak Beşik/TV solda (rv: 0..3)
+  if (s.items[IBuz]) {
+    let spot = null;
+    for (let rv = 3; rv >= 0; rv--) {
+      if (canPlaceInLayout(placed, isPlaced, IBuz, 2, rv, 0)) {
+        spot = { ru: 2, rv, rot: 0 };
+        break;
+      }
+    }
+    if (!spot) spot = findSpotInLayout(placed, isPlaced, IBuz, 0);
+    if (spot) placed[IBuz] = spot;
+  }
+
+  for (const key of [IBebek, ITv]) {
+    if (!s.items[key]) continue;
+    let spot = null;
+    for (let rv = 0; rv < 4; rv++) {
+      if (canPlaceInLayout(placed, isPlaced, key, 2, rv, 0)) {
+        spot = { ru: 2, rv, rot: 0 };
+        break;
+      }
+    }
+    if (!spot) spot = findSpotInLayout(placed, isPlaced, key, 0);
+    if (spot) placed[key] = spot;
+  }
+
+  // 3) Duvar/Tavan eşyaları: varsa mevcut konumları korunur, yoksa varsayılan duvar konumu atanır
+  const wallDefaults = [
+    [IAmpul, { ru: 1, rv: 1, rot: 0 }],
+    [IKamera, { ru: 0, rv: 0, rot: 0 }],
+    [IKlima, { ru: 0, rv: 3, rot: 0 }]
+  ];
+  for (const [key, defPos] of wallDefaults) {
+    if (!s.items[key]) continue;
+    const p = prev[key];
+    placed[key] = (p && typeof p.ru === "number" && typeof p.rv === "number")
+      ? { ru: p.ru, rv: p.rv, rot: p.rot || 0 }
+      : { ru: defPos.ru, rv: defPos.rv, rot: defPos.rot };
+  }
+
+  s.furnLayout = placed;
+}
+
+// 2^6 = 64 zemin eşyası kombinasyonunda çakışma ve 3x4 sınır doğrulaması
+function testAllRoomFurnCombinations() {
+  const optKeys = [IBanyo, IDolap, IMasa, IBebek, ITv, IBuz];
+  const total = 1 << optKeys.length;
+  let passed = 0, overlaps = 0, outOfBounds = 0, missing = 0;
+  const failures = [];
+
+  for (let mask = 0; mask < total; mask++) {
+    const dummy = {
+      type: "Room",
+      hasEnsuite: !!(mask & 1),
+      items: new Array(ItemCount).fill(false),
+      furnLayout: {}
+    };
+    if (mask & 2) dummy.items[IDolap] = true;
+    if (mask & 4) dummy.items[IMasa] = true;
+    if (mask & 8) dummy.items[IBebek] = true;
+    if (mask & 16) dummy.items[ITv] = true;
+    if (mask & 32) dummy.items[IBuz] = true;
+
+    autoArrangeRoom(dummy);
+
+    const grid = [[null, null, null, null], [null, null, null, null], [null, null, null, null]];
+    const activeFloorKeys = [4];
+    for (const k of optKeys) {
+      const pres = (k === IBanyo) ? dummy.hasEnsuite : !!dummy.items[k];
+      if (pres) activeFloorKeys.push(k);
+    }
+
+    let ok = true;
+    for (const k of activeFloorKeys) {
+      const pos = dummy.furnLayout[k];
+      if (!pos) { missing++; ok = false; failures.push({ mask, k, err: "missing" }); continue; }
+      const sp = itemSpan(k, pos.rot || 0);
+      if (pos.ru < 0 || pos.rv < 0 || pos.ru + sp.du > 3 || pos.rv + sp.dv > 4) {
+        outOfBounds++; ok = false; failures.push({ mask, k, err: "oob", pos, sp });
+        continue;
+      }
+      for (let u = pos.ru; u < pos.ru + sp.du; u++) {
+        for (let v = pos.rv; v < pos.rv + sp.dv; v++) {
+          if (grid[u][v] !== null) {
+            overlaps++; ok = false; failures.push({ mask, k, other: grid[u][v], u, v });
+          } else {
+            grid[u][v] = k;
+          }
+        }
+      }
+      if (!canPlaceFurnAt(dummy, k, pos.ru, pos.rv, pos.rot || 0)) {
+        ok = false; failures.push({ mask, k, err: "canPlaceFurnAt_false" });
+      }
+    }
+    if (ok) passed++;
+  }
+  return { total, passed, overlaps, outOfBounds, missing, failures };
 }
 
 // 6x6 Parsel Komşuluk & İnşa Edilebilirlik Kontrolleri (Zemin Kat Yola Paralel 8 Parsel: gv = -1..6, gu = 5)
@@ -3986,18 +4106,34 @@ function tryPlacePendingBodyguards() {
 // ===== BUNDLED: logic/housekeeping.js =====
 // [logic/housekeeping.js] Kir, temizlik, bakım ve eşya kurulumu
 function installItem(s, k) {
-  if (s.items[k]) return;
+  if (s.items[k]) return false;
+  let spot = null;
+  if (typeof findFirstFreeFurnSpot === "function") {
+    spot = findFirstFreeFurnSpot(s, k, typeof furnRot === "number" ? furnRot : 0);
+    if (!spot) {
+      play("reject");
+      log("⚠️ Odada yer yok! Önce bir eşyayı çıkar veya yerini değiştir.");
+      return false;
+    }
+  }
   const cost = (typeof getItemCost === "function") ? getItemCost(k) : ItemCosts[k];
   if (stock[k] > 0) {
-    stock[k]--; s.items[k] = true; play("build");
+    stock[k]--; s.items[k] = true;
+    if (spot && s.furnLayout) s.furnLayout[k] = spot;
+    play("build");
     log(s.roomNo + ". oda: " + ItemNames[k] + " depodan takıldı.");
     saveGame();
+    return true;
   } else if (pay(cost)) {
-    s.items[k] = true; play("build");
+    s.items[k] = true;
+    if (spot && s.furnLayout) s.furnLayout[k] = spot;
+    play("build");
     const hikeTag = (marketEvent && marketEvent.active && marketEvent.itemKey === k && marketEvent.daysLeft > 0) ? (marketEvent.isHike ? " (Zamlı)" : " (İndirimli)") : "";
     log(s.roomNo + ". oda: " + ItemNames[k] + " eklendi (" + cost + " TL" + hikeTag + ").");
     saveGame();
+    return true;
   }
+  return false;
 }
 
 // Dış kirler ve aletler
@@ -5629,13 +5765,23 @@ function onAction(i) {
             furnRot = (s.furnLayout[IBanyo] && s.furnLayout[IBanyo].rot) || 0;
             play("tap");
             log("🚿 Özel Banyo (2x2) seçildi. Odadaki 4x4 ızgarada taşımak istediğin kareye dokun!");
-          } else if (hasReadyRoom() && pay(CostEnsuite)) {
-            s.hasEnsuite = true;
-            s.furnLayout[IBanyo] = findFirstFreeFurnSpot(s, IBanyo, furnRot);
-            furnSelectedKey = IBanyo;
-            play("build");
-            log("🚿 " + s.roomNo + ". odaya Özel Banyo (2x2) eklendi! Odadaki karelere dokunarak yerini değiştirebilirsin.");
-            saveGame();
+          } else if (hasReadyRoom()) {
+            const spot = findFirstFreeFurnSpot(s, IBanyo, furnRot);
+            if (!spot) {
+              play("reject");
+              log("⚠️ Odada yer yok! Önce bir eşyayı çıkar veya yerini değiştir.");
+              refresh();
+              return;
+            }
+            if (pay(CostEnsuite)) {
+              s.hasEnsuite = true;
+              s.furnLayout[IBanyo] = spot;
+              furnRot = spot.rot || 0;
+              furnSelectedKey = IBanyo;
+              play("build");
+              log("🚿 " + s.roomNo + ". odaya Özel Banyo (2x2) eklendi! Odadaki karelere dokunarak yerini değiştirebilirsin.");
+              saveGame();
+            }
           }
         }
         refresh();
@@ -5657,10 +5803,18 @@ function onAction(i) {
           refresh();
           return;
         } else {
-          // Satın al veya depodan tak ve 4x4 ızgarada ilk uygun yere yerleştir + seçili yap
-          installItem(s, k);
-          if (s.items[k]) {
-            s.furnLayout[k] = findFirstFreeFurnSpot(s, k, furnRot);
+          // Yer kontrolü (hem satın alma hem depodan takma öncesi)
+          const spot = findFirstFreeFurnSpot(s, k, furnRot);
+          if (!spot) {
+            play("reject");
+            log("⚠️ Odada yer yok! Önce bir eşyayı çıkar veya yerini değiştir.");
+            refresh();
+            return;
+          }
+          // Satın al veya depodan tak ve uygun yere yerleştir + seçili yap
+          if (installItem(s, k) && s.items[k]) {
+            s.furnLayout[k] = spot;
+            furnRot = spot.rot || 0;
             furnSelectedKey = k;
             log(ITEM_FOOTPRINTS[k].icon + " " + ItemNames[k] + " odaya yerleştirildi! Yerini değiştirmek için odadaki 4x4 karelerden birine dokun.");
             saveGame();
@@ -6412,10 +6566,16 @@ document.getElementById("btn-furn-rot").onclick = () => {
         saveGame();
       } else {
         const spot = findFirstFreeFurnSpot(selSlot, furnSelectedKey, newRot);
-        curPos.ru = spot.ru; curPos.rv = spot.rv; curPos.rot = spot.rot;
-        furnRot = spot.rot;
-        log("🔄 " + ITEM_FOOTPRINTS[furnSelectedKey].name + " uygun kareye döndürüldü.");
-        saveGame();
+        if (!spot) {
+          furnRot = curPos.rot || 0;
+          play("reject");
+          log("⚠️ Odada yer yok! Önce bir eşyayı çıkar veya yerini değiştir.");
+        } else {
+          curPos.ru = spot.ru; curPos.rv = spot.rv; curPos.rot = spot.rot;
+          furnRot = spot.rot;
+          log("🔄 " + ITEM_FOOTPRINTS[furnSelectedKey].name + " uygun kareye döndürüldü.");
+          saveGame();
+        }
       }
     }
   }
@@ -7103,8 +7263,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 43;
-const APP_VERSION_NAME = "1.9.35-beta";
+const APP_VERSION_CODE = 44;
+const APP_VERSION_NAME = "1.9.36-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"

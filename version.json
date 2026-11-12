@@ -1,8 +1,8 @@
 {
-  "versionCode": 43,
-  "versionName": "1.9.35-beta",
+  "versionCode": 44,
+  "versionName": "1.9.36-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.35-beta:\n1. Koridor Kesit Duvarları: Komşu oda/WC/spor salonu tarafındaki koridor bölme duvarları alçak süpürgelik kesitine indirildi; koridorun solundaki odaların yatak ve eşyalarının tam boy duvar arkasında gizlenmesi engellendi.\n2. Koridor Saksısı Çizim Sırası: Saksı sağ bölme duvarından önce çizilerek dış cephe penceresi/duvarı üstüne binme sorunu giderildi.\n3. Performans: Parsel önbellek isabet oranı %100 korundu."
+  "notes": "v1.9.36-beta:\n1. Çakışmasız Oda Otomatik Yerleşimi: 3x4 oda ızgarasında tüm eşya kombinasyonları (Banyo, Dolap, Yatak, Masa arkada soldan sağa yüksekten alçağa; Beşik/TV ön-sol, Buzdolabı ön-sağ) çakışmasız ve derinlik sıralı otomatik dizilir.\n2. Sığmayan Eşya Koruması: Oda doluysa hem yeni satın almada hem depodan eşya takmada ödeme/stok düşmeden işlem reddedilir ve uyarı verilir; mevcut kayıtlı oda düzenleri korunur.\n3. Doğrulama: 64 eşya kombinasyonunda 0 çakışma ve 0 sınır dışı hatası."
 }
