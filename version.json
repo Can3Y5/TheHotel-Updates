@@ -1,8 +1,8 @@
 {
-  "versionCode": 46,
-  "versionName": "1.9.38-beta",
+  "versionCode": 47,
+  "versionName": "1.9.39-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.38-beta:\n1. Kozmetik / Tema Altyapısı (0a): Oda kabuğu ve koridor renkleri temaya taşındı (Klasik, Modern, Deniz Kenarı).\n2. Katman ve Parsel Önbelleği Uyumu: setCosmetic ile tema değişiminde tüm katman ve parsel bitmap önbellekleri anında temizlenir (0 piksel gecikme).\n3. Kayıt ve Arayüz Desteği: Seçilen tema yerel kayıtta saklanır; ana menüde tema seçici butonlar eklendi."
+  "notes": "v1.9.39-beta:\n1. Belirgin Oda & Koridor Temaları: Modern (koyu antrasit/çelik/beton) ve Deniz Kenarı (turkuaz/kumsal meşe/mercan) temaları artık tüm duvar, prosedürel parke/mermer zemin, yolluk, halı, perde, kapı ve banklara yansır.\n2. Oyun İçi Tema Seçici: Üst çubuğa 3 renkli palet örnekli canlı tema seçici eklendi.\n3. Performans & Kayıt Düzeltmesi: Düzleştirilmiş palet sabitleri ile kare süresi optimize edildi; sayfa yenilemesinde kayıtlı tema koruması düzeltildi."
 }
