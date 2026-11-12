@@ -7103,8 +7103,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 40;
-const APP_VERSION_NAME = "1.9.32-beta";
+const APP_VERSION_CODE = 41;
+const APP_VERSION_NAME = "1.9.33-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -11989,14 +11989,20 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
     isoBox(u0, v0 + wallThick - 1, u1, v0 + wallThick + 2, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
   }
 
-  // D) Sağ Yan Duvar (v = v1)
+  // D) Sağ Yan Duvar (v = v1) -> Alçak kesit süpürgelik (eşyalar duvarın üstüne binmesin)
   if (doorWall === "right") {
     // Kapı sağ duvara (sağındaki koridora) açılıyor (40 birim: u0 + 95 .. u0 + 135)
     const ud0 = u0 + 95, ud1 = u0 + 135;
-    isoBox(u0, v1 - wallThick, ud0, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(ud1, v1 - wallThick, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
-    isoBox(ud0, v1 - wallThick, ud1, v1, z0 + 64, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.6);
-    isoBox(ud0 - 2, v1 - wallThick - 1, ud1 + 2, v1 + 1, z0 + 63, z0 + 67, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+    // Arka ve ön alçak süpürgelik & pervaz
+    isoBox(u0, v1 - wallThick, ud0, v1, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(u0, v1 - wallThick - 1, ud0, v1 - wallThick + 2, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+    isoBox(ud1, v1 - wallThick, u1, v1, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(ud1, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
+    // Kapı eşiği (mermer / pirinç geçiş çıtası)
+    isoQuad(ud0, v1 - wallThick - 1.5, ud1, v1 + 1.5, z0 + 0.3, "#e2d5c3", "#a89078", 1);
+    // Kapı söve dikmeleri (yaklaşık 3 birim kalınlık, z0..z0+26)
+    isoBox(ud0 - 1.5, v1 - wallThick - 0.5, ud0 + 1.5, v1 + 0.5, z0, z0 + 26, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
+    isoBox(ud1 - 1.5, v1 - wallThick - 0.5, ud1 + 1.5, v1 + 0.5, z0, z0 + 26, "#ffffff", "#ede8de", "#d5cfc4", OUTLINE_COL, 1.1);
 
     if (s.type === "Toilet") {
       // WC Kapı Kanadı (Sağ koridora açılan kapı)
@@ -12004,6 +12010,10 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(ud0 + 4, v1 - 5, ud0 + 7, v1 - 2, z0 + 30, z0 + 33, "#94a3b8", "#64748b", "#475569", null, 0);
       isoBox((ud0 + ud1) * 0.5 - 12, v1 - 0.5, (ud0 + ud1) * 0.5 + 12, v1 + 1.5, z0 + 48, z0 + 55, "#2563eb", "#1d4ed8", "#1e40af", OUTLINE_COL, 1);
       isoLabel("WC 🚻", (ud0 + ud1) * 0.5, v1 + 2, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+    } else if (s.type === "Gym") {
+      isoBox(ud0 + 2, v1 - wallThick - 6, ud0 + 6, v1 - 1, z0, z0 + 63, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.3);
+      isoBox((ud0 + ud1) * 0.5 - 14, v1 - 0.5, (ud0 + ud1) * 0.5 + 14, v1 + 1.5, z0 + 48, z0 + 55, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
+      isoLabel("GYM 🏋️", (ud0 + ud1) * 0.5, v1 + 2, z0 + 51.5, 7, "#ffffff", null, 0, 0);
     } else if (s.type === "Room") {
       // Pirinç Oda Plaketi (v1 yüzeyinde)
       isoBox((ud0 + ud1) * 0.5 - 6, v1 - wallThick - 2, (ud0 + ud1) * 0.5 + 6, v1 + 1, z0 + 48, z0 + 55, "#ffd700", "#d4af37", "#a38218", OUTLINE_COL, 1);
@@ -12019,8 +12029,12 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
     }
   } else if (rightSlot && rightSlot.type === "Reception") {
     // Resepsiyon ile otel odaları arasında tek duvar: Resepsiyon'un sol duvarı ortak duvardır, oda tarafında ikinci bir duvar çizilmez!
+  } else if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") {
+    // Sağlam kapalı sağ duvar -> Alçak kesit süpürgelik & pervaz
+    isoBox(u0, v1 - wallThick, u1, v1, z0, z0 + 14, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.2);
+    isoBox(u0, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0 + 12, z0 + 15, "#ffffff", "#ede8de", "#d5cfc4", null, 0);
   } else {
-    // Sağlam kapalı sağ duvar
+    // Room/Toilet/Gym dışındaki türlerde (örn. Doğalgaz) mevcut tam boy sağ duvar korunur
     isoBox(u0, v1 - wallThick, u1, v1, z0, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.8);
     isoBox(u0, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0, z0 + 7, "#ffffff", "#d5cfc4", "#ede8de", OUTLINE_COL, 1.1);
   }
@@ -12084,10 +12098,9 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
     isoBox(u1 - colSize, v1 - colSize, u1, v1, z0, z0 + 15, "#8c583a", "#faf7f2", "#ebe3d5", OUTLINE_COL, 1.1);
     isoBox(u1 - colSize - 0.5, v1 - colSize - 0.5, u1 + 0.5, v1 + 0.5, z0, z0 + 4, "#d4af37", "#b89628", "#9c7c1b", OUTLINE_COL, 1);
 
-    // Tavan Taç Çıtaları (Yalnızca kapalı arka ve yan duvarların üzerinde)
+    // Tavan Taç Çıtaları (Yalnızca tam boy arka ve sol duvarların üzerinde; sağ duvar alçak kesit)
     isoBox(u0, v0, u0 + 5, v1, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
     isoBox(u0, v0, u1, v0 + 5, z1 - 5, z1, "#8c583a", "#ebdcc7", "#fbf7ee", OUTLINE_COL, 1.1);
-    isoBox(u0, v1 - 5, u1, v1, z1 - 5, z1, "#8c583a", "#fbf7ee", "#ebdcc7", OUTLINE_COL, 1.1);
   }
   return roomPoly;
 }

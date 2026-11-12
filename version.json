@@ -1,8 +1,8 @@
 {
-  "versionCode": 40,
-  "versionName": "1.9.32-beta",
+  "versionCode": 41,
+  "versionName": "1.9.33-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.32-beta:\n1. Çatı Döşemesi: Üst kata geçildiğinde alttaki çatılı odaların, koridorların ve resepsiyonun üstü karo çizgili ve kısa parapetli beton döşemeyle kapatılır.\n2. Üst Kat İnşa Izgarası: İNŞA ET hücreleri döşemenin tam üst yüzüne oturur; asansör boşluğu ve açık alanlar (çim, havuz, park) kapanmaz.\n3. Zemin Kat Koruması: viewFloor = 0 görünümü ve parsel önbellek isabet oranı %100 korunmuştur."
+  "notes": "v1.9.33-beta:\n1. Oda Kesit Sağ Duvar: Oda, Genel WC ve Spor Salonu parsellerinin sağ yan duvarı ön kenarla uyumlu alçak kesit süpürgelik (z0..z0+14) haline getirildi; yatak ve eşyalar artık duvarın üstüne binmiyor.\n2. Sağ Kapı Açıklığı: Sağ duvardaki kapı açıklığına söve dikmeleri ve eşik eklendi; tavan sağ taç çıtası kaldırıldı.\n3. Önbellek & Uyumluluk: Diğer tüm bina/parsel türleri ve önbellek isabet oranı (%100) korundu."
 }
