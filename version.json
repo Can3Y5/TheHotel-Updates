@@ -1,8 +1,8 @@
 {
-  "versionCode": 47,
-  "versionName": "1.9.39-beta",
+  "versionCode": 48,
+  "versionName": "1.9.40-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.39-beta:\n1. Belirgin Oda & Koridor Temaları: Modern (koyu antrasit/çelik/beton) ve Deniz Kenarı (turkuaz/kumsal meşe/mercan) temaları artık tüm duvar, prosedürel parke/mermer zemin, yolluk, halı, perde, kapı ve banklara yansır.\n2. Oyun İçi Tema Seçici: Üst çubuğa 3 renkli palet örnekli canlı tema seçici eklendi.\n3. Performans & Kayıt Düzeltmesi: Düzleştirilmiş palet sabitleri ile kare süresi optimize edildi; sayfa yenilemesinde kayıtlı tema koruması düzeltildi."
+  "notes": "v1.9.40-beta:\n1. Resepsiyon & Lobi Temaları: Mermer zemin, duvarlar, ahşap banko ve çıtalar, logo plakası, tabela yazısı, lobi halısı ve koltuk artık seçili temaya göre değişir.\n2. Asansör Teması: Kule kolonları, damalı zemin, panoramik cam, kabin şasisi ve portal süslemeleri tema paletine bağlandı.\n3. Çatı Döşemesi & UI: Üst kat beton çatı döşemesi, karo derzleri ve parapet duvarları temaya uyarlandı; başlıklar 'Otel Teması' olarak güncellendi."
 }
