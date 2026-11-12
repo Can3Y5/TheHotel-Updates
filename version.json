@@ -1,8 +1,8 @@
 {
-  "versionCode": 44,
-  "versionName": "1.9.36-beta",
+  "versionCode": 45,
+  "versionName": "1.9.37-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.36-beta:\n1. Çakışmasız Oda Otomatik Yerleşimi: 3x4 oda ızgarasında tüm eşya kombinasyonları (Banyo, Dolap, Yatak, Masa arkada soldan sağa yüksekten alçağa; Beşik/TV ön-sol, Buzdolabı ön-sağ) çakışmasız ve derinlik sıralı otomatik dizilir.\n2. Sığmayan Eşya Koruması: Oda doluysa hem yeni satın almada hem depodan eşya takmada ödeme/stok düşmeden işlem reddedilir ve uyarı verilir; mevcut kayıtlı oda düzenleri korunur.\n3. Doğrulama: 64 eşya kombinasyonunda 0 çakışma ve 0 sınır dışı hatası."
+  "notes": "v1.9.37-beta:\n1. Elle Eşya Taşıma Koruması: Oda içi 3x4 ızgarada seçili eşya başka bir eşyanın kapladığı hücreye yerleştirilmeye çalışıldığında canPlaceFurnAt ile engellenir ve uyarı verilir; eşyanın kendi hücresine tıklama korunur.\n2. Doğrulama: Tüm parsel türlerinde 0 piksel farkı ve %100 parsel önbellek uyumu doğrulandı."
 }

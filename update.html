@@ -7263,8 +7263,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 44;
-const APP_VERSION_NAME = "1.9.36-beta";
+const APP_VERSION_CODE = 45;
+const APP_VERSION_NAME = "1.9.37-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -12298,15 +12298,20 @@ function drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, room
             }
             if (furnSelectedKey !== null) {
               const sp = itemSpan(furnSelectedKey, furnRot);
-              if (ru + sp.du <= 3 && rv + sp.dv <= 4) {
-                if (!s.furnLayout) s.furnLayout = {};
-                s.furnLayout[furnSelectedKey] = { ru, rv, rot: furnRot };
-                play("build");
-                refreshPanel();
-              } else {
+              if (ru + sp.du > 3 || rv + sp.dv > 4) {
                 play("reject");
                 log("Bu esya buraya sigmaz!");
+                return;
               }
+              if (!canPlaceFurnAt(s, furnSelectedKey, ru, rv, furnRot)) {
+                play("reject");
+                log("⚠️ Orası dolu! Başka bir kareye dokun.");
+                return;
+              }
+              if (!s.furnLayout) s.furnLayout = {};
+              s.furnLayout[furnSelectedKey] = { ru, rv, rot: furnRot };
+              play("build");
+              refreshPanel();
             } else {
               for (let k = 0; k <= 9; k++) {
                 const isPres = (k === 9) ? s.hasEnsuite : (k === 4 ? true : !!s.items[k]);
