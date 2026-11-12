@@ -1,8 +1,8 @@
 {
-  "versionCode": 41,
-  "versionName": "1.9.33-beta",
+  "versionCode": 42,
+  "versionName": "1.9.34-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.33-beta:\n1. Oda Kesit Sağ Duvar: Oda, Genel WC ve Spor Salonu parsellerinin sağ yan duvarı ön kenarla uyumlu alçak kesit süpürgelik (z0..z0+14) haline getirildi; yatak ve eşyalar artık duvarın üstüne binmiyor.\n2. Sağ Kapı Açıklığı: Sağ duvardaki kapı açıklığına söve dikmeleri ve eşik eklendi; tavan sağ taç çıtası kaldırıldı.\n3. Önbellek & Uyumluluk: Diğer tüm bina/parsel türleri ve önbellek isabet oranı (%100) korundu."
+  "notes": "v1.9.34-beta:\n1. Oda Eşyaları & Derinlik Sıralaması: Dolap, Masa/Sandalye, Beşik, Buzdolabı ve TV detaylandırıldı; oda içi zemin mobilyaları ön-sağ köşe derinliğine göre sıralanarak üst üste binme engellendi.\n2. Tesis Eşyaları: Genel WC (iki kabin, klozetler ve lavabo), Spor Salonu (koşu bandı, ağırlık sehpası, dambıl rafı) ve Doğalgaz ünitesi (borular, vana çarkı, manometre, uyarı şeridi) gerçekçi tasarlandı.\n3. Performans: Parsel önbellek isabet oranı %100 korundu."
 }
