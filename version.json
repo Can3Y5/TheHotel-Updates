@@ -1,8 +1,8 @@
 {
-  "versionCode": 45,
-  "versionName": "1.9.37-beta",
+  "versionCode": 46,
+  "versionName": "1.9.38-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.37-beta:\n1. Elle Eşya Taşıma Koruması: Oda içi 3x4 ızgarada seçili eşya başka bir eşyanın kapladığı hücreye yerleştirilmeye çalışıldığında canPlaceFurnAt ile engellenir ve uyarı verilir; eşyanın kendi hücresine tıklama korunur.\n2. Doğrulama: Tüm parsel türlerinde 0 piksel farkı ve %100 parsel önbellek uyumu doğrulandı."
+  "notes": "v1.9.38-beta:\n1. Kozmetik / Tema Altyapısı (0a): Oda kabuğu ve koridor renkleri temaya taşındı (Klasik, Modern, Deniz Kenarı).\n2. Katman ve Parsel Önbelleği Uyumu: setCosmetic ile tema değişiminde tüm katman ve parsel bitmap önbellekleri anında temizlenir (0 piksel gecikme).\n3. Kayıt ve Arayüz Desteği: Seçilen tema yerel kayıtta saklanır; ana menüde tema seçici butonlar eklendi."
 }

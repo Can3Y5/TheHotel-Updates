@@ -214,6 +214,14 @@
           <label for="hotel-name-input">🏨 Otel İsmi:</label>
           <input id="hotel-name-input" type="text" maxlength="18" value="TheHotel" placeholder="Otelinizin İsmi..." />
         </div>
+        <div class="theme-select-row" style="margin: 6px 0 8px 0; text-align: left;">
+          <label style="display:block; font-size:12px; font-weight:700; color:#5a4632; margin-bottom:4px;">🎨 Oda Teması:</label>
+          <div style="display:flex; gap:6px;">
+            <button type="button" id="theme-btn-classic" class="theme-btn m-btn" data-theme="classic" style="flex:1; padding:6px 2px; font-size:11px;">Klasik</button>
+            <button type="button" id="theme-btn-modern" class="theme-btn m-btn" data-theme="modern" style="flex:1; padding:6px 2px; font-size:11px;">Modern</button>
+            <button type="button" id="theme-btn-seaside" class="theme-btn m-btn" data-theme="seaside" style="flex:1; padding:6px 2px; font-size:11px;">Deniz</button>
+          </div>
+        </div>
         <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
         <button id="btn-new-game" class="m-btn" style="display:none">🆕 YENİ OYUN BAŞLAT</button>
         <div id="newgame-confirm-box">
@@ -321,6 +329,7 @@
 <script src="js/render/camera.js"></script>
 <script src="js/render/input.js"></script>
 <script src="js/render/primitives.js"></script>
+<script src="js/render/theme.js"></script>
 <script src="js/render/layers.js"></script>
 <script src="js/render/lighting.js"></script>
 <script src="js/render/shadows.js"></script>
