@@ -1,8 +1,8 @@
 {
-  "versionCode": 50,
-  "versionName": "1.9.42-beta",
+  "versionCode": 51,
+  "versionName": "1.9.43-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.42-beta:\n1. Tesis Parseli Temaları (0d-1): Mutfak/Restoran, Havuz, Park, Depo, Personel Lojmanı ve Çatı Terası & Bar parselleri seçili temaya (Klasik / Modern / Deniz Kenarı) uyum sağlar.\n2. Tema Görselliği: Modern temada koyu bazalt havuz güvertesi, antrasit-çelik mutfak/bar, grafit depo ve lojman; Deniz Kenarı temasında kumlu taş güverteler, beyaz-turkuaz bistro ve açık bal/tik meşesi dokuları eklendi.\n3. Klasik Koruma & Performans: Klasik tema piksel piksel aynı korundu; düz palet okuma yapısı ile kare süresi korundu."
+  "notes": "v1.9.43-beta:\n1. Oda İçi Tesis Ekipmanları ve Kalan Kalıntılar (0d-2): Tuvalet kabinleri/lavabo/ayna/kapı, Spor salonu ekipmanları/minder/kapı, Doğalgaz ünitesi gövdesi, oda tablosu çerçeveleri, üst kat balkonlar, pencere pirinç detayları ve koridor bölme duvarı/kemer/kapısı seçili temaya (Klasik / Modern / Deniz Kenarı) uyum sağlar.\n2. Zemin ve Tema Uyumları: Modern temada arduvaz/antrasit spor ve doğalgaz zeminleri ile çelik banyo detayı; Deniz Kenarı temasında tropikal su yeşili/okyanus mavisi banyo-spor zeminleri ve kumlu balkon taşları eklendi.\n3. Klasik Koruma & Kalite: Klasik görünüm piksel piksel korundu; kimlik tabelaları (WC/GYM), manzara tabloları ve güvenlik/gaz uyarı işaretleri sabit tutuldu."
 }
