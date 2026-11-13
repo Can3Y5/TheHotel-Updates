@@ -1,8 +1,8 @@
 {
-  "versionCode": 52,
-  "versionName": "1.9.44-beta",
+  "versionCode": 53,
+  "versionName": "1.9.45-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.44-beta:\n1. Kalan Tema Kalıntıları Tamamlandı (0d-3): Resepsiyon giriş basamağı, paspas, markiz tabelası ve arka koridor kemeri/sütunları/eşiği; Asansör kaidesi ve tavan LED spotu; Koridor teras kemer açıklığı, fenerler/avize, pencere pervazı ve WC/Spor kapıları; Hazır başlangıç beton/taş parseli seçili temaya (Klasik / Modern / Deniz Kenarı) tam uyum sağlar.\n2. Tema Bütünlüğü: Modern ve Deniz Kenarı temalarında asansör tavanındaki zeytin/hardal spot artığı ve başlangıç beton parsellerindeki sıcak krem boya uyumsuzlukları giderildi.\n3. Klasik Koruma: Klasik görünüm piksel piksel aynı bırakıldı; teklif noktası, monitör, camlar, kimlik tabelaları ve inşa etiketleri korundu."
+  "notes": "v1.9.45-beta:\n1. Elmas (💎) Ekonomisi ve 40 Başarım Sistemi (E1): 7 grupta 40 adet veri odaklı başarım (toplam 470 💎), HUD'da 🔧 alet sayacı ve tıklanabilir 💎 elmas sayacı, ilerleme çubuklu başarım paneli ve sıralı bildirim kuyruğu eklendi.\n2. Mevsim Uzunluğu & Kat Tutarlılığı: Mevsim süresi 25 güne (1 yıl = 100 gün) çıkarıldı; tüm kat isimleri/logları arayüzle (1. Kat = zemin) uyumlu hale getirildi.\n3. Kayıt Uyumluluğu & İyileştirmeler: Eski v1.9.44 kayıtları korunarak geriye dönük açılan başarımlar tek özet bildirimle açılır; açılışta kayıt yükleme sırası ve sekme ikonu düzeltildi."
 }

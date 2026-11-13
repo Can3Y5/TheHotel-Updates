@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>TheHotel</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏨</text></svg>">
 <style>
 * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: manipulation; margin: 0; padding: 0; }
   :root { --sat: env(safe-area-inset-top, 0px); }  /* çentik / durum çubuğu güvenli alanı (APK'da kenardan kenara çizimde dolar) */
@@ -135,10 +136,21 @@
     position: relative; display: flex; align-items: center; justify-content: center;
     background: linear-gradient(180deg, #2b3c4e 0%, #1d2936 100%);
     border: 2.5px solid #3a281f; border-radius: 20px;
-    height: 36px; min-width: 112px; padding: 3px 12px 3px 32px;
+    height: 36px; min-width: 96px; padding: 3px 11px 3px 31px;
     box-shadow: 0 3px 0 rgba(0,0,0,0.3);
-    font-size: 14px; font-weight: 900; color: #ffffff;
-    text-shadow: 0 1.5px 0 #141c26;
+    font-size: 13.5px; font-weight: 900; color: #ffffff;
+    text-shadow: 0 1.5px 0 #141c26; white-space: nowrap;
+  }
+  #hud-gem-pill {
+    min-width: 72px; cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+  }
+  #hud-gem-pill:active { transform: scale(0.95); }
+  #hud-gem-pill.gem-pulse { animation: gemPillPulse 0.48s ease-out; }
+  @keyframes gemPillPulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    40% { transform: scale(1.16); filter: brightness(1.25); box-shadow: 0 0 12px rgba(56, 189, 248, 0.88); }
+    100% { transform: scale(1); filter: brightness(1); }
   }
   .curr-icon {
     position: absolute; left: -5px; top: -3px; width: 38px; height: 38px;
@@ -153,6 +165,10 @@
   .curr-icon.gem {
     background: radial-gradient(circle at 35% 35%, #7ce8ff 0%, #29a3e8 72%, #14629c 100%);
     color: #ffffff; font-size: 15px;
+  }
+  .curr-icon.tool {
+    background: radial-gradient(circle at 35% 35%, #f1f5f9 0%, #94a3b8 72%, #475569 100%);
+    color: #0f172a; font-size: 15px;
   }
   .curr-plus-btn {
     margin-left: 7px; margin-right: -6px; width: 25px; height: 25px;
@@ -851,14 +867,18 @@
     #top-mid .tm-sep { display: inline; opacity: 0.75; }
     #top-mid .tm-ev-txt { display: inline; }
 
-    /* Sag Para & Elmas */
+    /* Sag Para, Elmas & Alet */
     .hud-top-right { gap: 3px; }
     .hud-currency-row { gap: 4px; }
     .curr-pill {
-      height: 28px; min-width: 68px; padding: 2px 6px 2px 22px; font-size: 11px; border-width: 2px;
+      height: 26px; min-width: auto; padding: 2px 7px 2px 21px; font-size: 10.5px; border-width: 2px;
     }
-    .curr-icon { width: 26px; height: 26px; font-size: 12px; left: -3px; top: -1px; border-width: 2px; }
-    .curr-plus-btn { width: 19px; height: 19px; font-size: 12px; margin-left: 3px; margin-right: -3px; }
+    #hud-money-pill { min-width: 62px; }
+    #hud-gem-pill { min-width: 44px; padding-right: 7px; }
+    #hud-tool-pill { min-width: 54px; padding-right: 4px; }
+    .curr-icon { width: 24px; height: 24px; font-size: 11px; left: -3px; top: -1px; border-width: 2px; }
+    .curr-icon.gem, .curr-icon.tool { font-size: 11px; }
+    .curr-plus-btn { width: 18px; height: 18px; font-size: 12px; margin-left: 3px; margin-right: -2px; }
 
     .hud-sub-pill { padding: 2px 5px; border-radius: 10px; gap: 4px; }
     .sub-icon-btn { width: 24px; height: 22px; font-size: 12px; border-radius: 6px; }
@@ -1010,6 +1030,168 @@
   }
   .igt-btn { padding: 5px 7px; font-size: 11px; }
 }
+
+@media (max-width: 540px) {
+  .lv-pill {
+    height: 26px; min-width: 60px; padding: 2px 5px 2px 22px; font-size: 10px;
+  }
+  .lv-star-icon { width: 25px; height: 25px; font-size: 11.5px; }
+  .lv-num { font-size: 10px; }
+  .star-pill {
+    height: 26px; padding: 2px 5px 2px 20px;
+  }
+  .star-badge-num { width: 24px; height: 24px; font-size: 9px; }
+  .star-icons { font-size: 10px; letter-spacing: 0px; }
+  .curr-pill {
+    height: 26px; padding: 2px 6px 2px 19px; font-size: 10px;
+  }
+  #hud-money-pill { min-width: 56px; }
+  #hud-gem-pill { min-width: 40px; padding-right: 6px; }
+  #hud-tool-pill { min-width: 48px; padding-right: 4px; }
+  .curr-icon { width: 22px; height: 22px; font-size: 10.5px; }
+  .curr-icon.gem, .curr-icon.tool { font-size: 10.5px; }
+  #hud-center-banner {
+    left: 6px; transform: none; top: calc(34px + var(--sat));
+    padding: 2px 9px; border-radius: 11px; max-width: calc(100% - 132px);
+  }
+  #top-mid { font-size: 10px; }
+  #left-hud-top { top: calc(68px + var(--sat)); }
+  #log-text { top: calc(68px + var(--sat)); }
+}
+
+/* ===== BAŞARIMLAR PANELİ (KART & İLERLEME ÇUBUĞU) ===== */
+#ach-list {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 44vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 2px 4px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+#sel-panel.ach-mode #act-grid { display: none; }
+#sel-panel.ach-mode #ach-list { display: flex; }
+.ach-group-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 900;
+  color: #4a3525;
+  background: #ead9bc;
+  border: 1.5px solid #bfa47a;
+  border-radius: 8px;
+  padding: 3px 9px;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.ach-group-hdr:first-child { margin-top: 0; }
+.ach-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fff9ec;
+  border: 2px solid #bfa47a;
+  border-radius: 10px;
+  padding: 6px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ach-card.done {
+  background: #eef7eb;
+  border-color: #77b377;
+  opacity: 0.78;
+}
+.ach-ico {
+  font-size: 16px;
+  line-height: 1.1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ach-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ach-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ach-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #2b2119;
+  overflow-wrap: anywhere;
+}
+.ach-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ach-gem-badge, .ach-tl-badge {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1.5px 6px;
+  border-radius: 999px;
+  border: 1.5px solid #3a281f;
+  white-space: nowrap;
+}
+.ach-gem-badge {
+  background: #dff5ff;
+  color: #0c4a6e;
+  border-color: #29a3e8;
+}
+.ach-tl-badge {
+  background: #fef3c7;
+  color: #78350f;
+  border-color: #d97706;
+}
+.ach-desc {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #5c4938;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.ach-prog-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+}
+.ach-prog-track {
+  flex: 1;
+  height: 7px;
+  background: #e2d4bc;
+  border: 1px solid #9c825e;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.ach-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+.ach-card.done .ach-prog-fill {
+  background: linear-gradient(90deg, #4ade80 0%, #16a34a 100%);
+}
+.ach-prog-txt {
+  font-size: 10px;
+  font-weight: 800;
+  color: #4a3525;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -1041,8 +1223,12 @@
           <div class="curr-icon coin">$</div>
           <span id="hud-money-txt">600 TL</span>
         </div>
-        <div class="curr-pill" id="hud-tool-pill" title="Tamir Aleti & Stok">
+        <div class="curr-pill" id="hud-gem-pill" title="Elmaslar & Başarımlar">
           <div class="curr-icon gem">💎</div>
+          <span id="hud-gem-txt">0</span>
+        </div>
+        <div class="curr-pill" id="hud-tool-pill" title="Tamir Aleti & Stok">
+          <div class="curr-icon tool">🔧</div>
           <span id="hud-tool-txt">1</span>
           <button class="curr-plus-btn" id="hud-buy-tool-btn" title="+1 Alet Al (25 TL)">+</button>
         </div>
@@ -1332,6 +1518,7 @@
         </div>
       </div>
       <div id="act-grid"></div>
+      <div id="ach-list"></div>
     </div>
   </div>
   <div id="log-text"></div>
@@ -1342,7 +1529,7 @@
 const GRID_SIZE = 6;
 const SlotCountPerFloor = 36;
 // ===== AYARLAR (HotelGame.cs Prototip 6 ile birebir) =====
-const StartMoney = 600, DayLength = 60, SeasonDays = 8;
+const StartMoney = 600, DayLength = 60, SeasonDays = 25;
 const Star1 = 250, Star2 = 500, Star3 = 750;
 const CostRoom = 100, CostRoomStep = 25, CostGym = 150, CostToilet = 120, CostGas = 250;
 const CostReception = 200, CostDoor = 50, CostMaint = 20, CostBalcony = 140;
@@ -1671,6 +1858,9 @@ for (let f = 0; f < FloorCount; f++) {
 let hotelName = "TheHotel";
 let sel = "Slot", selSlot = floors[0].slots[32], selFloor = null;
 let money = StartMoney, tools = 1, day = 1, roomCounter = 0, builtRooms = 0, cleanCount = 0, todayServed = 0;
+let gems = 0, gemsEarnedTotal = 0, gemsSpentTotal = 0;
+let totalServed = 0, firesExtinguished = 0, gasLeaksFixed = 0, killersCaught = 0, vipServed = 0;
+let themesTried = ["classic"];
 let guestsSinceNeedy = 6, saveTimer = 0;
 // Depo stoğu, sipariş sepeti, yoldaki teslimatlar, kamyonlar ve kaldırımdaki koli yığını
 const stock = new Array(ItemCount).fill(0);
@@ -1705,12 +1895,10 @@ let reputation = 0, ratingSum = 0, ratingCount = 0;
 let isOpen = false, isNight = false, gasOn = true, gasLeak = false, gasLeakLeft = 0;
 let lastSeason = -1;
 const queue = [], guests = [], pawns = [], cleaners = [], floaties = [], dirts = [];
-const achs = [
-  { title: "1. katı aç", reward: Ach1Reward, done: false },
-  { title: "Bir günde 10 müşteri al", reward: Ach2Reward, done: false }
-];
+let achs = [];
 let lastFront = null, pending = null, pendingPrice = 0;
-let spawnTimer = 8, dayTimer = 0, uiTimer = 0, dirtTimer = 10, achTimer = 0, timeNow = 0;
+let spawnTimer = 8, dayTimer = 0, uiTimer = 0, dirtTimer = 10, achTimer = 0, achCheckTimer = 0, timeNow = 0;
+let achPopupQueue = [];
 let curPrice = 60;
 const logLines = [];
 
@@ -1793,6 +1981,431 @@ spawnBirdFlock(1150);
 const parts = [];
 for (let i = 0; i < 40; i++) {
   parts.push({ x: Math.random(), y: Math.random(), spd: rnd(0.06, 0.16) });
+}
+
+// ===== BUNDLED: state/achievements.js =====
+// [state/achievements.js] Elmas (💎) ekonomisi ve 40 başarımlı veri odaklı başarım sistemi
+
+function addGems(n, reason = "") {
+  const amt = Number(n);
+  if (!Number.isInteger(amt) || amt <= 0) return false;
+  gems += amt;
+  gemsEarnedTotal += amt;
+  if (typeof pulseGemHud === "function") pulseGemHud();
+  if (typeof refreshHud === "function") refreshHud();
+  return true;
+}
+
+function spendGems(n, reason = "") {
+  const amt = Number(n);
+  if (!Number.isInteger(amt) || amt <= 0 || gems < amt) return false;
+  gems -= amt;
+  gemsSpentTotal += amt;
+  if (typeof refreshHud === "function") refreshHud();
+  if (typeof saveGame === "function") saveGame();
+  return true;
+}
+
+function resetGemState(g = 0, earned = 0, spent = 0) {
+  gems = Math.max(0, Math.floor(Number(g) || 0));
+  gemsEarnedTotal = Math.max(0, Math.floor(Number(earned) || 0));
+  gemsSpentTotal = Math.max(0, Math.floor(Number(spent) || 0));
+}
+
+function recordThemeTried(themeId) {
+  if (!themeId || typeof themeId !== "string") return false;
+  if (!Array.isArray(themesTried)) themesTried = [];
+  if (!themesTried.includes(themeId)) {
+    themesTried.push(themeId);
+    return true;
+  }
+  return false;
+}
+
+function countBuiltRooms() {
+  let c = 0;
+  for (let i = 0; i < allSlots.length; i++) {
+    const s = allSlots[i];
+    if (s.type === "Room" && s.floor && s.floor.state === "Built") c++;
+  }
+  return c;
+}
+
+function hasBuiltParcel(type) {
+  for (let i = 0; i < allSlots.length; i++) {
+    const s = allSlots[i];
+    if (s.type === type && s.floor && s.floor.state === "Built") return true;
+  }
+  return false;
+}
+
+function maxBuiltRoomLevel() {
+  let maxLv = 0;
+  for (let i = 0; i < allSlots.length; i++) {
+    const s = allSlots[i];
+    if (s.type === "Room" && s.floor && s.floor.state === "Built") {
+      const lv = (typeof getRoomLevel === "function") ? getRoomLevel(s) : (s.level || 1);
+      if (lv > maxLv) maxLv = lv;
+    }
+  }
+  return maxLv;
+}
+
+const ACH_GROUPS = ["Büyüme", "Tesisler", "Personel", "Hizmet", "Para", "Zaman", "Olaylar"];
+
+const ACHIEVEMENTS = [
+  // 1) Büyüme (7)
+  {
+    id: "first_room", group: "Büyüme", title: "İlk Oda", desc: "Otelinde ilk odanı kur",
+    gems: 5, tl: 0, done: false,
+    check: () => countBuiltRooms() >= 1,
+    progress: () => ({ cur: Math.min(1, countBuiltRooms()), max: 1 })
+  },
+  {
+    id: "floor2", group: "Büyüme", title: "2. Katı Aç", desc: "2. kat inşaatını tamamla",
+    gems: 10, tl: Ach1Reward, done: false,
+    check: () => !!(floors[1] && floors[1].state === "Built"),
+    progress: null
+  },
+  {
+    id: "floor3", group: "Büyüme", title: "3. Kat", desc: "3. kat inşaatını tamamla",
+    gems: 15, tl: 0, done: false,
+    check: () => !!(floors[2] && floors[2].state === "Built"),
+    progress: null
+  },
+  {
+    id: "floor4", group: "Büyüme", title: "Gökdelen (4. Kat)", desc: "4. kat inşaatını tamamla",
+    gems: 25, tl: 0, done: false,
+    check: () => !!(floors[3] && floors[3].state === "Built"),
+    progress: null
+  },
+  {
+    id: "rooms_10", group: "Büyüme", title: "10 Odalı Otel", desc: "Aynı anda 10 kurulu odaya ulaş",
+    gems: 10, tl: 0, done: false,
+    check: () => countBuiltRooms() >= 10,
+    progress: () => ({ cur: Math.min(10, countBuiltRooms()), max: 10 })
+  },
+  {
+    id: "rooms_20", group: "Büyüme", title: "20 Odalı Otel", desc: "Aynı anda 20 kurulu odaya ulaş",
+    gems: 20, tl: 0, done: false,
+    check: () => countBuiltRooms() >= 20,
+    progress: () => ({ cur: Math.min(20, countBuiltRooms()), max: 20 })
+  },
+  {
+    id: "elevator", group: "Büyüme", title: "Asansör", desc: "Otel asansörünü kur",
+    gems: 5, tl: 0, done: false,
+    check: () => hasBuiltParcel("Elevator"),
+    progress: null
+  },
+
+  // 2) Tesisler (8)
+  {
+    id: "kitchen", group: "Tesisler", title: "Restoran Açıldı", desc: "Mutfak ve restoran kur",
+    gems: 5, tl: 0, done: false,
+    check: () => kitchenState === "Built" || hasBuiltParcel("Kitchen"),
+    progress: null
+  },
+  {
+    id: "storage", group: "Tesisler", title: "Depo Açıldı", desc: "Malzeme deposunu kur",
+    gems: 5, tl: 0, done: false,
+    check: () => storageState === "Built" || hasBuiltParcel("Storage"),
+    progress: null
+  },
+  {
+    id: "dorm", group: "Tesisler", title: "Lojman Açıldı", desc: "Personel lojmanını kur",
+    gems: 5, tl: 0, done: false,
+    check: () => dormState === "Built" || hasBuiltParcel("Dorm"),
+    progress: null
+  },
+  {
+    id: "pool", group: "Tesisler", title: "Havuz Açıldı", desc: "Açık yüzme havuzu kur",
+    gems: 5, tl: 0, done: false,
+    check: () => poolState === "Built" || hasBuiltParcel("Pool"),
+    progress: null
+  },
+  {
+    id: "park", group: "Tesisler", title: "Park Açıldı", desc: "Dinlenme parkı & çocuk bahçesi kur",
+    gems: 5, tl: 0, done: false,
+    check: () => parkState === "Built" || hasBuiltParcel("Park"),
+    progress: null
+  },
+  {
+    id: "roof_terrace", group: "Tesisler", title: "Çatı Terası", desc: "Üst kata çatı terası kur",
+    gems: 10, tl: 0, done: false,
+    check: () => hasBuiltParcel("RoofTerrace"),
+    progress: null
+  },
+  {
+    id: "gym", group: "Tesisler", title: "Spor Salonu", desc: "Spor salonu parseli kur",
+    gems: 5, tl: 0, done: false,
+    check: () => hasBuiltParcel("Gym"),
+    progress: null
+  },
+  {
+    id: "room_lvl3", group: "Tesisler", title: "Lüks Oda", desc: "Herhangi bir odayı Sv.3 yap",
+    gems: 10, tl: 0, done: false,
+    check: () => maxBuiltRoomLevel() >= 3,
+    progress: () => ({ cur: Math.min(3, maxBuiltRoomLevel()), max: 3 })
+  },
+
+  // 3) Personel (4)
+  {
+    id: "receptionist", group: "Personel", title: "Resepsiyonist", desc: "Bir resepsiyonist işe al",
+    gems: 5, tl: 0, done: false,
+    check: () => receptionistLevel >= 1,
+    progress: null
+  },
+  {
+    id: "security", group: "Personel", title: "Güvenlik", desc: "Bir güvenlik görevlisi işe al",
+    gems: 5, tl: 0, done: false,
+    check: () => securityLevel >= 1,
+    progress: null
+  },
+  {
+    id: "cook_lvl3", group: "Personel", title: "Usta Aşçı", desc: "Aşçıyı Seviye 3'e yükselt",
+    gems: 10, tl: 0, done: false,
+    check: () => cookLevel >= 3,
+    progress: () => ({ cur: Math.min(3, Math.max(0, cookLevel)), max: 3 })
+  },
+  {
+    id: "full_staff", group: "Personel", title: "Tam Kadro", desc: "Depo Sv.3 ve Lojman Sv.3 seviyesine ulaş",
+    gems: 15, tl: 0, done: false,
+    check: () => storageState === "Built" && storageLevel >= 3 && dormState === "Built" && dormLevel >= 3,
+    progress: () => ({
+      cur: (storageState === "Built" ? Math.min(3, storageLevel) : 0) + (dormState === "Built" ? Math.min(3, dormLevel) : 0),
+      max: 6
+    })
+  },
+
+  // 4) Hizmet (9)
+  {
+    id: "day10guests", group: "Hizmet", title: "Bir günde 10 müşteri", desc: "Tek günde 10 misafir ağırla",
+    gems: 10, tl: Ach2Reward, done: false,
+    check: () => todayServed >= 10,
+    progress: () => ({ cur: Math.min(10, todayServed), max: 10 })
+  },
+  {
+    id: "day20guests", group: "Hizmet", title: "Yoğun Gün", desc: "Tek günde 20 misafir ağırla",
+    gems: 15, tl: 0, done: false,
+    check: () => todayServed >= 20,
+    progress: () => ({ cur: Math.min(20, todayServed), max: 20 })
+  },
+  {
+    id: "guests_100", group: "Hizmet", title: "100 Misafir", desc: "Toplam 100 müşteri ağırla",
+    gems: 10, tl: 0, done: false,
+    check: () => totalServed >= 100,
+    progress: () => ({ cur: Math.min(100, totalServed), max: 100 })
+  },
+  {
+    id: "guests_500", group: "Hizmet", title: "500 Misafir", desc: "Toplam 500 müşteri ağırla",
+    gems: 20, tl: 0, done: false,
+    check: () => totalServed >= 500,
+    progress: () => ({ cur: Math.min(500, totalServed), max: 500 })
+  },
+  {
+    id: "guests_1000", group: "Hizmet", title: "1000 Misafir", desc: "Toplam 1000 müşteri ağırla",
+    gems: 30, tl: 0, done: false,
+    check: () => totalServed >= 1000,
+    progress: () => ({ cur: Math.min(1000, totalServed), max: 1000 })
+  },
+  {
+    id: "star1", group: "Hizmet", title: "1 Yıldızlı Otel", desc: "1 yıldız itibarına ulaş (" + Star1 + ")",
+    gems: 5, tl: 0, done: false,
+    check: () => reputation >= Star1,
+    progress: () => ({ cur: Math.min(Star1, Math.max(0, Math.floor(reputation))), max: Star1 })
+  },
+  {
+    id: "star2", group: "Hizmet", title: "2 Yıldızlı Otel", desc: "2 yıldız itibarına ulaş (" + Star2 + ")",
+    gems: 10, tl: 0, done: false,
+    check: () => reputation >= Star2,
+    progress: () => ({ cur: Math.min(Star2, Math.max(0, Math.floor(reputation))), max: Star2 })
+  },
+  {
+    id: "star3", group: "Hizmet", title: "3 Yıldızlı Otel", desc: "3 yıldız itibarına ulaş (" + Star3 + ")",
+    gems: 20, tl: 0, done: false,
+    check: () => reputation >= Star3,
+    progress: () => ({ cur: Math.min(Star3, Math.max(0, Math.floor(reputation))), max: Star3 })
+  },
+  {
+    id: "avg_rating", group: "Hizmet", title: "Mükemmel Hizmet", desc: "En az 50 yorumda 4.5+ puan ortalaması",
+    gems: 25, tl: 0, done: false,
+    check: () => ratingCount >= 50 && (ratingSum / ratingCount) >= 4.5,
+    progress: () => ({ cur: Math.min(50, ratingCount), max: 50 })
+  },
+
+  // 5) Para (3)
+  {
+    id: "money_5k", group: "Para", title: "Kasa Dolu", desc: "Kasada 5.000 TL biriktir",
+    gems: 10, tl: 0, done: false,
+    check: () => money >= 5000,
+    progress: () => ({ cur: Math.min(5000, Math.max(0, Math.floor(money))), max: 5000 })
+  },
+  {
+    id: "money_25k", group: "Para", title: "Zengin Otel", desc: "Kasada 25.000 TL biriktir",
+    gems: 25, tl: 0, done: false,
+    check: () => money >= 25000,
+    progress: () => ({ cur: Math.min(25000, Math.max(0, Math.floor(money))), max: 25000 })
+  },
+  {
+    id: "daily_income_1k", group: "Para", title: "Altın Gün", desc: "Bir günde 1.000 TL gelir elde et",
+    gems: 15, tl: 0, done: false,
+    check: () => !!(dayStats && dayStats.income >= 1000),
+    progress: () => ({ cur: Math.min(1000, Math.max(0, Math.floor((dayStats && dayStats.income) || 0))), max: 1000 })
+  },
+
+  // 6) Zaman (3)
+  {
+    id: "week1", group: "Zaman", title: "İlk Hafta", desc: "7. güne ulaş",
+    gems: 5, tl: 0, done: false,
+    check: () => day >= 7,
+    progress: () => ({ cur: Math.min(7, day), max: 7 })
+  },
+  {
+    id: "season1", group: "Zaman", title: "İlk Mevsim", desc: "25. güne (1 tam mevsim) ulaş",
+    gems: 10, tl: 0, done: false,
+    check: () => day >= 25,
+    progress: () => ({ cur: Math.min(25, day), max: 25 })
+  },
+  {
+    id: "year1", group: "Zaman", title: "Bir Yıl", desc: "100. güne (4 mevsim) ulaş",
+    gems: 25, tl: 0, done: false,
+    check: () => day >= 100,
+    progress: () => ({ cur: Math.min(100, day), max: 100 })
+  },
+
+  // 7) Olaylar (6)
+  {
+    id: "fire_1", group: "Olaylar", title: "İtfaiyeci", desc: "İlk yangını söndür",
+    gems: 5, tl: 0, done: false,
+    check: () => firesExtinguished >= 1,
+    progress: () => ({ cur: Math.min(1, firesExtinguished), max: 1 })
+  },
+  {
+    id: "gas_leak_1", group: "Olaylar", title: "Gaz Ustası", desc: "İlk gaz kaçağını kapat",
+    gems: 5, tl: 0, done: false,
+    check: () => gasLeaksFixed >= 1,
+    progress: () => ({ cur: Math.min(1, gasLeaksFixed), max: 1 })
+  },
+  {
+    id: "killer_caught", group: "Olaylar", title: "Dedektif", desc: "Bir seri katili yakala",
+    gems: 20, tl: 0, done: false,
+    check: () => killersCaught >= 1,
+    progress: () => ({ cur: Math.min(1, killersCaught), max: 1 })
+  },
+  {
+    id: "vip_served", group: "Olaylar", title: "VIP Ağırla", desc: "Bir VIP misafiri ağırla",
+    gems: 10, tl: 0, done: false,
+    check: () => vipServed >= 1,
+    progress: () => ({ cur: Math.min(1, vipServed), max: 1 })
+  },
+  {
+    id: "clean_100", group: "Olaylar", title: "Temizlik Ustası", desc: "100 kir/oda temizliği tamamla",
+    gems: 15, tl: 0, done: false,
+    check: () => cleanCount >= 100,
+    progress: () => ({ cur: Math.min(100, cleanCount), max: 100 })
+  },
+  {
+    id: "themes_3", group: "Olaylar", title: "Stilist", desc: "3 otel temasını da dene",
+    gems: 5, tl: 0, done: false,
+    check: () => Array.isArray(themesTried) && themesTried.length >= 3,
+    progress: () => ({ cur: Math.min(3, Array.isArray(themesTried) ? themesTried.length : 0), max: 3 })
+  }
+];
+
+achs = ACHIEVEMENTS;
+const ACH_BY_ID = {};
+for (let i = 0; i < ACHIEVEMENTS.length; i++) ACH_BY_ID[ACHIEVEMENTS[i].id] = ACHIEVEMENTS[i];
+
+function showNextAchPopup() {
+  if (achTimer > 0 || !achPopupQueue || achPopupQueue.length === 0) return;
+  const next = achPopupQueue.shift();
+  const text = typeof next === "string" ? next : next.text;
+  const el = document.getElementById("ach-popup");
+  if (el) {
+    el.textContent = text;
+    el.style.display = "flex";
+  }
+  achTimer = 3.0;
+  if (typeof play === "function") play("done");
+}
+
+function enqueueAchPopupItems(entries) {
+  if (!entries || entries.length === 0) return;
+  for (const e of entries) achPopupQueue.push(e);
+  // Kuyruk + aktif bildirim toplamda en fazla 3 sıra tutulur; fazlası tek özet bildirimde birleştirilir
+  const maxQueue = achTimer > 0 ? 2 : 3;
+  if (achPopupQueue.length > maxQueue) {
+    const keepCount = Math.max(0, maxQueue - 1);
+    const overflow = achPopupQueue.slice(keepCount);
+    let extraGems = 0;
+    let extraCount = 0;
+    for (const item of overflow) {
+      if (typeof item === "object" && item !== null) {
+        extraGems += item.gems || 0;
+        extraCount += item.count || 1;
+      } else {
+        extraCount += 1;
+      }
+    }
+    achPopupQueue.length = keepCount;
+    achPopupQueue.push({
+      text: "+" + extraCount + " başarım daha açıldı: +" + extraGems + " 💎",
+      gems: extraGems,
+      count: extraCount
+    });
+  }
+  showNextAchPopup();
+}
+
+function tickAchPopup(dt) {
+  if (achTimer > 0) {
+    achTimer -= dt;
+    if (achTimer <= 0) {
+      achTimer = 0;
+      const el = document.getElementById("ach-popup");
+      if (el) el.style.display = "none";
+      showNextAchPopup();
+    }
+  } else if (achPopupQueue.length > 0) {
+    showNextAchPopup();
+  }
+}
+
+function checkAchievements(opts = {}) {
+  const retroactive = !!(opts && opts.retroactive);
+  const newly = [];
+  for (let i = 0; i < ACHIEVEMENTS.length; i++) {
+    const a = ACHIEVEMENTS[i];
+    if (a.done) continue;
+    if (a.check()) {
+      a.done = true;
+      addGems(a.gems, "ach:" + a.id);
+      if (a.tl > 0 && !retroactive) {
+        money += a.tl;
+        if (dayStats) dayStats.income = (dayStats.income || 0) + a.tl;
+      }
+      newly.push(a);
+    }
+  }
+  if (newly.length > 0) {
+    if (retroactive) {
+      const sumG = newly.reduce((s, a) => s + a.gems, 0);
+      const summaryMsg = newly.length + " başarım açıldı: +" + sumG + " 💎";
+      enqueueAchPopupItems([{ text: summaryMsg, gems: sumG, count: newly.length }]);
+      if (typeof log === "function") log("🏆 " + summaryMsg);
+    } else {
+      const entries = [];
+      for (const a of newly) {
+        const rewardStr = "+" + a.gems + " 💎" + (a.tl > 0 ? " +" + a.tl + " TL" : "");
+        entries.push({ text: "Başarı: " + a.title + " (" + rewardStr + ")", gems: a.gems, count: 1 });
+        if (typeof log === "function") log("🏆 Başarı kazandın: " + a.title + " (" + rewardStr + ")");
+      }
+      enqueueAchPopupItems(entries);
+    }
+    if (typeof refresh === "function") refresh();
+    if (!retroactive && typeof saveGame === "function") saveGame();
+  }
+  return newly;
 }
 
 // ===== BUNDLED: state/daynight.js =====
@@ -2252,7 +2865,7 @@ function saveGame() {
   try {
     const data = {
       v: 200,
-      hotelName: hotelName || "OTEL",
+      hotelName: hotelName || "TheHotel",
       cosmetics: (typeof cosmetics === "object" && cosmetics) ? { roomTheme: cosmetics.roomTheme || "classic" } : { roomTheme: "classic" },
       money,
       reputation,
@@ -2282,7 +2895,20 @@ function saveGame() {
       recAutoPlace,
       securityLevel,
       treePlanted: treePlanted.slice(),
-      achUnlocked: achs.map(a => !!a.done),
+      achIds: ACHIEVEMENTS.filter(a => a.done).map(a => a.id),
+      achUnlocked: [
+        !!(ACH_BY_ID.floor2 && ACH_BY_ID.floor2.done),
+        !!(ACH_BY_ID.day10guests && ACH_BY_ID.day10guests.done)
+      ],
+      gems,
+      gemsEarnedTotal,
+      gemsSpentTotal,
+      totalServed,
+      firesExtinguished,
+      gasLeaksFixed,
+      killersCaught,
+      vipServed,
+      themesTried: Array.isArray(themesTried) ? themesTried.slice() : ["classic"],
       todayServed,
       guestsSinceNeedy,
       stock: stock.slice(),
@@ -2368,12 +2994,27 @@ function loadGame() {
     const data = JSON.parse(raw);
     if (!data || data.v !== 200 || typeof data.money !== "number") return false;
 
-    hotelName = (data.hotelName || "OTEL").slice(0, 18).toUpperCase();
+    hotelName = data.hotelName ? String(data.hotelName).slice(0, 18) : "TheHotel";
     if (typeof window !== "undefined") window._pendingCosmetics = data.cosmetics || { roomTheme: "classic" };
     if (typeof COSMETIC_CATALOG === "object" && COSMETIC_CATALOG && typeof applyCosmetics === "function") {
       applyCosmetics(data.cosmetics);
       if (typeof window !== "undefined") window._pendingCosmetics = null;
     }
+    guests.length = 0;
+    queue.length = 0;
+    pawns.length = 0;
+    cleaners.length = 0;
+    shipments.length = 0;
+    trucks.length = 0;
+    storageWorkers.length = 0;
+    dormWorkers.length = 0;
+    kitchenWorkers.length = 0;
+    parkWorkers.length = 0;
+    achPopupQueue = [];
+    achTimer = 0;
+    achCheckTimer = 0;
+    const popupEl = document.getElementById("ach-popup");
+    if (popupEl) popupEl.style.display = "none";
     money = data.money;
     reputation = data.reputation || 0;
     tools = typeof data.tools === "number" ? data.tools : 3;
@@ -2417,7 +3058,7 @@ function loadGame() {
     nextEventDay = data.nextEventDay || 0;
     nextEventType = (data.nextEventType && EventTypes.includes(data.nextEventType)) ? data.nextEventType : pick(EventTypes);
     vipSpawnedThisEvent = !!data.vipSpawnedThisEvent;
-    if (stars() >= 1 && !activeEvent && nextEventDay <= day) {
+    if (typeof stars === "function" && stars() >= 1 && !activeEvent && nextEventDay <= day && typeof scheduleNextEventIfEligible === "function") {
       scheduleNextEventIfEligible();
     }
     receptionistLevel = data.receptionistLevel || 0;
@@ -2431,9 +3072,29 @@ function loadGame() {
         treePlanted[i] = !!data.treePlanted[i];
       }
     }
-    if (Array.isArray(data.achUnlocked)) {
-      for (let i = 0; i < achs.length && i < data.achUnlocked.length; i++) {
-        achs[i].done = !!data.achUnlocked[i];
+    for (const a of ACHIEVEMENTS) a.done = false;
+    totalServed = Math.max(0, Math.floor(Number(data.totalServed) || 0));
+    firesExtinguished = Math.max(0, Math.floor(Number(data.firesExtinguished) || 0));
+    gasLeaksFixed = Math.max(0, Math.floor(Number(data.gasLeaksFixed) || 0));
+    killersCaught = Math.max(0, Math.floor(Number(data.killersCaught) || 0));
+    vipServed = Math.max(0, Math.floor(Number(data.vipServed) || 0));
+    themesTried = (Array.isArray(data.themesTried) && data.themesTried.length > 0)
+      ? Array.from(new Set(data.themesTried.filter(t => typeof t === "string" && t)))
+      : [];
+    const activeThemeId = (data.cosmetics && typeof data.cosmetics.roomTheme === "string")
+      ? data.cosmetics.roomTheme
+      : ((typeof cosmetics === "object" && cosmetics && cosmetics.roomTheme) ? cosmetics.roomTheme : "classic");
+    recordThemeTried(activeThemeId || "classic");
+
+    if (Array.isArray(data.achIds)) {
+      const idSet = new Set(data.achIds);
+      for (const a of ACHIEVEMENTS) a.done = idSet.has(a.id);
+      resetGemState(data.gems || 0, data.gemsEarnedTotal || 0, data.gemsSpentTotal || 0);
+    } else {
+      resetGemState(0, 0, 0);
+      if (Array.isArray(data.achUnlocked)) {
+        if (data.achUnlocked[0] && ACH_BY_ID.floor2) ACH_BY_ID.floor2.done = true;
+        if (data.achUnlocked[1] && ACH_BY_ID.day10guests) ACH_BY_ID.day10guests.done = true;
       }
     }
     todayServed = data.todayServed || 0;
@@ -2595,23 +3256,31 @@ function loadGame() {
     const cCount = Math.min(MaxCleaners, data.cleanerCount || 0);
     const recSlot = floors[0].slots.find(s => s.type === "Reception") || floors[0].slots[32];
     const recIdx = recSlot ? recSlot.idx : 32;
-    const recCenter = getSlotCenterIso(0, recIdx);
+    const recCenter = (typeof getSlotCenterIso === "function" && typeof slotIsoBox === "function")
+      ? getSlotCenterIso(0, recIdx)
+      : { u: 1072, v: 487, z: 8 };
     for (let i = 0; i < cCount; i++) {
-      const p = makePawn({ x: ElevX + 110 + i * 45, y: floors[0].WalkY }, pick(Skins), pick(Hairs), "#338c99");
-      p.speed = 95;
-      p.isStaff = true;
-      p.isCleaner = true;
-      p.iso = { u: recCenter.u + (i % 3) * 15, v: recCenter.v + Math.floor(i / 3) * 10, z: recCenter.z };
-      cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
+      if (typeof makePawn === "function") {
+        const p = makePawn({ x: ElevX + 110 + i * 45, y: floors[0].WalkY }, pick(Skins), pick(Hairs), "#338c99");
+        p.speed = 95;
+        p.isStaff = true;
+        p.isCleaner = true;
+        p.iso = { u: recCenter.u + (i % 3) * 15, v: recCenter.v + Math.floor(i / 3) * 10, z: recCenter.z };
+        cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
+      }
     }
-    syncStaffPawns();
+    if (typeof syncStaffPawns === "function") syncStaffPawns();
 
     // Oyun başında ilk odamızı ve kapımızı almamız lazım koruması (kayıt sonrası da kontrol)
-    if (!hasReadyRoom()) {
+    if (typeof hasReadyRoom === "function" && !hasReadyRoom()) {
       isOpen = false;
       const fSlot = floors[0].slots[21];
       const needed = (fSlot.type === "Room" ? 0 : CostRoom) + (fSlot.hasDoor ? 0 : CostDoor);
       if (money < needed) money = needed;
+    }
+
+    if (typeof checkAchievements === "function") {
+      checkAchievements({ retroactive: true });
     }
 
     return true;
@@ -2634,9 +3303,21 @@ function startNewGameClean() {
     }
   } catch (_) {}
 
-  const customName = (hotelNameInput && hotelNameInput.value.trim()) ? hotelNameInput.value.trim().slice(0, 18).toUpperCase() : "OTEL";
-  hotelName = customName || "OTEL";
+  const customName = (hotelNameInput && hotelNameInput.value.trim()) ? hotelNameInput.value.trim().slice(0, 18) : "TheHotel";
+  hotelName = customName || "TheHotel";
   if (typeof setCosmetic === "function") setCosmetic("roomTheme", "classic", true);
+  resetGemState(0, 0, 0);
+  totalServed = 0;
+  firesExtinguished = 0;
+  gasLeaksFixed = 0;
+  killersCaught = 0;
+  vipServed = 0;
+  themesTried = ["classic"];
+  achCheckTimer = 0;
+  achTimer = 0;
+  achPopupQueue = [];
+  const popupEl = document.getElementById("ach-popup");
+  if (popupEl) popupEl.style.display = "none";
   money = StartMoney;
   reputation = 0;
   ratingSum = 0;
@@ -2713,7 +3394,7 @@ function startNewGameClean() {
   lastFront = null;
 
   for (let i = 0; i < treePlanted.length; i++) treePlanted[i] = (i === 0 || i === 4);
-  for (const a of achs) a.done = false;
+  for (const a of ACHIEVEMENTS) a.done = false;
 
   for (let f = 0; f < FloorCount; f++) {
     const fl = floors[f];
@@ -2786,7 +3467,7 @@ function startNewGameClean() {
   play("open");
 }
 
-let hadSavedGame = loadGame();
+let hadSavedGame = false;
 
 // ===== BUNDLED: logic/core.js =====
 // [logic/core.js] Maliyetler, sorgular, log() ve ödeme yardımcıları  (selectSlot/Floor/Mode → ui/dock-wiring.js, floatText → render/camera.js)
@@ -3444,8 +4125,10 @@ function placeGuestIntoRoom(g, room, price, byAuto = false) {
   }
 
   todayServed++;
+  if (!g._servedCounted) { totalServed++; g._servedCounted = true; }
+  if (g.isVip && !g._vipCounted) { vipServed++; g._vipCounted = true; }
   dayStats.served++;
-  if (todayServed >= 10) unlock(1);
+  if (typeof checkAchievements === "function") checkAchievements();
   reflowQueue();
   refresh();
   saveGame();
@@ -3535,11 +4218,13 @@ function evictGuest(g) {
   g.room = null;
   if (g.role === "Killer") {
     killerCaughtWeek = 1;
+    killersCaught++;
     reputation += 25;
     money += 200;
     play("done");
     floatText(g.pawn.pos.x, g.pawn.pos.y + 135, "🚓 SERİ KATİL YAKALANDI! +200 TL", "#1a8c26");
     log("🚓 MÜTHİŞ DEDEKTİFLİK! Polise ihbar ettiğin " + g.name + " aranan SERİ KATİL çıktı! (+200 TL ödül, +25 İtibar)");
+    if (typeof checkAchievements === "function") checkAchievements();
   } else if (g.role === "Thief" || g.role === "Vampire") {
     const roleTr = g.role === "Vampire" ? "VAMPİR" : "HIRSIZ";
     reputation += 15;
@@ -3584,6 +4269,8 @@ function checkout(s) {
     saveGame();
     return;
   }
+  if (g && !g._servedCounted) { totalServed++; g._servedCounted = true; }
+  if (g && g.isVip && !g._vipCounted) { vipServed++; g._vipCounted = true; }
   if (g.type === "Freebie") {
     log(g.name + " (Ücretsiz Misafir) teşekkür ederek ayrıldı (Toplam +10 İtibar).");
     floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "Teşekkürler!", "#1a8c26");
@@ -3961,11 +4648,13 @@ function triggerKillerHunt(g) {
     // Yan odada Koruma varsa Ünlü konuğu korur ve Seri Katili yakalar!
     if (victim.isVip && adjacentSlots(vSlot).some(sl => sl.guest && sl.guest.role === "Bodyguard")) {
       killerCaughtWeek = 1;
+      killersCaught++;
       reputation += 25;
       money += 200;
       play("done");
       floatText(vSlot.X0 + SlotW * 0.5, vSlot.floor.BaseY + FloorH * 0.65, "🕶️ KORUMA SERİ KATİLİ YAKALADI! +200 TL", "#1a8c26");
       log("🕶️ KAHRAMAN KORUMA! " + victim.name + " odasına sızan Seri Katil " + g.name + " yatağın başında suçüstü yakalandı! (+200 TL ödül, +25 İtibar)");
+      if (typeof checkAchievements === "function") checkAchievements();
       if (g.room) g.room.guest = null;
       g.room = null;
       startLeaving(g);
@@ -4113,9 +4802,11 @@ function extinguish(s) {
   if (tools >= 1) tools--;
   else if (!pay(FireCost)) return;
   s.onFire = false;
+  firesExtinguished++;
   play("done");
   log(s.roomNo + ". odadaki yangın söndürüldü.");
   floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.6, "Söndü!", "#1a80cc");
+  if (typeof checkAchievements === "function") checkAchievements();
   refresh();
 }
 
@@ -4149,8 +4840,14 @@ function burnDown(s) {
 // Doğalgaz
 function toggleGas() {
   gasOn = !gasOn;
-  if (!gasOn && gasLeak) { gasLeak = false; log("Vana kapatıldı, gaz kaçağı durdu."); }
-  else log(gasOn ? "Doğalgaz vanası açıldı." : "Doğalgaz vanası kapatıldı.");
+  if (!gasOn && gasLeak) {
+    gasLeak = false;
+    gasLeaksFixed++;
+    log("Vana kapatıldı, gaz kaçağı durdu.");
+    if (typeof checkAchievements === "function") checkAchievements();
+  } else {
+    log(gasOn ? "Doğalgaz vanası açıldı." : "Doğalgaz vanası kapatıldı.");
+  }
 }
 
 function startLeak() {
@@ -4377,10 +5074,12 @@ function updateCleaners(dt) {
         p.exercise = false;
         const finishedTarget = c.target;
         c.target = null;
+        cleanCount++;
         if (finishedTarget && typeof floatText === "function") {
           floatText(finishedTarget.X0 + SlotW * 0.5, finishedTarget.floor.BaseY + FloorH * 0.65, "✨ Oda temizlendi", "#10b981");
         }
         p.cleanSparkleEndT = (typeof timeNow === "number" ? timeNow : 0) + 1.0;
+        if (typeof checkAchievements === "function") checkAchievements();
         if (sel === "Slot") refreshPanel();
         saveGame();
         c.state = 3;
@@ -4421,8 +5120,10 @@ function doMaint(s) {
   money -= cost;
   tools--;
   s.maintenance = 100;
+  cleanCount++;
   play("clean");
   log("Bakım yapıldı (-" + cost + " TL ve -1 Alet).");
+  if (typeof checkAchievements === "function") checkAchievements();
   saveGame();
   return true;
 }
@@ -4800,7 +5501,7 @@ function tryBuildFloor(fl) {
     log("⚠️ Üst katları (" + (n + 1) + ". Kat) açabilmek için önce oteline bir '🛗 Asansör' (150 TL) kurmalısın!");
     return;
   }
-  if (stars() < n) { log(n + ". kat için " + n + " yıldız gerekli (itibar " + StarTargets[n - 1] + ")."); return; }
+  if (stars() < n) { log((n + 1) + ". kat için " + n + " yıldız gerekli (itibar " + StarTargets[n - 1] + ")."); return; }
   if (floors[n - 1].state !== "Built") { log("Önce alttaki katı tamamla."); return; }
   if (!pay(FloorCost[n])) return;
   fl.state = "Building"; fl.buildTotal = FloorBuildSec[n]; fl.buildLeft = fl.buildTotal;
@@ -4810,7 +5511,7 @@ function tryBuildFloor(fl) {
     fl.workers.push(w);
   }
   play("build");
-  log(n + ". kat inşaatı başladı (" + Math.round(fl.buildTotal) + " sn).");
+  log((n + 1) + ". kat inşaatı başladı (" + Math.round(fl.buildTotal) + " sn).");
   refresh();
 }
 
@@ -4819,8 +5520,8 @@ function finishFloor(fl) {
   for (const w of fl.workers) destroyPawn(w);
   fl.workers.length = 0;
   play("done");
-  log(fl.idx + ". kat tamamlandı! Artık oda kurabilirsin.");
-  if (fl.idx === 1) unlock(0);
+  log((fl.idx + 1) + ". kat tamamlandı! Artık oda kurabilirsin.");
+  if (typeof checkAchievements === "function") checkAchievements();
   refresh();
 }
 
@@ -5196,15 +5897,7 @@ function buildIsoRouteFromRoomToReception(room) {
 // ===== BUNDLED: logic/day.js =====
 // [logic/day.js] Gün döngüsü: yeni gün, gazete, gün sonu özeti, otel aç/kapa, başarımlar
 function unlock(i) {
-  if (i < 0 || i >= achs.length || achs[i].done) return;
-  achs[i].done = true;
-  money += achs[i].reward;
-  play("done");
-  achPopup.textContent = "Başarı: " + achs[i].title + "  (+" + achs[i].reward + " TL)";
-  achPopup.style.display = "flex";
-  achTimer = 4.0;
-  log("Başarı kazandın: " + achs[i].title + " (+" + achs[i].reward + " TL)");
-  refresh();
+  if (typeof checkAchievements === "function") checkAchievements();
 }
 
 function newDay() {
@@ -6201,8 +6894,16 @@ function refresh() { refreshHud(); refreshPanel(); refreshGuest(); }
 // ===== PARA / ELMAS SAYAÇ ANİMASYONU & ALTIN PARÇACIKLAR =====
 // Sayılar anında değişmek yerine akarak artar/azalır; para artışında (ödeme anı) HUD'da altın parçacıklar saçılır.
 const HUD_COUNT_MS = 450;
-const hudCtr = { money: { shown: null, from: 0, to: 0, t0: 0 }, tools: { shown: null, from: 0, to: 0, t0: 0 } };
+const hudCtr = { money: { shown: null, from: 0, to: 0, t0: 0 }, tools: { shown: null, from: 0, to: 0, t0: 0 }, gems: { shown: null, from: 0, to: 0, t0: 0 } };
 let hudCtrRaf = 0, hudCoinAlive = 0;
+
+function pulseGemHud() {
+  const pill = document.getElementById("hud-gem-pill");
+  if (!pill) return;
+  pill.classList.remove("gem-pulse");
+  void pill.offsetWidth;
+  pill.classList.add("gem-pulse");
+}
 
 function hudCounterSet(key, target, snap) {
   const c = hudCtr[key];
@@ -6214,7 +6915,7 @@ function hudCounterSet(key, target, snap) {
 function hudCounterTick(now) {
   hudCtrRaf = 0;
   let active = false;
-  for (const key of ["money", "tools"]) {
+  for (const key of ["money", "tools", "gems"]) {
     const c = hudCtr[key];
     if (c.shown === c.to) continue;
     const k = Math.min(1, (now - c.t0) / HUD_COUNT_MS);
@@ -6227,6 +6928,7 @@ function hudCounterTick(now) {
 }
 function hudCounterRender() {
   if (hudMoneyTxt) hudMoneyTxt.textContent = hudCtr.money.shown + " TL";
+  if (hudGemTxt) hudGemTxt.textContent = String(hudCtr.gems.shown);
   if (hudToolTxt) hudToolTxt.textContent = String(hudCtr.tools.shown);
 }
 function hudCoinBurst(n) {
@@ -6334,11 +7036,15 @@ function refreshHud() {
 
   // Para & elmas: akarak değişir; menüdeyken / sekme gizliyken anında güncellenir
   const ctrSnap = (typeof inMenu !== "undefined" && inMenu) || document.hidden;
-  const ctrReady = hudCtr.money.shown !== null, prevMoneyTarget = hudCtr.money.to;
+  const ctrReady = hudCtr.money.shown !== null, prevMoneyTarget = hudCtr.money.to, prevGemTarget = hudCtr.gems.to;
   hudCounterSet("money", money, ctrSnap);
+  hudCounterSet("gems", gems, ctrSnap);
   hudCounterSet("tools", tools, ctrSnap);
   hudCounterRender();
   if (ctrReady && !ctrSnap && money - prevMoneyTarget >= 5) hudCoinBurst(Math.min(10, 3 + Math.floor((money - prevMoneyTarget) / 40)));
+  if (ctrReady && !ctrSnap && gems > prevGemTarget) pulseGemHud();
+  const hudGemPill = document.getElementById("hud-gem-pill");
+  if (hudGemPill) hudGemPill.title = "Elmas: " + gems + " 💎 (Toplam Kazanılan: " + gemsEarnedTotal + " 💎)";
   const hudMoneyPill = document.getElementById("hud-money-pill");
   if (hudMoneyPill) hudMoneyPill.title = "Mevcut Para: " + money + " TL (Sonraki Yıldız Hedefi: " + target + " İtibar)";
 
@@ -6414,7 +7120,7 @@ function renderGuestBook() {
 
       const badge = document.createElement("div");
       badge.className = "gb-room-badge";
-      const flLabel = s.floor.idx === 0 ? "Zemin Kat" : (s.floor.idx + ". Kat");
+      const flLabel = (s.floor.idx + 1) + ". Kat";
       badge.textContent = s.roomNo + ". Oda • " + flLabel;
       topRow.appendChild(nameEl);
       topRow.appendChild(badge);
@@ -6652,6 +7358,7 @@ const hudStarAvg = document.getElementById("hud-star-avg");
 const hudStarIcons = document.getElementById("hud-star-icons");
 const hudHotelTitle = document.getElementById("hud-hotel-title");
 const hudMoneyTxt = document.getElementById("hud-money-txt");
+const hudGemTxt = document.getElementById("hud-gem-txt");
 const hudToolTxt = document.getElementById("hud-tool-txt");
 const openBtnIco = document.getElementById("open-btn-ico");
 const openBtnLbl = document.getElementById("open-btn-lbl");
@@ -6786,6 +7493,10 @@ document.getElementById("hud-lv-pill").onclick = () => {
   }
 };
 document.getElementById("hud-star-pill").onclick = () => { play("tap"); selectMode("Ach"); openDrawer("upgrade"); };
+const hudGemPillEl = document.getElementById("hud-gem-pill");
+if (hudGemPillEl) {
+  hudGemPillEl.onclick = () => { play("tap"); selectMode("Ach"); openDrawer("upgrade"); };
+}
 document.getElementById("satisfaction-card").onclick = () => { play("tap"); openGuestBook(); };
 document.getElementById("hud-bell-btn").onclick = () => {
   play("bell");
@@ -6930,7 +7641,100 @@ function setAct(i, t, show, on, owned = false, selectedFurn = false) {
 
 // ===== BUNDLED: ui/panel.js =====
 // [ui/panel.js] Seçim paneli: refreshPanel
+function renderAchPanel() {
+  const listEl = document.getElementById("ach-list");
+  if (!listEl) return;
+  let unlockedCount = 0;
+  for (let i = 0; i < ACHIEVEMENTS.length; i++) if (ACHIEVEMENTS[i].done) unlockedCount++;
+  infoText.textContent = "🏆 Başarımlar — Açılan " + unlockedCount + "/" + ACHIEVEMENTS.length + " · Kazanılan 💎 " + gemsEarnedTotal + " (Mevcut: " + gems + " 💎)";
+  const frag = document.createDocumentFragment();
+  for (let gIdx = 0; gIdx < ACH_GROUPS.length; gIdx++) {
+    const grp = ACH_GROUPS[gIdx];
+    const items = ACHIEVEMENTS.filter(a => a.group === grp);
+    if (items.length === 0) continue;
+    const grpDone = items.filter(a => a.done).length;
+    const hdr = document.createElement("div");
+    hdr.className = "ach-group-hdr";
+    const hLeft = document.createElement("span");
+    hLeft.textContent = grp;
+    const hRight = document.createElement("span");
+    hRight.textContent = grpDone + "/" + items.length;
+    hdr.appendChild(hLeft);
+    hdr.appendChild(hRight);
+    frag.appendChild(hdr);
+
+    for (let j = 0; j < items.length; j++) {
+      const a = items[j];
+      const card = document.createElement("div");
+      card.className = "ach-card" + (a.done ? " done" : "");
+
+      const ico = document.createElement("div");
+      ico.className = "ach-ico";
+      ico.textContent = a.done ? "✅" : "🔒";
+      card.appendChild(ico);
+
+      const body = document.createElement("div");
+      body.className = "ach-body";
+
+      const top = document.createElement("div");
+      top.className = "ach-top";
+      const titleEl = document.createElement("span");
+      titleEl.className = "ach-title";
+      titleEl.textContent = a.title;
+      top.appendChild(titleEl);
+
+      const badges = document.createElement("span");
+      badges.className = "ach-badges";
+      if (a.tl > 0) {
+        const tlB = document.createElement("span");
+        tlB.className = "ach-tl-badge";
+        tlB.textContent = "+" + a.tl + " TL";
+        badges.appendChild(tlB);
+      }
+      const gemB = document.createElement("span");
+      gemB.className = "ach-gem-badge";
+      gemB.textContent = "+" + a.gems + " 💎";
+      badges.appendChild(gemB);
+      top.appendChild(badges);
+      body.appendChild(top);
+
+      const desc = document.createElement("div");
+      desc.className = "ach-desc";
+      desc.textContent = a.desc;
+      body.appendChild(desc);
+
+      if (typeof a.progress === "function") {
+        const pr = a.progress();
+        if (pr && pr.max > 0) {
+          const cur = a.done ? pr.max : Math.max(0, Math.min(pr.max, pr.cur));
+          const pct = Math.round((cur / pr.max) * 100);
+          const pRow = document.createElement("div");
+          pRow.className = "ach-prog-row";
+          const track = document.createElement("div");
+          track.className = "ach-prog-track";
+          const fill = document.createElement("div");
+          fill.className = "ach-prog-fill";
+          fill.style.width = pct + "%";
+          track.appendChild(fill);
+          const pTxt = document.createElement("span");
+          pTxt.className = "ach-prog-txt";
+          pTxt.textContent = cur + "/" + pr.max;
+          pRow.appendChild(track);
+          pRow.appendChild(pTxt);
+          body.appendChild(pRow);
+        }
+      }
+
+      card.appendChild(body);
+      frag.appendChild(card);
+    }
+  }
+  listEl.innerHTML = "";
+  listEl.appendChild(frag);
+}
+
 function refreshPanel() {
+  if (selPanelEl) selPanelEl.classList.toggle("ach-mode", sel === "Ach");
   for (let i = 0; i < ActCount; i++) setAct(i, "", false, true, false, false);
   actBtns[ActCount - 1].style.background = "linear-gradient(180deg, #a4f578 0%, #58c934 100%)";
   const readyOnce = hasReadyRoom();
@@ -7043,9 +7847,7 @@ function refreshPanel() {
       setAct(2, "👷 Personel Yönetimi", true, true);
     }
   } else if (sel === "Ach") {
-    let t = "🏆 Başarılar  (Bugün alınan müşteri: " + todayServed + "/10)";
-    for (const a of achs) t += "\n" + (a.done ? "✅ " : "⬜ ") + a.title + " (+" + a.reward + " TL)";
-    infoText.textContent = t;
+    renderAchPanel();
   } else if (sel === "Garden") {
     const n = treePlanted.filter(Boolean).length;
     infoText.textContent = "🌴 Tatil Köyü Peyzajı & Palmiyeler  •  Ağaç: " + n + "/" + treePlanted.length + "\nDışarıdaki kirlere dokunup temizle: her 2 kirde +1 Alet kazanırsın.";
@@ -7395,8 +8197,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 52;
-const APP_VERSION_NAME = "1.9.44-beta";
+const APP_VERSION_CODE = 53;
+const APP_VERSION_NAME = "1.9.45-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -7404,9 +8206,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.45-beta",
+    title: "Elmas (💎) Ekonomisi & 40 Başarım Sistemi (E1)",
+    latest: true,
+    notes: "• 💎 Elmas (💎) Altyapısı & HUD: Üst HUD'a tıklanabilir Elmas sayacı (💎) eklendi; Tamir Aleti sayacı ikonu 🔧 olarak güncellendi. Elmas artınca sayaç kısa bir parlama animasyonu (pulse) yapar.\n• 🏆 40 Başarım Sistemi: 7 kategoride (Büyüme, Tesisler, Personel, Hizmet, Para, Zaman, Olaylar) toplam 470 💎 ödüllü veri odaklı başarım sistemi, grup kartları, ilerleme çubukları ve sıralı pop-up kuyruğu eklendi.\n• 📅 25 Günlük Mevsimler & Kat Adlandırma: Mevsim uzunluğu 25 güne (1 yıl = 100 gün) çıkarıldı; kat bildirimleri arayüzle (1. Kat = zemin) birebir uyumlu hale getirildi."
+  },
+  {
     ver: "v1.9.26-beta",
     title: "Belirgin Gölgeler, Optimize UI & Ultra Hızlı Atmosfer",
-    latest: true,
+    latest: false,
     notes: "• 🌳 Belirgin Gölgeler: Çim zemin üzerine düşen bina ve palmiye/park ağacı yönsel gölgeleri güçlendirildi ve yumuşatıldı.\n• 🧭 Optimize UI: Üst 'Gün / Mevsim' asılı tabelası dar ekranlarda kırpılmayacak şekilde kenarlık ve dolguyla optimize edildi.\n• ⚡ 0.3 ms Atmosfer: Işık ve vinyet motoruna gradyan önbelleği eklenerek kare başına render maliyeti minimuma indirildi."
   },
   {
@@ -7594,18 +8402,16 @@ btnUpdate.textContent = "Güncelle\nv" + APP_VERSION_NAME;
 const menuFooterEl = document.querySelector(".menu-footer");
 if (menuFooterEl) menuFooterEl.textContent = "TheHotel • v" + APP_VERSION_NAME;
 if (hotelNameInput) {
-  hotelNameInput.value = hotelName || "OTEL";
+  hotelNameInput.value = hotelName || "TheHotel";
   hotelNameInput.addEventListener("input", () => {
-    const v = hotelNameInput.value.trim().slice(0, 18).toUpperCase();
-    hotelName = v || "OTEL";
+    const v = hotelNameInput.value.trim().slice(0, 18);
+    hotelName = v || "TheHotel";
   });
 }
 if (btnNewGame) {
-  btnNewGame.style.display = hadSavedGame ? "flex" : "none";
   btnNewGame.onclick = () => { play("tap"); showNewGameConfirm(); };
 }
 if (btnResetSave) {
-  btnResetSave.style.display = hadSavedGame ? "flex" : "none";
   btnResetSave.onclick = () => { play("tap"); showNewGameConfirm(); };
 }
 if (btnConfirmNewGame) {
@@ -7614,9 +8420,14 @@ if (btnConfirmNewGame) {
 if (btnCancelNewGame) {
   btnCancelNewGame.onclick = () => { play("tap"); if (newGameConfirmBox) newGameConfirmBox.style.display = "none"; };
 }
-if (hadSavedGame) {
-  btnStartGame.textContent = "▶ KAYITLI OYUNA DEVAM ET";
+function syncStartMenuUi() {
+  if (hotelNameInput) hotelNameInput.value = hotelName || "TheHotel";
+  if (btnNewGame) btnNewGame.style.display = hadSavedGame ? "flex" : "none";
+  if (btnResetSave) btnResetSave.style.display = hadSavedGame ? "flex" : "none";
+  if (btnStartGame) btnStartGame.textContent = (gameStartedOnce || hadSavedGame) ? "▶ KAYITLI OYUNA DEVAM ET" : "▶ OYUNA BAŞLA";
+  if (typeof updateThemeButtons === "function") updateThemeButtons();
 }
+syncStartMenuUi();
 
 function updateThemeButtons() {
   const cur = (typeof window !== "undefined" && window.cosmetics && window.cosmetics.roomTheme) ||
@@ -7680,7 +8491,7 @@ function openStartMenu() {
   inMenu = true;
   saveGame();
   hadSavedGame = true;
-  if (hotelNameInput) hotelNameInput.value = hotelName || "OTEL";
+  if (hotelNameInput) hotelNameInput.value = hotelName || "TheHotel";
   updateThemeButtons();
   if (btnNewGame) btnNewGame.style.display = "flex";
   if (btnResetSave) btnResetSave.style.display = "flex";
@@ -7693,7 +8504,7 @@ function openStartMenu() {
 btnStartGame.onclick = () => {
   initAudio();
   if (hotelNameInput && hotelNameInput.value.trim()) {
-    hotelName = hotelNameInput.value.trim().slice(0, 18).toUpperCase();
+    hotelName = hotelNameInput.value.trim().slice(0, 18);
   }
   saveGame();
   inMenu = false;
@@ -7841,7 +8652,7 @@ function drawMenuLogo() {
   c.lineWidth = 3;
   c.strokeRect(66, 40, 108, 22);
   c.fillStyle = "#ffffff";
-  const logoTitle = (hotelName || "OTEL").slice(0, 12);
+  const logoTitle = (hotelName || "TheHotel").slice(0, 12);
   c.font = (logoTitle.length > 8 ? "bold 10px Arial" : "bold 13px Arial");
   c.textAlign = "center";
   c.textBaseline = "middle";
@@ -14848,9 +15659,17 @@ function loop(now) {
     if (clouds[i].x > TotalW + 1500) clouds[i].x = -1500;
   }
 
-  if (achTimer > 0) {
+  if (typeof tickAchPopup === "function") {
+    tickAchPopup(dt);
+  } else if (achTimer > 0) {
     achTimer -= dt;
     if (achTimer <= 0) achPopup.style.display = "none";
+  }
+
+  achCheckTimer -= dt;
+  if (achCheckTimer <= 0) {
+    achCheckTimer = 1.0;
+    if (typeof checkAchievements === "function") checkAchievements();
   }
 
   saveTimer += dt;
@@ -14882,6 +15701,27 @@ function loop(now) {
 }
 
 // ===== BAŞLATMA & OYUN DÖNGÜSÜ BOOTSTRAP =====
+if (typeof window !== "undefined" && typeof window.setCosmetic === "function" && !window.setCosmetic._wrappedForAch) {
+  const _baseSetCosmetic = window.setCosmetic;
+  const _wrappedSetCosmetic = function(slot, id, silent = false) {
+    const res = _baseSetCosmetic(slot, id, silent);
+    if (slot === "roomTheme" && !silent && res && typeof recordThemeTried === "function") {
+      recordThemeTried(res);
+      if (typeof checkAchievements === "function") checkAchievements();
+    }
+    return res;
+  };
+  _wrappedSetCosmetic._wrappedForAch = true;
+  window.setCosmetic = _wrappedSetCosmetic;
+  setCosmetic = _wrappedSetCosmetic;
+}
+
+hadSavedGame = (typeof loadGame === "function") ? loadGame() : false;
+if (!hadSavedGame && typeof recordThemeTried === "function" && typeof cosmetics === "object" && cosmetics) {
+  recordThemeTried(cosmetics.roomTheme || "classic");
+}
+if (typeof syncStartMenuUi === "function") syncStartMenuUi();
+
 window.addEventListener("beforeunload", () => saveGame());
 document.addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });
 
