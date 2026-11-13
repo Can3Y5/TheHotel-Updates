@@ -1,8 +1,8 @@
 {
-  "versionCode": 49,
-  "versionName": "1.9.41-beta",
+  "versionCode": 50,
+  "versionName": "1.9.42-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.41-beta:\n1. Oda İçi Eşya Temaları: Banyo kabini, yatak (oda seviyesi/numarası varyasyonuyla), dolap, masa/sandalye, beşik, TV sehpası ve mini buzdolabı seçili temaya (Klasik / Modern / Deniz) göre görünüm değiştirir.\n2. Tema Bütünlüğü: Modern temada orta-koyu arduvaz mobilyalar ve çelik-mavi kumaşlar; Deniz temasında bal/tik ahşap, turkuaz ve mercan dokular eklendi.\n3. Klasik Koruma & Performans: Klasik tema piksel piksel aynı korundu; düz palet okuma yapısı ile kare süresi korundu."
+  "notes": "v1.9.42-beta:\n1. Tesis Parseli Temaları (0d-1): Mutfak/Restoran, Havuz, Park, Depo, Personel Lojmanı ve Çatı Terası & Bar parselleri seçili temaya (Klasik / Modern / Deniz Kenarı) uyum sağlar.\n2. Tema Görselliği: Modern temada koyu bazalt havuz güvertesi, antrasit-çelik mutfak/bar, grafit depo ve lojman; Deniz Kenarı temasında kumlu taş güverteler, beyaz-turkuaz bistro ve açık bal/tik meşesi dokuları eklendi.\n3. Klasik Koruma & Performans: Klasik tema piksel piksel aynı korundu; düz palet okuma yapısı ile kare süresi korundu."
 }

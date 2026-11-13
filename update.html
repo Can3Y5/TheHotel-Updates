@@ -7395,8 +7395,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 49;
-const APP_VERSION_NAME = "1.9.41-beta";
+const APP_VERSION_CODE = 50;
+const APP_VERSION_NAME = "1.9.42-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -8601,7 +8601,31 @@ var COSMETIC_CATALOG = {
       fridgeBaseTop: "#475569", fridgeBaseL: "#334155", fridgeBaseR: "#1e293b",
       fridgeSeam: "#64748b",
       bathTile: "#b8e2f5", bathWallTop: "#89c8e8", bathWallL: "#a8dcf5", bathWallR: "#91cde8",
-      bathGlass: "rgba(180, 235, 255, 0.40)"
+      bathGlass: "rgba(180, 235, 255, 0.40)",
+      // 0d-1: Tesis parselleri (parcel-facilities.js)
+      facKitchenFloorTop: "#c98d54", facKitchenFloorL: "#9e6637", facKitchenFloorR: "#7d4e27",
+      facKitchenWallTop: "#6e473b", facKitchenWallL: "#f5e6d3", facKitchenWallR: "#ebd5bc",
+      facKitchenCounterTop: "#ebd9c0", facCounterL: "#9e6637", facCounterR: "#7d4e27",
+      facKitchenTableTop: "#e0a96d", facKitchenTableL: "#b07442", facKitchenTableR: "#8c5830",
+      facPoolDeckBase: "#f8f5ee", facPoolTileA: "#fdfbf7", facPoolTileB: "#f1ede2",
+      facPoolGrout: "rgba(203,213,225,0.4)", facPoolCoping: "#ffffff",
+      facPoolMosaic: "#0284c7", facPoolMosaicStroke: "#0369a1", facPoolWater: "#0ea5e9",
+      facPoolShimmerA: "#38bdf8", facPoolShimmerB: "rgba(224, 242, 254, 0.7)",
+      facTowelWarm: "#fff3c4", facTowelCool: "#d4f0ff", facTowelCream: "#fff8eb",
+      facPoolUmbrella: "#0284c7",
+      facParkStoneFill: "#e2e8f0", facParkStoneStroke: "#94a3b8",
+      facTimberDark: "#78350f", facTimberMid: "#92400e", facTimberLight: "#b45309", facTimberBright: "#d97706",
+      facStorageFloorTop: "#d1d5db", facStorageFloorL: "#9ca3af", facStorageFloorR: "#6b7280", facStorageRamp: "#e5e7eb",
+      facStorageWallTop: "#475569", facStorageWallL: "#cbd5e1", facStorageWallR: "#e2e8f0",
+      facCrateTop: "#e0ad63", facCrateL: "#c98f42", facCrateR: "#a8732d",
+      facDormSlabTop: "#e0d3be", facDormFloorA: "#eedfca", facDormFloorB: "#e4d3bc", facDormFloorLine: "rgba(120,90,60,0.15)",
+      facDormWallTop: "#5c3d2e", facDormWallL: "#eddcc8", facDormWallR: "#cfbda2",
+      facBunk1Light: "#93c5fd", facBunk1Mid: "#60a5fa", facBunk1Dark: "#3b82f6",
+      facBunk2Light: "#86efac", facBunk2Mid: "#4ade80", facBunk2Dark: "#22c55e",
+      facLockerTop: "#64748b", facLockerL: "#475569", facLockerR: "#334155",
+      facTerraceDeckTop: "#c98b54", facTerraceDeckL: "#a36836", facTerraceDeckR: "#875225",
+      facTerraceWallTop: "#fff8eb", facTerraceWallL: "#e3d1b8", facTerraceWallR: "#c9b59a",
+      facTerraceBarTop: "#e0a96d", facTerraceUmbrella: "#3b96e6"
     },
     modern: {
       id: "modern",
@@ -8681,7 +8705,31 @@ var COSMETIC_CATALOG = {
       fridgeBaseTop: "#374151", fridgeBaseL: "#1f2937", fridgeBaseR: "#111827",
       fridgeSeam: "#334155",
       bathTile: "#cbd5e1", bathWallTop: "#475569", bathWallL: "#94a3b8", bathWallR: "#64748b",
-      bathGlass: "rgba(203, 213, 225, 0.40)"
+      bathGlass: "rgba(203, 213, 225, 0.40)",
+      // 0d-1: Tesis parselleri (parcel-facilities.js)
+      facKitchenFloorTop: "#475569", facKitchenFloorL: "#334155", facKitchenFloorR: "#1e293b",
+      facKitchenWallTop: "#1e293b", facKitchenWallL: "#cbd5e1", facKitchenWallR: "#94a3b8",
+      facKitchenCounterTop: "#e2e8f0", facCounterL: "#64748b", facCounterR: "#475569",
+      facKitchenTableTop: "#94a3b8", facKitchenTableL: "#7b8696", facKitchenTableR: "#5b6676",
+      facPoolDeckBase: "#334155", facPoolTileA: "#3f4c5e", facPoolTileB: "#293548",
+      facPoolGrout: "rgba(15,23,42,0.55)", facPoolCoping: "#94a3b8",
+      facPoolMosaic: "#1e40af", facPoolMosaicStroke: "#1e3a8a", facPoolWater: "#0284c7",
+      facPoolShimmerA: "#60a5fa", facPoolShimmerB: "rgba(191, 219, 254, 0.65)",
+      facTowelWarm: "#cbd5e1", facTowelCool: "#60a5fa", facTowelCream: "#e2e8f0",
+      facPoolUmbrella: "#1e3a8a",
+      facParkStoneFill: "#334155", facParkStoneStroke: "#1e293b",
+      facTimberDark: "#4e5868", facTimberMid: "#64748b", facTimberLight: "#7b8696", facTimberBright: "#94a3b8",
+      facStorageFloorTop: "#3f4654", facStorageFloorL: "#2b303c", facStorageFloorR: "#1e293b", facStorageRamp: "#475569",
+      facStorageWallTop: "#18181b", facStorageWallL: "#64748b", facStorageWallR: "#475569",
+      facCrateTop: "#94a3b8", facCrateL: "#7b8696", facCrateR: "#5b6676",
+      facDormSlabTop: "#525c68", facDormFloorA: "#3b4250", facDormFloorB: "#2d3340", facDormFloorLine: "rgba(15,23,42,0.42)",
+      facDormWallTop: "#1e293b", facDormWallL: "#b8c4d0", facDormWallR: "#94a3b8",
+      facBunk1Light: "#7fa6cf", facBunk1Mid: "#5b84b1", facBunk1Dark: "#3f648e",
+      facBunk2Light: "#d4a66a", facBunk2Mid: "#b8864b", facBunk2Dark: "#966832",
+      facLockerTop: "#94a3b8", facLockerL: "#64748b", facLockerR: "#475569",
+      facTerraceDeckTop: "#3f4654", facTerraceDeckL: "#2b303c", facTerraceDeckR: "#1e293b",
+      facTerraceWallTop: "#cbd5e1", facTerraceWallL: "#64748b", facTerraceWallR: "#475569",
+      facTerraceBarTop: "#e2e8f0", facTerraceUmbrella: "#1d4ed8"
     },
     seaside: {
       id: "seaside",
@@ -8761,7 +8809,31 @@ var COSMETIC_CATALOG = {
       fridgeBaseTop: "#0e7490", fridgeBaseL: "#155e75", fridgeBaseR: "#164e63",
       fridgeSeam: "#059669",
       bathTile: "#99f6e4", bathWallTop: "#0891b2", bathWallL: "#67e8f9", bathWallR: "#22d3ee",
-      bathGlass: "rgba(103, 232, 249, 0.40)"
+      bathGlass: "rgba(103, 232, 249, 0.40)",
+      // 0d-1: Tesis parselleri (parcel-facilities.js)
+      facKitchenFloorTop: "#f0e2c4", facKitchenFloorL: "#d2ab74", facKitchenFloorR: "#b38953",
+      facKitchenWallTop: "#0e7490", facKitchenWallL: "#ecfeff", facKitchenWallR: "#bae6fd",
+      facKitchenCounterTop: "#ffffff", facCounterL: "#06b6d4", facCounterR: "#0891b2",
+      facKitchenTableTop: "#d2ab74", facKitchenTableL: "#b38953", facKitchenTableR: "#8f683a",
+      facPoolDeckBase: "#d9b87c", facPoolTileA: "#eed39c", facPoolTileB: "#d6b070",
+      facPoolGrout: "rgba(8,145,178,0.28)", facPoolCoping: "#67e8f9",
+      facPoolMosaic: "#0891b2", facPoolMosaicStroke: "#0e7490", facPoolWater: "#06b6d4",
+      facPoolShimmerA: "#67e8f9", facPoolShimmerB: "rgba(207, 250, 254, 0.82)",
+      facTowelWarm: "#fda4af", facTowelCool: "#67e8f9", facTowelCream: "#fda4af",
+      facPoolUmbrella: "#0891b2",
+      facParkStoneFill: "#f5d598", facParkStoneStroke: "#c49b63",
+      facTimberDark: "#9c7342", facTimberMid: "#b8884e", facTimberLight: "#d2ab74", facTimberBright: "#e8c896",
+      facStorageFloorTop: "#f0d8a8", facStorageFloorL: "#d2b684", facStorageFloorR: "#a88e60", facStorageRamp: "#efe0c0",
+      facStorageWallTop: "#0e7490", facStorageWallL: "#a5e3ef", facStorageWallR: "#7ad3e6",
+      facCrateTop: "#b9803b", facCrateL: "#9c6626", facCrateR: "#7d4e18",
+      facDormSlabTop: "#b8e7f5", facDormFloorA: "#d2eef5", facDormFloorB: "#b8e1ed", facDormFloorLine: "rgba(14,116,144,0.22)",
+      facDormWallTop: "#0e7490", facDormWallL: "#a5e3ef", facDormWallR: "#7ad3e6",
+      facBunk1Light: "#67e8f9", facBunk1Mid: "#22d3ee", facBunk1Dark: "#06b6d4",
+      facBunk2Light: "#fda4af", facBunk2Mid: "#fb7185", facBunk2Dark: "#f43f5e",
+      facLockerTop: "#7fb7c9", facLockerL: "#4e8fa6", facLockerR: "#1a6a85",
+      facTerraceDeckTop: "#f2d6a2", facTerraceDeckL: "#d2ab74", facTerraceDeckR: "#a8834f",
+      facTerraceWallTop: "#ffffff", facTerraceWallL: "#a5e3ef", facTerraceWallR: "#68c5d6",
+      facTerraceBarTop: "#ffffff", facTerraceUmbrella: "#06b6d4"
     }
   }
 };
@@ -11904,14 +11976,19 @@ function drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlo
 // [render/parcel-facilities.js] Tesisler: mutfak, havuz, park, depo, lojman, çatı terası
 // 3) Restoran & Mutfak Parseli (Kitchen)
 function drawParcelKitchen(s, u0, v0, u1, v1, z0, z1, isSel, activeCount, leftConnected) {
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#c98d54", "#9e6637", "#7d4e27", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
-  drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, "#6e473b", "#f5e6d3", "#ebd5bc", false, false, 0);
-  isoBox(u0, v0, u0 + 12, v1, z0, z1, "#6e473b", "#ebd5bc", "#f5e6d3", OUTLINE_COL, 2);
+  const p = getRoomPalette();
+  const kfTop = p.facKitchenFloorTop, kfL = p.facKitchenFloorL, kfR = p.facKitchenFloorR;
+  const kwTop = p.facKitchenWallTop, kwL = p.facKitchenWallL, kwR = p.facKitchenWallR;
+  const kcTop = p.facKitchenCounterTop, cL = p.facCounterL, cR = p.facCounterR;
+  const ktTop = p.facKitchenTableTop, ktL = p.facKitchenTableL, ktR = p.facKitchenTableR;
+  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, kfTop, kfL, kfR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, kwTop, kwL, kwR, false, false, 0);
+  isoBox(u0, v0, u0 + 12, v1, z0, z1, kwTop, kwR, kwL, OUTLINE_COL, 2);
   // Mutfak Tezgahı
-  isoBox(u0 + 18, v0 + 18, u0 + 62, v1 - 24, z0, z0 + 34, "#ebd9c0", "#9e6637", "#7d4e27", OUTLINE_COL, 1.8);
+  isoBox(u0 + 18, v0 + 18, u0 + 62, v1 - 24, z0, z0 + 34, kcTop, cL, cR, OUTLINE_COL, 1.8);
   // 2 Restoran Masası
   for (const tv of [v0 + 45, v0 + 125]) {
-    isoBox(u0 + 105, tv, u0 + 158, tv + 46, z0, z0 + 24, "#e0a96d", "#b07442", "#8c5830", OUTLINE_COL, 1.8);
+    isoBox(u0 + 105, tv, u0 + 158, tv + 46, z0, z0 + 24, ktTop, ktL, ktR, OUTLINE_COL, 1.8);
   }
   if (cookLevel > 0) {
     drawMiniChibi(u0 + 75, v0 + 95, z0 + 4, "#fcd9b8", "#3a281f", "#ffffff", 0.76, 1, "#ffffff");
@@ -11931,24 +12008,29 @@ function drawParcelKitchen(s, u0, v0, u1, v1, z0, z1, isSel, activeCount, leftCo
 
 // 4) Lüks Açık Yüzme Havuzu Parseli (Pool)
 function drawParcelPool(s, u0, v0, u1, v1, z0, isSel, activeCount) {
+  const p = getRoomPalette();
+  const deckBase = p.facPoolDeckBase, tileA = p.facPoolTileA, tileB = p.facPoolTileB, grout = p.facPoolGrout;
+  const coping = p.facPoolCoping, mosaic = p.facPoolMosaic, mosaicStroke = p.facPoolMosaicStroke;
+  const water = p.facPoolWater, shimA = p.facPoolShimmerA, shimB = p.facPoolShimmerB;
+  const towelW = p.facTowelWarm, towelC = p.facTowelCool, umbCol = p.facPoolUmbrella;
   // A) Traverten Havuz Terası Zemin Kaplaması
-  const poly = isoQuad(u0, v0, u1, v1, z0, "#f8f5ee", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const poly = isoQuad(u0, v0, u1, v1, z0, deckBase, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   // Zarif Taş Döşeme Derz Çizgileri
   const poolSteps = 4, pdu = (u1 - u0) / poolSteps, pdv = (v1 - v0) / poolSteps;
   for (let iu = 0; iu < poolSteps; iu++) {
     for (let iv = 0; iv < poolSteps; iv++) {
-      isoQuad(u0 + iu * pdu, v0 + iv * pdv, u0 + (iu + 1) * pdu, v0 + (iv + 1) * pdv, z0, ((iu + iv) % 2 === 0 ? "#fdfbf7" : "#f1ede2"), "rgba(203,213,225,0.4)", 0.8);
+      isoQuad(u0 + iu * pdu, v0 + iv * pdv, u0 + (iu + 1) * pdu, v0 + (iv + 1) * pdv, z0, ((iu + iv) % 2 === 0 ? tileA : tileB), grout, 0.8);
     }
   }
   // B) Havuz Mermer Bordürü (Coping)
-  isoQuad(u0 + 20, v0 + 48, u1 - 15, v1 - 15, z0 + 1, "#ffffff", OUTLINE_COL, 2.2);
+  isoQuad(u0 + 20, v0 + 48, u1 - 15, v1 - 15, z0 + 1, coping, OUTLINE_COL, 2.2);
   // Su Hattı Mozaik Bordürü
-  isoQuad(u0 + 26, v0 + 54, u1 - 21, v1 - 21, z0 + 1.2, "#0284c7", "#0369a1", 1.2);
+  isoQuad(u0 + 26, v0 + 54, u1 - 21, v1 - 21, z0 + 1.2, mosaic, mosaicStroke, 1.2);
   // Turkuaz Berrak Havuz Suyu
-  isoQuad(u0 + 28, v0 + 56, u1 - 23, v1 - 23, z0 + 1.5, "#0ea5e9", "#0284c7", 1.5);
+  isoQuad(u0 + 28, v0 + 56, u1 - 23, v1 - 23, z0 + 1.5, water, mosaic, 1.5);
   // Canlı Su Yüzeyi Parıltısı ve Dalgalanması
-  isoQuad(u0 + 38, v0 + 66, u1 - 33, v1 - 33, z0 + 1.8, "#38bdf8", null, 0);
-  isoQuad(u0 + 48, v0 + 76, u1 - 43, v1 - 43, z0 + 2.0, "rgba(224, 242, 254, 0.7)", null, 0);
+  isoQuad(u0 + 38, v0 + 66, u1 - 33, v1 - 33, z0 + 1.8, shimA, null, 0);
+  isoQuad(u0 + 48, v0 + 76, u1 - 43, v1 - 43, z0 + 2.0, shimB, null, 0);
 
   // C) Krom Havuz Merdiveni (Sol Üst Köşe)
   isoBox(u0 + 32, v0 + 54, u0 + 36, v0 + 64, z0 + 1, z0 + 18, "#94a3b8", "#cbd5e1", "#f1f5f9", OUTLINE_COL, 1);
@@ -11957,9 +12039,9 @@ function drawParcelPool(s, u0, v0, u1, v1, z0, isSel, activeCount) {
   isoBox(u0 + 32, v0 + 56, u0 + 48, v0 + 60, z0 + 12, z0 + 14, "#e2e8f0", "#94a3b8", "#64748b", null, 0);
 
   // D) Şezlonglar & Güneş Şemsiyesi
-  drawSunLounger(u0 + 28, v0 + 14, z0 + 1, isOpen && activeCount >= 1, "#fff3c4");
-  drawSunLounger(u0 + 92, v0 + 14, z0 + 1, isOpen && activeCount >= 2, "#d4f0ff");
-  drawIsoUmbrella(u0 + 165, v0 + 25, z0 + 2, "#0284c7", 0.9);
+  drawSunLounger(u0 + 28, v0 + 14, z0 + 1, isOpen && activeCount >= 1, towelW);
+  drawSunLounger(u0 + 92, v0 + 14, z0 + 1, isOpen && activeCount >= 2, towelC);
+  drawIsoUmbrella(u0 + 165, v0 + 25, z0 + 2, umbCol, 0.9);
 
   // E) Kokteyl Sehpası & Can Simidi
   isoBox(u0 + 76, v0 + 18, u0 + 88, v0 + 30, z0 + 1, z0 + 12, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1);
@@ -11980,20 +12062,23 @@ function drawParcelPool(s, u0, v0, u1, v1, z0, isSel, activeCount) {
 
 // 4.5) Yeşil Dinlenme Parkı & Çocuk Bahçesi Parseli (Park)
 function drawParcelPark(s, u0, v0, u1, v1, z0, isSel) {
+  const p = getRoomPalette();
+  const stoneFill = p.facParkStoneFill, stoneStroke = p.facParkStoneStroke;
+  const wDark = p.facTimberDark, wMid = p.facTimberMid, wLight = p.facTimberLight, wBright = p.facTimberBright;
   // A) Bakımlı Kadife Çim Zemin
   const poly = isoQuad(u0, v0, u1, v1, z0, "#5ea218", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   isoQuad(u0 + 10, v0 + 10, u1 - 10, v1 - 10, z0 + 0.3, "#65a91d", null, 0);
 
   // B) Kıvrımlı Doğal Bahçe Yürüyüş Yolu (Flagstone Path)
-  isoQuad(u0 + 15, v0 + 90, u0 + 65, v0 + 130, z0 + 0.5, "#e2e8f0", "#94a3b8", 1.2);
-  isoQuad(u0 + 60, v0 + 115, u0 + 125, v0 + 155, z0 + 0.5, "#e2e8f0", "#94a3b8", 1.2);
-  isoQuad(u0 + 120, v0 + 140, u1 - 15, v1 - 35, z0 + 0.5, "#e2e8f0", "#94a3b8", 1.2);
+  isoQuad(u0 + 15, v0 + 90, u0 + 65, v0 + 130, z0 + 0.5, stoneFill, stoneStroke, 1.2);
+  isoQuad(u0 + 60, v0 + 115, u0 + 125, v0 + 155, z0 + 0.5, stoneFill, stoneStroke, 1.2);
+  isoQuad(u0 + 120, v0 + 140, u1 - 15, v1 - 35, z0 + 0.5, stoneFill, stoneStroke, 1.2);
 
   // C) Ahşap Çocuk Salıncağı (A-Frame Timber Swing Set)
   const swU = u0 + 45, swV = v0 + 35;
-  isoBox(swU, swV, swU + 6, swV + 8, z0, z0 + 44, "#78350f", "#92400e", "#b45309", OUTLINE_COL, 1.2);
-  isoBox(swU, swV + 65, swU + 6, swV + 73, z0, z0 + 44, "#78350f", "#92400e", "#b45309", OUTLINE_COL, 1.2);
-  isoBox(swU - 2, swV - 4, swU + 8, swV + 77, z0 + 42, z0 + 48, "#92400e", "#b45309", "#d97706", OUTLINE_COL, 1.3);
+  isoBox(swU, swV, swU + 6, swV + 8, z0, z0 + 44, wDark, wMid, wLight, OUTLINE_COL, 1.2);
+  isoBox(swU, swV + 65, swU + 6, swV + 73, z0, z0 + 44, wDark, wMid, wLight, OUTLINE_COL, 1.2);
+  isoBox(swU - 2, swV - 4, swU + 8, swV + 77, z0 + 42, z0 + 48, wMid, wLight, wBright, OUTLINE_COL, 1.3);
   // Salıncak 1
   isoBox(swU + 2, swV + 18, swU + 4, swV + 20, z0 + 14, z0 + 42, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
   isoBox(swU + 2, swV + 32, swU + 4, swV + 34, z0 + 14, z0 + 42, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
@@ -12030,32 +12115,37 @@ function drawParcelPark(s, u0, v0, u1, v1, z0, isSel) {
 
 // 5) Depo Binası Parseli (Storage - Yola Bağlantılı Lojistik & Mal Kabul Binası)
 function drawParcelStorage(s, gu, u0, v0, u1, v1, z0, z1, isSel) {
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#d1d5db", "#9ca3af", "#6b7280", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const p = getRoomPalette();
+  const sfTop = p.facStorageFloorTop, sfL = p.facStorageFloorL, sfR = p.facStorageFloorR, rampCol = p.facStorageRamp;
+  const swTop = p.facStorageWallTop, swL = p.facStorageWallL, swR = p.facStorageWallR;
+  const stD1 = p.elevSteelDark1, stD2 = p.elevSteelDark2, stD3 = p.elevSteelDark3, stD4 = p.elevSteelDark4, stM4 = p.elevSteelMid4;
+  const crTop = p.facCrateTop, crL = p.facCrateL, crR = p.facCrateR;
+  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, sfTop, sfL, sfR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
 
   // Yola Bağlantı Rampası (Depo yola bakan sırada - gu === 5)
   if (gu === 5) {
     const swU0 = 6 * PARCEL_SIZE + FRONT_GAP; // 1260
     // Kaldırıma ve Caddeye uzanan sağlam beton mal kabul rampası
-    isoQuad(u1, v0 + 25, swU0, v1 - 25, 0, "#e5e7eb", "#9ca3af", 1.8);
+    isoQuad(u1, v0 + 25, swU0, v1 - 25, 0, rampCol, sfL, 1.8);
     // Sarı-Siyah Yükleme Alanı Güvenlik Çizgisi
     isoQuad(u1 + 2, v0 + 30, u1 + 8, v1 - 30, 0.4, "#facc15", "#eab308", 0.8);
     isoQuad(swU0 - 8, v0 + 30, swU0 - 2, v1 - 30, 0.4, "#facc15", "#eab308", 0.8);
   }
 
   // Sağlam Dış Duvarlar (Sanayi Tipi Çelik & Yalıtımlı Panel Duvarlar)
-  isoBox(u0, v0, u0 + 12, v1, z0, z1, "#475569", "#cbd5e1", "#e2e8f0", OUTLINE_COL, 2); // Arka Duvar
-  isoBox(u0, v0, u1, v0 + 10, z0, z1, "#475569", "#cbd5e1", "#e2e8f0", OUTLINE_COL, 1.8); // Sol Yan Duvar
-  isoBox(u0, v1 - 10, u1, v1, z0, z1, "#475569", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.8); // Sağ Yan Duvar
+  isoBox(u0, v0, u0 + 12, v1, z0, z1, swTop, swL, swR, OUTLINE_COL, 2); // Arka Duvar
+  isoBox(u0, v0, u1, v0 + 10, z0, z1, swTop, swL, swR, OUTLINE_COL, 1.8); // Sol Yan Duvar
+  isoBox(u0, v1 - 10, u1, v1, z0, z1, swTop, swR, swL, OUTLINE_COL, 1.8); // Sağ Yan Duvar
 
   // Ön Cephe: Yola Açılan Motorlu Otomatik Kepenk / Teslimat Kapısı
   if (gu === 5) {
     // Yola Açılan Büyük Metal Kepenk Kapı (u = u1)
-    isoBox(u1 - 4, v0 + 35, u1, v1 - 35, z0, z0 + 58, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.6);
+    isoBox(u1 - 4, v0 + 35, u1, v1 - 35, z0, z0 + 58, stD1, stD2, stD3, OUTLINE_COL, 1.6);
     for (let sz = z0 + 10; sz < z0 + 54; sz += 10) {
-      isoBox(u1 - 4.5, v0 + 37, u1 + 0.5, v1 - 37, sz, sz + 2, "#475569", "#334155", "#1e293b", null, 0);
+      isoBox(u1 - 4.5, v0 + 37, u1 + 0.5, v1 - 37, sz, sz + 2, stM4, stD1, stD2, null, 0);
     }
     // Kepenk Üstü Işıklı Tabela Paneli
-    isoBox(u1 - 5, (v0 + v1) * 0.5 - 38, u1 + 1, (v0 + v1) * 0.5 + 38, z0 + 64, z0 + 76, "#1e293b", "#0f172a", "#020617", OUTLINE_COL, 1.2);
+    isoBox(u1 - 5, (v0 + v1) * 0.5 - 38, u1 + 1, (v0 + v1) * 0.5 + 38, z0 + 64, z0 + 76, stD2, stD3, stD4, OUTLINE_COL, 1.2);
     isoLabel("📦 MAL KABUL & DEPO", u1, (v0 + v1) * 0.5, z0 + 70, 7.5, "#ffd700", null, 0, 0);
   }
 
@@ -12063,7 +12153,7 @@ function drawParcelStorage(s, gu, u0, v0, u1, v1, z0, z1, isSel) {
   const total = sumArr(stock);
   for (let i = 0; i < Math.min(6, Math.max(2, total)); i++) {
     const bu = u0 + 32 + (i % 3) * 52, bv = v0 + 36 + Math.floor(i / 3) * 62;
-    isoBox(bu, bv, bu + 38, bv + 36, z0, z0 + 24, "#e0ad63", "#c98f42", "#a8732d", OUTLINE_COL, 1.6);
+    isoBox(bu, bv, bu + 38, bv + 36, z0, z0 + 24, crTop, crL, crR, OUTLINE_COL, 1.6);
   }
   isoLabel("📦 DEPO Sv." + storageLevel + " (" + total + "/" + storageCap() + ")", u0 + 52, v0 + 52, z0 + 88, 11, "#1e293b", "#f1f5f9", 6, 2.5);
   addHitPoly(poly, () => {
@@ -12077,47 +12167,57 @@ function drawParcelStorage(s, gu, u0, v0, u1, v1, z0, z1, isSel) {
 
 // 6) Personel Lojmanı Parseli (Dorm)
 function drawParcelDorm(s, u0, v0, u1, v1, z0, z1, isSel, leftConnected) {
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, "#e0d3be", "#c4b59d", "#ab9b82", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const p = getRoomPalette();
+  const slabTop = p.facDormSlabTop, slabL = p.roofSlabL, slabR = p.roofSlabR;
+  const flA = p.facDormFloorA, flB = p.facDormFloorB, flLine = p.facDormFloorLine;
+  const dwTop = p.facDormWallTop, dwL = p.facDormWallL, dwR = p.facDormWallR;
+  const shTop = p.bedSheetTop, pilL = p.bedPillowL, pilR = p.bedSheetR;
+  const b1L = p.facBunk1Light, b1M = p.facBunk1Mid, b1D = p.facBunk1Dark;
+  const b2L = p.facBunk2Light, b2M = p.facBunk2Mid, b2D = p.facBunk2Dark;
+  const tDark = p.facTimberDark, tMid = p.facTimberMid, tLight = p.facTimberLight, tBright = p.facTimberBright;
+  const lkTop = p.facLockerTop, lkL = p.facLockerL, lkR = p.facLockerR;
+  const stD1 = p.elevSteelDark1, stD2 = p.elevSteelDark2, stD3 = p.elevSteelDark3, stD4 = p.elevSteelDark4, stM4 = p.elevSteelMid4;
+  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, slabTop, slabL, slabR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   // Şık ahşap parke zemin kaplaması
   const steps = 4, du = (u1 - u0) / steps, dv = (v1 - v0) / steps;
   for (let iu = 0; iu < steps; iu++) {
     for (let iv = 0; iv < steps; iv++) {
-      const col = (iu + iv) % 2 === 0 ? "#eedfca" : "#e4d3bc";
-      isoQuad(u0 + iu * du, v0 + iv * dv, u0 + (iu + 1) * du, v0 + (iv + 1) * dv, z0, col, "rgba(120,90,60,0.15)", 0.8);
+      const col = (iu + iv) % 2 === 0 ? flA : flB;
+      isoQuad(u0 + iu * du, v0 + iv * dv, u0 + (iu + 1) * du, v0 + (iv + 1) * dv, z0, col, flLine, 0.8);
     }
   }
   // Arka ve sol bölme duvarları
-  drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, "#5c3d2e", "#eddcc8", "#cfbda2", false, false, 0);
-  isoBox(u0, v0, u0 + 12, v1, z0, z1, "#5c3d2e", "#cfbda2", "#eddcc8", OUTLINE_COL, 2);
+  drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, dwTop, dwL, dwR, false, false, 0);
+  isoBox(u0, v0, u0 + 12, v1, z0, z1, dwTop, dwR, dwL, OUTLINE_COL, 2);
 
   // 1. Personel Ranzası (Ahşap çerçeve, mavi nevresim & beyaz yastık)
-  isoBox(u0 + 24, v0 + 22, u0 + 106, v0 + 74, z0, z0 + 18, "#ffffff", "#60a5fa", "#3b82f6", OUTLINE_COL, 1.5);
-  isoBox(u0 + 24, v0 + 22, u0 + 44, v0 + 74, z0 + 18, z0 + 24, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2); // Yastık
+  isoBox(u0 + 24, v0 + 22, u0 + 106, v0 + 74, z0, z0 + 18, shTop, b1M, b1D, OUTLINE_COL, 1.5);
+  isoBox(u0 + 24, v0 + 22, u0 + 44, v0 + 74, z0 + 18, z0 + 24, shTop, pilL, pilR, OUTLINE_COL, 1.2); // Yastık
   // Ranza Üst Katı (Sv.2+)
   if (dormLevel >= 2) {
-    isoBox(u0 + 24, v0 + 22, u0 + 106, v0 + 74, z0 + 36, z0 + 48, "#ffffff", "#93c5fd", "#60a5fa", OUTLINE_COL, 1.3);
-    isoBox(u0 + 22, v0 + 20, u0 + 28, v0 + 26, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
-    isoBox(u0 + 102, v0 + 20, u0 + 108, v0 + 26, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
+    isoBox(u0 + 24, v0 + 22, u0 + 106, v0 + 74, z0 + 36, z0 + 48, shTop, b1L, b1M, OUTLINE_COL, 1.3);
+    isoBox(u0 + 22, v0 + 20, u0 + 28, v0 + 26, z0, z0 + 50, tDark, tMid, tLight, null, 0);
+    isoBox(u0 + 102, v0 + 20, u0 + 108, v0 + 26, z0, z0 + 50, tDark, tMid, tLight, null, 0);
   }
 
   // 2. Personel Yatağı / Ranzası (Yeşil nevresim)
-  isoBox(u0 + 24, v0 + 102, u0 + 106, v0 + 154, z0, z0 + 18, "#ffffff", "#4ade80", "#22c55e", OUTLINE_COL, 1.5);
-  isoBox(u0 + 24, v0 + 102, u0 + 44, v0 + 154, z0 + 18, z0 + 24, "#ffffff", "#f8fafc", "#e2e8f0", OUTLINE_COL, 1.2);
+  isoBox(u0 + 24, v0 + 102, u0 + 106, v0 + 154, z0, z0 + 18, shTop, b2M, b2D, OUTLINE_COL, 1.5);
+  isoBox(u0 + 24, v0 + 102, u0 + 44, v0 + 154, z0 + 18, z0 + 24, shTop, pilL, pilR, OUTLINE_COL, 1.2);
   if (dormLevel >= 3) {
-    isoBox(u0 + 24, v0 + 102, u0 + 106, v0 + 154, z0 + 36, z0 + 48, "#ffffff", "#86efac", "#4ade80", OUTLINE_COL, 1.3);
-    isoBox(u0 + 22, v0 + 100, u0 + 28, v0 + 106, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
-    isoBox(u0 + 102, v0 + 100, u0 + 108, v0 + 106, z0, z0 + 50, "#78350f", "#92400e", "#b45309", null, 0);
+    isoBox(u0 + 24, v0 + 102, u0 + 106, v0 + 154, z0 + 36, z0 + 48, shTop, b2L, b2M, OUTLINE_COL, 1.3);
+    isoBox(u0 + 22, v0 + 100, u0 + 28, v0 + 106, z0, z0 + 50, tDark, tMid, tLight, null, 0);
+    isoBox(u0 + 102, v0 + 100, u0 + 108, v0 + 106, z0, z0 + 50, tDark, tMid, tLight, null, 0);
   }
 
   // Personel Soyunma Dolapları (Metal Locker)
-  isoBox(u0 + 128, v0 + 20, u0 + 168, v0 + 64, z0, z0 + 44, "#64748b", "#475569", "#334155", OUTLINE_COL, 1.4);
-  isoBox(u0 + 128, v0 + 41, u0 + 168, v0 + 43, z0, z0 + 44, "#1e293b", "#0f172a", "#020617", null, 0); // Bölme çizgisi
+  isoBox(u0 + 128, v0 + 20, u0 + 168, v0 + 64, z0, z0 + 44, lkTop, lkL, lkR, OUTLINE_COL, 1.4);
+  isoBox(u0 + 128, v0 + 41, u0 + 168, v0 + 43, z0, z0 + 44, stD2, stD3, stD4, null, 0); // Bölme çizgisi
 
   // Personel Dinlenme Masası & Kahve Köşesi
-  isoBox(u0 + 124, v0 + 102, u0 + 164, v0 + 152, z0, z0 + 20, "#d97706", "#b45309", "#92400e", OUTLINE_COL, 1.4);
+  isoBox(u0 + 124, v0 + 102, u0 + 164, v0 + 152, z0, z0 + 20, tBright, tLight, tMid, OUTLINE_COL, 1.4);
   // Masa üstü kupası & radyo
   isoBox(u0 + 138, v0 + 115, u0 + 148, v0 + 125, z0 + 20, z0 + 28, "#f8fafc", "#ef4444", "#dc2626", null, 0);
-  isoBox(u0 + 136, v0 + 132, u0 + 152, v0 + 146, z0 + 20, z0 + 29, "#1e293b", "#334155", "#475569", null, 0);
+  isoBox(u0 + 136, v0 + 132, u0 + 152, v0 + 146, z0 + 20, z0 + 29, stD2, stD1, stM4, null, 0);
 
   isoLabel("🏠 LOJMAN Sv." + dormLevel + " (" + totalStaffCount() + "/" + staffCap() + ")", u0 + 52, v0 + 52, z0 + 88, 11, "#3b1e54", "#f3e8ff", 6, 2.5);
   addHitPoly(poly, () => {
@@ -12131,14 +12231,19 @@ function drawParcelDorm(s, u0, v0, u1, v1, z0, z1, isSel, leftConnected) {
 
 // 7) Çatı Terası & Çatı Barı (RoofTerrace - Üst Katlarda)
 function drawParcelRoofTerrace(s, u0, v0, u1, v1, z0, isSel, activeCount) {
-  const poly = isoBox(u0, v0, u1, v1, z0 - 6, z0, "#c98b54", "#a36836", "#875225", isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.2);
-  isoBox(u0, v0, u1, v0 + 10, z0, z0 + 22, "#fff8eb", "#e3d1b8", "#c9b59a", OUTLINE_COL, 1.6);
-  isoBox(u0, v0, u0 + 10, v1, z0, z0 + 22, "#fff8eb", "#e3d1b8", "#c9b59a", OUTLINE_COL, 1.6);
+  const p = getRoomPalette();
+  const deckTop = p.facTerraceDeckTop, deckL = p.facTerraceDeckL, deckR = p.facTerraceDeckR;
+  const parTop = p.facTerraceWallTop, parL = p.facTerraceWallL, parR = p.facTerraceWallR;
+  const barTop = p.facTerraceBarTop, barL = p.facCounterL, barR = p.facCounterR;
+  const towel1 = p.facTowelCream, towel2 = p.facTowelCool, umbCol = p.facTerraceUmbrella;
+  const poly = isoBox(u0, v0, u1, v1, z0 - 6, z0, deckTop, deckL, deckR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.2);
+  isoBox(u0, v0, u1, v0 + 10, z0, z0 + 22, parTop, parL, parR, OUTLINE_COL, 1.6);
+  isoBox(u0, v0, u0 + 10, v1, z0, z0 + 22, parTop, parL, parR, OUTLINE_COL, 1.6);
   // Çatı Barı Tezgahı
-  isoBox(u0 + 22, v0 + 22, u0 + 82, v0 + 115, z0, z0 + 30, "#e0a96d", "#9e6637", "#7d4e27", OUTLINE_COL, 1.8);
-  drawSunLounger(u0 + 110, v0 + 35, z0, isOpen && activeCount >= 1, "#fff8eb", "#e6b84d");
-  drawSunLounger(u0 + 110, v0 + 125, z0, isOpen && activeCount >= 2, "#d4f0ff", "#59331a");
-  drawIsoUmbrella(u0 + 135, v0 + 90, z0, "#3b96e6", 0.9);
+  isoBox(u0 + 22, v0 + 22, u0 + 82, v0 + 115, z0, z0 + 30, barTop, barL, barR, OUTLINE_COL, 1.8);
+  drawSunLounger(u0 + 110, v0 + 35, z0, isOpen && activeCount >= 1, towel1, "#e6b84d");
+  drawSunLounger(u0 + 110, v0 + 125, z0, isOpen && activeCount >= 2, towel2, "#59331a");
+  drawIsoUmbrella(u0 + 135, v0 + 90, z0, umbCol, 0.9);
   drawPottedPlant(u0 + 28, v1 - 28, z0, 0.85);
   isoLabel("🏖️ ÇATI TERASI & BAR", u0 + 52, v0 + 52, z0 + 80, 10.5, "#0f4c81", "#e0f2fe", 6, 2);
   addHitPoly(poly, () => {
