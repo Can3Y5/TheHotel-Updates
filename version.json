@@ -1,8 +1,8 @@
 {
-  "versionCode": 56,
-  "versionName": "1.9.48-beta",
+  "versionCode": 57,
+  "versionName": "1.9.49-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.48-beta:\n1. Bahçe Süsleri Hizalama (E2.1): 24 bahçe yuvasının koordinatları depo rampası, köşe yola paralel parseller, taş yol ve kuyruk hattıyla 0 çakışma olacak şekilde hizalandı; çizimler yuva kutusuna sığdırıldı.\n2. Tek Bahçe Paneli: Eski Palmiye Dik modu kaldırıldı, kaldırım dokunuşu da yeni elmas bahçe panelini açar.\n3. Katman & Geçiş İadesi: Sol şerit (left_*) arka planda, ön/sağ şerit otel önünde çizilir; küçülen yuvalardaki uyumsuz eski süsler yüklemede tam elmas iadesiyle güncellenir."
+  "notes": "v1.9.49-beta:\n1. Kapalı Alt Kat Cepheleri (V1): Üst katlar izlenirken alttaki kapalı yapı katlarının ön/sağ yüzleri çerçeveli pencereler, gece ışıklı/karanlık camlar, köşe pilastırları, depo kepengi ve açık zemin kat resepsiyon vitriniyle çizilir.\n2. Kalın Kat Döşemesi: Üst kat tabanları ve çatı döşemesi 14 birim beton plaka olarak güncellendi; viewFloor=0 görünümü birebir korunur.\n3. Alt Kat Karakter Filtresi: Alt kattaki kapalı parsellerdeki misafir/personel gizlenirken açık hava, kaldırım ve resepsiyon kapısı karakterleri görünür kalır."
 }

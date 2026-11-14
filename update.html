@@ -9446,8 +9446,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 56;
-const APP_VERSION_NAME = "1.9.48-beta";
+const APP_VERSION_CODE = 57;
+const APP_VERSION_NAME = "1.9.49-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9455,9 +9455,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.49-beta",
+    title: "V1 Üst Kat Görünümü: Kapalı Alt Kat Cepheleri & Kalın Döşeme",
+    latest: true,
+    notes: "• 🏢 Kapalı Alt Kat Cepheleri: Üst katlar (2., 3., 4. kat) izlenirken alttaki kapalı katların dışa bakan ön ve sağ yüzleri kesit yerine çerçeveli pencereli, gece ışıklı/karanlık camlı, köşe pilastırlı kapalı bina cephesi olarak çizilir; zemin kat resepsiyon kapısı açık ve vitrinli kalır, depo kepenkli görünür.\n• 🧱 Kalın Kat Döşemesi (14 birim): Üst kat döşemeleri ve çatı kenarları daha belirgin beton plaka olarak çizilir; zemin kat görünümü (viewFloor = 0) birebir korunur.\n• 👥 Alt Kat İç Mekan Gizleme: İzlenen katın altındaki kapalı parsellerdeki misafir ve personel gizlenir; kuyruk, kaldırım, havuz/park ve resepsiyon kapısındaki karakterler görünmeye devam eder."
+  },
+  {
     ver: "v1.9.48-beta",
     title: "E2.1 Bahçe Yuvaları Hizalama & Tek Bahçe Paneli",
-    latest: true,
+    latest: false,
     notes: "• 📐 Gerçek Koda Hizalı 24 Yuva: Tüm ön, sağ ve sol bahçe yuvaları ek yol parselleri, depo rampaları, taş yol ve kuyruk hattından ayrı olacak şekilde yeniden konumlandırıldı; ürün çizimleri kendi (u±h, v±h) kutusuna sığdırıldı.\n• 🌳 Tek Bahçe Paneli: Eski 'Palmiye Dik (40 TL)' modu kaldırıldı; kaldırım tıklaması da doğrudan Elmas Bahçe (E2) panelini açar.\n• 🎨 Katman & Geçiş Güvenliği: Sol bahçe süsleri bina arkasında, ön ve sağ süsler önde çizilir; v1.9.47 kaydında küçülen yuvaya sığmayan süsler otomatik tam 💎 iadesi alır."
   },
   {
@@ -10180,7 +10186,7 @@ function isParcelInViewport(fIdx, sIdx, cw, ch) {
   const cH = ch || (typeof viewport !== "undefined" && viewport.clientHeight) || (typeof canvas !== "undefined" && canvas.height ? canvas.height / curDpr : 600);
   const halfW = cW * 0.5;
   const halfH = cH * 0.5;
-  const zBot = b.z0 - 6;
+  const zBot = b.z0 - (fIdx >= 1 ? 14 : 6);
   const zTop = b.z1 + 75;
   const corners = [
     iso(b.u0, b.v0, zBot),
@@ -10230,7 +10236,49 @@ function focusIsoTarget(mode) {
 }
 
 // Mantıksal (wx, wy) oyun koordinatını 5x5 parsel sistemindeki izometrik (u, v, z) koordinatına dönüştürür
+function _hideIfBelowViewFloor(uvz, pawn) {
+  if (!pawn || !uvz || uvz.hidden) return uvz;
+  if (typeof viewFloor !== "number" || viewFloor <= 0) return uvz;
+  const cutZ = 4 + viewFloor * FLOOR_Z - 4;
+  if (uvz.z >= cutZ) return uvz;
+
+  if (pawn.climbing) {
+    return { u: uvz.u, v: uvz.v, z: uvz.z, inPool: false, hidden: true };
+  }
+
+  const pf = Math.max(0, Math.min(viewFloor - 1, Math.floor(Math.max(0, uvz.z - 4) / FLOOR_Z)));
+  const gu = Math.floor(uvz.u / PARCEL_SIZE);
+  const gv = Math.floor(uvz.v / PARCEL_SIZE);
+  let pIdx = -1;
+  if (gu >= 0 && gu <= 5) {
+    if (gv >= 0 && gv <= 5) pIdx = gu * 6 + gv;
+    else if (pf === 0 && gu === 5 && gv === -1) pIdx = 36;
+    else if (pf === 0 && gu === 5 && gv === 6) pIdx = 37;
+  }
+  if (pIdx < 0 || typeof floors === "undefined" || !floors[pf] || floors[pf].state !== "Built") {
+    return uvz;
+  }
+  const ps = floors[pf].slots[pIdx];
+  if (!ps || (!ps.parcelBuilt && ps.type === "Empty") || typeof isRoofedStructure !== "function" || !isRoofedStructure(ps.type)) {
+    return uvz;
+  }
+
+  // Zemin kat Resepsiyon giriş kapısı açıklığından girenler görünür kalır
+  if (pf === 0 && ps.type === "Reception") {
+    const rb = slotIsoBox(0, ps.idx);
+    if (uvz.u >= rb.u1 - 24 && uvz.v >= rb.v0 + 42 && uvz.v <= rb.v1 - 42) {
+      return uvz;
+    }
+  }
+
+  return { u: uvz.u, v: uvz.v, z: uvz.z, inPool: uvz.inPool, hidden: true };
+}
+
 function logicalToIsoUVZ(wx, wy, pawn = null) {
+  return _hideIfBelowViewFloor(_logicalToIsoUVZRaw(wx, wy, pawn), pawn);
+}
+
+function _logicalToIsoUVZRaw(wx, wy, pawn = null) {
   // 0) Eger pawn'in dogrudan izometrik 3D konumu varsa hemen onu kullan (O(1) ultra-hizli donus)
   if (pawn && pawn.iso) {
     return {
@@ -10734,7 +10782,13 @@ var COSMETIC_CATALOG = {
       recepArchSignTop: "#3a281f", recepArchSignL: "#1e293b", recepArchSignR: "#0f172a",
       recepThresh: "#f8f3ea", recepThreshStroke: "rgba(180, 155, 125, 0.35)",
       elevPlinthTop: "#181514", elevCabLight: "rgba(254, 240, 138, 0.4)",
-      emptyBuiltWash: "rgba(255,248,230,0.88)"
+      emptyBuiltWash: "rgba(255,248,230,0.88)",
+      facadeWinDay: "rgba(186, 230, 253, 0.55)",
+      facadeWinNightDark: "rgba(22, 34, 56, 0.82)",
+      facadeWinNightLit: "rgba(253, 224, 128, 0.82)",
+      facadeFrameTop: "#fff8eb", facadeFrameL: "#7d5836", facadeFrameR: "#5e4024",
+      facadeSillTop: "#f5efe6", facadeSillL: "#d6cab8", facadeSillR: "#b8aa96",
+      facadeShutterL: "#64748b", facadeShutterR: "#475569"
     },
     modern: {
       id: "modern",
@@ -10869,7 +10923,13 @@ var COSMETIC_CATALOG = {
       recepArchSignTop: "#0f172a", recepArchSignL: "#334155", recepArchSignR: "#020617",
       recepThresh: "#cbd5e1", recepThreshStroke: "rgba(51, 65, 85, 0.45)",
       elevPlinthTop: "#09090b", elevCabLight: "rgba(226, 232, 240, 0.42)",
-      emptyBuiltWash: "rgba(100,116,139,0.72)"
+      emptyBuiltWash: "rgba(100,116,139,0.72)",
+      facadeWinDay: "rgba(186, 230, 253, 0.55)",
+      facadeWinNightDark: "rgba(12, 20, 38, 0.86)",
+      facadeWinNightLit: "rgba(254, 240, 138, 0.78)",
+      facadeFrameTop: "#cbd5e1", facadeFrameL: "#334155", facadeFrameR: "#1e293b",
+      facadeSillTop: "#e2e8f0", facadeSillL: "#64748b", facadeSillR: "#475569",
+      facadeShutterL: "#334155", facadeShutterR: "#1e293b"
     },
     seaside: {
       id: "seaside",
@@ -11004,7 +11064,13 @@ var COSMETIC_CATALOG = {
       recepArchSignTop: "#0b3b4d", recepArchSignL: "#0e7490", recepArchSignR: "#062a38",
       recepThresh: "#ecfeff", recepThreshStroke: "rgba(14, 116, 144, 0.32)",
       elevPlinthTop: "#0e4d64", elevCabLight: "rgba(224, 247, 250, 0.48)",
-      emptyBuiltWash: "rgba(212,244,252,0.78)"
+      emptyBuiltWash: "rgba(212,244,252,0.78)",
+      facadeWinDay: "rgba(186, 230, 253, 0.55)",
+      facadeWinNightDark: "rgba(12, 42, 66, 0.80)",
+      facadeWinNightLit: "rgba(254, 243, 150, 0.82)",
+      facadeFrameTop: "#ffffff", facadeFrameL: "#0e7490", facadeFrameR: "#155e75",
+      facadeSillTop: "#ffffff", facadeSillL: "#ccfbf1", facadeSillR: "#99f6e4",
+      facadeShutterL: "#94a3b8", facadeShutterR: "#64748b"
     }
   }
 };
@@ -14013,7 +14079,10 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, roomPoly);
   }
 
-  // Üst kat açıkken alt kattaki çatılı yapıların üstünü beton çatı döşemesiyle kapat
+  // Üst kat açıkken alt kattaki çatılı yapıların dış yüzlerini kapat ve üstü boş olanlara kalın çatı plakası ekle
+  if (typeof drawParcelLowerFloorFacade === "function") {
+    drawParcelLowerFloorFacade(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, rightSlot, backSlot, frontSlot);
+  }
   if (typeof drawParcelRoofSlab === "function") {
     drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1);
   }
@@ -14039,7 +14108,7 @@ function drawParcelEmpty(s, fIdx, sIdx, canBuildHere, showBuildGrid, gu, gv, u0,
     const pal = THEME.room;
     const rsTop = pal.roofSlabTop, rsL = pal.roofSlabL, rsR = pal.roofSlabR;
     const washCol = pal.emptyBuiltWash;
-    isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, rsTop, rsL, rsR, isSel ? "#ff8c00" : "#2ecc40", isSel ? 4 : 2.8);
+    isoBox(u0, v0, u1, v1, Math.max(0, z0 - (fIdx >= 1 ? 14 : 4)), z0, rsTop, rsL, rsR, isSel ? "#ff8c00" : "#2ecc40", isSel ? 4 : 2.8);
     const poly = isoQuad(u0, v0, u1, v1, z0, washCol, isSel ? "#ff8c00" : "#2ecc40", isSel ? 4 : 2.5);
     let badgeLabel = "➕ İNŞA ET";
     let badgeCol = "#164a20", badgeBg = "#d4f7dc";
@@ -14138,7 +14207,7 @@ function drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlo
   const recepThreshStroke = pal.recepThreshStroke;
 
   // A) Resepsiyon Tabanı: İtalyan Parlak Mermer Zemin
-  isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, floorMarble, floorMarbleEdgeL, floorMarbleEdgeR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  isoBox(u0, v0, u1, v1, Math.max(0, z0 - (fIdx >= 1 ? 14 : 4)), z0, floorMarble, floorMarbleEdgeL, floorMarbleEdgeR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   if (typeof drawIsoTexturedFloor === "function") {
     drawIsoTexturedFloor(u0, v0, u1, v1, z0, "marble", floorMarble);
   } else {
@@ -14295,7 +14364,8 @@ function drawParcelKitchen(s, u0, v0, u1, v1, z0, z1, isSel, activeCount, leftCo
   const kwTop = p.facKitchenWallTop, kwL = p.facKitchenWallL, kwR = p.facKitchenWallR;
   const kcTop = p.facKitchenCounterTop, cL = p.facCounterL, cR = p.facCounterR;
   const ktTop = p.facKitchenTableTop, ktL = p.facKitchenTableL, ktR = p.facKitchenTableR;
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, kfTop, kfL, kfR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const kfSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 4));
+  const poly = isoBox(u0, v0, u1, v1, kfSlabBot, z0, kfTop, kfL, kfR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   drawPartitionWallWithCorridor(u0, v0, u1, z0, z1, leftConnected, kwTop, kwL, kwR, false, false, 0);
   isoBox(u0, v0, u0 + 12, v1, z0, z1, kwTop, kwR, kwL, OUTLINE_COL, 2);
   // Mutfak Tezgahı
@@ -14434,7 +14504,8 @@ function drawParcelStorage(s, gu, u0, v0, u1, v1, z0, z1, isSel) {
   const swTop = p.facStorageWallTop, swL = p.facStorageWallL, swR = p.facStorageWallR;
   const stD1 = p.elevSteelDark1, stD2 = p.elevSteelDark2, stD3 = p.elevSteelDark3, stD4 = p.elevSteelDark4, stM4 = p.elevSteelMid4;
   const crTop = p.facCrateTop, crL = p.facCrateL, crR = p.facCrateR;
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, sfTop, sfL, sfR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const sfSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 4));
+  const poly = isoBox(u0, v0, u1, v1, sfSlabBot, z0, sfTop, sfL, sfR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
 
   // Yola Bağlantı Rampası (Depo yola bakan sırada - gu === 5)
   if (gu === 5) {
@@ -14491,7 +14562,8 @@ function drawParcelDorm(s, u0, v0, u1, v1, z0, z1, isSel, leftConnected) {
   const tDark = p.facTimberDark, tMid = p.facTimberMid, tLight = p.facTimberLight, tBright = p.facTimberBright;
   const lkTop = p.facLockerTop, lkL = p.facLockerL, lkR = p.facLockerR;
   const stD1 = p.elevSteelDark1, stD2 = p.elevSteelDark2, stD3 = p.elevSteelDark3, stD4 = p.elevSteelDark4, stM4 = p.elevSteelMid4;
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, slabTop, slabL, slabR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const dormSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 4));
+  const poly = isoBox(u0, v0, u1, v1, dormSlabBot, z0, slabTop, slabL, slabR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   // Şık ahşap parke zemin kaplaması
   const steps = 4, du = (u1 - u0) / steps, dv = (v1 - v0) / steps;
   for (let iu = 0; iu < steps; iu++) {
@@ -14550,7 +14622,8 @@ function drawParcelRoofTerrace(s, u0, v0, u1, v1, z0, isSel, activeCount) {
   const parTop = p.facTerraceWallTop, parL = p.facTerraceWallL, parR = p.facTerraceWallR;
   const barTop = p.facTerraceBarTop, barL = p.facCounterL, barR = p.facCounterR;
   const towel1 = p.facTowelCream, towel2 = p.facTowelCool, umbCol = p.facTerraceUmbrella;
-  const poly = isoBox(u0, v0, u1, v1, z0 - 6, z0, deckTop, deckL, deckR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.2);
+  const deckSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 6));
+  const poly = isoBox(u0, v0, u1, v1, deckSlabBot, z0, deckTop, deckL, deckR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.2);
   isoBox(u0, v0, u1, v0 + 10, z0, z0 + 22, parTop, parL, parR, OUTLINE_COL, 1.6);
   isoBox(u0, v0, u0 + 10, v1, z0, z0 + 22, parTop, parL, parR, OUTLINE_COL, 1.6);
   // Çatı Barı Tezgahı
@@ -14598,7 +14671,7 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
   const gsTop = P.gymSubTop, gsL = P.gymSubL, gsR = P.gymSubR;
   const sfL = P.stoneFrameL, sfR = P.stoneFrameR;
 
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, fMarb, fEdgeL, fEdgeR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - (fIdx >= 1 ? 14 : 4)), z0, fMarb, fEdgeL, fEdgeR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   // İtalyan Parlak Mermer Zemin
   if (typeof drawIsoTexturedFloor === "function") {
     drawIsoTexturedFloor(u0, v0, u1, v1, z0, "marble", fMarb);
@@ -14850,7 +14923,7 @@ function drawParcelElevator(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftConnecte
   const plinthTop = pal.elevPlinthTop;
   const cabLight = pal.elevCabLight;
 
-  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, plinthTop, sd3, sd4, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  const poly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - (fIdx >= 1 ? 14 : 4)), z0, plinthTop, sd3, sd4, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
   // Damalı Siyah & Altın İtalyan Mermer Zemin
   const steps = 4, du = (u1 - u0) / steps, dv = (v1 - v0) / steps;
   for (let iu = 0; iu < steps; iu++) {
@@ -15167,7 +15240,8 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
                    s.type === "Gas" ? fGas : fWood;
 
   // A) Oda Tabanı: Sıcak Meşe Ahşap Parke Zemin
-  const roomPoly = isoBox(u0, v0, u1, v1, Math.max(0, z0 - 6), z0, floorCol, fEdgeL, fEdgeR, isSel ? "#ff8c00" : avail ? "#2ecc40" : OUTLINE_COL, isSel || avail ? 4 : 2.2);
+  const roomSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 6));
+  const roomPoly = isoBox(u0, v0, u1, v1, roomSlabBot, z0, floorCol, fEdgeL, fEdgeR, isSel ? "#ff8c00" : avail ? "#2ecc40" : OUTLINE_COL, isSel || avail ? 4 : 2.2);
 
   const rLvl = (s.type === "Room") ? getRoomLevel(s) : 1;
 
@@ -15721,11 +15795,11 @@ function drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1) {
   const roofParapetR = pal.roofParapetR;
   const roofTileLine = pal.roofTileLine;
 
-  const thickness = 5;
+  const thickness = 14;
   const zTop = z1;
   const zBot = Math.max(0, zTop - thickness);
 
-  // Üst kat taban yüksekliğinde (üst kat z0 = z1) 5 birimlik açık beton plaka
+  // Üst kat taban yüksekliğinde (üst kat z0 = z1) 14 birimlik açık beton plaka
   isoBox(u0, v0, u1, v1, zBot, zTop, roofSlabTop, roofSlabL, roofSlabR, OUTLINE_COL, 1.8);
 
   // Üst yüzeyde hafif karo derz çizgileri
@@ -15787,6 +15861,226 @@ function drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1) {
     const fv0 = drawLeft ? v0 + pW : v0;
     const fv1 = drawRight ? v1 - pW : v1;
     isoBox(u1 - pW, fv0, u1, fv1, zTop, pTop, roofParapetTop, roofParapetL, roofParapetR, OUTLINE_COL, 1.3);
+  }
+}
+
+// ===== BUNDLED: render/parcel-facade.js =====
+// [render/parcel-facade.js] V1: Üst kat izlenirken (viewFloor > fIdx) kapalı alt kat cepheleri & pencereler
+
+function _isFacadeSlotBuiltRoofed(slot) {
+  return !!(slot && (slot.parcelBuilt || slot.type !== "Empty") && typeof isRoofedStructure === "function" && isRoofedStructure(slot.type));
+}
+
+function _isFacadeWindowLitNight(s) {
+  if (!s) return false;
+  if (s.type === "Room") return !!(s.guest && !s.guest.sleeping);
+  return s.type === "Reception" || s.type === "Kitchen" || s.type === "Corridor" || s.type === "Elevator" || s.type === "Gym";
+}
+
+function _facadeFacePts(axis, u1, v1, t0, t1, d, zb, zt) {
+  if (axis === "front") {
+    return [iso(u1 + d, t0, zb), iso(u1 + d, t1, zb), iso(u1 + d, t1, zt), iso(u1 + d, t0, zt)];
+  }
+  return [iso(t0, v1 + d, zb), iso(t1, v1 + d, zb), iso(t1, v1 + d, zt), iso(t0, v1 + d, zt)];
+}
+
+function _drawFacadeFaceQuad(axis, u1, v1, t0, t1, d, zb, zt, fill, stroke, lw) {
+  drawPoly2D(_facadeFacePts(axis, u1, v1, t0, t1, d, zb, zt), fill, stroke, lw);
+}
+
+function _drawFacadeWindowBatch(axis, u1, v1, windows, pal, isLitNight, isNightMode, frosted) {
+  const fCol = (axis === "front") ? (pal.facadeFrameL || pal.trimL) : (pal.facadeFrameR || pal.trimR);
+  const sCol = (axis === "front") ? (pal.facadeSillL || pal.trimAltL) : (pal.facadeSillR || pal.trimAltR);
+  const sTop = pal.facadeSillTop || pal.trimTop;
+  const glassCol = isNightMode
+    ? (isLitNight ? (pal.facadeWinNightLit || "rgba(253, 224, 128, 0.82)") : (pal.facadeWinNightDark || "rgba(22, 34, 56, 0.82)"))
+    : (pal.facadeWinDay || "rgba(186, 230, 253, 0.55)");
+  const pad = 3.2;
+
+  for (let i = 0; i < windows.length; i++) {
+    const [t0, t1, zb, zt] = windows[i];
+    // Kasa + cam + alt denizlik (tek düzlem çağrıları -> sıfır gereksiz arka yüz)
+    _drawFacadeFaceQuad(axis, u1, v1, t0, t1, 0.2, zb, zt, fCol, OUTLINE_COL, 1.15);
+    _drawFacadeFaceQuad(axis, u1, v1, t0 + pad, t1 - pad, 0.35, zb + pad, zt - pad, glassCol, OUTLINE_COL, 0.95);
+    if (!isNightMode && !frosted) {
+      const g0 = t0 + pad + 2, g1 = t0 + pad + (t1 - t0) * 0.34, gz0 = zb + pad + 2.5, gz1 = zt - pad - 2.5;
+      const g2 = Math.min(t1 - pad - 2, g1 + 6);
+      const glint = (axis === "front")
+        ? [iso(u1 + 0.4, g0, gz0), iso(u1 + 0.4, g1, gz1), iso(u1 + 0.4, g2, gz1), iso(u1 + 0.4, g0 + 6, gz0)]
+        : [iso(g0, v1 + 0.4, gz0), iso(g1, v1 + 0.4, gz1), iso(g2, v1 + 0.4, gz1), iso(g0 + 6, v1 + 0.4, gz0)];
+      drawPoly2D(glint, "rgba(255, 255, 255, 0.32)", null, 0);
+    }
+    // Alt denizlik (yalnızca üst ve ön dudak)
+    _drawFacadeFaceQuad(axis, u1, v1, t0 - 2.2, t1 + 2.2, 2.2, zb - 2.8, zb + 0.4, sCol, OUTLINE_COL, 1.0);
+    const sillTopPts = (axis === "front")
+      ? [iso(u1, t0 - 2.2, zb + 0.4), iso(u1, t1 + 2.2, zb + 0.4), iso(u1 + 2.2, t1 + 2.2, zb + 0.4), iso(u1 + 2.2, t0 - 2.2, zb + 0.4)]
+      : [iso(t0 - 2.2, v1, zb + 0.4), iso(t1 + 2.2, v1, zb + 0.4), iso(t1 + 2.2, v1 + 2.2, zb + 0.4), iso(t0 - 2.2, v1 + 2.2, zb + 0.4)];
+    drawPoly2D(sillTopPts, sTop, OUTLINE_COL, 0.9);
+  }
+
+  // Tüm pencere kayıtları / lamelleri tek beginPath+stroke altında
+  ctx.strokeStyle = (isNightMode && isLitNight) ? "#78350f" : (pal.facadeFrameR || pal.trimR);
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  for (let i = 0; i < windows.length; i++) {
+    const [t0, t1, zb, zt] = windows[i];
+    if (frosted) {
+      for (let lv = zb + pad + 5; lv < zt - pad - 2; lv += 5) {
+        const a = (axis === "front") ? iso(u1 + 0.45, t0 + pad + 1, lv) : iso(t0 + pad + 1, v1 + 0.45, lv);
+        const b = (axis === "front") ? iso(u1 + 0.45, t1 - pad - 1, lv) : iso(t1 - pad - 1, v1 + 0.45, lv);
+        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      }
+    } else {
+      const tm = (t0 + t1) * 0.5, zm = (zb + zt) * 0.5 + 1.5;
+      const mA = (axis === "front") ? iso(u1 + 0.45, tm, zb + pad) : iso(tm, v1 + 0.45, zb + pad);
+      const mB = (axis === "front") ? iso(u1 + 0.45, tm, zt - pad) : iso(tm, v1 + 0.45, zt - pad);
+      const hA = (axis === "front") ? iso(u1 + 0.45, t0 + pad, zm) : iso(t0 + pad, v1 + 0.45, zm);
+      const hB = (axis === "front") ? iso(u1 + 0.45, t1 - pad, zm) : iso(t1 - pad, v1 + 0.45, zm);
+      ctx.moveTo(mA.x, mA.y); ctx.lineTo(mB.x, mB.y);
+      ctx.moveTo(hA.x, hA.y); ctx.lineTo(hB.x, hB.y);
+    }
+  }
+  ctx.stroke();
+}
+
+function _drawFacadeShutterFace(axis, sIdx, u1, v1, t0, t1, z0, zWallTop, pal) {
+  const swCol = (axis === "front") ? (pal.facStorageWallL || pal.wallFrontL) : (pal.facStorageWallR || pal.wallFrontR);
+  const corCol = (axis === "front") ? pal.trimL : pal.trimR;
+  const shL = pal.facadeShutterL || "#64748b";
+  const shR = pal.facadeShutterR || "#475569";
+
+  _drawFacadeFaceQuad(axis, u1, v1, t0, t1, 0, z0, zWallTop, swCol, OUTLINE_COL, 1.8);
+  _drawFacadeFaceQuad(axis, u1, v1, t0, t1, 0.3, zWallTop - 3.5, zWallTop, corCol, OUTLINE_COL, 1.0);
+
+  if (axis === "front") {
+    const sh0 = t0 + 35, sh1 = t1 - 35;
+    _drawFacadeFaceQuad(axis, u1, v1, sh0, sh1, 0.6, z0 + 2, z0 + 45, shL, OUTLINE_COL, 1.4);
+    ctx.strokeStyle = "rgba(15, 23, 42, 0.52)";
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    for (let kz = z0 + 8; kz <= z0 + 41; kz += 6.5) {
+      const ka = iso(u1 + 0.75, sh0 + 3, kz), kb = iso(u1 + 0.75, sh1 - 3, kz);
+      ctx.moveTo(ka.x, ka.y); ctx.lineTo(kb.x, kb.y);
+    }
+    ctx.stroke();
+    _drawFacadeFaceQuad(axis, u1, v1, sh0 - 3, sh1 + 3, 1.0, z0 + 44, z0 + 49, shR, OUTLINE_COL, 1.2);
+    const tm = (t0 + t1) * 0.5;
+    _drawFacadeFaceQuad(axis, u1, v1, tm - 10, tm + 10, 1.0, z0 + 4, z0 + 7, pal.goldL, OUTLINE_COL, 0.9);
+    if (typeof parcelCoords === "function" && parcelCoords(sIdx).gu === 5) {
+      isoBox(u1 - 1, tm - 46, u1 + 4.5, tm + 46, z0 + 50, z0 + 59, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.1);
+      isoLabel("📦 MAL KABUL & DEPO", u1 + 4.5, tm, z0 + 54.5, 7.0, "#ffd700", null, 0, 0);
+    }
+  } else {
+    _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 26, t0 + 76, z0 + 44, z0 + 66], [t1 - 76, t1 - 26, z0 + 44, z0 + 66]], pal, false, false, true);
+  }
+}
+
+function _drawReceptionLowerFront(s, u0, v0, u1, v1, z0, zWallTop, pal, isNightMode) {
+  const wallTop = pal.wallTop;
+  const wallFL = pal.wallFrontL || pal.wallL;
+  const glassTint = isNightMode ? "rgba(253, 224, 130, 0.44)" : "rgba(186, 230, 253, 0.32)";
+
+  // Giriş açıklığı: v0+45 .. v1-45 (taş yola hizalı v≈435..540) tamamen AÇIK!
+  const doorV0 = v0 + 45, doorV1 = v1 - 45;
+  const wings = [[v0, doorV0], [doorV1, v1]];
+  for (const [w0, w1] of wings) {
+    _drawFacadeFaceQuad("front", u1, v1, w0, w1, 0, z0, z0 + 16, wallFL, OUTLINE_COL, 1.6);
+    _drawFacadeFaceQuad("front", u1, v1, w0, w1, 0.4, z0, z0 + 6, pal.trimAltL, OUTLINE_COL, 1.0);
+    _drawFacadeFaceQuad("front", u1, v1, w0, w1, 0.6, z0 + 14.5, z0 + 17.5, pal.facadeSillL || pal.trimL, OUTLINE_COL, 1.0);
+    _drawFacadeFaceQuad("front", u1, v1, w0, w0 + 8, 0.5, z0 + 16, z0 + 64, pal.columnL, OUTLINE_COL, 1.1);
+    _drawFacadeFaceQuad("front", u1, v1, w1 - 8, w1, 0.5, z0 + 16, z0 + 64, pal.columnL, OUTLINE_COL, 1.1);
+    _drawFacadeFaceQuad("front", u1, v1, w0 + 8, w1 - 8, -0.4, z0 + 17, z0 + 64, glassTint, OUTLINE_COL, 1.0);
+    const glA = iso(u1 - 0.3, w0 + 11, z0 + 21), glB = iso(u1 - 0.3, w0 + 24, z0 + 60);
+    const glC = iso(u1 - 0.3, w0 + 29, z0 + 60), glD = iso(u1 - 0.3, w0 + 16, z0 + 21);
+    drawPoly2D([glA, glB, glC, glD], "rgba(255, 255, 255, 0.28)", null, 0);
+    _drawFacadeFaceQuad("front", u1, v1, w0, w1, 0, z0 + 64, zWallTop, wallFL, OUTLINE_COL, 1.6);
+  }
+
+  isoBox(u1 - 6, doorV0, u1, doorV1, z0 + 64, zWallTop, wallTop, wallFL, pal.wallFrontR || pal.wallR, OUTLINE_COL, 1.6);
+  _drawFacadeFaceQuad("front", u1, v1, v0, v1, 0.5, zWallTop - 3, zWallTop, pal.trimL, OUTLINE_COL, 1.0);
+
+  // Ön marquee tabelası 14 birim üst kat döşemesinin altında tam görünür kalır
+  isoBox(u1 - 1, v0 + 40, u1 + 11, v1 - 40, z0 + 53, z0 + 62, pal.recepMarqueeTop, pal.recepMarqueeL, pal.recepMarqueeR, OUTLINE_COL, 1.6);
+  isoLabel("★ RESEPSİYON ★", u1 + 10.5, (v0 + v1) * 0.5, z0 + 57.5, 8.2, pal.goldTop, null, 0, 0);
+}
+
+function drawParcelLowerFloorFacade(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, rightSlot, backSlot, frontSlot) {
+  if (typeof viewFloor !== "number" || viewFloor <= fIdx) return;
+  if (!s || (!s.parcelBuilt && s.type === "Empty") || typeof isRoofedStructure !== "function" || !isRoofedStructure(s.type)) return;
+
+  let effRight = rightSlot;
+  if (fIdx === 0 && sIdx === 35 && typeof floors !== "undefined" && floors[0] && floors[0].slots[37]) {
+    effRight = floors[0].slots[37];
+  }
+
+  const frontOpen = !_isFacadeSlotBuiltRoofed(frontSlot);
+  const rightOpen = !_isFacadeSlotBuiltRoofed(effRight);
+  if (!frontOpen && !rightOpen) return;
+
+  const pal = (typeof getRoomPalette === "function") ? getRoomPalette() : THEME.room;
+  const zWallTop = z1 - 14;
+  const isNightMode = (typeof isNight !== "undefined" && isNight);
+  const litNight = _isFacadeWindowLitNight(s);
+  const strokeCol = isSel ? "#ff8c00" : OUTLINE_COL;
+  const lw = isSel ? 2.4 : 1.7;
+  const isElev = (s.type === "Elevator");
+
+  const drawClosedFace = (axis, t0, t1) => {
+    if (axis === "front" && fIdx === 0 && s.type === "Reception") {
+      _drawReceptionLowerFront(s, u0, v0, u1, v1, z0, zWallTop, pal, isNightMode);
+      return;
+    }
+    if (s.type === "Storage") {
+      _drawFacadeShutterFace(axis, sIdx, u1, v1, t0, t1, z0, zWallTop, pal);
+      return;
+    }
+
+    const wCol = isElev
+      ? (axis === "front" ? pal.elevSteelMid2 : pal.elevSteelMid3)
+      : (axis === "front" ? (pal.wallFrontL || pal.wallL) : (pal.wallFrontR || pal.wallR));
+    const bCol = (axis === "front") ? pal.trimAltL : pal.trimAltR;
+    const corCol = isElev ? (axis === "front" ? pal.elevSteelDark2 : pal.elevSteelDark3) : (axis === "front" ? pal.trimL : pal.trimR);
+
+    _drawFacadeFaceQuad(axis, u1, v1, t0, t1, 0, z0, zWallTop, wCol, strokeCol, lw);
+    _drawFacadeFaceQuad(axis, u1, v1, t0, t1, 0.2, z0, z0 + 6, bCol, OUTLINE_COL, 1.0);
+    if (!isElev) {
+      _drawFacadeFaceQuad(axis, u1, v1, t0, t1, 0.15, z0 + 13, z0 + 15.5, axis === "front" ? pal.trimL : pal.trimR, null, 0);
+    }
+    _drawFacadeFaceQuad(axis, u1, v1, t0, t1, 0.35, zWallTop - 3.5, zWallTop, corCol, OUTLINE_COL, 1.0);
+
+    const tm = (t0 + t1) * 0.5;
+    if (s.type === "Reception") {
+      _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 24, t0 + 84, z0 + 16, z0 + 66], [t1 - 84, t1 - 24, z0 + 16, z0 + 66]], pal, litNight, isNightMode, false);
+    } else if (s.type === "Corridor" || isElev) {
+      _drawFacadeWindowBatch(axis, u1, v1, [[tm - 22, tm + 22, z0 + 18, zWallTop - 12]], pal, litNight, isNightMode, false);
+    } else if (s.type === "Toilet") {
+      _drawFacadeWindowBatch(axis, u1, v1, [[tm - 23, tm + 23, z0 + 45, z0 + 67]], pal, false, isNightMode, true);
+    } else if (s.type === "Gas") {
+      _drawFacadeWindowBatch(axis, u1, v1, [[tm - 28, tm + 28, z0 + 26, z0 + 62]], pal, false, isNightMode, true);
+      _drawFacadeFaceQuad(axis, u1, v1, tm - 28, tm + 28, 0.6, z0 + 62, z0 + 66, axis === "front" ? pal.goldL : pal.goldR, OUTLINE_COL, 0.9);
+    } else if (axis === "right" && s.type === "Room" && s.hasBalcony) {
+      _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 24, t0 + 70, z0 + 20, z0 + 64], [t1 - 70, t1 - 24, z0 + 20, z0 + 64]], pal, litNight, isNightMode, false);
+    } else {
+      _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 26, t0 + 80, z0 + 20, z0 + 64], [t1 - 80, t1 - 26, z0 + 20, z0 + 64]], pal, litNight, isNightMode, false);
+    }
+  };
+
+  if (frontOpen) drawClosedFace("front", v0, v1);
+  if (rightOpen) drawClosedFace("right", u0, u1);
+
+  if (frontOpen && rightOpen) {
+    const cW = 11;
+    const cTop = isElev ? pal.elevSteelDark1 : pal.columnTop;
+    const cL = isElev ? pal.elevSteelDark2 : pal.columnL;
+    const cR = isElev ? pal.elevSteelDark3 : pal.columnR;
+    isoBox(u1 - cW, v1 - cW, u1 + 1.2, v1 + 1.2, z0, zWallTop, cTop, cL, cR, OUTLINE_COL, 1.3);
+    isoBox(u1 - cW - 0.5, v1 - cW - 0.5, u1 + 1.6, v1 + 1.6, z0, z0 + 6, pal.brassTop, pal.brassL, pal.brassR, OUTLINE_COL, 1.0);
+    isoBox(u1 - cW - 0.5, v1 - cW - 0.5, u1 + 1.6, v1 + 1.6, zWallTop - 5, zWallTop, pal.brassTop, pal.brassL, pal.brassR, OUTLINE_COL, 1.0);
+  }
+
+  if (rightOpen && s.type === "Room" && s.hasBalcony) {
+    isoBox(u0 + 20, v1, u1 - 20, v1 + 32, z0 - 4, z0 + 2, pal.balconyTop, pal.balconyL, pal.balconyR, OUTLINE_COL, 1.6);
+    isoBox(u0 + 20, v1 + 24, u1 - 20, v1 + 32, z0 + 2, z0 + 24, pal.furnWoodL, pal.furnWoodR, pal.furnWoodDeep, OUTLINE_COL, 1.5);
   }
 }
 
