@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build-android-apk:
@@ -25,7 +26,14 @@ jobs:
         run: |
           mkdir -p android-app/app/src/main/java/com/oteloyunu/app
           mkdir -p android-app/app/src/main/assets
-          cp index.html android-app/app/src/main/assets/index.html
+          cp update.html android-app/app/src/main/assets/index.html
+
+          # Sürüm bilgilerini version.json üzerinden dinamik oku
+          APP_VER_CODE=$(python3 -c "import json; print(json.load(open('version.json')).get('versionCode', 12))")
+          APP_VER_NAME=$(python3 -c "import json; print(json.load(open('version.json')).get('versionName', '1.9.1'))")
+          echo "APP_VER_CODE=$APP_VER_CODE" >> $GITHUB_ENV
+          echo "APP_VER_NAME=$APP_VER_NAME" >> $GITHUB_ENV
+          echo "Derlenen Sürüm: v$APP_VER_NAME (Kod: $APP_VER_CODE)"
 
           for dir in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             mkdir -p android-app/app/src/main/res/$dir
@@ -58,7 +66,7 @@ jobs:
           }
           EOF
 
-          cat << 'EOF' > android-app/app/build.gradle
+          cat << EOF > android-app/app/build.gradle
           plugins {
               id 'com.android.application'
           }
@@ -69,8 +77,8 @@ jobs:
                   applicationId "com.oteloyunu.app"
                   minSdk 24
                   targetSdk 34
-                  versionCode 12
-                  versionName "1.9.1"
+                  versionCode ${APP_VER_CODE}
+                  versionName "${APP_VER_NAME}"
               }
               buildTypes {
                   debug {
@@ -346,6 +354,9 @@ jobs:
           }
           EOF
 
+          # Yerleşik APK sürüm kodunu version.json'daki dinamik kodla güncelle
+          sed -i "s/private static final int BUILTIN_VERSION = 12;/private static final int BUILTIN_VERSION = ${APP_VER_CODE};/g" android-app/app/src/main/java/com/oteloyunu/app/MainActivity.java
+
           cd android-app
           gradle wrapper --gradle-version 8.5
           ./gradlew assembleDebug
@@ -356,17 +367,46 @@ jobs:
         with:
           name: OtelOyunu-Android-APK
           path: OtelOyunu-Android.apk
+          retention-days: 1
 
       - name: GitHub Releases Kısmına APK Yayınla
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.9.1
-          name: "TheHotel Game - Güncel APK (v1.9.1)"
-          body: "v1.9.1: Ana menüde '📜 Geçmiş' (Güncelleme Geçmişi / Sürüm Notları) penceresi, v1.9.0 Etkinlikler Sistemi (Ünlü Konuk & Koruma, Düğün, Festival) ve önceki tüm yenilikleri içeren güncel Android APK dosyası."
+          tag_name: v${{ env.APP_VER_NAME }}
+          name: "TheHotel Game - Güncel APK (v${{ env.APP_VER_NAME }})"
+          body: "TheHotel Game v${{ env.APP_VER_NAME }} (Derleme: ${{ env.APP_VER_CODE }}) güncel Android APK dosyası."
           files: OtelOyunu-Android.apk
           prerelease: false
 
+      - name: Eski GitHub Release, Tag ve Artifact'leri Temizle (Sadece Son Sürümü Tut)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT_TAG="v${{ env.APP_VER_NAME }}"
+          echo "Güncel sürüm korunuyor: $CURRENT_TAG"
+          # Eski release'leri ve tag'lerini sil
+          for tag in $(gh release list --limit 100 --json tagName --jq '.[].tagName'); do
+            if [ "$tag" != "$CURRENT_TAG" ]; then
+              echo "Eski release siliniyor: $tag"
+              gh release delete "$tag" --cleanup-tag --yes || true
+            fi
+          done
+          # Release'i olmayan eski tag'leri de temizle
+          git fetch --tags
+          for tag in $(git tag); do
+            if [ "$tag" != "$CURRENT_TAG" ]; then
+              echo "Eski tag siliniyor: $tag"
+              git push origin ":refs/tags/$tag" || true
+            fi
+          done
+          # Önceki workflow çalışmalarından kalan eski artifact'leri temizle (500 MB kotasını boşalt)
+          for art_id in $(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts[].id'); do
+            echo "Eski artifact siliniyor: $art_id"
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$art_id" || true
+          done
+
   build-windows-exe:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Depoyu İndir
@@ -414,3 +454,4 @@ jobs:
         with:
           name: OtelOyunu-Windows-EXE
           path: dist/OtelOyunu-win32-x64/
+          retention-days: 1
