@@ -1,8 +1,8 @@
 {
-  "versionCode": 54,
-  "versionName": "1.9.46-beta",
+  "versionCode": 55,
+  "versionName": "1.9.47-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.46-beta:\n1. Yıldız Eşikleri & Başarım İlerlemesi (E1.1): star1/star2/star3 başarımları config.js StarTargets (250/500/750) sabitlerine ve stars() fonksiyonuna bağlandı; Mükemmel Hizmet (avg_rating) çubuğu hem yorum sayısını hem ortalama hedefini (örn. 32/50 yorum · ort 4.2/4.5) gösterir.\n2. Kayıt Bütünlüğü & Tekrarlı Yükleme Güvenliği: saveGame/loadGame artık sıradaki misafirleri (queue), dış kirleri (dirts), expired misafirlerin daysLeft=0 değerini ve inşaat işçilerini de korur; personel piyonları tekrarlı yüklemede duplike olmaz.\n3. Başarım Bildirimi Katmanlaması: #ach-popup artık #viewport dışına taşındı (z-index: 24) ve #log-text üstünde konumlanarak 4 satırlı log/eğitim metinleriyle çakışmaz."
+  "notes": "v1.9.47-beta:\n1. Bahçe Süsleri (E2): Otelin ön, sağ ve sol bahçelerinde 24 farklı boyutta yuva (15 küçük, 6 orta, 3 büyük) açıldı.\n2. Elmas Dekor Kataloğu: 💎 elmasla satın alınabilen 13 görsel bahçe süsü eklendi; sokak lambaları gece ışık yayar.\n3. Bahçe Modu & İade: Üst bardaki 🌳 Bahçe düğmesiyle önizlemeli yerleştirme, değiştirme ve %100 elmas iadeli kaldırma desteği geldi."
 }

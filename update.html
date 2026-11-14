@@ -202,6 +202,10 @@
     cursor: pointer; box-shadow: 0 2px 0 #3a281f;
   }
   .sub-icon-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #3a281f; }
+  .sub-icon-btn.is-active {
+    background: linear-gradient(180deg, #dcfce7 0%, #86efac 100%);
+    border-color: #16a34a;
+  }
 
   /* ===== SOL YÜZEN BUTONLAR ===== */
   #left-hud-top {
@@ -1054,9 +1058,11 @@
   #hud-tool-pill { min-width: 48px; padding-right: 4px; }
   .curr-icon { width: 22px; height: 22px; font-size: 10.5px; }
   .curr-icon.gem, .curr-icon.tool { font-size: 10.5px; }
+  .hud-sub-pill { padding: 2px 4px; gap: 3px; }
+  .sub-icon-btn { width: 23px; height: 22px; font-size: 11.5px; }
   #hud-center-banner {
     left: 6px; transform: none; top: calc(34px + var(--sat));
-    padding: 2px 9px; border-radius: 11px; max-width: calc(100% - 132px);
+    padding: 2px 9px; border-radius: 11px; max-width: calc(100% - 154px);
   }
   #top-mid { font-size: 10px; }
   #left-hud-top { top: calc(68px + var(--sat)); }
@@ -1197,6 +1203,221 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* ===== BAHÇE SÜSLERİ PANELİ (E2) ===== */
+#decor-panel {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+#sel-panel.decor-mode #act-grid,
+#sel-panel.decor-mode #ach-list,
+#sel-panel.decor-mode #furn-toolbar { display: none; }
+#sel-panel.decor-mode #decor-panel { display: flex; }
+
+.decor-slot-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+.decor-slot-chip {
+  flex-shrink: 0;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1.5px solid #bfa47a;
+  background: #fff9ec;
+  color: #4a3525;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.decor-slot-chip.filled {
+  background: #ecfdf5;
+  border-color: #16a34a;
+  color: #14532d;
+}
+.decor-slot-chip.active {
+  background: #ffedd5;
+  border-color: #ea580c;
+  color: #9a3412;
+  box-shadow: 0 1px 0 #ea580c;
+}
+.decor-empty-hint {
+  background: #fff9ec;
+  border: 1.5px dashed #bfa47a;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #5c4938;
+  line-height: 1.3;
+}
+.decor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 5px;
+  max-height: 30vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.decor-card {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 7px;
+  border-radius: 10px;
+  border: 2px solid #bfa47a;
+  background: #fff9ec;
+  text-align: left;
+  cursor: pointer;
+  color: #2b2119;
+  font-family: inherit;
+}
+.decor-card.selected {
+  background: #ffedd5;
+  border-color: #f97316;
+  box-shadow: 0 0 0 1px #f97316;
+}
+.decor-card.is-current {
+  opacity: 0.62;
+  cursor: default;
+}
+.decor-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1.5px solid #d4be98;
+  background: #eef7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.decor-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.decor-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.decor-card-name {
+  font-size: 11px;
+  font-weight: 900;
+  color: #2b2119;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.decor-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.decor-size-badge {
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 1px 5px;
+  border-radius: 999px;
+  border: 1px solid #3a281f;
+}
+.decor-size-badge.size-K { background: #dcfce7; color: #14532d; border-color: #16a34a; }
+.decor-size-badge.size-O { background: #dbeafe; color: #1e3a8a; border-color: #2563eb; }
+.decor-size-badge.size-B { background: #f3e8ff; color: #581c87; border-color: #9333ea; }
+.decor-cost-badge {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #0c4a6e;
+  background: #dff5ff;
+  border: 1px solid #29a3e8;
+  border-radius: 999px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.decor-occ-box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  border: 2px solid #16a34a;
+}
+.decor-occ-meta {
+  flex: 1;
+  min-width: 0;
+}
+.decor-occ-title {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #14532d;
+}
+.decor-occ-sub {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #166534;
+  margin-top: 2px;
+}
+.decor-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.decor-btn {
+  flex: 1;
+  min-width: 110px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 2px solid #3a281f;
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 2px 0 #3a281f;
+  color: #2b2119;
+}
+.decor-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 0 #3a281f; }
+.decor-btn.success { background: linear-gradient(180deg, #a4f578 0%, #58c934 100%); color: #143608; }
+.decor-btn.primary { background: linear-gradient(180deg, #bae6fd 0%, #38bdf8 100%); color: #0c4a6e; }
+.decor-btn.danger { background: linear-gradient(180deg, #fecaca 0%, #f87171 100%); color: #7f1d1d; }
+.decor-btn.secondary { flex: 0 0 auto; min-width: 72px; background: linear-gradient(180deg, #f5efe2 0%, #d9cbb5 100%); }
+.decor-btn.locked, .decor-btn:disabled {
+  background: #e2e8f0;
+  color: #64748b;
+  border-color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.decor-select-prompt {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b533b;
+  text-align: center;
+  padding: 4px;
+}
+@media (max-width: 540px) {
+  .decor-grid { grid-template-columns: repeat(2, 1fr); max-height: 26vh; gap: 4px; }
+  .decor-thumb { width: 32px; height: 32px; font-size: 16px; }
+  .decor-card { padding: 4px 5px; gap: 5px; }
+  .decor-card-name { font-size: 10px; }
+  .decor-cost-badge { font-size: 9.5px; padding: 1px 4px; }
+  .decor-btn { font-size: 10.5px; padding: 6px 8px; }
+}
 </style>
 </head>
 <body>
@@ -1242,6 +1463,7 @@
         <button class="sub-icon-btn" id="hud-bell-btn" title="Resepsiyon / Bekleyen Müşteri">🛎️</button>
         <button class="sub-icon-btn" id="hud-rotate-btn" title="Yatay / Dikey Görünüm">🔄</button>
         <button class="sub-icon-btn" id="hud-theme-btn" title="Otel Teması">🎨</button>
+        <button class="sub-icon-btn" id="hud-garden-btn" title="Bahçe Süsleri (💎)">🌳</button>
         <button class="sub-icon-btn" id="hud-gear-btn" title="Menü & Ayarlar">⚙️</button>
       </div>
     </div>
@@ -1523,6 +1745,7 @@
       </div>
       <div id="act-grid"></div>
       <div id="ach-list"></div>
+      <div id="decor-panel"></div>
     </div>
   </div>
   <div id="log-text"></div>
@@ -1563,6 +1786,22 @@ const ChanceThreat = 0.08, ChanceNeedy = 0.12, ChanceFamily = 0.22, ChanceChines
 const StarTargets = [Star1, Star2, Star3];
 const FloorCost = [0, 400, 700, 1000];
 const FloorBuildSec = [0, 40, 60, 80];
+
+const DecorPrices = {
+  planter: 15,
+  bush: 20,
+  potted_plant: 20,
+  flower_bush: 25,
+  street_lamp: 30,
+  bench: 40,
+  umbrella_set: 50,
+  cypress: 50,
+  shade_tree: 70,
+  palm: 70,
+  kiosk: 80,
+  gazebo: 120,
+  fountain: 180
+};
 
 const SeasonNames = ["İlkbahar", "Yaz", "Sonbahar", "Kış"];
 const SeasonSpawn = [1.0, 1.3, 1.0, 0.75];
@@ -1864,6 +2103,7 @@ let hotelName = "TheHotel";
 let sel = "Slot", selSlot = floors[0].slots[32], selFloor = null;
 let money = StartMoney, tools = 1, day = 1, roomCounter = 0, builtRooms = 0, cleanCount = 0, todayServed = 0;
 let gems = 0, gemsEarnedTotal = 0, gemsSpentTotal = 0;
+let gardenTipShown = false;
 let totalServed = 0, firesExtinguished = 0, gasLeaksFixed = 0, killersCaught = 0, vipServed = 0;
 let themesTried = ["classic"];
 let guestsSinceNeedy = 6, saveTimer = 0;
@@ -1991,11 +2231,15 @@ for (let i = 0; i < 40; i++) {
 // ===== BUNDLED: state/achievements.js =====
 // [state/achievements.js] Elmas (💎) ekonomisi ve 40 başarımlı veri odaklı başarım sistemi
 
-function addGems(n, reason = "") {
+function addGems(n, reason = "", opts = {}) {
   const amt = Number(n);
   if (!Number.isInteger(amt) || amt <= 0) return false;
   gems += amt;
   gemsEarnedTotal += amt;
+  if (typeof day !== "undefined" && day === 1 && gems >= 15 && typeof gardenTipShown !== "undefined" && !gardenTipShown && !(opts && opts.retroactive)) {
+    gardenTipShown = true;
+    if (typeof log === "function") log("🌳 Bahçe düğmesinden süs alabilirsin");
+  }
   if (typeof pulseGemHud === "function") pulseGemHud();
   if (typeof refreshHud === "function") refreshHud();
   return true;
@@ -2006,6 +2250,18 @@ function spendGems(n, reason = "") {
   if (!Number.isInteger(amt) || amt <= 0 || gems < amt) return false;
   gems -= amt;
   gemsSpentTotal += amt;
+  if (typeof pulseGemHud === "function") pulseGemHud();
+  if (typeof refreshHud === "function") refreshHud();
+  if (typeof saveGame === "function") saveGame();
+  return true;
+}
+
+function refundGems(n, reason = "") {
+  const amt = Number(n);
+  if (!Number.isInteger(amt) || amt <= 0) return false;
+  gems += amt;
+  gemsSpentTotal = Math.max(0, gemsSpentTotal - amt);
+  if (typeof pulseGemHud === "function") pulseGemHud();
   if (typeof refreshHud === "function") refreshHud();
   if (typeof saveGame === "function") saveGame();
   return true;
@@ -2394,7 +2650,7 @@ function checkAchievements(opts = {}) {
     if (a.done) continue;
     if (a.check()) {
       a.done = true;
-      addGems(a.gems, "ach:" + a.id);
+      addGems(a.gems, "ach:" + a.id, { retroactive });
       if (a.tl > 0 && !retroactive) {
         money += a.tl;
         if (dayStats) dayStats.income = (dayStats.income || 0) + a.tl;
@@ -2421,6 +2677,320 @@ function checkAchievements(opts = {}) {
     if (!retroactive && typeof saveGame === "function") saveGame();
   }
   return newly;
+}
+
+// ===== BUNDLED: state/decor.js =====
+// [state/decor.js] E2: Elmasla satın alınan görsel bahçe süsleri (24 yuva, 13 süs kataloğu)
+const DECOR_SIZE_RANK = { K: 1, O: 2, B: 3 };
+const DECOR_SIZE_LABELS = {
+  K: "Küçük (K)",
+  O: "Orta (O)",
+  B: "Büyük (B)"
+};
+const DECOR_ZONE_LABELS = {
+  front: "Ön Bahçe",
+  right: "Sağ Bahçe",
+  left: "Sol Bahçe"
+};
+const DECOR_SIZE_FOOTPRINT = {
+  K: { du: 16, dv: 16 },
+  O: { du: 32, dv: 32 },
+  B: { du: 46, dv: 46 }
+};
+
+// 24 bahçe yuvası: Ön 10×K, Sağ 2×B + 3×O + 2×K, Sol 1×B + 3×O + 3×K
+const DECOR_SLOTS = [
+  // Ön Bahçe (10 × K, u ∈ [1186..1202], rampa/yol/kaldırım/mevcut çalı ve saksı dışı temiz bölgeler)
+  { id: "front_1",  zone: "front", label: "Ön Bahçe #1",  u: 1202, v: -520, size: "K", flip: -1 },
+  { id: "front_2",  zone: "front", label: "Ön Bahçe #2",  u: 1202, v: -415, size: "K", flip: -1 },
+  { id: "front_3",  zone: "front", label: "Ön Bahçe #3",  u: 1202, v: -315, size: "K", flip: -1 },
+  { id: "front_4",  zone: "front", label: "Ön Bahçe #4",  u: 1190, v: -205, size: "K", flip: -1 },
+  { id: "front_5",  zone: "front", label: "Ön Bahçe #5",  u: 1186, v: 201,  size: "K", flip: 1 },
+  { id: "front_6",  zone: "front", label: "Ön Bahçe #6",  u: 1190, v: 1170, size: "K", flip: 1 },
+  { id: "front_7",  zone: "front", label: "Ön Bahçe #7",  u: 1202, v: 1365, size: "K", flip: 1 },
+  { id: "front_8",  zone: "front", label: "Ön Bahçe #8",  u: 1202, v: 1475, size: "K", flip: 1 },
+  { id: "front_9",  zone: "front", label: "Ön Bahçe #9",  u: 1202, v: 1585, size: "K", flip: 1 },
+  { id: "front_10", zone: "front", label: "Ön Bahçe #10", u: 1202, v: 1695, size: "K", flip: 1 },
+
+  // Sağ Bahçe (7 yuva: 2×B + 3×O + 2×K, v > 1170 tenis kortu tarafı)
+  { id: "right_1",  zone: "right", label: "Sağ Bahçe #1", u: 90,   v: 1340, size: "B", flip: 1 },
+  { id: "right_2",  zone: "right", label: "Sağ Bahçe #2", u: 920,  v: 1460, size: "B", flip: 1 },
+  { id: "right_3",  zone: "right", label: "Sağ Bahçe #3", u: 90,   v: 1520, size: "O", flip: 1 },
+  { id: "right_4",  zone: "right", label: "Sağ Bahçe #4", u: 920,  v: 1610, size: "O", flip: 1 },
+  { id: "right_5",  zone: "right", label: "Sağ Bahçe #5", u: 1070, v: 1460, size: "O", flip: 1 },
+  { id: "right_6",  zone: "right", label: "Sağ Bahçe #6", u: 485,  v: 1216, size: "K", flip: 1 },
+  { id: "right_7",  zone: "right", label: "Sağ Bahçe #7", u: 635,  v: 1216, size: "K", flip: 1 },
+
+  // Sol Bahçe (7 yuva: 1×B + 3×O + 3×K, v < 0 otopark tarafı)
+  { id: "left_1",   zone: "left",  label: "Sol Bahçe #1", u: 1060, v: -450, size: "B", flip: -1 },
+  { id: "left_2",   zone: "left",  label: "Sol Bahçe #2", u: 1035, v: -260, size: "O", flip: -1 },
+  { id: "left_3",   zone: "left",  label: "Sol Bahçe #3", u: 1135, v: -340, size: "O", flip: -1 },
+  { id: "left_4",   zone: "left",  label: "Sol Bahçe #4", u: 90,   v: -450, size: "O", flip: -1 },
+  { id: "left_5",   zone: "left",  label: "Sol Bahçe #5", u: 90,   v: -540, size: "K", flip: -1 },
+  { id: "left_6",   zone: "left",  label: "Sol Bahçe #6", u: 1045, v: -345, size: "K", flip: -1 },
+  { id: "left_7",   zone: "left",  label: "Sol Bahçe #7", u: 1135, v: -245, size: "K", flip: -1 }
+];
+
+const DECOR_SLOT_MAP = {};
+for (let i = 0; i < DECOR_SLOTS.length; i++) {
+  DECOR_SLOT_MAP[DECOR_SLOTS[i].id] = DECOR_SLOTS[i];
+}
+
+// Katman önbelleğinde props.js'teki timeNow tabanlı sallanma/su fışkırmasını sabitlemek için sarmalayıcı
+function withStaticDecorTime(fn) {
+  const hasTN = (typeof timeNow !== "undefined");
+  const prev = hasTN ? timeNow : 0;
+  if (hasTN) timeNow = 0;
+  try {
+    fn();
+  } finally {
+    if (hasTN) timeNow = prev;
+  }
+}
+
+const DECOR_CATALOG = [
+  // K (Küçük)
+  {
+    id: "planter", name: "Çiçek Kutusu", icon: "🌺", size: "K", cost: DecorPrices.planter,
+    drawFn: "drawFlowerPlanterBox", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawFlowerPlanterBox === "function") drawFlowerPlanterBox(u - 16, v - 6, 0, 32, 12); }
+  },
+  {
+    id: "bush", name: "Çalı", icon: "🌿", size: "K", cost: DecorPrices.bush,
+    drawFn: "drawResortBush", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawResortBush === "function") drawResortBush(u, v, 0, 0.92); }
+  },
+  {
+    id: "potted_plant", name: "Saksı Bitkisi", icon: "🪴", size: "K", cost: DecorPrices.potted_plant,
+    drawFn: "drawPottedPlant", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawPottedPlant === "function") drawPottedPlant(u, v, 0, 1.1); }
+  },
+  {
+    id: "flower_bush", name: "Çiçekli Çalı", icon: "🌸", size: "K", cost: DecorPrices.flower_bush,
+    drawFn: "drawLushBush", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawLushBush === "function") drawLushBush(u, v, 0, 0.92, "flower", si); }
+  },
+  {
+    id: "street_lamp", name: "Sokak Lambası", icon: "🏮", size: "K", cost: DecorPrices.street_lamp,
+    drawFn: "drawVictorianStreetLamp", seasonal: false, nightGlow: true,
+    draw(u, v, si, flip, isNight, glow) {
+      if (typeof drawVictorianStreetLamp === "function") drawVictorianStreetLamp(u, v, 0, !!isNight, glow || 0);
+    }
+  },
+  // O (Orta)
+  {
+    id: "bench", name: "Park Bankı", icon: "🪑", size: "O", cost: DecorPrices.bench,
+    drawFn: "drawParkBench", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawParkBench === "function") drawParkBench(u, v, 0, 1.0); }
+  },
+  {
+    id: "umbrella_set", name: "Şemsiye ve Şezlong", icon: "⛱️", size: "O", cost: DecorPrices.umbrella_set,
+    drawFn: "drawIsoUmbrella + drawSunLounger", seasonal: false, nightGlow: false,
+    draw(u, v) {
+      if (typeof drawSunLounger === "function") {
+        drawSunLounger(u - 20, v - 24, 0, false, "#38bdf8");
+        drawSunLounger(u - 20, v + 2, 0, false, "#fbbf24");
+      }
+      if (typeof drawIsoUmbrella === "function") drawIsoUmbrella(u + 2, v, 0, "#ef4444", 0.78);
+    }
+  },
+  {
+    id: "cypress", name: "Selvi", icon: "🌲", size: "O", cost: DecorPrices.cypress,
+    drawFn: "drawItalianCypress", seasonal: true, nightGlow: false,
+    draw(u, v, si) {
+      if (typeof drawItalianCypress === "function") {
+        withStaticDecorTime(() => drawItalianCypress(u, v, 0, 1.0, si));
+      }
+    }
+  },
+  {
+    id: "shade_tree", name: "Gölgelik Ağaç", icon: "🌳", size: "O", cost: DecorPrices.shade_tree,
+    drawFn: "drawParkShadeTree", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawParkShadeTree === "function") drawParkShadeTree(u, v, 0, 0.95, si); }
+  },
+  {
+    id: "palm", name: "Palmiye", icon: "🌴", size: "O", cost: DecorPrices.palm,
+    drawFn: "drawPalmTree", seasonal: false, nightGlow: false,
+    draw(u, v, si, flip) {
+      if (typeof drawPalmTree === "function") {
+        withStaticDecorTime(() => drawPalmTree(u, v, 0, 0.95, flip || 1));
+      }
+    }
+  },
+  {
+    id: "kiosk", name: "Kiosk", icon: "🧋", size: "O", cost: DecorPrices.kiosk,
+    drawFn: "drawParkKiosk", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawParkKiosk === "function") drawParkKiosk(u - 24, v, 0, 1.0); }
+  },
+  // B (Büyük)
+  {
+    id: "gazebo", name: "Çardak", icon: "🏛️", size: "B", cost: DecorPrices.gazebo,
+    drawFn: "drawResortGazebo", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawResortGazebo === "function") drawResortGazebo(u, v, 0, 1.0); }
+  },
+  {
+    id: "fountain", name: "Mermer Fıskiye", icon: "⛲", size: "B", cost: DecorPrices.fountain,
+    drawFn: "drawGrandMarbleFountain", seasonal: false, nightGlow: false,
+    draw(u, v) {
+      if (typeof drawGrandMarbleFountain === "function") {
+        withStaticDecorTime(() => drawGrandMarbleFountain(u, v, 0, 1.0));
+      }
+    }
+  }
+];
+
+const DECOR_CATALOG_MAP = {};
+for (let i = 0; i < DECOR_CATALOG.length; i++) {
+  DECOR_CATALOG_MAP[DECOR_CATALOG[i].id] = DECOR_CATALOG[i];
+}
+
+let decor = {};
+const DECOR = { version: 1 };
+let decorSelectedSlotId = null;
+let decorPreviewItemId = null;
+let decorReplaceMode = false;
+
+function canSlotFitDecor(slotSize, itemSize) {
+  return (DECOR_SIZE_RANK[slotSize] || 0) >= (DECOR_SIZE_RANK[itemSize] || 99);
+}
+
+function getPlacedDecorItemId(slotId) {
+  return (decor && typeof decor[slotId] === "string") ? decor[slotId] : null;
+}
+
+function getKnownPlacedDecorInZones(zones) {
+  const out = [];
+  if (!decor || typeof decor !== "object") return out;
+  for (let i = 0; i < DECOR_SLOTS.length; i++) {
+    const slot = DECOR_SLOTS[i];
+    if (!zones.includes(slot.zone)) continue;
+    const itemId = decor[slot.id];
+    if (typeof itemId !== "string") continue;
+    const item = DECOR_CATALOG_MAP[itemId];
+    if (!item) continue;
+    out.push({ slot, item });
+  }
+  out.sort((a, b) => (a.slot.u + a.slot.v) - (b.slot.u + b.slot.v));
+  return out;
+}
+
+function hasPlacedStreetLamp() {
+  if (!decor || typeof decor !== "object") return false;
+  for (let i = 0; i < DECOR_SLOTS.length; i++) {
+    const slot = DECOR_SLOTS[i];
+    if (decor[slot.id] === "street_lamp") return true;
+  }
+  return false;
+}
+
+function placeDecor(slotId, itemId) {
+  const slot = DECOR_SLOT_MAP[slotId];
+  if (!slot) return { ok: false, reason: "invalid_slot" };
+  const item = DECOR_CATALOG_MAP[itemId];
+  if (!item) return { ok: false, reason: "invalid_item" };
+  if (!canSlotFitDecor(slot.size, item.size)) return { ok: false, reason: "size_mismatch" };
+
+  const curId = getPlacedDecorItemId(slotId);
+  if (curId && DECOR_CATALOG_MAP[curId]) {
+    return { ok: false, reason: "slot_occupied" };
+  }
+  if (!spendGems(item.cost, "decor:" + item.id)) {
+    if (typeof play === "function") play("reject");
+    return { ok: false, reason: "insufficient_gems" };
+  }
+  decor[slotId] = item.id;
+  DECOR.version++;
+  decorPreviewItemId = null;
+  decorReplaceMode = false;
+  if (typeof play === "function") play("build");
+  if (typeof log === "function") log("🌳 " + item.name + " yerleştirildi (-" + item.cost + " 💎)");
+  if (typeof saveGame === "function") saveGame();
+  if (typeof refresh === "function") refresh();
+  return { ok: true, slotId, itemId: item.id, cost: item.cost };
+}
+
+function removeDecor(slotId) {
+  const slot = DECOR_SLOT_MAP[slotId];
+  if (!slot) return { ok: false, reason: "invalid_slot" };
+  const curId = getPlacedDecorItemId(slotId);
+  if (!curId) return { ok: false, reason: "empty_slot" };
+  const oldItem = DECOR_CATALOG_MAP[curId];
+  const refundAmt = oldItem ? oldItem.cost : 0;
+  if (refundAmt > 0) refundGems(refundAmt, "decor_refund:" + curId);
+  delete decor[slotId];
+  DECOR.version++;
+  decorPreviewItemId = null;
+  decorReplaceMode = false;
+  if (typeof play === "function") play("clean");
+  if (typeof log === "function") {
+    log("🌳 " + (oldItem ? oldItem.name : curId) + " kaldırıldı (+" + refundAmt + " 💎 iade)");
+  }
+  if (typeof saveGame === "function") saveGame();
+  if (typeof refresh === "function") refresh();
+  return { ok: true, slotId, removedId: curId, refunded: refundAmt };
+}
+
+function replaceDecor(slotId, newItemId) {
+  const slot = DECOR_SLOT_MAP[slotId];
+  if (!slot) return { ok: false, reason: "invalid_slot" };
+  const newItem = DECOR_CATALOG_MAP[newItemId];
+  if (!newItem) return { ok: false, reason: "invalid_item" };
+  if (!canSlotFitDecor(slot.size, newItem.size)) return { ok: false, reason: "size_mismatch" };
+
+  const curId = getPlacedDecorItemId(slotId);
+  if (!curId || !DECOR_CATALOG_MAP[curId]) {
+    return placeDecor(slotId, newItemId);
+  }
+  if (curId === newItem.id) return { ok: false, reason: "same_item" };
+
+  const oldItem = DECOR_CATALOG_MAP[curId];
+  const oldCost = oldItem ? oldItem.cost : 0;
+  if (gems + oldCost < newItem.cost) {
+    if (typeof play === "function") play("reject");
+    return { ok: false, reason: "insufficient_gems", missing: newItem.cost - (gems + oldCost) };
+  }
+
+  if (oldCost > 0) refundGems(oldCost, "decor_replace_refund:" + curId);
+  if (!spendGems(newItem.cost, "decor:" + newItem.id)) {
+    // Savunma amaçlı geri alma (normalde gems + oldCost >= newItem.cost kontrolü nedeniyle ulaşılmaz)
+    if (oldCost > 0) spendGems(oldCost, "decor_rollback:" + curId);
+    return { ok: false, reason: "insufficient_gems" };
+  }
+  decor[slotId] = newItem.id;
+  DECOR.version++;
+  decorPreviewItemId = null;
+  decorReplaceMode = false;
+  if (typeof play === "function") play("build");
+  if (typeof log === "function") log("🌳 " + newItem.name + " yerleştirildi (-" + newItem.cost + " 💎)");
+  if (typeof saveGame === "function") saveGame();
+  if (typeof refresh === "function") refresh();
+  return { ok: true, slotId, itemId: newItem.id, refunded: oldCost, cost: newItem.cost };
+}
+
+function cloneDecorState() {
+  const out = {};
+  if (!decor || typeof decor !== "object" || Array.isArray(decor)) return out;
+  for (const [k, v] of Object.entries(decor)) {
+    if (typeof k === "string" && typeof v === "string" && v.length > 0) out[k] = v;
+  }
+  return out;
+}
+
+function resetDecorState(rawDecor) {
+  const next = {};
+  if (rawDecor && typeof rawDecor === "object" && !Array.isArray(rawDecor)) {
+    for (const [k, v] of Object.entries(rawDecor)) {
+      // İleri sürüm uyumu için bilinmeyen yuva/katalog kimlikleri de dize ise korunur
+      if (typeof k === "string" && k.length > 0 && typeof v === "string" && v.length > 0) {
+        next[k] = v;
+      }
+    }
+  }
+  decor = next;
+  decorSelectedSlotId = null;
+  decorPreviewItemId = null;
+  decorReplaceMode = false;
+  DECOR.version++;
 }
 
 // ===== BUNDLED: state/daynight.js =====
@@ -2918,6 +3488,8 @@ function saveGame() {
       gems,
       gemsEarnedTotal,
       gemsSpentTotal,
+      gardenTipShown: !!gardenTipShown,
+      decor: (typeof cloneDecorState === "function") ? cloneDecorState() : {},
       totalServed,
       firesExtinguished,
       gasLeaksFixed,
@@ -3152,6 +3724,8 @@ function loadGame() {
         if (data.achUnlocked[1] && ACH_BY_ID.day10guests) ACH_BY_ID.day10guests.done = true;
       }
     }
+    gardenTipShown = !!data.gardenTipShown;
+    if (typeof resetDecorState === "function") resetDecorState(data.decor);
     todayServed = data.todayServed || 0;
     guestsSinceNeedy = typeof data.guestsSinceNeedy === "number" ? data.guestsSinceNeedy : 6;
     if (Array.isArray(data.stock)) for (let k = 0; k < ItemCount; k++) stock[k] = data.stock[k] || 0;
@@ -3489,6 +4063,8 @@ function startNewGameClean() {
   hotelName = customName || "TheHotel";
   if (typeof setCosmetic === "function") setCosmetic("roomTheme", "classic", true);
   resetGemState(0, 0, 0);
+  gardenTipShown = false;
+  if (typeof resetDecorState === "function") resetDecorState({});
   totalServed = 0;
   firesExtinguished = 0;
   gasLeaksFixed = 0;
@@ -7227,6 +7803,8 @@ function refreshHud() {
   if (ctrReady && !ctrSnap && gems > prevGemTarget) pulseGemHud();
   const hudGemPill = document.getElementById("hud-gem-pill");
   if (hudGemPill) hudGemPill.title = "Elmas: " + gems + " 💎 (Toplam Kazanılan: " + gemsEarnedTotal + " 💎)";
+  const hudGardenBtn = document.getElementById("hud-garden-btn");
+  if (hudGardenBtn) hudGardenBtn.classList.toggle("is-active", sel === "Decor");
   const hudMoneyPill = document.getElementById("hud-money-pill");
   if (hudMoneyPill) hudMoneyPill.title = "Mevcut Para: " + money + " TL (Sonraki Yıldız Hedefi: " + target + " İtibar)";
 
@@ -7560,7 +8138,18 @@ function closeDrawer() {
   drawerOpen = false;
   activeDock = "";
   furnSelectedKey = null;
-  if (selPanelEl) selPanelEl.classList.remove("open");
+  if (sel === "Decor") {
+    sel = "Slot";
+    selSlot = floors[viewFloor] ? floors[viewFloor].slots[32] : null;
+    decorSelectedSlotId = null;
+    decorPreviewItemId = null;
+    decorReplaceMode = false;
+  }
+  if (selPanelEl) {
+    selPanelEl.classList.remove("open", "decor-mode", "ach-mode");
+  }
+  const gBtn = document.getElementById("hud-garden-btn");
+  if (gBtn) gBtn.classList.remove("is-active");
   updateDockHighlights();
 }
 function updateDockHighlights() {
@@ -7688,6 +8277,19 @@ document.getElementById("hud-bell-btn").onclick = () => {
   }
 };
 document.getElementById("hud-gear-btn").onclick = () => { play("tap"); openStartMenu(); };
+const hudGardenBtn = document.getElementById("hud-garden-btn");
+if (hudGardenBtn) {
+  hudGardenBtn.onclick = () => {
+    if (sel === "Decor") {
+      play("tap");
+      closeDrawer();
+      refresh();
+      return;
+    }
+    if (typeof toggleInGameThemePanel === "function") toggleInGameThemePanel(false);
+    selectMode("Decor");
+  };
+}
 document.getElementById("hud-rotate-btn").onclick = () => {
   play("tap");
   document.getElementById("app").classList.toggle("force-landscape");
@@ -7786,6 +8388,9 @@ function selectSlot(s) {
   sel = "Slot";
   selSlot = s;
   selFloor = null;
+  decorSelectedSlotId = null;
+  decorPreviewItemId = null;
+  decorReplaceMode = false;
   if (s && s.floor) viewFloor = s.floor.idx;
   if (!s || s.type !== "Room") furnSelectedKey = null;
   openDrawer(activeDock || (s && s.type === "Room" ? "shop" : "build"));
@@ -7798,6 +8403,9 @@ function selectFloor(f) {
   selFloor = f;
   selSlot = null;
   furnSelectedKey = null;
+  decorSelectedSlotId = null;
+  decorPreviewItemId = null;
+  decorReplaceMode = false;
   openDrawer("upgrade");
   refresh();
 }
@@ -7807,8 +8415,35 @@ function selectMode(m) {
   selSlot = null;
   selFloor = null;
   furnSelectedKey = null;
+  if (m !== "Decor") {
+    decorSelectedSlotId = null;
+    decorPreviewItemId = null;
+    decorReplaceMode = false;
+  }
   openDrawer(m === "Staff" || m === "Dorm" ? "staff" : m === "Storage" ? "shop" : "upgrade");
   refresh();
+}
+function selectDecorSlot(slotId) {
+  if (typeof DECOR_SLOT_MAP === "undefined" || !DECOR_SLOT_MAP[slotId]) return;
+  play("tap");
+  sel = "Decor";
+  selSlot = null;
+  selFloor = null;
+  furnSelectedKey = null;
+  decorSelectedSlotId = slotId;
+  decorPreviewItemId = null;
+  decorReplaceMode = false;
+  openDrawer("upgrade");
+  refresh();
+}
+function focusDecorSlot(slotId) {
+  if (typeof DECOR_SLOT_MAP === "undefined" || typeof iso !== "function") return;
+  const sl = DECOR_SLOT_MAP[slotId];
+  if (!sl) return;
+  const p = iso(sl.u, sl.v, 0);
+  camCenter.x = p.x;
+  camCenter.y = -p.y - (drawerOpen ? 90 : 0);
+  if (typeof applyCam === "function") applyCam();
 }
 
 function setAct(i, t, show, on, owned = false, selectedFurn = false) {
@@ -7919,8 +8554,272 @@ function renderAchPanel() {
   listEl.appendChild(frag);
 }
 
+const _decorThumbCache = {};
+function getDecorThumbUrl(item) {
+  if (_decorThumbCache[item.id] !== undefined) return _decorThumbCache[item.id];
+  try {
+    if (typeof ctx === "undefined" || typeof iso !== "function") {
+      _decorThumbCache[item.id] = "";
+      return "";
+    }
+    const cv = document.createElement("canvas");
+    cv.width = 48;
+    cv.height = 48;
+    const tctx = cv.getContext("2d");
+    tctx.save();
+    const tall = (item.id === "shade_tree" || item.id === "palm" || item.id === "cypress" || item.id === "street_lamp");
+    const sc = item.size === "B" ? 0.36 : tall ? 0.34 : item.size === "O" ? 0.42 : 0.64;
+    const dy = tall ? 43 : (item.size === "B" ? 34 : 36);
+    tctx.translate(24, dy);
+    tctx.scale(sc, sc);
+    const prevCtx = ctx;
+    ctx = tctx;
+    try {
+      item.draw(0, 0, typeof seasonIdx === "function" ? seasonIdx() : 0, 1, false, 0);
+    } finally {
+      ctx = prevCtx;
+    }
+    tctx.restore();
+    _decorThumbCache[item.id] = cv.toDataURL();
+  } catch (_) {
+    _decorThumbCache[item.id] = "";
+  }
+  return _decorThumbCache[item.id];
+}
+
+function createDecorThumbNode(item) {
+  const wrap = document.createElement("div");
+  wrap.className = "decor-thumb";
+  const url = getDecorThumbUrl(item);
+  if (url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = item.name;
+    wrap.appendChild(img);
+  } else {
+    wrap.textContent = item.icon || "🌳";
+  }
+  return wrap;
+}
+
+function renderDecorPanel() {
+  const panelEl = document.getElementById("decor-panel");
+  if (!panelEl || typeof DECOR_SLOTS === "undefined") return;
+
+  let placedCount = 0;
+  for (let i = 0; i < DECOR_SLOTS.length; i++) {
+    const pid = getPlacedDecorItemId(DECOR_SLOTS[i].id);
+    if (pid && DECOR_CATALOG_MAP[pid]) placedCount++;
+  }
+
+  const slot = decorSelectedSlotId ? DECOR_SLOT_MAP[decorSelectedSlotId] : null;
+  if (!slot) {
+    infoText.textContent = "🌳 Bahçe Süsleri — Bir bahçe yuvasına (+ / ✎) dokun · Dolu: " + placedCount + "/24 · Mevcut: " + gems + " 💎";
+  } else {
+    const accepts = slot.size === "B" ? "K, O, B" : (slot.size === "O" ? "K, O" : "Yalnız K");
+    const zLbl = DECOR_ZONE_LABELS[slot.zone] || slot.zone;
+    infoText.textContent = "🌳 " + slot.label + " (" + zLbl + ") · Boyut: " + slot.size + " (" + accepts + ") · Bakiye: " + gems + " 💎";
+  }
+
+  const frag = document.createDocumentFragment();
+
+  // Hızlı yuva geçiş şeridi (24 yuva)
+  const slotBar = document.createElement("div");
+  slotBar.className = "decor-slot-bar";
+  for (let i = 0; i < DECOR_SLOTS.length; i++) {
+    const sl = DECOR_SLOTS[i];
+    const pid = getPlacedDecorItemId(sl.id);
+    const hasKnown = !!(pid && DECOR_CATALOG_MAP[pid]);
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "decor-slot-chip" + (decorSelectedSlotId === sl.id ? " active" : "") + (hasKnown ? " filled" : "");
+    chip.setAttribute("data-decor-slot", sl.id);
+    chip.textContent = (hasKnown ? "✓ " : "") + sl.id.replace("_", " ").replace("front", "Ö").replace("right", "Sğ").replace("left", "Sl") + " (" + sl.size + ")";
+    chip.onclick = () => {
+      if (typeof focusDecorSlot === "function") focusDecorSlot(sl.id);
+      if (typeof selectDecorSlot === "function") selectDecorSlot(sl.id);
+    };
+    slotBar.appendChild(chip);
+  }
+  frag.appendChild(slotBar);
+
+  if (!slot) {
+    const hint = document.createElement("div");
+    hint.className = "decor-empty-hint";
+    hint.textContent = "Haritadaki + veya ✎ işaretli 24 bahçe yuvasından birine dokun (veya yukarıdan seç). Süsler tamamen görseldir; kaldırdığında elmasın %100'ü iade edilir.";
+    frag.appendChild(hint);
+    panelEl.innerHTML = "";
+    panelEl.appendChild(frag);
+    return;
+  }
+
+  const placedId = getPlacedDecorItemId(slot.id);
+  const placedItem = placedId ? DECOR_CATALOG_MAP[placedId] : null;
+
+  if (placedItem && !decorReplaceMode) {
+    // Dolu yuva görünümü: süs adı, Değiştir ve Kaldır (tam iade)
+    const occBox = document.createElement("div");
+    occBox.className = "decor-occ-box";
+    occBox.appendChild(createDecorThumbNode(placedItem));
+
+    const meta = document.createElement("div");
+    meta.className = "decor-occ-meta";
+    const title = document.createElement("div");
+    title.className = "decor-occ-title";
+    title.textContent = placedItem.name;
+    const sub = document.createElement("div");
+    sub.className = "decor-occ-sub";
+    sub.textContent = "Boyut: " + placedItem.size + " · Değer: " + placedItem.cost + " 💎 (Tam iade)";
+    meta.appendChild(title);
+    meta.appendChild(sub);
+    occBox.appendChild(meta);
+    frag.appendChild(occBox);
+
+    const bar = document.createElement("div");
+    bar.className = "decor-action-bar";
+
+    const btnRep = document.createElement("button");
+    btnRep.type = "button";
+    btnRep.id = "decor-btn-replace";
+    btnRep.className = "decor-btn primary";
+    btnRep.textContent = "🔄 Değiştir";
+    btnRep.onclick = () => {
+      if (typeof play === "function") play("tap");
+      decorReplaceMode = true;
+      decorPreviewItemId = null;
+      refreshPanel();
+    };
+    bar.appendChild(btnRep);
+
+    const btnRem = document.createElement("button");
+    btnRem.type = "button";
+    btnRem.id = "decor-btn-remove";
+    btnRem.className = "decor-btn danger";
+    btnRem.textContent = "🗑️ Kaldır (+" + placedItem.cost + " 💎 iade)";
+    btnRem.onclick = () => {
+      removeDecor(slot.id);
+    };
+    bar.appendChild(btnRem);
+
+    frag.appendChild(bar);
+    panelEl.innerHTML = "";
+    panelEl.appendChild(frag);
+    return;
+  }
+
+  // Boş yuva veya Değiştir modu: uygun süs kataloğu listesi
+  const compatItems = DECOR_CATALOG.filter(it => canSlotFitDecor(slot.size, it.size));
+  const grid = document.createElement("div");
+  grid.className = "decor-grid";
+  for (let i = 0; i < compatItems.length; i++) {
+    const it = compatItems[i];
+    const isCurrent = !!(decorReplaceMode && placedItem && it.id === placedItem.id);
+    const isPreview = decorPreviewItemId === it.id;
+
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "decor-card" + (isPreview ? " selected" : "") + (isCurrent ? " is-current" : "");
+    card.setAttribute("data-decor-item", it.id);
+    if (isCurrent) card.disabled = true;
+
+    card.appendChild(createDecorThumbNode(it));
+
+    const info = document.createElement("div");
+    info.className = "decor-card-info";
+
+    const nameEl = document.createElement("div");
+    nameEl.className = "decor-card-name";
+    nameEl.textContent = it.name;
+    info.appendChild(nameEl);
+
+    const row = document.createElement("div");
+    row.className = "decor-card-meta";
+    const sBadge = document.createElement("span");
+    sBadge.className = "decor-size-badge size-" + it.size;
+    sBadge.textContent = it.size;
+    const cBadge = document.createElement("span");
+    cBadge.className = "decor-cost-badge";
+    cBadge.textContent = isCurrent ? "Kurulu" : (it.cost + " 💎");
+    row.appendChild(sBadge);
+    row.appendChild(cBadge);
+    info.appendChild(row);
+
+    card.appendChild(info);
+    card.onclick = () => {
+      if (isCurrent) return;
+      if (typeof play === "function") play("tap");
+      decorPreviewItemId = it.id;
+      refreshPanel();
+    };
+    grid.appendChild(card);
+  }
+  frag.appendChild(grid);
+
+  const bar = document.createElement("div");
+  bar.className = "decor-action-bar";
+
+  const previewItem = decorPreviewItemId ? DECOR_CATALOG_MAP[decorPreviewItemId] : null;
+  if (previewItem) {
+    const oldCost = (decorReplaceMode && placedItem) ? placedItem.cost : 0;
+    const availGems = gems + oldCost;
+    const canAfford = availGems >= previewItem.cost;
+    const missing = Math.max(0, previewItem.cost - availGems);
+
+    const btnBuy = document.createElement("button");
+    btnBuy.type = "button";
+    btnBuy.id = decorReplaceMode ? "decor-btn-confirm-replace" : "decor-btn-buy";
+    btnBuy.className = "decor-btn " + (canAfford ? "success" : "locked");
+    btnBuy.disabled = !canAfford;
+
+    if (!canAfford) {
+      btnBuy.textContent = "🔒 " + missing + " 💎 eksik (" + previewItem.cost + " 💎)";
+    } else if (decorReplaceMode && placedItem) {
+      const diff = previewItem.cost - oldCost;
+      const diffTxt = diff === 0 ? "0 💎" : (diff > 0 ? ("-" + diff + " 💎") : ("+" + (-diff) + " 💎 iade"));
+      btnBuy.textContent = "🔄 " + previewItem.name + " ile Değiştir (" + diffTxt + ")";
+    } else {
+      btnBuy.textContent = "🌳 Satın al ve yerleştir (" + previewItem.cost + " 💎)";
+    }
+    btnBuy.onclick = () => {
+      if (decorReplaceMode && placedItem) {
+        replaceDecor(slot.id, previewItem.id);
+      } else {
+        placeDecor(slot.id, previewItem.id);
+      }
+    };
+    bar.appendChild(btnBuy);
+  } else {
+    const promptEl = document.createElement("div");
+    promptEl.className = "decor-select-prompt";
+    promptEl.textContent = "Önizleme için yukarıdan bir süs seç";
+    bar.appendChild(promptEl);
+  }
+
+  if (decorReplaceMode) {
+    const btnCancel = document.createElement("button");
+    btnCancel.type = "button";
+    btnCancel.id = "decor-btn-cancel-replace";
+    btnCancel.className = "decor-btn secondary";
+    btnCancel.textContent = "İptal";
+    btnCancel.onclick = () => {
+      if (typeof play === "function") play("tap");
+      decorReplaceMode = false;
+      decorPreviewItemId = null;
+      refreshPanel();
+    };
+    bar.appendChild(btnCancel);
+  }
+
+  frag.appendChild(bar);
+  panelEl.innerHTML = "";
+  panelEl.appendChild(frag);
+}
+
 function refreshPanel() {
-  if (selPanelEl) selPanelEl.classList.toggle("ach-mode", sel === "Ach");
+  if (selPanelEl) {
+    selPanelEl.classList.toggle("ach-mode", sel === "Ach");
+    selPanelEl.classList.toggle("decor-mode", sel === "Decor");
+  }
   for (let i = 0; i < ActCount; i++) setAct(i, "", false, true, false, false);
   actBtns[ActCount - 1].style.background = "linear-gradient(180deg, #a4f578 0%, #58c934 100%)";
   const readyOnce = hasReadyRoom();
@@ -8034,6 +8933,8 @@ function refreshPanel() {
     }
   } else if (sel === "Ach") {
     renderAchPanel();
+  } else if (sel === "Decor") {
+    renderDecorPanel();
   } else if (sel === "Garden") {
     const n = treePlanted.filter(Boolean).length;
     infoText.textContent = "🌴 Tatil Köyü Peyzajı & Palmiyeler  •  Ağaç: " + n + "/" + treePlanted.length + "\nDışarıdaki kirlere dokunup temizle: her 2 kirde +1 Alet kazanırsın.";
@@ -8383,8 +9284,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 54;
-const APP_VERSION_NAME = "1.9.46-beta";
+const APP_VERSION_CODE = 55;
+const APP_VERSION_NAME = "1.9.47-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -8392,9 +9293,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.47-beta",
+    title: "E2 Bahçe Süsleri (Elmas Dekor Kataloğu & Bahçe Modu)",
+    latest: true,
+    notes: "• 🌳 Bahçe Modu (24 Yuva): Ön, sağ ve sol bahçelerde Küçük (15), Orta (6) ve Büyük (3) boyutta 24 dekor yuvası açıldı; 🌳 düğmesinden önizlemeli yerleştirme ve değiştirme yapılabilir.\n• 💎 13 Görsel Süs & %100 İade: Çiçeklikten büyük mermer fıskiyeye 13 farklı bahçe süsü elmasla alınabilir, kaldırıldığında veya değiştirildiğinde %100 elmas iade edilir.\n• 🏮 Gece Işıklandırması & Önbellek: Eklenen sokak lambaları gece çevre aydınlatmasına katılır; süsler katman önbelleğinde çizilir."
+  },
+  {
     ver: "v1.9.46-beta",
     title: "E1.1 Yıldız Eşikleri, Kayıt Bütünlüğü & Bildirim Katmanı",
-    latest: true,
+    latest: false,
     notes: "• ⭐ Yıldız Eşikleri: star1/star2/star3 başarımları config.js StarTargets (250/500/750) ve stars() fonksiyonundan türetildi.\n• 📊 Çift Koşullu Yorum İlerlemesi: 'Mükemmel Hizmet' (avg_rating) çubuğu hem yorum sayısını hem puan ortalamasını birlikte gösterir (min(ort/4.5, yorum/50)).\n• 💾 Kayıt & Yükleme Güvenliği: Kuyruk (queue), dış kirler (dirts), inşaat işçileri ve daysLeft=0 alanları eksiksiz kaydedilip yüklenir; Devam Et / yenileme piyon duplikasyonu yapmaz.\n• 🏆 Başarım Bildirimi: #ach-popup z-index ve konumu #log-text üstünde ve 4 satırlı loglarla çakışmayacak şekilde düzeltildi."
   },
   {
@@ -9332,8 +10239,8 @@ function applyCam() {
   zoom = clamp(zoom, 0.36, 1.95);
   // Kamera sınırları: Oyuncunun otel, otopark, tenis kortu, şehir parkı ve tünelleri rahatça görebilmesini sağlar;
   // sonsuz boş yeşil alana kaymayı engeller.
-  camCenter.x = clamp(camCenter.x, -850, 850);
-  camCenter.y = clamp(camCenter.y, -1080, -120);
+  camCenter.x = clamp(camCenter.x, -1600, 1400);
+  camCenter.y = clamp(camCenter.y, -1600, 280);
 }
 function fitView() {
   const vw = viewport.clientWidth || 800, vh = viewport.clientHeight || 600;
@@ -10143,6 +11050,13 @@ function collectSceneLights(cw, ch) {
   const uN = streetLampUNear(), uF = streetLampUFar();
   for (const v of STREET_LAMP_VS_NEAR) add(uN, v, 40, 120, "lamp", 1);
   for (const v of STREET_LAMP_VS_FAR) add(uF, v, 40, 120, "lamp", 1);
+  if (typeof decor === "object" && decor && typeof DECOR_SLOT_MAP === "object") {
+    for (const [slotId, itemId] of Object.entries(decor)) {
+      if (itemId !== "street_lamp") continue;
+      const slot = DECOR_SLOT_MAP[slotId];
+      if (slot) add(slot.u, slot.v, 40, 120, "lamp", 1);
+    }
+  }
   return out;
 }
 
@@ -12074,6 +12988,16 @@ function drawWorld() {
   drawPalmTree(280, -160, 0, 1.1, -1);
   drawPalmTree(-160, 280, 0, 1.1, 1);
 
+  const decorShKey = isNight ? 0 : Math.round(((typeof shadowIntensity === "function") ? shadowIntensity() : 1) * 4);
+  const decorGlow = Math.round(clamp(1 - b, 0, 1) * 10) / 10;
+  const decorKey = (typeof DECOR !== "undefined" ? DECOR.version : 0) + "|" + si + "|" + (isNight ? 1 : 0) + "|" + decorShKey + "|" + decorGlow;
+  const backDecorItems = (typeof getKnownPlacedDecorInZones === "function") ? getKnownPlacedDecorInZones(["left", "back"]) : [];
+  if (backDecorItems.length > 0) {
+    drawCachedLayer("decorBack", decorKey, () => {
+      drawDecorItemsLayer(backDecorItems, si, isNight, decorGlow);
+    });
+  }
+
   // 3) Ön Kaldırım ve Kesintisiz İzometrik Otoyol (Kuzey Tüneli v=-1150 ile Güney Tüneli v=2250 Arasında)
   const gridMaxU = 6 * PARCEL_SIZE; // 1170
   const swU0 = gridMaxU + FRONT_GAP; // 1260
@@ -12266,6 +13190,13 @@ function drawWorld() {
     drawPalmTree(ps.u, ps.v, 0, ps.sc, ps.flip);
   }
 
+  const frontDecorItems = (typeof getKnownPlacedDecorInZones === "function") ? getKnownPlacedDecorInZones(["front", "right"]) : [];
+  if (frontDecorItems.length > 0) {
+    drawCachedLayer("decorFront", decorKey, () => {
+      drawDecorItemsLayer(frontDecorItems, si, isNight, decorGlow);
+    });
+  }
+
   // 6) Dış Kirler
   for (const d of dirts) {
     const dp = logicalXYToIsoCanvas(d.x, d.y);
@@ -12401,6 +13332,10 @@ function drawWorld() {
     ctx.fillStyle = f.col;
     ctx.fillText(f.msg, f.x, -f.y);
     ctx.restore();
+  }
+
+  if (sel === "Decor" && typeof drawDecorModeOverlay === "function") {
+    drawDecorModeOverlay(si, isNight, decorGlow);
   }
 
   ctx.restore();
@@ -12767,6 +13702,91 @@ function drawLushLawnDetails(si) {
       ctx.fillStyle = "#facc15";
       ctx.beginPath(); ctx.arc(p.x, p.y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
     }
+  }
+}
+
+// 7.8) Bahçe Süsleri Önbellek Katmanı Çizicisi & Bahçe Modu İşaret/Önizleme Üst Katmanı
+function drawDecorItemsLayer(entries, si, isNight, glow) {
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    ctx.save();
+    e.item.draw(e.slot.u, e.slot.v, si, e.slot.flip || 1, isNight, glow);
+    ctx.restore();
+  }
+}
+
+const _DECOR_MARKER_STYLES = {
+  K: { bg: "#dcfce7", border: "#16a34a", text: "#14532d", rx: 18, ry: 9 },
+  O: { bg: "#dbeafe", border: "#2563eb", text: "#1e3a8a", rx: 28, ry: 14 },
+  B: { bg: "#f3e8ff", border: "#9333ea", text: "#581c87", rx: 40, ry: 20 }
+};
+
+function drawDecorModeOverlay(si, isNight, glow) {
+  if (typeof DECOR_SLOTS === "undefined" || !Array.isArray(DECOR_SLOTS)) return;
+
+  // 1) Seçili yuvada önizlenen süs varsa yarı saydam (ghost) önizleme çiz
+  if (decorSelectedSlotId && decorPreviewItemId) {
+    const pSlot = DECOR_SLOT_MAP[decorSelectedSlotId];
+    const pItem = DECOR_CATALOG_MAP[decorPreviewItemId];
+    if (pSlot && pItem) {
+      ctx.save();
+      ctx.globalAlpha = 0.62;
+      pItem.draw(pSlot.u, pSlot.v, si, pSlot.flip || 1, isNight, glow);
+      ctx.restore();
+    }
+  }
+
+  // 2) 24 bahçe yuvası için boyut rozetli (+ / ✏️ K/O/B) işaretler & en üst öncelikli tıklama bölgeleri
+  for (let i = 0; i < DECOR_SLOTS.length; i++) {
+    const slot = DECOR_SLOTS[i];
+    const st = _DECOR_MARKER_STYLES[slot.size] || _DECOR_MARKER_STYLES.K;
+    const isSel = (decorSelectedSlotId === slot.id);
+    const placedId = (typeof getPlacedDecorItemId === "function") ? getPlacedDecorItemId(slot.id) : null;
+    const isKnownPlaced = !!(placedId && DECOR_CATALOG_MAP[placedId]);
+
+    const gp = iso(slot.u, slot.v, 0);
+    const bp = iso(slot.u, slot.v, isKnownPlaced ? 30 : 12);
+
+    ctx.save();
+    // Zemin yuva halkası
+    ctx.fillStyle = isSel ? "rgba(249, 115, 22, 0.28)" : (isKnownPlaced ? "rgba(255, 255, 255, 0.14)" : "rgba(255, 255, 255, 0.24)");
+    ctx.strokeStyle = isSel ? "#f97316" : st.border;
+    ctx.lineWidth = isSel ? 3 : 2;
+    ctx.beginPath();
+    ctx.ellipse(gp.x, gp.y, st.rx, st.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Üst rozet (+ K / ✏️ O / + B)
+    const pillW = 42, pillH = 20;
+    const bx = bp.x - pillW * 0.5, by = bp.y - pillH * 0.5;
+    ctx.fillStyle = isSel ? "#ffedd5" : st.bg;
+    ctx.strokeStyle = isSel ? "#ea580c" : st.border;
+    ctx.lineWidth = isSel ? 2.5 : 1.8;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, pillW, pillH, 9);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = isSel ? "#9a3412" : st.text;
+    ctx.font = "900 11px 'Segoe UI', Roboto, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText((isKnownPlaced ? "✎ " : "+ ") + slot.size, bp.x, bp.y + 0.5);
+    ctx.restore();
+
+    const minX = Math.min(gp.x - st.rx - 4, bx - 3);
+    const maxX = Math.max(gp.x + st.rx + 4, bx + pillW + 3);
+    const minY = Math.min(gp.y - st.ry - 4, by - 3);
+    const maxY = Math.max(gp.y + st.ry + 4, by + pillH + 3);
+    addHitPoly([
+      { x: minX, y: minY },
+      { x: maxX, y: minY },
+      { x: maxX, y: maxY },
+      { x: minX, y: maxY }
+    ], () => {
+      if (typeof selectDecorSlot === "function") selectDecorSlot(slot.id);
+    });
   }
 }
 
