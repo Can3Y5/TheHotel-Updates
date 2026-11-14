@@ -792,11 +792,12 @@
   .menu-footer { font-size: clamp(9.5px, 2.2vw, 11px); color: #fff8eb; text-align: center; font-weight: 800; text-shadow: 0 1px 2px #000; }
 
   #ach-popup {
-    position: absolute; left: 50%; top: 96px; transform: translateX(-50%);
-    width: min(84%, 380px); background: #ffe666; border: 3px solid #3a281f; border-radius: 12px;
+    position: fixed; left: 50%; top: calc(144px + var(--sat)); transform: translateX(-50%);
+    width: min(84%, 380px); max-width: calc(100vw - 24px); box-sizing: border-box;
+    background: #ffe666; border: 3px solid #3a281f; border-radius: 12px;
     color: #3a281f; font-weight: 900; font-size: clamp(12px, 2.8vw, 15px);
     display: none; align-items: center; justify-content: center; text-align: center;
-    padding: 8px 12px; z-index: 20; pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out; box-shadow: 0 6px 16px rgba(0,0,0,0.32);
+    padding: 8px 12px; z-index: 24; pointer-events: auto; cursor: pointer; transition: opacity 0.4s ease-out; box-shadow: 0 6px 16px rgba(0,0,0,0.32);
   }
 
   #update-modal {
@@ -938,6 +939,9 @@
       top: calc(52px + var(--sat)); max-width: 80%; padding: 3px 8px; font-size: 9.5px;
       border-radius: 8px; border-width: 1.5px;
     }
+    #ach-popup {
+      top: calc(114px + var(--sat)); font-size: 13px; padding: 8px 14px;
+    }
 
     /* 7. Cekmece & Islem Paneli */
     #bottom-area { bottom: 62px; width: 96%; }
@@ -1057,6 +1061,7 @@
   #top-mid { font-size: 10px; }
   #left-hud-top { top: calc(68px + var(--sat)); }
   #log-text { top: calc(68px + var(--sat)); }
+  #ach-popup { top: calc(136px + var(--sat)); }
 }
 
 /* ===== BAŞARIMLAR PANELİ (KART & İLERLEME ÇUBUĞU) ===== */
@@ -1366,7 +1371,6 @@
   <!-- DÜNYA CANVAS -->
   <div id="viewport">
     <canvas id="world-canvas"></canvas>
-    <div id="ach-popup"></div>
   </div>
 
   <!-- MÜŞTERİ KİTABI -->
@@ -1522,6 +1526,7 @@
     </div>
   </div>
   <div id="log-text"></div>
+  <div id="ach-popup"></div>
 </div>
 
 <script>
@@ -2209,28 +2214,38 @@ const ACHIEVEMENTS = [
     progress: () => ({ cur: Math.min(1000, totalServed), max: 1000 })
   },
   {
-    id: "star1", group: "Hizmet", title: "1 Yıldızlı Otel", desc: "1 yıldız itibarına ulaş (" + Star1 + ")",
+    id: "star1", group: "Hizmet", title: "1 Yıldızlı Otel", desc: "1 yıldız itibarına ulaş (" + StarTargets[0] + ")",
     gems: 5, tl: 0, done: false,
-    check: () => reputation >= Star1,
-    progress: () => ({ cur: Math.min(Star1, Math.max(0, Math.floor(reputation))), max: Star1 })
+    check: () => stars() >= 1 && reputation >= StarTargets[0],
+    progress: () => ({ cur: Math.min(StarTargets[0], Math.max(0, Math.floor(reputation))), max: StarTargets[0] })
   },
   {
-    id: "star2", group: "Hizmet", title: "2 Yıldızlı Otel", desc: "2 yıldız itibarına ulaş (" + Star2 + ")",
+    id: "star2", group: "Hizmet", title: "2 Yıldızlı Otel", desc: "2 yıldız itibarına ulaş (" + StarTargets[1] + ")",
     gems: 10, tl: 0, done: false,
-    check: () => reputation >= Star2,
-    progress: () => ({ cur: Math.min(Star2, Math.max(0, Math.floor(reputation))), max: Star2 })
+    check: () => stars() >= 2 && reputation >= StarTargets[1],
+    progress: () => ({ cur: Math.min(StarTargets[1], Math.max(0, Math.floor(reputation))), max: StarTargets[1] })
   },
   {
-    id: "star3", group: "Hizmet", title: "3 Yıldızlı Otel", desc: "3 yıldız itibarına ulaş (" + Star3 + ")",
+    id: "star3", group: "Hizmet", title: "3 Yıldızlı Otel", desc: "3 yıldız itibarına ulaş (" + StarTargets[2] + ")",
     gems: 20, tl: 0, done: false,
-    check: () => reputation >= Star3,
-    progress: () => ({ cur: Math.min(Star3, Math.max(0, Math.floor(reputation))), max: Star3 })
+    check: () => stars() >= 3 && reputation >= StarTargets[2],
+    progress: () => ({ cur: Math.min(StarTargets[2], Math.max(0, Math.floor(reputation))), max: StarTargets[2] })
   },
   {
     id: "avg_rating", group: "Hizmet", title: "Mükemmel Hizmet", desc: "En az 50 yorumda 4.5+ puan ortalaması",
     gems: 25, tl: 0, done: false,
     check: () => ratingCount >= 50 && (ratingSum / ratingCount) >= 4.5,
-    progress: () => ({ cur: Math.min(50, ratingCount), max: 50 })
+    progress: () => {
+      const cnt = Math.max(0, Math.floor(ratingCount || 0));
+      const avg = cnt > 0 ? (ratingSum / cnt) : 0;
+      const ratio = Math.min(clamp(avg / 4.5, 0, 1), clamp(cnt / 50, 0, 1));
+      return {
+        cur: Math.min(50, cnt),
+        max: 50,
+        pct: Math.round(ratio * 100),
+        text: Math.min(50, cnt) + "/50 yorum · ort " + avg.toFixed(1) + "/4.5"
+      };
+    }
   },
 
   // 5) Para (3)
@@ -2916,6 +2931,39 @@ function saveGame() {
       shipments: shipments.map(sh => ({ items: sh.items.slice(), left: sh.left, total: sh.total }))
         .concat(trucks.filter(t => t.sh).map(t => ({ items: t.sh.items.slice(), left: 2, total: t.sh.total }))),
       cleanerCount: cleaners.length,
+      dirts: dirts.map(d => ({ x: d.x, y: d.y, si: d.si })),
+      queue: queue.map(g => ({
+        name: g.name,
+        type: g.type,
+        role: g.role || "None",
+        hint: g.hint || "",
+        story: g.story || "",
+        chinese: !!g.chinese,
+        wantsToilet: !!g.wantsToilet,
+        wantsBalcony: !!g.wantsBalcony,
+        isVip: !!g.isVip,
+        vipRule: g.vipRule || "",
+        bodyguardBooked: !!g.bodyguardBooked,
+        eventTag: g.eventTag || "",
+        expired: !!g.expired,
+        kids: g.kids || 0,
+        overstay: g.overstay || 0,
+        fed: !!g.fed,
+        budget: g.budget || 0,
+        offer: g.offer || 0,
+        days: typeof g.days === "number" ? g.days : 1,
+        daysLeft: typeof g.daysLeft === "number" ? g.daysLeft : 0,
+        price: g.price || 0,
+        attempts: g.attempts || 0,
+        wants: (g.wants || []).slice(),
+        patience: typeof g.patience === "number" ? g.patience : 25,
+        maxPatience: typeof g.maxPatience === "number" ? g.maxPatience : 25,
+        atSpot: !!g.atSpot,
+        arrivedOnce: !!g.arrivedOnce,
+        crimeDone: !!g.crimeDone,
+        sneaky: !!g.sneaky,
+        sneakyDays: g.sneakyDays || 0
+      })),
       floors: floors.map(fl => ({
         state: fl.state,
         buildLeft: fl.buildLeft,
@@ -2925,7 +2973,7 @@ function saveGame() {
           parcelBuilt: !!s.parcelBuilt,
           hasTree: !!s.hasTree,
           hasEnsuite: !!s.hasEnsuite,
-          furnLayout: s.furnLayout || {},
+          furnLayout: (s.furnLayout && typeof s.furnLayout === "object") ? JSON.parse(JSON.stringify(s.furnLayout)) : {},
           roomNo: s.roomNo,
           hasDoor: s.hasDoor,
           doorWall: s.doorWall || null,
@@ -2959,7 +3007,7 @@ function saveGame() {
             budget: s.guest.budget || 0,
             offer: s.guest.offer || 0,
             days: s.guest.days || 1,
-            daysLeft: s.guest.daysLeft || 1,
+            daysLeft: typeof s.guest.daysLeft === "number" ? s.guest.daysLeft : 1,
             price: s.guest.price || 0,
             wants: (s.guest.wants || []).slice(),
             crimeDone: !!s.guest.crimeDone,
@@ -3010,6 +3058,13 @@ function loadGame() {
     dormWorkers.length = 0;
     kitchenWorkers.length = 0;
     parkWorkers.length = 0;
+    receptionistPawn = null;
+    securityPawn = null;
+    cookPawn = null;
+    paperboyPawn = null;
+    pending = null;
+    lastFront = null;
+    for (const fl of floors) fl.workers.length = 0;
     achPopupQueue = [];
     achTimer = 0;
     achCheckTimer = 0;
@@ -3136,18 +3191,18 @@ function loadGame() {
             }
             if (sd.type === "Storage") {
               storageState = "Built";
-              storageLevel = sd.level || 1;
+              storageLevel = Math.max(storageLevel, sd.level || 1);
               s.type = "Storage";
             } else if (sd.type === "Dorm") {
               dormState = "Built";
-              dormLevel = sd.level || 1;
+              dormLevel = Math.max(dormLevel, sd.level || 1);
               s.type = "Dorm";
             } else {
               s.type = sd.type || "Empty";
             }
             s.parcelBuilt = sd.parcelBuilt !== undefined ? !!sd.parcelBuilt : (s.type !== "Empty" || (f === 0 && (targetIdx === 32 || targetIdx === 31)));
             s.hasEnsuite = !!sd.hasEnsuite;
-            s.furnLayout = (sd.furnLayout && typeof sd.furnLayout === "object") ? sd.furnLayout : {};
+            s.furnLayout = (sd.furnLayout && typeof sd.furnLayout === "object") ? JSON.parse(JSON.stringify(sd.furnLayout)) : {};
             s.roomNo = sd.roomNo || 0;
             s.hasDoor = !!sd.hasDoor;
             s.doorWall = sd.doorWall || null;
@@ -3186,7 +3241,7 @@ function loadGame() {
                 budget: gd.budget || 0,
                 offer: gd.offer || 0,
                 days: gd.days || 1,
-                daysLeft: gd.daysLeft || 1,
+                daysLeft: typeof gd.daysLeft === "number" ? gd.daysLeft : 1,
                 price: gd.price || 0,
                 attempts: 0,
                 wants: Array.isArray(gd.wants) ? gd.wants.slice() : new Array(ItemCount).fill(false),
@@ -3270,6 +3325,133 @@ function loadGame() {
       }
     }
     if (typeof syncStaffPawns === "function") syncStaffPawns();
+
+    if (Array.isArray(data.dirts)) {
+      for (const d of data.dirts) {
+        if (d && typeof d.x === "number") {
+          dirts.push({
+            x: d.x,
+            y: typeof d.y === "number" ? d.y : (SlabH - 6),
+            si: typeof d.si === "number" ? d.si : (typeof seasonIdx === "function" ? seasonIdx() : 0)
+          });
+        }
+      }
+    }
+
+    if (Array.isArray(data.queue) && typeof makePawn === "function") {
+      const wx = typeof waitX === "function" ? waitX() : (ElevW + 70);
+      for (let i = 0; i < data.queue.length; i++) {
+        const qd = data.queue[i];
+        if (!qd) continue;
+        const g = {
+          name: qd.name || "Misafir",
+          type: qd.type || "Normal",
+          role: qd.role || "None",
+          hint: qd.hint || "",
+          story: qd.story || "",
+          isVip: !!qd.isVip,
+          vipRule: qd.vipRule || "",
+          bodyguardBooked: !!qd.bodyguardBooked,
+          eventTag: qd.eventTag || "",
+          chinese: !!qd.chinese,
+          wantsToilet: !!qd.wantsToilet,
+          wantsBalcony: !!qd.wantsBalcony,
+          expired: !!qd.expired,
+          kids: qd.kids || 0,
+          overstay: qd.overstay || 0,
+          fed: !!qd.fed,
+          budget: qd.budget || 0,
+          offer: qd.offer || 0,
+          days: typeof qd.days === "number" ? qd.days : 1,
+          daysLeft: typeof qd.daysLeft === "number" ? qd.daysLeft : 0,
+          price: qd.price || 0,
+          attempts: qd.attempts || 0,
+          wants: Array.isArray(qd.wants) ? qd.wants.slice() : new Array(ItemCount).fill(false),
+          patience: typeof qd.patience === "number" ? qd.patience : 25,
+          maxPatience: typeof qd.maxPatience === "number" ? qd.maxPatience : 25,
+          atSpot: true,
+          arrivedOnce: true,
+          state: "Queued",
+          room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
+          gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
+          crimeTimer: rnd(10, 18), crimeDone: !!qd.crimeDone,
+          sneaky: !!qd.sneaky, sneakyDays: qd.sneakyDays || 0,
+          parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
+          hasBubble: false, bubbleLines: ["", ""]
+        };
+        const slotPos = (typeof getQueueSlotPos === "function") ? getQueueSlotPos(i) : { u: 1070, v: 472, z: 8 };
+        if (g.role === "Vampire") {
+          g.pawn = makePawn({ x: wx, y: floors[0].WalkY }, "#f0ebf5", "#17131c", "#3d1424");
+        } else if (g.role === "Thief") {
+          g.pawn = makePawn({ x: wx, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#282c37");
+          g.pawn.isThief = true;
+        } else if (g.role === "Bodyguard") {
+          g.pawn = makePawn({ x: wx, y: floors[0].WalkY }, pick(Skins), "#141418", "#1c2026");
+          g.pawn.isBodyguard = true;
+        } else if (g.isVip) {
+          g.pawn = makePawn({ x: wx, y: floors[0].WalkY }, pick(Skins), "#e6bf59", "#b3246b");
+          g.pawn.isVip = true;
+        } else {
+          g.pawn = makeRandomPawn({ x: wx, y: floors[0].WalkY });
+        }
+        g.pawn.iso = { u: slotPos.u, v: slotPos.v, z: slotPos.z };
+        g.pawn.facing = i === 0 ? -1 : 1;
+        g.pawn.speed = 95;
+        for (let k = 0; k < g.kids; k++) {
+          const kid = makeRandomPawn({ x: wx, y: floors[0].WalkY });
+          kid.scale = 0.68;
+          kid.follow = g.pawn;
+          kid.followOffsetU = 14 * (k + 1);
+          kid.followOffsetV = 18 * (k + 1);
+          kid.iso = { u: slotPos.u + 14 * (k + 1), v: slotPos.v + 18 * (k + 1), z: slotPos.z };
+          g.kidPawns.push(kid);
+        }
+        queue.push(g);
+        guests.push(g);
+        if (typeof setBubbleText === "function") setBubbleText(g, i);
+      }
+      if (typeof syncFront === "function") syncFront();
+    }
+
+    if (typeof makePawn === "function") {
+      if (storageState === "Building") {
+        for (let i = 0; i < 2; i++) {
+          const w = makePawn({ x: rnd(StorageX + 50, StorageX + StorageW - 50), y: floors[0].WalkY }, pick(Skins), "#ffd91a", "#f2801a");
+          w.speed = 60; w.wander = true; w.wMinX = StorageX + 40; w.wMaxX = StorageX + StorageW - 40; w.wTimer = rnd(0.2, 2);
+          storageWorkers.push(w);
+        }
+      }
+      if (dormState === "Building" && typeof towerLayout === "function") {
+        for (let i = 0; i < 2; i++) {
+          const w = makePawn({ x: rnd(DormX + 50, DormX + DormW - 50), y: towerLayout().Dorm.y + (floors[0].WalkY - SlabH) }, pick(Skins), "#ffd91a", "#f2801a");
+          w.speed = 60; w.wander = true; w.wMinX = DormX + 40; w.wMaxX = DormX + DormW - 40; w.wTimer = rnd(0.2, 2);
+          dormWorkers.push(w);
+        }
+      }
+      if (kitchenState === "Building" && typeof kitchenWalkY === "function") {
+        for (let i = 0; i < 2; i++) {
+          const w = makePawn({ x: rnd(DormX + 50, DormX + DormW - 50), y: kitchenWalkY() }, pick(Skins), "#ffd91a", "#f2801a");
+          w.speed = 60; w.wander = true; w.wMinX = DormX + 40; w.wMaxX = DormX + DormW - 40; w.wTimer = rnd(0.2, 2);
+          kitchenWorkers.push(w);
+        }
+      }
+      if (parkState === "Building") {
+        for (let i = 0; i < 2; i++) {
+          const w = makePawn({ x: rnd(ParkX + 60, ParkX + ParkW - 60), y: floors[0].WalkY }, pick(Skins), "#ffd91a", "#f2801a");
+          w.speed = 60; w.wander = true; w.wMinX = ParkX + 40; w.wMaxX = ParkX + ParkW - 40; w.wTimer = rnd(0.2, 2);
+          parkWorkers.push(w);
+        }
+      }
+      for (const fl of floors) {
+        if (fl.state === "Building") {
+          for (let i = 0; i < 2; i++) {
+            const w = makePawn({ x: rnd(ElevW + 100, TotalW - 100), y: fl.WalkY }, pick(Skins), "#ffd91a", "#f2801a");
+            w.speed = 60; w.wander = true; w.wMinX = ElevW + 60; w.wMaxX = TotalW - 60; w.wTimer = rnd(0.2, 2);
+            fl.workers.push(w);
+          }
+        }
+      }
+    }
 
     // Oyun başında ilk odamızı ve kapımızı almamız lazım koruması (kayıt sonrası da kontrol)
     if (typeof hasReadyRoom === "function" && !hasReadyRoom()) {
@@ -7707,7 +7889,11 @@ function renderAchPanel() {
         const pr = a.progress();
         if (pr && pr.max > 0) {
           const cur = a.done ? pr.max : Math.max(0, Math.min(pr.max, pr.cur));
-          const pct = Math.round((cur / pr.max) * 100);
+          const pct = a.done
+            ? 100
+            : (typeof pr.pct === "number"
+                ? clamp(Math.round(pr.pct), 0, 100)
+                : Math.round((cur / pr.max) * 100));
           const pRow = document.createElement("div");
           pRow.className = "ach-prog-row";
           const track = document.createElement("div");
@@ -7718,7 +7904,7 @@ function renderAchPanel() {
           track.appendChild(fill);
           const pTxt = document.createElement("span");
           pTxt.className = "ach-prog-txt";
-          pTxt.textContent = cur + "/" + pr.max;
+          pTxt.textContent = pr.text ? pr.text : (cur + "/" + pr.max);
           pRow.appendChild(track);
           pRow.appendChild(pTxt);
           body.appendChild(pRow);
@@ -8197,8 +8383,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 53;
-const APP_VERSION_NAME = "1.9.45-beta";
+const APP_VERSION_CODE = 54;
+const APP_VERSION_NAME = "1.9.46-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -8206,9 +8392,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.46-beta",
+    title: "E1.1 Yıldız Eşikleri, Kayıt Bütünlüğü & Bildirim Katmanı",
+    latest: true,
+    notes: "• ⭐ Yıldız Eşikleri: star1/star2/star3 başarımları config.js StarTargets (250/500/750) ve stars() fonksiyonundan türetildi.\n• 📊 Çift Koşullu Yorum İlerlemesi: 'Mükemmel Hizmet' (avg_rating) çubuğu hem yorum sayısını hem puan ortalamasını birlikte gösterir (min(ort/4.5, yorum/50)).\n• 💾 Kayıt & Yükleme Güvenliği: Kuyruk (queue), dış kirler (dirts), inşaat işçileri ve daysLeft=0 alanları eksiksiz kaydedilip yüklenir; Devam Et / yenileme piyon duplikasyonu yapmaz.\n• 🏆 Başarım Bildirimi: #ach-popup z-index ve konumu #log-text üstünde ve 4 satırlı loglarla çakışmayacak şekilde düzeltildi."
+  },
+  {
     ver: "v1.9.45-beta",
     title: "Elmas (💎) Ekonomisi & 40 Başarım Sistemi (E1)",
-    latest: true,
+    latest: false,
     notes: "• 💎 Elmas (💎) Altyapısı & HUD: Üst HUD'a tıklanabilir Elmas sayacı (💎) eklendi; Tamir Aleti sayacı ikonu 🔧 olarak güncellendi. Elmas artınca sayaç kısa bir parlama animasyonu (pulse) yapar.\n• 🏆 40 Başarım Sistemi: 7 kategoride (Büyüme, Tesisler, Personel, Hizmet, Para, Zaman, Olaylar) toplam 470 💎 ödüllü veri odaklı başarım sistemi, grup kartları, ilerleme çubukları ve sıralı pop-up kuyruğu eklendi.\n• 📅 25 Günlük Mevsimler & Kat Adlandırma: Mevsim uzunluğu 25 güne (1 yıl = 100 gün) çıkarıldı; kat bildirimleri arayüzle (1. Kat = zemin) birebir uyumlu hale getirildi."
   },
   {

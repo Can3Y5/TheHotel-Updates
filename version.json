@@ -1,8 +1,8 @@
 {
-  "versionCode": 53,
-  "versionName": "1.9.45-beta",
+  "versionCode": 54,
+  "versionName": "1.9.46-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.45-beta:\n1. Elmas (💎) Ekonomisi ve 40 Başarım Sistemi (E1): 7 grupta 40 adet veri odaklı başarım (toplam 470 💎), HUD'da 🔧 alet sayacı ve tıklanabilir 💎 elmas sayacı, ilerleme çubuklu başarım paneli ve sıralı bildirim kuyruğu eklendi.\n2. Mevsim Uzunluğu & Kat Tutarlılığı: Mevsim süresi 25 güne (1 yıl = 100 gün) çıkarıldı; tüm kat isimleri/logları arayüzle (1. Kat = zemin) uyumlu hale getirildi.\n3. Kayıt Uyumluluğu & İyileştirmeler: Eski v1.9.44 kayıtları korunarak geriye dönük açılan başarımlar tek özet bildirimle açılır; açılışta kayıt yükleme sırası ve sekme ikonu düzeltildi."
+  "notes": "v1.9.46-beta:\n1. Yıldız Eşikleri & Başarım İlerlemesi (E1.1): star1/star2/star3 başarımları config.js StarTargets (250/500/750) sabitlerine ve stars() fonksiyonuna bağlandı; Mükemmel Hizmet (avg_rating) çubuğu hem yorum sayısını hem ortalama hedefini (örn. 32/50 yorum · ort 4.2/4.5) gösterir.\n2. Kayıt Bütünlüğü & Tekrarlı Yükleme Güvenliği: saveGame/loadGame artık sıradaki misafirleri (queue), dış kirleri (dirts), expired misafirlerin daysLeft=0 değerini ve inşaat işçilerini de korur; personel piyonları tekrarlı yüklemede duplike olmaz.\n3. Başarım Bildirimi Katmanlaması: #ach-popup artık #viewport dışına taşındı (z-index: 24) ve #log-text üstünde konumlanarak 4 satırlı log/eğitim metinleriyle çakışmaz."
 }
