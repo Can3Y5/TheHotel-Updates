@@ -1743,11 +1743,11 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <button id="btn-close-sel" title="Paneli Kapat">✕</button>
       </div>
       <div id="furn-toolbar">
-        <span id="furn-status-lbl">🛋️ 4x4 Oda İçi Yerleşim: Eşya seçip odadaki kareye dokunun</span>
+        <span id="furn-status-lbl">🛋️ Oda İçi Yerleşim: Eşyaya dokunup taşı veya döndür</span>
         <div class="ft-btns">
-          <button class="ft-btn rot" id="btn-furn-rot" title="Seçili eşyayı 90 derece döndür">🔄 Döndür</button>
+          <button class="ft-btn rot" id="btn-furn-rot" title="Seçili eşyayı 90° döndür veya duvarını değiştir">🔄 Döndür</button>
           <button class="ft-btn del" id="btn-furn-del" title="Seçili eşyayı odadan kaldırıp depoya koy">🗑️ Kaldır</button>
-          <button class="ft-btn auto" id="btn-furn-auto" title="Odadaki tüm eşyaları 4x4 ızgaraya otomatik yerleştir">⚡ Otomatik Diz</button>
+          <button class="ft-btn auto" id="btn-furn-auto" title="3 farklı oda yerleşim düzeni arasında geçiş yap">⚡ Diz 1/3</button>
         </div>
       </div>
       <div id="act-grid"></div>
@@ -3092,6 +3092,17 @@ function decorBoxesOverlap(a, b) {
   return a.u0 < b.u1 && a.u1 > b.u0 && a.v0 < b.v1 && a.v1 > b.v0;
 }
 
+function decorBoxGap(obj, box) {
+  if (obj.isBox) {
+    const du = Math.max((obj.u - obj.hu) - box.u1, box.u0 - (obj.u + obj.hu), 0);
+    const dv = Math.max((obj.v - obj.hv) - box.v1, box.v0 - (obj.v + obj.hv), 0);
+    return Math.hypot(du, dv);
+  }
+  const du = Math.max(box.u0 - obj.u, 0, obj.u - box.u1);
+  const dv = Math.max(box.v0 - obj.v, 0, obj.v - box.v1);
+  return Math.hypot(du, dv);
+}
+
 if (typeof window !== "undefined") {
   window.__decorSelfTest = function __decorSelfTest() {
     const forbidden = getDecorForbiddenZones();
@@ -3148,6 +3159,29 @@ if (typeof window !== "undefined") {
       });
     }
 
+    // Sabit dünya objeleri (çalı, palmiye, çim, çiçeklik, lamba, selvi) ile 24 yuva kutusu + 10u pay denetimi
+    const staticObjs = (typeof getWorldStaticGroundObjects === "function") ? getWorldStaticGroundObjects() : [];
+    const staticConflicts = [];
+    for (let i = 0; i < staticObjs.length; i++) {
+      const obj = staticObjs[i];
+      const req = obj.isBox ? 10 : ((obj.r || 8) + 10);
+      for (let j = 0; j < slotBoxes.length; j++) {
+        const gap = decorBoxGap(obj, slotBoxes[j].box);
+        if (gap < req) {
+          staticConflicts.push({
+            object: obj.name,
+            group: obj.group,
+            u: obj.u,
+            v: obj.v,
+            r: obj.r,
+            slotId: slotBoxes[j].s.id,
+            boxGap: Math.round(gap * 10) / 10,
+            required: Math.round(req * 10) / 10
+          });
+        }
+      }
+    }
+
     const countsOk = (
       DECOR_SLOTS.length === 24 &&
       seenIds.size === 24 &&
@@ -3155,7 +3189,7 @@ if (typeof window !== "undefined") {
       counts.byZone.right === 7 && counts.byZoneSize.right.B === 2 && counts.byZoneSize.right.O === 3 && counts.byZoneSize.right.K === 2 &&
       counts.byZone.left === 7 && counts.byZoneSize.left.B === 1 && counts.byZoneSize.left.O === 3 && counts.byZoneSize.left.K === 3
     );
-    const ok = countsOk && conflicts.length === 0 && slotOverlaps.length === 0;
+    const ok = countsOk && conflicts.length === 0 && slotOverlaps.length === 0 && staticConflicts.length === 0;
     if (typeof console !== "undefined" && typeof console.table === "function") {
       console.table(rows);
     }
@@ -3167,6 +3201,9 @@ if (typeof window !== "undefined") {
       counts,
       conflicts,
       slotOverlaps,
+      staticObjectsChecked: staticObjs.length,
+      staticConflictCount: staticConflicts.length,
+      staticConflicts,
       rows
     };
   };
@@ -3278,23 +3315,42 @@ const CostRoofTerrace = 180;
 const CostCorridor = 60;
 
 // 4x4 Oda İçi Eşya Boyutları (w x h hücre) ve Varsayılan Konumları
+const ROOM_FURN_PRESETS = [
+  { id: "classic", name: "Klasik Sıralı", icon: "🏨" },
+  { id: "suite",   name: "Köşe Süit",     icon: "🛋️" },
+  { id: "alcove",  name: "Merkez Süit",   icon: "✨" }
+];
+
 const ITEM_FOOTPRINTS = {
-  0: { w: 1, h: 1, name: "Ampul", icon: "💡", defU: 0, defV: 2, wall: true },
-  1: { w: 2, h: 1, name: "Masa (2x1)", icon: "🪑", defU: 2, defV: 2, wall: false },
-  2: { w: 2, h: 1, name: "Dolap (2x1)", icon: "🗄️", defU: 0, defV: 3, wall: false },
+  0: { w: 1, h: 1, name: "Ampul", icon: "💡", defU: 1, defV: 2, wall: true },
+  1: { w: 2, h: 1, name: "Masa (2x1)", icon: "🪑", defU: 0, defV: 3, wall: false },
+  2: { w: 2, h: 1, name: "Dolap (2x1)", icon: "🗄️", defU: 0, defV: 1, wall: false },
   3: { w: 1, h: 1, name: "Kamera", icon: "📹", defU: 0, defV: 0, wall: true },
   4: { w: 2, h: 1, name: "Yatak (2x1)", icon: "🛏️", defU: 0, defV: 2, wall: false },
   5: { w: 1, h: 1, name: "Beşik (1x1)", icon: "🍼", defU: 2, defV: 1, wall: false },
-  6: { w: 1, h: 1, name: "TV (1x1)", icon: "📺", defU: 3, defV: 3, wall: false },
-  7: { w: 1, h: 1, name: "Klima", icon: "❄️", defU: 1, defV: 0, wall: true },
+  6: { w: 1, h: 1, name: "TV (1x1)", icon: "📺", defU: 2, defV: 2, wall: false },
+  7: { w: 1, h: 1, name: "Klima", icon: "❄️", defU: 0, defV: 3, wall: true },
   8: { w: 1, h: 1, name: "Buzdolabı (1x1)", icon: "🧊", defU: 2, defV: 3, wall: false },
   9: { w: 2, h: 1, name: "Özel Banyo (2x1)", icon: "🚿", defU: 0, defV: 0, wall: false }
 };
 
+function isFurnWallItem(key) {
+  const fp = ITEM_FOOTPRINTS[key];
+  return !!(fp && fp.wall);
+}
+
+function isFurnItemActive(s, key) {
+  if (!s) return false;
+  if (key === 9) return !!s.hasEnsuite;
+  if (key === 4) return true;
+  return !!(s.items && s.items[key]);
+}
+
 function ensureRoomFurnLayout(s) {
   if (!s || s.type !== "Room") return;
   if (!s.furnLayout || typeof s.furnLayout !== "object") s.furnLayout = {};
-  // Yatak odada her zaman temel karyola olarak bulunur; IYatak veya diğer eşyalar alındığında 4x4 ızgarada yerini alır
+  if (typeof s.furnPresetIdx !== "number" || s.furnPresetIdx < 0 || s.furnPresetIdx > 2) s.furnPresetIdx = 0;
+  // Yatak odada her zaman temel karyola olarak bulunur; IYatak veya diğer eşyalar alındığında ızgarada yerini alır
   if (!s.furnLayout[4]) {
     s.furnLayout[4] = { ru: 0, rv: 2, rot: 0 };
   }
@@ -3302,9 +3358,19 @@ function ensureRoomFurnLayout(s) {
     s.furnLayout[9] = { ru: 0, rv: 0, rot: 0 };
   }
   for (let k = 0; k < ItemCount; k++) {
-    if (s.items[k] && !s.furnLayout[k]) {
-      const fp = ITEM_FOOTPRINTS[k];
-      s.furnLayout[k] = { ru: fp.defU, rv: fp.defV, rot: 0 };
+    if (s.items[k]) {
+      const cur = s.furnLayout[k];
+      if (!cur) {
+        const spot = findSpotInLayout(s.furnLayout, (key) => isFurnItemActive(s, key), k, 0);
+        const fp = ITEM_FOOTPRINTS[k];
+        s.furnLayout[k] = spot || { ru: fp.defU, rv: fp.defV, rot: 0 };
+      } else if (!isFurnWallItem(k)) {
+        const sp = itemSpan(k, cur.rot || 0);
+        if (cur.ru < 0 || cur.rv < 0 || cur.ru + sp.du > 3 || cur.rv + sp.dv > 4) {
+          const spot = findSpotInLayout(s.furnLayout, (key) => key !== k && isFurnItemActive(s, key), k, cur.rot || 0);
+          if (spot) s.furnLayout[k] = spot;
+        }
+      }
     }
   }
 }
@@ -3320,7 +3386,7 @@ function rectsOverlap(ru1, rv1, du1, dv1, ru2, rv2, du2, dv2) {
 
 function canPlaceInLayout(layout, isKeyActive, key, ru, rv, rot) {
   const { du, dv } = itemSpan(key, rot);
-  // Oda derinliği 3 kare (ru: 0..2), genişliği 4 kare (rv: 0..3). Ön 2 kare koridordur!
+  // Oda derinliği 3 kare (ru: 0..2), genişliği 4 kare (rv: 0..3). Ön sıra yürüyüş alanıdır!
   if (ru < 0 || rv < 0 || ru + du > 3 || rv + dv > 4) return false;
   const fp = ITEM_FOOTPRINTS[key];
   if (fp && fp.wall) return true; // Duvar/tavan eşyaları zemindeki mobilyalarla çakışmaz
@@ -3340,7 +3406,7 @@ function canPlaceFurnAt(s, key, ru, rv, rot) {
   ensureRoomFurnLayout(s);
   return canPlaceInLayout(
     s.furnLayout,
-    (k) => (k === 9) ? s.hasEnsuite : (k === 4 ? true : !!s.items[k]),
+    (k) => isFurnItemActive(s, k),
     key, ru, rv, rot
   );
 }
@@ -3367,130 +3433,383 @@ function findFirstFreeFurnSpot(s, key, preferRot = 0) {
   ensureRoomFurnLayout(s);
   return findSpotInLayout(
     s.furnLayout,
-    (k) => (k === 9) ? s.hasEnsuite : (k === 4 ? true : !!s.items[k]),
+    (k) => isFurnItemActive(s, k),
     key, preferRot
   );
 }
 
-function autoArrangeRoom(s) {
-  if (!s || s.type !== "Room") return;
-  const prev = (s.furnLayout && typeof s.furnLayout === "object") ? s.furnLayout : {};
-  const placed = {};
-  const isPlaced = (k) => !!placed[k];
-
-  // 1) İki derinlikli kolonlar (ru: 0..1, rot: 0) — yüksekten alçağa soldan sağa (rv: 0..3)
-  const colKeys = [];
-  if (s.hasEnsuite) colKeys.push(IBanyo);
-  if (s.items[IDolap]) colKeys.push(IDolap);
-  colKeys.push(4); // Yatak her zaman odada bulunur
-  if (s.items[IMasa]) colKeys.push(IMasa);
-
-  for (let i = 0; i < colKeys.length; i++) {
-    const key = colKeys[i];
-    let spot = (i < 4 && canPlaceInLayout(placed, isPlaced, key, 0, i, 0))
-      ? { ru: 0, rv: i, rot: 0 }
-      : null;
-    if (!spot) spot = findSpotInLayout(placed, isPlaced, key, 0);
-    if (spot) placed[key] = spot;
+function findFloorItemAtCell(s, ru, rv, ignoreKey = -1) {
+  if (!s || !s.furnLayout) return null;
+  for (let k = 0; k <= 9; k++) {
+    if (k === ignoreKey || isFurnWallItem(k) || !isFurnItemActive(s, k)) continue;
+    const pos = s.furnLayout[k];
+    if (!pos) continue;
+    const sp = itemSpan(k, pos.rot || 0);
+    if (ru >= pos.ru && ru < pos.ru + sp.du && rv >= pos.rv && rv < pos.rv + sp.dv) return k;
   }
-
-  // 2) Ön sıra (ru: 2) 1x1 eşyalar — yüksek Buzdolabı en sağda (rv: 3..0), alçak Beşik/TV solda (rv: 0..3)
-  if (s.items[IBuz]) {
-    let spot = null;
-    for (let rv = 3; rv >= 0; rv--) {
-      if (canPlaceInLayout(placed, isPlaced, IBuz, 2, rv, 0)) {
-        spot = { ru: 2, rv, rot: 0 };
-        break;
-      }
-    }
-    if (!spot) spot = findSpotInLayout(placed, isPlaced, IBuz, 0);
-    if (spot) placed[IBuz] = spot;
-  }
-
-  for (const key of [IBebek, ITv]) {
-    if (!s.items[key]) continue;
-    let spot = null;
-    for (let rv = 0; rv < 4; rv++) {
-      if (canPlaceInLayout(placed, isPlaced, key, 2, rv, 0)) {
-        spot = { ru: 2, rv, rot: 0 };
-        break;
-      }
-    }
-    if (!spot) spot = findSpotInLayout(placed, isPlaced, key, 0);
-    if (spot) placed[key] = spot;
-  }
-
-  // 3) Duvar/Tavan eşyaları: varsa mevcut konumları korunur, yoksa varsayılan duvar konumu atanır
-  const wallDefaults = [
-    [IAmpul, { ru: 1, rv: 1, rot: 0 }],
-    [IKamera, { ru: 0, rv: 0, rot: 0 }],
-    [IKlima, { ru: 0, rv: 3, rot: 0 }]
-  ];
-  for (const [key, defPos] of wallDefaults) {
-    if (!s.items[key]) continue;
-    const p = prev[key];
-    placed[key] = (p && typeof p.ru === "number" && typeof p.rv === "number")
-      ? { ru: p.ru, rv: p.rv, rot: p.rot || 0 }
-      : { ru: defPos.ru, rv: defPos.rv, rot: defPos.rot };
-  }
-
-  s.furnLayout = placed;
+  return null;
 }
 
-// 2^6 = 64 zemin eşyası kombinasyonunda çakışma ve 3x4 sınır doğrulaması
+// Klima/Kamera sadece tam boy Arka (ru=0) veya Sol (rv=0) duvarlara yaslanır; Ampul 3x4'te herhangi bir hücreye gelebilir
+function getWallPlacementFromCell(s, key, ru, rv, cornerRot) {
+  if (key === IAmpul) return { ru: clamp(ru, 0, 2), rv: clamp(rv, 0, 3), rot: cornerRot ? 1 : 0 };
+  if (ru === 0 && rv === 0) {
+    const rot = (typeof cornerRot === "number") ? (cornerRot ? 1 : 0) : 0;
+    return { ru: 0, rv: 0, rot };
+  }
+  if (ru === 0) return { ru: 0, rv: clamp(rv, 0, 3), rot: 0 };
+  if (rv === 0) return { ru: clamp(ru, 0, 2), rv: 0, rot: 1 };
+  if (ru <= rv) return { ru: 0, rv: clamp(rv, 0, 3), rot: 0 };
+  return { ru: clamp(ru, 0, 2), rv: 0, rot: 1 };
+}
+
+function _cellInFootprint(ru, rv, ancRu, ancRv, du, dv) {
+  return ru >= ancRu && ru < ancRu + du && rv >= ancRv && rv < ancRv + dv;
+}
+
+function _findPlacementCoveringCell(layout, isActive, key, tapRu, tapRv, preferRot) {
+  const rots = (ITEM_FOOTPRINTS[key].w === ITEM_FOOTPRINTS[key].h)
+    ? [preferRot ? 1 : 0]
+    : [preferRot ? 1 : 0, preferRot ? 0 : 1];
+
+  for (const r of rots) {
+    const sp = itemSpan(key, r);
+    const cands = [
+      { ru: tapRu, rv: tapRv },
+      { ru: Math.min(tapRu, 3 - sp.du), rv: Math.min(tapRv, 4 - sp.dv) },
+      { ru: tapRu - (sp.du - 1), rv: tapRv },
+      { ru: tapRu, rv: tapRv - (sp.dv - 1) }
+    ];
+    for (const c of cands) {
+      if (!_cellInFootprint(tapRu, tapRv, c.ru, c.rv, sp.du, sp.dv)) continue;
+      if (canPlaceInLayout(layout, isActive, key, c.ru, c.rv, r)) {
+        return { ru: c.ru, rv: c.rv, rot: r, autoRotated: r !== (preferRot ? 1 : 0) };
+      }
+    }
+  }
+  return null;
+}
+
+function _trySwapLayout(s, keyA, keyB, tapRu, tapRv, preferRot) {
+  if (isFurnWallItem(keyA) || isFurnWallItem(keyB)) return null;
+  const oldA = s.furnLayout[keyA];
+  const oldB = s.furnLayout[keyB];
+  if (!oldA || !oldB) return null;
+
+  // Her iki eşyayı geçici olarak çıkarıp geçici klonda yerleştir
+  const tempLayout = {};
+  for (let k = 0; k <= 9; k++) {
+    if (k !== keyA && k !== keyB && s.furnLayout[k]) tempLayout[k] = { ...s.furnLayout[k] };
+  }
+  const activeMinusB = (k) => k !== keyB && isFurnItemActive(s, k);
+  const newA = _findPlacementCoveringCell(tempLayout, activeMinusB, keyA, tapRu, tapRv, preferRot);
+  if (!newA) return null;
+
+  tempLayout[keyA] = { ru: newA.ru, rv: newA.rv, rot: newA.rot };
+  const activeAll = (k) => isFurnItemActive(s, k);
+  let newB = _findPlacementCoveringCell(tempLayout, activeAll, keyB, oldA.ru, oldA.rv, oldB.rot || 0);
+  if (!newB) {
+    const ospA = itemSpan(keyA, oldA.rot || 0);
+    for (let du = 0; du < ospA.du && !newB; du++) {
+      for (let dv = 0; dv < ospA.dv && !newB; dv++) {
+        newB = _findPlacementCoveringCell(tempLayout, activeAll, keyB, oldA.ru + du, oldA.rv + dv, oldB.rot || 0);
+      }
+    }
+  }
+  if (!newB) return null;
+  return { newA: { ru: newA.ru, rv: newA.rv, rot: newA.rot }, newB: { ru: newB.ru, rv: newB.rv, rot: newB.rot } };
+}
+
+// 3x4 hücre ipucu: "self" | "move" | "swap" | "select" | "snap" | "blocked"
+function getFurnCellHint(s, selKey, ru, rv, preferRot) {
+  if (!s || selKey === null || selKey === undefined) return "idle";
+  ensureRoomFurnLayout(s);
+  if (isFurnWallItem(selKey)) {
+    const cur = s.furnLayout[selKey];
+    if (cur && cur.ru === ru && cur.rv === rv) return "self";
+    if (selKey === IAmpul || ru === 0 || rv === 0) return "move";
+    return "snap";
+  }
+  const occ = findFloorItemAtCell(s, ru, rv);
+  if (occ === selKey) return "self";
+  if (occ === null) {
+    const spot = _findPlacementCoveringCell(s.furnLayout, (k) => isFurnItemActive(s, k), selKey, ru, rv, preferRot);
+    return spot ? "move" : "blocked";
+  }
+  const swap = _trySwapLayout(s, selKey, occ, ru, rv, preferRot);
+  return swap ? "swap" : "select";
+}
+
+function trySmartPlaceOrSwapFurn(s, key, tapRu, tapRv, preferRot) {
+  if (!s || s.type !== "Room" || key === null || key === undefined) return { ok: false };
+  ensureRoomFurnLayout(s);
+
+  if (isFurnWallItem(key)) {
+    const cur = s.furnLayout[key];
+    const target = getWallPlacementFromCell(s, key, tapRu, tapRv, (tapRu === 0 && tapRv === 0 && cur) ? (cur.rot || 0) : preferRot);
+    if (cur && cur.ru === target.ru && cur.rv === target.rv && (cur.rot || 0) === target.rot) {
+      return { ok: true, action: "deselect", key };
+    }
+    s.furnLayout[key] = target;
+    return { ok: true, action: "moved", key, pos: target };
+  }
+
+  const cur = s.furnLayout[key];
+  const occ = findFloorItemAtCell(s, tapRu, tapRv);
+  if (occ === key) {
+    const sp = itemSpan(key, cur.rot || 0);
+    // 2x1 eşyanın kuyruk karesine tıklanırsa önü boşsa 1 kare kaydır; baş karesinde veya önü doluysa seçimi bırak
+    if ((sp.du > 1 || sp.dv > 1) && !(tapRu === cur.ru && tapRv === cur.rv)) {
+      if (canPlaceFurnAt(s, key, tapRu, tapRv, cur.rot || 0)) {
+        const nextPos = { ru: tapRu, rv: tapRv, rot: cur.rot || 0 };
+        s.furnLayout[key] = nextPos;
+        return { ok: true, action: "moved", key, pos: nextPos };
+      }
+    }
+    return { ok: true, action: "deselect", key };
+  }
+
+  if (occ === null) {
+    const spot = _findPlacementCoveringCell(s.furnLayout, (k) => isFurnItemActive(s, k), key, tapRu, tapRv, preferRot);
+    if (!spot) return { ok: false, reason: "blocked" };
+    s.furnLayout[key] = { ru: spot.ru, rv: spot.rv, rot: spot.rot };
+    return { ok: true, action: "moved", key, pos: s.furnLayout[key], autoRotated: spot.autoRotated };
+  }
+
+  const swap = _trySwapLayout(s, key, occ, tapRu, tapRv, preferRot);
+  if (swap) {
+    s.furnLayout[key] = swap.newA;
+    s.furnLayout[occ] = swap.newB;
+    return { ok: true, action: "swapped", key, otherKey: occ, pos: swap.newA };
+  }
+
+  return { ok: true, action: "switch", key: occ, pos: s.furnLayout[occ] };
+}
+
+function rotateSelectedRoomFurn(s, key, curRot) {
+  if (!s || s.type !== "Room" || key === null || key === undefined) return { ok: false };
+  ensureRoomFurnLayout(s);
+  const curPos = s.furnLayout[key];
+  if (!curPos) return { ok: false };
+  const newRot = 1 - (curPos.rot || 0);
+
+  // Duvar eşyası (Klima / Kamera): Arka duvar <-> Sol duvar arası döndür
+  if (key === IKlima || key === IKamera) {
+    if (curPos.ru === 0 && curPos.rv === 0) {
+      curPos.rot = newRot;
+    } else if (curPos.ru === 0) {
+      curPos.ru = clamp(curPos.rv, 0, 2);
+      curPos.rv = 0;
+      curPos.rot = 1;
+    } else {
+      curPos.rv = clamp(curPos.ru, 0, 3);
+      curPos.ru = 0;
+      curPos.rot = 0;
+    }
+    return { ok: true, local: true, pos: { ...curPos } };
+  }
+
+  // 1x1 zemin/tavan eşyası (TV, Buzdolabı, Beşik, Ampul): yerinde yönü değiştir
+  const fp = ITEM_FOOTPRINTS[key];
+  if (fp && fp.w === fp.h) {
+    curPos.rot = newRot;
+    return { ok: true, local: true, pos: { ...curPos } };
+  }
+
+  // 2x1 zemin eşyası: önce yerinde, sonra hemen yan kenarlara yaslayarak dene
+  const sp = itemSpan(key, newRot);
+  const nearOffsets = [
+    [0, 0],
+    [clamp(curPos.ru, 0, 3 - sp.du) - curPos.ru, clamp(curPos.rv, 0, 4 - sp.dv) - curPos.rv],
+    [0, -1], [-1, 0], [0, 1], [1, 0]
+  ];
+  for (const [du, dv] of nearOffsets) {
+    const tu = curPos.ru + du, tv = curPos.rv + dv;
+    if (canPlaceFurnAt(s, key, tu, tv, newRot)) {
+      const moved = (tu !== curPos.ru || tv !== curPos.rv);
+      curPos.ru = tu; curPos.rv = tv; curPos.rot = newRot;
+      return { ok: true, local: !moved, shifted: moved, pos: { ...curPos } };
+    }
+  }
+  const spot = findFirstFreeFurnSpot(s, key, newRot);
+  if (!spot) return { ok: false };
+  curPos.ru = spot.ru; curPos.rv = spot.rv; curPos.rot = spot.rot;
+  return { ok: true, relocated: true, pos: { ...curPos } };
+}
+
+function _placeFirstValid(placed, isPlaced, key, candidates, fallbackRot = 0) {
+  for (const c of candidates) {
+    if (canPlaceInLayout(placed, isPlaced, key, c.ru, c.rv, c.rot)) {
+      placed[key] = { ru: c.ru, rv: c.rv, rot: c.rot };
+      return;
+    }
+  }
+  const spot = findSpotInLayout(placed, isPlaced, key, fallbackRot);
+  if (spot) placed[key] = spot;
+}
+
+function _buildPresetLayout(s, presetIdx) {
+  const placed = {};
+  const isPlaced = (k) => !!placed[k];
+  const hasBanyo = !!s.hasEnsuite;
+  const hasDolap = !!(s.items && s.items[IDolap]);
+  const hasMasa = !!(s.items && s.items[IMasa]);
+  const hasBebek = !!(s.items && s.items[IBebek]);
+  const hasTv = !!(s.items && s.items[ITv]);
+  const hasBuz = !!(s.items && s.items[IBuz]);
+
+  let wallList;
+  if (presetIdx === 1) {
+    // Tip 2: Köşe Süit (Sol duvar yatay yatak + arka duvar dolap/banyo + ön-sağ çalışma alanı)
+    if (hasBanyo) _placeFirstValid(placed, isPlaced, IBanyo, [{ ru: 0, rv: 2, rot: 1 }, { ru: 0, rv: 3, rot: 0 }, { ru: 0, rv: 0, rot: 1 }], 1);
+    if (hasDolap) _placeFirstValid(placed, isPlaced, IDolap, [{ ru: 0, rv: 0, rot: 1 }, { ru: 0, rv: 1, rot: 0 }, { ru: 0, rv: 2, rot: 1 }], 1);
+    _placeFirstValid(placed, isPlaced, 4, [{ ru: 1, rv: 0, rot: 1 }, { ru: 2, rv: 0, rot: 1 }, { ru: 0, rv: 0, rot: 1 }], 1);
+    if (hasMasa) _placeFirstValid(placed, isPlaced, IMasa, [{ ru: 2, rv: 2, rot: 1 }, { ru: 1, rv: 2, rot: 1 }, { ru: 2, rv: 1, rot: 1 }, { ru: 1, rv: 3, rot: 0 }], 1);
+    if (hasBuz) _placeFirstValid(placed, isPlaced, IBuz, [{ ru: 1, rv: 3, rot: 0 }, { ru: 0, rv: 3, rot: 0 }, { ru: 2, rv: 3, rot: 0 }, { ru: 2, rv: 1, rot: 0 }], 0);
+    if (hasTv) _placeFirstValid(placed, isPlaced, ITv, [{ ru: 1, rv: 2, rot: 0 }, { ru: 1, rv: 2, rot: 1 }, { ru: 2, rv: 1, rot: 0 }, { ru: 0, rv: 2, rot: 0 }], 0);
+    if (hasBebek) _placeFirstValid(placed, isPlaced, IBebek, [{ ru: 2, rv: 0, rot: 1 }, { ru: 0, rv: 0, rot: 1 }, { ru: 2, rv: 1, rot: 1 }, { ru: 1, rv: 2, rot: 1 }], 1);
+    wallList = [
+      [IAmpul, { ru: 1, rv: 1, rot: 0 }],
+      [IKamera, { ru: 0, rv: 0, rot: 1 }],
+      [IKlima, { ru: 1, rv: 0, rot: 1 }]
+    ];
+  } else if (presetIdx === 2) {
+    // Tip 3: Merkez Süit (İki yanda banyo & dolap kanadı, ortada niş yatak + ön orta masa)
+    if (hasBanyo) _placeFirstValid(placed, isPlaced, IBanyo, [{ ru: 0, rv: 0, rot: 0 }, { ru: 0, rv: 2, rot: 1 }], 0);
+    if (hasDolap) _placeFirstValid(placed, isPlaced, IDolap, [{ ru: 0, rv: 3, rot: 0 }, { ru: 0, rv: 0, rot: 0 }, { ru: 0, rv: 1, rot: 0 }], 0);
+    _placeFirstValid(placed, isPlaced, 4, [{ ru: 0, rv: 1, rot: 1 }, { ru: 1, rv: 1, rot: 1 }, { ru: 0, rv: 2, rot: 0 }], 1);
+    if (hasMasa) _placeFirstValid(placed, isPlaced, IMasa, [{ ru: 2, rv: 1, rot: 1 }, { ru: 2, rv: 2, rot: 1 }, { ru: 2, rv: 0, rot: 1 }, { ru: 1, rv: 1, rot: 1 }], 1);
+    if (hasBebek) _placeFirstValid(placed, isPlaced, IBebek, [{ ru: 1, rv: 1, rot: 0 }, { ru: 2, rv: 0, rot: 0 }, { ru: 1, rv: 2, rot: 0 }], 0);
+    if (hasBuz) _placeFirstValid(placed, isPlaced, IBuz, [{ ru: 2, rv: 0, rot: 1 }, { ru: 1, rv: 0, rot: 1 }, { ru: 2, rv: 3, rot: 1 }], 1);
+    if (hasTv) _placeFirstValid(placed, isPlaced, ITv, [{ ru: 2, rv: 3, rot: 1 }, { ru: 1, rv: 2, rot: 1 }, { ru: 2, rv: 0, rot: 1 }], 1);
+    wallList = [
+      [IAmpul, { ru: 1, rv: 2, rot: 0 }],
+      [IKamera, { ru: 0, rv: 3, rot: 0 }],
+      [IKlima, { ru: 0, rv: 2, rot: 0 }]
+    ];
+  } else {
+    // Tip 1: Klasik Sıralı (Arka duvar boyunca dikey kolonlar + ön şeritte tamamlayıcılar)
+    const colKeys = [];
+    if (hasBanyo) colKeys.push(IBanyo);
+    if (hasDolap) colKeys.push(IDolap);
+    colKeys.push(4);
+    if (hasMasa) colKeys.push(IMasa);
+    const colSlots = colKeys.length === 1 ? [1]
+      : colKeys.length === 2 ? [1, 2]
+      : colKeys.length === 3 ? ((hasMasa && !hasBanyo) ? [1, 2, 3] : [0, 1, 2])
+      : [0, 1, 2, 3];
+    for (let i = 0; i < colKeys.length; i++) {
+      _placeFirstValid(placed, isPlaced, colKeys[i], [{ ru: 0, rv: colSlots[i], rot: 0 }], 0);
+    }
+    const bedRv = placed[4] ? placed[4].rv : 2;
+    if (hasBuz) _placeFirstValid(placed, isPlaced, IBuz, [{ ru: 2, rv: 3, rot: 0 }, { ru: 0, rv: 3, rot: 0 }, { ru: 2, rv: 0, rot: 0 }, { ru: 2, rv: 2, rot: 0 }, { ru: 2, rv: 1, rot: 0 }], 0);
+    if (hasBebek) _placeFirstValid(placed, isPlaced, IBebek, [{ ru: 2, rv: Math.max(0, bedRv - 1), rot: 0 }, { ru: 2, rv: bedRv, rot: 0 }, { ru: 2, rv: 0, rot: 0 }, { ru: 2, rv: 1, rot: 0 }, { ru: 2, rv: 2, rot: 0 }, { ru: 2, rv: 3, rot: 0 }], 0);
+    if (hasTv) _placeFirstValid(placed, isPlaced, ITv, [{ ru: 2, rv: bedRv, rot: 0 }, { ru: 2, rv: Math.min(3, bedRv + 1), rot: 0 }, { ru: 2, rv: Math.max(0, bedRv - 1), rot: 0 }, { ru: 2, rv: 2, rot: 0 }, { ru: 2, rv: 1, rot: 0 }, { ru: 2, rv: 0, rot: 0 }, { ru: 2, rv: 3, rot: 0 }], 0);
+    wallList = [
+      [IAmpul, { ru: 1, rv: bedRv, rot: 0 }],
+      [IKamera, { ru: 0, rv: 0, rot: 0 }],
+      [IKlima, { ru: 0, rv: 3, rot: 0 }]
+    ];
+  }
+
+  for (const [key, defPos] of wallList) {
+    if (s.items && s.items[key]) placed[key] = { ...defPos };
+  }
+  return placed;
+}
+
+function autoArrangeRoom(s, presetIdx) {
+  if (!s || s.type !== "Room") return;
+  const idx = (typeof presetIdx === "number")
+    ? ((presetIdx % 3) + 3) % 3
+    : ((typeof s.furnPresetIdx === "number" && s.furnPresetIdx >= 0 && s.furnPresetIdx < 3) ? s.furnPresetIdx : 0);
+  s.furnPresetIdx = idx;
+  s.furnLayout = _buildPresetLayout(s, idx);
+  return ROOM_FURN_PRESETS[idx];
+}
+
+function _layoutSignature(layout) {
+  if (!layout) return "";
+  return Object.keys(layout).sort().map(k => {
+    const p = layout[k];
+    return k + ":" + p.ru + "," + p.rv + "," + (p.rot || 0);
+  }).join("|");
+}
+
+function cycleRoomAutoPreset(s) {
+  if (!s || s.type !== "Room") return null;
+  ensureRoomFurnLayout(s);
+  const curSig = _layoutSignature(s.furnLayout);
+  let nextIdx = ((typeof s.furnPresetIdx === "number" ? s.furnPresetIdx : -1) + 1) % ROOM_FURN_PRESETS.length;
+  // Eğer mevcut yerleşim sıradaki şablonla zaten birebir aynıysa, bir sonraki şablona atla
+  if (_layoutSignature(_buildPresetLayout(s, nextIdx)) === curSig) {
+    nextIdx = (nextIdx + 1) % ROOM_FURN_PRESETS.length;
+  }
+  autoArrangeRoom(s, nextIdx);
+  return { idx: nextIdx, preset: ROOM_FURN_PRESETS[nextIdx] };
+}
+
+// 3 yerleşim türü x 2^6 = 192 kombinasyonda çakışma, 3x4 sınır ve şablon ayrışma doğrulaması
 function testAllRoomFurnCombinations() {
   const optKeys = [IBanyo, IDolap, IMasa, IBebek, ITv, IBuz];
-  const total = 1 << optKeys.length;
-  let passed = 0, overlaps = 0, outOfBounds = 0, missing = 0;
+  const totalMasks = 1 << optKeys.length;
+  const presetCount = ROOM_FURN_PRESETS.length;
+  const total = totalMasks * presetCount;
+  let passed = 0, overlaps = 0, outOfBounds = 0, missing = 0, distinctTriples = 0;
   const failures = [];
 
-  for (let mask = 0; mask < total; mask++) {
-    const dummy = {
-      type: "Room",
-      hasEnsuite: !!(mask & 1),
-      items: new Array(ItemCount).fill(false),
-      furnLayout: {}
-    };
-    if (mask & 2) dummy.items[IDolap] = true;
-    if (mask & 4) dummy.items[IMasa] = true;
-    if (mask & 8) dummy.items[IBebek] = true;
-    if (mask & 16) dummy.items[ITv] = true;
-    if (mask & 32) dummy.items[IBuz] = true;
+  for (let mask = 0; mask < totalMasks; mask++) {
+    const sigs = new Set();
+    for (let presetIdx = 0; presetIdx < presetCount; presetIdx++) {
+      const dummy = {
+        type: "Room",
+        hasEnsuite: !!(mask & 1),
+        items: new Array(ItemCount).fill(false),
+        furnLayout: {}
+      };
+      if (mask & 2) dummy.items[IDolap] = true;
+      if (mask & 4) dummy.items[IMasa] = true;
+      if (mask & 8) dummy.items[IBebek] = true;
+      if (mask & 16) dummy.items[ITv] = true;
+      if (mask & 32) dummy.items[IBuz] = true;
 
-    autoArrangeRoom(dummy);
+      autoArrangeRoom(dummy, presetIdx);
+      sigs.add(_layoutSignature(dummy.furnLayout));
 
-    const grid = [[null, null, null, null], [null, null, null, null], [null, null, null, null]];
-    const activeFloorKeys = [4];
-    for (const k of optKeys) {
-      const pres = (k === IBanyo) ? dummy.hasEnsuite : !!dummy.items[k];
-      if (pres) activeFloorKeys.push(k);
-    }
-
-    let ok = true;
-    for (const k of activeFloorKeys) {
-      const pos = dummy.furnLayout[k];
-      if (!pos) { missing++; ok = false; failures.push({ mask, k, err: "missing" }); continue; }
-      const sp = itemSpan(k, pos.rot || 0);
-      if (pos.ru < 0 || pos.rv < 0 || pos.ru + sp.du > 3 || pos.rv + sp.dv > 4) {
-        outOfBounds++; ok = false; failures.push({ mask, k, err: "oob", pos, sp });
-        continue;
+      const grid = [[null, null, null, null], [null, null, null, null], [null, null, null, null]];
+      const activeFloorKeys = [4];
+      for (const k of optKeys) {
+        const pres = (k === IBanyo) ? dummy.hasEnsuite : !!dummy.items[k];
+        if (pres) activeFloorKeys.push(k);
       }
-      for (let u = pos.ru; u < pos.ru + sp.du; u++) {
-        for (let v = pos.rv; v < pos.rv + sp.dv; v++) {
-          if (grid[u][v] !== null) {
-            overlaps++; ok = false; failures.push({ mask, k, other: grid[u][v], u, v });
-          } else {
-            grid[u][v] = k;
+
+      let ok = true;
+      for (const k of activeFloorKeys) {
+        const pos = dummy.furnLayout[k];
+        if (!pos) { missing++; ok = false; failures.push({ mask, presetIdx, k, err: "missing" }); continue; }
+        const sp = itemSpan(k, pos.rot || 0);
+        if (pos.ru < 0 || pos.rv < 0 || pos.ru + sp.du > 3 || pos.rv + sp.dv > 4) {
+          outOfBounds++; ok = false; failures.push({ mask, presetIdx, k, err: "oob", pos, sp });
+          continue;
+        }
+        for (let u = pos.ru; u < pos.ru + sp.du; u++) {
+          for (let v = pos.rv; v < pos.rv + sp.dv; v++) {
+            if (grid[u][v] !== null) {
+              overlaps++; ok = false; failures.push({ mask, presetIdx, k, other: grid[u][v], u, v });
+            } else {
+              grid[u][v] = k;
+            }
           }
         }
+        if (!canPlaceFurnAt(dummy, k, pos.ru, pos.rv, pos.rot || 0)) {
+          ok = false; failures.push({ mask, presetIdx, k, err: "canPlaceFurnAt_false" });
+        }
       }
-      if (!canPlaceFurnAt(dummy, k, pos.ru, pos.rv, pos.rot || 0)) {
-        ok = false; failures.push({ mask, k, err: "canPlaceFurnAt_false" });
-      }
+      if (ok) passed++;
     }
-    if (ok) passed++;
+    if (sigs.size === presetCount) distinctTriples++;
   }
-  return { total, passed, overlaps, outOfBounds, missing, failures };
+  return { total, totalMasks, presetCount, passed, overlaps, outOfBounds, missing, distinctTriples, failures };
 }
 
 // 6x6 Parsel Komşuluk & İnşa Edilebilirlik Kontrolleri (Zemin Kat Yola Paralel 8 Parsel: gv = -1..6, gu = 5)
@@ -3724,6 +4043,7 @@ function saveGame() {
           parcelBuilt: !!s.parcelBuilt,
           hasTree: !!s.hasTree,
           hasEnsuite: !!s.hasEnsuite,
+          furnPresetIdx: (typeof s.furnPresetIdx === "number") ? s.furnPresetIdx : 0,
           furnLayout: (s.furnLayout && typeof s.furnLayout === "object") ? JSON.parse(JSON.stringify(s.furnLayout)) : {},
           roomNo: s.roomNo,
           hasDoor: s.hasDoor,
@@ -3955,6 +4275,7 @@ function loadGame() {
             }
             s.parcelBuilt = sd.parcelBuilt !== undefined ? !!sd.parcelBuilt : (s.type !== "Empty" || (f === 0 && (targetIdx === 32 || targetIdx === 31)));
             s.hasEnsuite = !!sd.hasEnsuite;
+            s.furnPresetIdx = (typeof sd.furnPresetIdx === "number") ? sd.furnPresetIdx : 0;
             s.furnLayout = (sd.furnLayout && typeof sd.furnLayout === "object") ? JSON.parse(JSON.stringify(sd.furnLayout)) : {};
             s.roomNo = sd.roomNo || 0;
             s.hasDoor = !!sd.hasDoor;
@@ -4354,6 +4675,7 @@ function startNewGameClean() {
       s.parcelBuilt = (f === 0 && (i === 32 || i === 31 || i === 26 || i === 25));
       s.hasTree = (f === 0 && (i === 36 || i === 37));
       s.hasEnsuite = false;
+      s.furnPresetIdx = 0;
       s.furnLayout = {};
       s.roomNo = 0;
       s.hasDoor = false;
@@ -7514,12 +7836,17 @@ function onAction(i) {
             saveGame();
           }
         } else {
-          // Özel Banyo (2x2) satın al veya seç
+          // Özel Banyo (2x1) satın al veya seç
           if (s.hasEnsuite) {
-            furnSelectedKey = IBanyo;
-            furnRot = (s.furnLayout[IBanyo] && s.furnLayout[IBanyo].rot) || 0;
-            play("tap");
-            log("🚿 Özel Banyo (2x2) seçildi. Odadaki 4x4 ızgarada taşımak istediğin kareye dokun!");
+            if (furnSelectedKey === IBanyo) {
+              furnSelectedKey = null;
+              play("tap");
+            } else {
+              furnSelectedKey = IBanyo;
+              furnRot = (s.furnLayout[IBanyo] && s.furnLayout[IBanyo].rot) || 0;
+              play("tap");
+              log("🚿 Özel Banyo seçildi. Odadaki yeşil karelere dokunarak taşıyabilir veya 🔄 Döndür'e basabilirsin!");
+            }
           } else if (hasReadyRoom()) {
             const spot = findFirstFreeFurnSpot(s, IBanyo, furnRot);
             if (!spot) {
@@ -7550,11 +7877,16 @@ function onAction(i) {
         }
         const k = i - 1;
         if (s.items[k]) {
-          // Zaten odada var -> 4x4 ızgarada taşımak/döndürmek için seç!
-          furnSelectedKey = k;
-          furnRot = (s.furnLayout[k] && s.furnLayout[k].rot) || 0;
-          play("tap");
-          log(ITEM_FOOTPRINTS[k].icon + " " + ItemNames[k] + " seçildi! Odadaki 4x4 ızgarada istediğin kareye dokunarak taşıyabilir veya 🔄 Döndür'e basabilirsin.");
+          // Zaten odada var -> tekrar basılırsa seçimi bırak, değilse taşımak/döndürmek için seç!
+          if (furnSelectedKey === k) {
+            furnSelectedKey = null;
+            play("tap");
+          } else {
+            furnSelectedKey = k;
+            furnRot = (s.furnLayout[k] && s.furnLayout[k].rot) || 0;
+            play("tap");
+            log(ITEM_FOOTPRINTS[k].icon + " " + ItemNames[k] + " seçildi! Odadaki yeşil kareye taşı, mavi eşyayla değiştir veya 🔄 Döndür.");
+          }
           refresh();
           return;
         } else {
@@ -8332,35 +8664,29 @@ function updateDockHighlights() {
   }
 }
 
-// 4x4 Oda İçi Araç Çubuğu Butonları (Döndür, Kaldır, Otomatik Diz)
+// 3x4 Oda İçi Araç Çubuğu Butonları (Döndür, Kaldır, 3 Yerleşim Modu Döngüsü)
 document.getElementById("btn-furn-rot").onclick = () => {
+  if (sel === "Slot" && selSlot && selSlot.type === "Room" && furnSelectedKey !== null) {
+    const res = rotateSelectedRoomFurn(selSlot, furnSelectedKey, furnRot);
+    if (!res.ok) {
+      play("reject");
+      log("⚠️ Odada yer yok! Önce başka bir eşyayı kaydır veya çıkar.");
+      refreshPanel();
+      return;
+    }
+    furnRot = res.pos.rot || 0;
+    play("tap");
+    const cleanNm = ITEM_FOOTPRINTS[furnSelectedKey].name.replace(/\s*\(\dx\d\)/, "");
+    const wallTxt = (furnSelectedKey === IKlima || furnSelectedKey === IKamera)
+      ? (furnRot === 1 ? " (sol duvara)" : " (arka duvara)")
+      : (res.relocated ? " (uygun kareye)" : "");
+    log("🔄 " + cleanNm + " döndürüldü" + wallTxt + ".");
+    saveGame();
+    refreshPanel();
+    return;
+  }
   play("tap");
   furnRot = 1 - furnRot;
-  if (sel === "Slot" && selSlot && selSlot.type === "Room" && furnSelectedKey !== null) {
-    ensureRoomFurnLayout(selSlot);
-    const curPos = selSlot.furnLayout[furnSelectedKey];
-    if (curPos) {
-      const newRot = 1 - (curPos.rot || 0);
-      if (canPlaceFurnAt(selSlot, furnSelectedKey, curPos.ru, curPos.rv, newRot)) {
-        curPos.rot = newRot;
-        furnRot = newRot;
-        log("🔄 " + ITEM_FOOTPRINTS[furnSelectedKey].name + " döndürüldü.");
-        saveGame();
-      } else {
-        const spot = findFirstFreeFurnSpot(selSlot, furnSelectedKey, newRot);
-        if (!spot) {
-          furnRot = curPos.rot || 0;
-          play("reject");
-          log("⚠️ Odada yer yok! Önce bir eşyayı çıkar veya yerini değiştir.");
-        } else {
-          curPos.ru = spot.ru; curPos.rv = spot.rv; curPos.rot = spot.rot;
-          furnRot = spot.rot;
-          log("🔄 " + ITEM_FOOTPRINTS[furnSelectedKey].name + " uygun kareye döndürüldü.");
-          saveGame();
-        }
-      }
-    }
-  }
   refreshPanel();
 };
 
@@ -8399,8 +8725,13 @@ document.getElementById("btn-furn-del").onclick = () => {
 document.getElementById("btn-furn-auto").onclick = () => {
   if (sel !== "Slot" || !selSlot || selSlot.type !== "Room") return;
   play("build");
-  autoArrangeRoom(selSlot);
-  log("⚡ " + selSlot.roomNo + ". odanın eşyaları 4x4 ızgaraya otomatik dizildi!");
+  const res = cycleRoomAutoPreset(selSlot);
+  if (furnSelectedKey !== null && selSlot.furnLayout && selSlot.furnLayout[furnSelectedKey]) {
+    furnRot = selSlot.furnLayout[furnSelectedKey].rot || 0;
+  }
+  const idx = res ? res.idx : 0;
+  const pr = res ? res.preset : ROOM_FURN_PRESETS[0];
+  log("⚡ " + selSlot.roomNo + ". oda düzeni (" + (idx + 1) + "/3): " + pr.icon + " " + pr.name);
   refresh(); saveGame();
 };
 
@@ -9001,13 +9332,23 @@ function refreshPanel() {
   if (furnToolbarEl) {
     furnToolbarEl.classList.toggle("show", !!isRoomSel);
     if (isRoomSel && furnStatusLbl) {
+      const pIdx = (typeof selSlot.furnPresetIdx === "number") ? ((selSlot.furnPresetIdx % 3) + 3) % 3 : 0;
+      const pDef = (typeof ROOM_FURN_PRESETS !== "undefined" && ROOM_FURN_PRESETS[pIdx]) ? ROOM_FURN_PRESETS[pIdx] : { icon: "🏨", name: "Klasik" };
+      const autoBtn = document.getElementById("btn-furn-auto");
+      if (autoBtn) autoBtn.textContent = "⚡ Diz " + (pIdx + 1) + "/3";
       if (furnSelectedKey !== null && ITEM_FOOTPRINTS[furnSelectedKey]) {
         const fp = ITEM_FOOTPRINTS[furnSelectedKey];
         const sp = itemSpan(furnSelectedKey, furnRot);
         const cleanName = fp.name.replace(/\s*\(\dx\d\)/, "");
-        furnStatusLbl.textContent = "🎯 Seçili: " + fp.icon + " " + cleanName + " (" + sp.du + "x" + sp.dv + ") 👉 Odadaki yeşil kareye dokun!";
+        if (furnSelectedKey === IKlima || furnSelectedKey === IKamera) {
+          furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + ": Üst duvara dokun • 🔄 Duvar değiştir";
+        } else if (furnSelectedKey === IAmpul) {
+          furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + ": İstediğin yeşil kareye dokun";
+        } else {
+          furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + " (" + sp.du + "x" + sp.dv + "): Yeşil Taşı • Mavi Değiştir";
+        }
       } else {
-        furnStatusLbl.textContent = "🛋️ 4x4 Oda Izgarası: Eşyaya basıp odada istediğin kareye taşı / döndür";
+        furnStatusLbl.textContent = "🛋️ Odadaki eşyaya tıkla/taşı • " + pDef.icon + " " + pDef.name;
       }
     }
   }
@@ -9453,8 +9794,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 58;
-const APP_VERSION_NAME = "1.9.50-beta";
+const APP_VERSION_CODE = 59;
+const APP_VERSION_NAME = "1.9.51-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9462,9 +9803,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.51-beta",
+    title: "E2.2 Bahçe Cilası, Kamera Sınırı & Odada Eşya Dizilimi",
+    latest: true,
+    notes: "• 🌿 Bahçe Yuvası Çakışması Giderildi: 24 bahçe süsü yuvasıyla çakışan sabit çalı/çim tutamı ve palmiye temizlendi veya güvenli alana taşındı; süs yerleşiminde görsel çakışma kalmadı.\n• 🎥 Daraltılmış Kamera Sınırı: Dünya sürükleme sınırı tüm 24 bahçe yuvasını koruyacak şekilde daraltılarak boş kenarların dışına taşma engellendi.\n• 🛋️ Oda Eşyaları & 3 Akıllı Dizilim: Odadaki eşyalara tıklayıp seçme/taşıma/döndürme, eşya değiştirme ve Otomatik Diz ile 3 farklı oda düzeni arasında tek dokunuşla geçiş eklendi."
+  },
+  {
     ver: "v1.9.50-beta",
     title: "Mobil Dokunma Mavi Vurgu (Tap Highlight) Düzeltmesi",
-    latest: true,
+    latest: false,
     notes: "• 📱 Mavi Yanma Hatası Giderildi: Mobil WebView ve dokunmatik ekranlarda sağ HUD kutusu ve diğer arayüz butonlarına basıldığında çıkan mavi dokunma vurgusu (-webkit-tap-highlight-color: transparent) ve odak çerçevesi tamamen kapatıldı.\n• 🎯 Boş Alan Geçirgenliği: #right-hud, #top-bar, #left-hud-top, #left-hud-bottom, #bottom-area ve #ach-popup kapsayıcılarındaki hatalı pointer-events: auto / cursor: pointer kaldırılarak yalnızca gerçek butonların tıklanması ve boşlukların haritaya geçmesi sağlandı."
   },
   {
@@ -10466,10 +10813,9 @@ function floatText(x, y, msg, col) {
 
 function applyCam() {
   zoom = clamp(zoom, 0.36, 1.95);
-  // Kamera sınırları: Oyuncunun otel, otopark, tenis kortu, şehir parkı ve tünelleri rahatça görebilmesini sağlar;
-  // sonsuz boş yeşil alana kaymayı engeller.
-  camCenter.x = clamp(camCenter.x, -1600, 1400);
-  camCenter.y = clamp(camCenter.y, -1600, 280);
+  // E2.2 daraltılmış kamera sınırları: 24 yuva (x∈[-1338,972], y∈[-1380,-14]) + küçük emniyet payı
+  camCenter.x = clamp(camCenter.x, -1380, 1020);
+  camCenter.y = clamp(camCenter.y, -1420, 20);
 }
 function fitView() {
   const vw = viewport.clientWidth || 800, vh = viewport.clientHeight || 600;
@@ -10619,6 +10965,18 @@ function isoBox(u0, v0, u1, v1, z0, z1, colTop, colLeft, colRight, stroke = OUTL
   if (colRight) drawPoly2D(pRight, colRight, stroke, lw);
   if (colTop) drawPoly2D(pTop, colTop, stroke, lw);
   return pTop;
+}
+
+// 3D izometrik kutunun ekrandaki saat-yönünde dış silüeti (tıklama bölgesi için)
+function isoBoxSilhouette(u0, v0, u1, v1, z0, z1) {
+  return [
+    iso(u0, v0, z1),
+    iso(u0, v1, z1),
+    iso(u0, v1, z0),
+    iso(u1, v1, z0),
+    iso(u1, v0, z0),
+    iso(u1, v0, z1)
+  ];
 }
 
 function isoLabel(txt, u, v, z, fontSize = 14, fg = "#3a281f", bg = "#fffdf5", padX = 7, padY = 3.5) {
@@ -13072,16 +13430,97 @@ function drawDistantMountainBackdrop(si) {
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
+const WORLD_STATIC_CACHE_VER = "e22";
 const _GRASS_TUFTS = [
   [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
   [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
-  [80, 1150], [220, 1180], [380, 1200], [540, 1160], [700, 1190],
+  [80, 1150], [540, 1160],
   [-520, -40], [-440, 180], [-600, 360], [-480, 560], [-560, 740],
   [200, 480], [350, 320], [150, 720], [380, 800], [520, 640],
   [-300, 920], [-220, 1080], [450, 1020], [620, 980], [750, 820],
-  [920, -60], [1050, 120], [980, 340], [1120, 520], [1040, 760],
-  [1240, -200], [1250, 140], [1240, 520], [1245, 960], [1250, 1380]
+  [1050, 120], [980, 340], [1120, 520], [1040, 760],
+  [1250, 140], [1240, 520], [1250, 1380]
 ];
+
+const WORLD_PALM_SPOTS = [
+  { u: 520, v: 1120, flip: 1, sc: 1.2 },
+  { u: 140, v: 1120, flip: -1, sc: 1.15 },
+  { u: 1040, v: -320, flip: -1, sc: 1.08 }
+];
+
+// E2.2: Çakışan ön şerit çalıları kaldırıldı; yan çalılar ve papatya öbekleri yuva kutularından >=45u dışarı taşındı.
+const WORLD_LUSH_BUSHES = [
+  { u: 70, v: -290, sc: 1.1, type: "normal" },
+  { u: 360, v: -110, sc: 1.0, type: "flower" },
+  { u: 740, v: -100, sc: 1.1, type: "normal" },
+  { u: -90, v: 480, sc: 1.05, type: "flower" },
+  { u: -100, v: 820, sc: 1.1, type: "normal" },
+  { u: 70, v: 1360, sc: 1.0, type: "flower" },
+  { u: 930, v: 1480, sc: 1.1, type: "normal" }
+];
+
+const WORLD_LAWN_SPOTS = [
+  { u: -120, v: 240, fl: true }, { u: -180, v: 620, fl: false }, { u: -80, v: 920, fl: true },
+  { u: 220, v: -110, fl: false }, { u: 90, v: -370, fl: true }, { u: 1020, v: -110, fl: false },
+  { u: 1210, v: 100, fl: true }, { u: 1225, v: 280, fl: false }, { u: 1215, v: 480, fl: true },
+  { u: 1220, v: 720, fl: false }, { u: 1215, v: 910, fl: true }, { u: 1210, v: 1100, fl: true },
+  { u: 90, v: 1490, fl: false }, { u: 1030, v: 1520, fl: true }, { u: 1180, v: 1350, fl: false },
+  // Karşı park tarafı çimleri
+  { u: 1570, v: 120, fl: true }, { u: 1580, v: 460, fl: false }, { u: 1575, v: 820, fl: true },
+  { u: 1670, v: -120, fl: false }, { u: 1680, v: 280, fl: true }, { u: 1690, v: 620, fl: false },
+  { u: 1720, v: 940, fl: true }, { u: 1760, v: 400, fl: true }, { u: 1780, v: -80, fl: false }
+];
+
+const WORLD_GARDEN_PLANTER_VS = [-280, -80, 240, 720, 1080, 1420];
+
+function getWorldStaticGroundObjects() {
+  const out = [];
+  for (let i = 0; i < _GRASS_TUFTS.length; i++) {
+    out.push({ group: "_GRASS_TUFTS", name: "grass_tuft[" + i + "]", u: _GRASS_TUFTS[i][0], v: _GRASS_TUFTS[i][1], r: 8 });
+  }
+  for (let cv = -120; cv <= 1220; cv += 140) {
+    out.push({ group: "cypress_row", name: "cypress(-230," + cv + ")", u: -230, v: cv, r: 22 * 1.05 });
+  }
+  out.push(
+    { group: "world_back", name: "drawResortBush(40,-140)", u: 40, v: -140, r: 22 * 1.15 },
+    { group: "world_back", name: "drawResortBush(-140,40)", u: -140, v: 40, r: 22 * 1.15 },
+    { group: "world_back", name: "drawPalmTree(280,-160)", u: 280, v: -160, r: 30 * 1.1 },
+    { group: "world_back", name: "drawPalmTree(-160,280)", u: -160, v: 280, r: 30 * 1.1 },
+    { group: "world_back", name: "drawGrandMarbleFountain(-110,585)", u: -110, v: 585, r: 45 * 1.05 },
+    { group: "world_back", name: "drawResortGazebo(-120,240)", u: -120, v: 240, r: 45 }
+  );
+  for (let i = 0; i < WORLD_GARDEN_PLANTER_VS.length; i++) {
+    const pv = WORLD_GARDEN_PLANTER_VS[i];
+    out.push({ group: "sw_planters", name: "planter(1236," + pv + ")", u: 1259, v: pv + 7, hu: 23, hv: 7, r: 16, isBox: true });
+  }
+  out.push(
+    { group: "entry_planters", name: "entryPlanterL(1195,415.5)", u: 1215, v: 422.5, hu: 20, hv: 7, r: 14, isBox: true },
+    { group: "entry_planters", name: "entryPlanterR(1195,545.5)", u: 1215, v: 552.5, hu: 20, hv: 7, r: 14, isBox: true }
+  );
+  if (typeof STREET_LAMP_VS_NEAR !== "undefined") {
+    for (let i = 0; i < STREET_LAMP_VS_NEAR.length; i++) {
+      out.push({ group: "street_lamps_near", name: "lampNear(1342," + STREET_LAMP_VS_NEAR[i] + ")", u: 1342, v: STREET_LAMP_VS_NEAR[i], r: 14 });
+    }
+  }
+  if (typeof STREET_LAMP_VS_FAR !== "undefined") {
+    for (let i = 0; i < STREET_LAMP_VS_FAR.length; i++) {
+      out.push({ group: "street_lamps_far", name: "lampFar(1538," + STREET_LAMP_VS_FAR[i] + ")", u: 1538, v: STREET_LAMP_VS_FAR[i], r: 14 });
+    }
+  }
+  for (let i = 0; i < WORLD_PALM_SPOTS.length; i++) {
+    const ps = WORLD_PALM_SPOTS[i];
+    out.push({ group: "palmSpots", name: "palmSpots[" + i + "](" + ps.u + "," + ps.v + ")", u: ps.u, v: ps.v, r: 30 * ps.sc });
+  }
+  for (let i = 0; i < WORLD_LUSH_BUSHES.length; i++) {
+    const lb = WORLD_LUSH_BUSHES[i];
+    out.push({ group: "lush_bushes", name: "lushBush[" + i + "](" + lb.u + "," + lb.v + ")", u: lb.u, v: lb.v, r: 22 * lb.sc });
+  }
+  for (let i = 0; i < WORLD_LAWN_SPOTS.length; i++) {
+    const sp = WORLD_LAWN_SPOTS[i];
+    out.push({ group: "lush_spots", name: "lushSpot[" + i + "](" + sp.u + "," + sp.v + ")", u: sp.u, v: sp.v, r: 8 });
+  }
+  return out;
+}
 
 function drawGrassTuft(u, v, col, sz = 1.0) {
   const p = iso(u, v, 0);
@@ -13126,7 +13565,7 @@ function drawWorld() {
   };
 
   // KATMAN A (önbellekli): çim gradyanı, çim lekeleri, dağ silüeti ve arka duvar — kamera sabitken tek bir drawImage
-  drawCachedLayer("base", `${si}|${cw}|${ch}`, () => {
+  drawCachedLayer("base", `${si}|${cw}|${ch}|${WORLD_STATIC_CACHE_VER}`, () => {
     // 1) Çim Arka Plan (Güneş Işıklı Zengin Çayır Gradyanı)
     const lawnGrad = ctx.createLinearGradient(0, 0, cw, ch);
     if (si === 0) { // İlkbahar: Taze sıcak çayır ve güneş ışıltısı
@@ -13209,7 +13648,7 @@ function drawWorld() {
   }
 
   // KATMAN B (önbellekli): çardak, otopark, tenis kortu, çim detayları, arka çalılar
-  drawCachedLayer("garden", `${si}`, () => {
+  drawCachedLayer("garden", `${si}|${WORLD_STATIC_CACHE_VER}`, () => {
     if (typeof drawResortGazebo === "function") {
       drawResortGazebo(-120, 240, 0, 1.0);
     }
@@ -13373,8 +13812,7 @@ function drawWorld() {
     }
 
     // 3.4) Otel Ön Bahçesi Çiçeklikleri (Kaldırımı kesmez, çim tampon bölgede yer alır: u = swU0 - 24 = 1236)
-    const gardenPlanterVs = [-280, -80, 240, 720, 1080, 1420];
-    for (const pv of gardenPlanterVs) {
+    for (const pv of WORLD_GARDEN_PLANTER_VS) {
       if (typeof drawFlowerPlanterBox === "function") {
         drawFlowerPlanterBox(swU0 - 24, pv, 0, 46, 14);
       }
@@ -13426,13 +13864,8 @@ function drawWorld() {
   }
 
   // 5) Ön & Yan Palmiye Ağaçları (Arsa Çevresinde)
-  const palmSpots = [
-    { u: 520, v: 1120, flip: 1, sc: 1.2 },
-    { u: 140, v: 1120, flip: -1, sc: 1.15 },
-    { u: 820, v: -90, flip: -1, sc: 1.08 }
-  ];
-  for (let i = 0; i < palmSpots.length; i++) {
-    const ps = palmSpots[i];
+  for (let i = 0; i < WORLD_PALM_SPOTS.length; i++) {
+    const ps = WORLD_PALM_SPOTS[i];
     drawPalmTree(ps.u, ps.v, 0, ps.sc, ps.flip);
   }
 
@@ -13886,38 +14319,16 @@ function drawZebraCrossing(u0, u1, vCenter, widthV = 96) {
 
 // 7.7) Çayır Zenginleştirmesi: Stilize Çim Tutamları, Kır Çiçekleri, Bahçe Çalıları ve Çakıl Taşları
 function drawLushLawnDetails(si) {
-  // A) Otel Bahçesi Süs Çalıları (Ön bahçe tamponu ve köşe peyzajı - kaldırımı asla kesmez)
+  // A) Otel Bahçesi Süs Çalıları (Arka ve yan peyzaj çalıları)
   if (typeof drawLushBush === "function") {
-    // Ön bahçe çim hattı (u = 1215..1225)
-    drawLushBush(1220, 20, 0, 0.95, "flower", si);
-    drawLushBush(1225, 170, 0, 0.9, "normal", si);
-    drawLushBush(1220, 360, 0, 0.95, "flower", si);
-    drawLushBush(1225, 610, 0, 0.9, "normal", si);
-    drawLushBush(1220, 810, 0, 0.95, "flower", si);
-    drawLushBush(1225, 990, 0, 0.9, "normal", si);
-
-    // Arka ve yan peyzaj çalıları
-    drawLushBush(60, -90, 0, 1.1, "normal", si);
-    drawLushBush(360, -110, 0, 1.0, "flower", si);
-    drawLushBush(740, -100, 0, 1.1, "normal", si);
-    drawLushBush(-90, 480, 0, 1.05, "flower", si);
-    drawLushBush(-100, 820, 0, 1.1, "normal", si);
-    drawLushBush(340, 1220, 0, 1.0, "flower", si);
-    drawLushBush(780, 1230, 0, 1.1, "normal", si);
+    for (let i = 0; i < WORLD_LUSH_BUSHES.length; i++) {
+      const lb = WORLD_LUSH_BUSHES[i];
+      drawLushBush(lb.u, lb.v, 0, lb.sc, lb.type, si);
+    }
   }
 
   // B) Doğal Çim Tutamları ve Papatyalar
-  const spots = [
-    { u: -120, v: 240, fl: true }, { u: -180, v: 620, fl: false }, { u: -80, v: 920, fl: true },
-    { u: 220, v: -110, fl: false }, { u: 640, v: -90, fl: true }, { u: 1020, v: -110, fl: false },
-    { u: 1210, v: 100, fl: true }, { u: 1225, v: 280, fl: false }, { u: 1215, v: 480, fl: true },
-    { u: 1220, v: 720, fl: false }, { u: 1215, v: 910, fl: true }, { u: 1210, v: 1100, fl: true },
-    { u: 420, v: 1220, fl: false }, { u: 820, v: 1230, fl: true }, { u: 1180, v: 1350, fl: false },
-    // Karşı park tarafı çimleri
-    { u: 1570, v: 120, fl: true }, { u: 1580, v: 460, fl: false }, { u: 1575, v: 820, fl: true },
-    { u: 1670, v: -120, fl: false }, { u: 1680, v: 280, fl: true }, { u: 1690, v: 620, fl: false },
-    { u: 1720, v: 940, fl: true }, { u: 1760, v: 400, fl: true }, { u: 1780, v: -80, fl: false }
-  ];
+  const spots = WORLD_LAWN_SPOTS;
 
   const grassCol = si === 3 ? "#94a3b8" : si === 2 ? "#854d0e" : "#22c55e";
   const flowerCols = ["#ffffff", "#fef08a", "#c084fc", "#f472b6"];
@@ -15510,6 +15921,64 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
   return roomPoly;
 }
 
+function handleRoomFurnCellTap(s, ru, rv) {
+  if (!s || s.type !== "Room") return;
+  if (pending && s.Ready && !s.guest && !s.onFire) {
+    selSlot = s;
+    placeGuestIntoRoom(pending, s, pendingPrice, false);
+    refresh();
+    return;
+  }
+  ensureRoomFurnLayout(s);
+  if (furnSelectedKey !== null) {
+    const res = trySmartPlaceOrSwapFurn(s, furnSelectedKey, ru, rv, furnRot);
+    if (!res.ok) {
+      play("reject");
+      log("⚠️ Eşya buraya sığmıyor! Yeşil veya mavi karelerden birine dokun.");
+      return;
+    }
+    if (res.action === "deselect") {
+      furnSelectedKey = null;
+      play("tap");
+    } else if (res.action === "switch") {
+      furnSelectedKey = res.key;
+      furnRot = (res.pos && res.pos.rot) || 0;
+      play("tap");
+      const fp = ITEM_FOOTPRINTS[res.key];
+      if (fp) log(fp.icon + " " + fp.name.replace(/\s*\(\dx\d\)/, "") + " seçildi!");
+    } else if (res.action === "swapped") {
+      furnRot = (res.pos && res.pos.rot) || 0;
+      play("build");
+      const nA = ITEM_FOOTPRINTS[res.key].name.replace(/\s*\(\dx\d\)/, "");
+      const nB = ITEM_FOOTPRINTS[res.otherKey].name.replace(/\s*\(\dx\d\)/, "");
+      log("🔄 " + nA + " ↔ " + nB + " yer değiştirdi!");
+      saveGame();
+    } else {
+      furnRot = (res.pos && res.pos.rot) || 0;
+      play("build");
+      if (res.autoRotated) {
+        const nm = ITEM_FOOTPRINTS[res.key].name.replace(/\s*\(\dx\d\)/, "");
+        log("🔄 " + nm + " alana sığacak şekilde döndürülüp yerleştirildi.");
+      }
+      saveGame();
+    }
+    refreshPanel();
+    return;
+  }
+
+  const floorK = (typeof findFloorItemAtCell === "function") ? findFloorItemAtCell(s, ru, rv) : null;
+  if (floorK !== null) {
+    _selectRoomFurnOnTap(s, floorK, false);
+    return;
+  }
+  for (const wk of [IAmpul, IKlima, IKamera]) {
+    if (s.items && s.items[wk] && s.furnLayout[wk] && s.furnLayout[wk].ru === ru && s.furnLayout[wk].rv === rv) {
+      _selectRoomFurnOnTap(s, wk, false);
+      return;
+    }
+  }
+}
+
 // Oda içi: mobilya, misafir, uyku, eşya ve etkileşim bölgeleri
 function drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, roomPoly) {
   if (s.type === "Room") {
@@ -15528,51 +15997,45 @@ function drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, room
         refresh();
       });
     } else if (isSel) {
+      // Boş/ön yürüme şeridine tıklanınca alt kata düşmeyi önle ve seçili eşyayı bırak
+      addHitPoly(roomPoly, () => {
+        if (furnSelectedKey !== null) {
+          furnSelectedKey = null;
+          play("tap");
+          refreshPanel();
+        }
+      });
       for (let ru = 0; ru < 3; ru++) {
         for (let rv = 0; rv < 4; rv++) {
           const cu0 = u0 + ru * cellU, cv0 = v0 + rv * cellV;
           const cu1 = cu0 + cellU, cv1 = cv0 + cellV;
-          const poly = isoQuad(cu0 + 1, cv0 + 1, cu1 - 1, cv1 - 1, z0 + 0.8,
-            "rgba(255, 235, 180, 0.45)", "rgba(200, 160, 90, 0.6)", 1.2);
-          addHitPoly(poly, () => {
-            if (pending && s.Ready && !s.guest && !s.onFire) {
-              selSlot = s;
-              placeGuestIntoRoom(pending, s, pendingPrice, false);
-              refresh();
-              return;
-            }
-            if (furnSelectedKey !== null) {
-              const sp = itemSpan(furnSelectedKey, furnRot);
-              if (ru + sp.du > 3 || rv + sp.dv > 4) {
-                play("reject");
-                log("Bu esya buraya sigmaz!");
-                return;
-              }
-              if (!canPlaceFurnAt(s, furnSelectedKey, ru, rv, furnRot)) {
-                play("reject");
-                log("⚠️ Orası dolu! Başka bir kareye dokun.");
-                return;
-              }
-              if (!s.furnLayout) s.furnLayout = {};
-              s.furnLayout[furnSelectedKey] = { ru, rv, rot: furnRot };
-              play("build");
-              refreshPanel();
-            } else {
-              for (let k = 0; k <= 9; k++) {
-                const isPres = (k === 9) ? s.hasEnsuite : (k === 4 ? true : !!s.items[k]);
-                if (!isPres || !s.furnLayout[k]) continue;
-                const pos = s.furnLayout[k];
-                const sp = itemSpan(k, pos.rot || 0);
-                if (ru >= pos.ru && ru < pos.ru + sp.du && rv >= pos.rv && rv < pos.rv + sp.dv) {
-                  furnSelectedKey = k;
-                  furnRot = pos.rot || 0;
-                  play("tap");
-                  refreshPanel();
-                  return;
-                }
-              }
-            }
-          });
+          const hint = (typeof getFurnCellHint === "function")
+            ? getFurnCellHint(s, furnSelectedKey, ru, rv, furnRot)
+            : "idle";
+          let fillCol = "rgba(255, 235, 180, 0.36)";
+          let strokeCol = "rgba(200, 160, 90, 0.55)";
+          let strokeLw = 1.2;
+          if (hint === "self") {
+            fillCol = "rgba(251, 146, 60, 0.44)";
+            strokeCol = "#ea580c";
+            strokeLw = 2.4;
+          } else if (hint === "move") {
+            fillCol = "rgba(34, 197, 94, 0.36)";
+            strokeCol = "#16a34a";
+            strokeLw = 2.2;
+          } else if (hint === "swap") {
+            fillCol = "rgba(56, 189, 248, 0.38)";
+            strokeCol = "#0284c7";
+            strokeLw = 2.2;
+          } else if (hint === "snap") {
+            fillCol = "rgba(255, 243, 210, 0.22)";
+            strokeCol = "rgba(20, 184, 166, 0.45)";
+          } else if (hint === "select" || hint === "blocked") {
+            fillCol = "rgba(148, 163, 184, 0.16)";
+            strokeCol = "rgba(100, 116, 139, 0.4)";
+          }
+          const poly = isoQuad(cu0 + 1, cv0 + 1, cu1 - 1, cv1 - 1, z0 + 0.8, fillCol, strokeCol, strokeLw);
+          addHitPoly(poly, () => handleRoomFurnCellTap(s, ru, rv));
         }
       }
     } else {
@@ -15587,8 +16050,8 @@ function drawParcelRoomContents(s, u0, v0, u1, v1, z0, z1, isSel, doorWall, room
       });
     }
 
-    // Odadaki Eşyaları 3x4 Izgara Konumlarına (s.furnLayout) Göre Çiz
-    drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV);
+    // Odadaki Eşyaları 3x4 Izgara Konumlarına (s.furnLayout) Göre Çiz (seçili odada 3D tıklamayla beraber)
+    drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV, !!(isSel && !pending));
 
     // Balkon (Üst kat odalarda)
     if (s.hasBalcony) {
@@ -16215,10 +16678,15 @@ function drawFurnYatak(s, bedPos, sp, u0, v0, u1, v1, z0, cellU, cellV) {
       isoQuad(bx1 - 12, by0 + 2.5, bx1 - 7, by1 - 2.5, z0 + 15.7, acc3F, acc3S, 0.8);
     }
 
-    if (by0 > v0 + 16) {
+    const sideFree = (du, dv) => {
+      const tr = bedPos.ru + du, tv = bedPos.rv + dv;
+      if (tr < 0 || tr >= 3 || tv < 0 || tv >= 4) return false;
+      return typeof findFloorItemAtCell !== "function" || findFloorItemAtCell(s, tr, tv, 4) === null;
+    };
+    if (by0 > v0 + 16 && sideFree(0, -1)) {
       isoBox(bx0 + 2, by0 - 16, bx0 + 18, by0 - 2, z0, z0 + 10, wlT, wlL, wlR, OUTLINE_COL, 1.2);
       isoBox(bx0 + 8, by0 - 11, bx0 + 12, by0 - 7, z0 + 10, z0 + 18, lampT, lampL, lampR, OUTLINE_COL, 1.1);
-    } else if (by1 < v1 - 16) {
+    } else if (by1 < v1 - 16 && sideFree(0, 1)) {
       isoBox(bx0 + 2, by1 + 2, bx0 + 18, by1 + 16, z0, z0 + 10, wlT, wlL, wlR, OUTLINE_COL, 1.2);
       isoBox(bx0 + 8, by1 + 7, bx0 + 12, by1 + 11, z0 + 10, z0 + 18, lampT, lampL, lampR, OUTLINE_COL, 1.1);
     }
@@ -16253,10 +16721,15 @@ function drawFurnYatak(s, bedPos, sp, u0, v0, u1, v1, z0, cellU, cellV) {
       isoQuad(bx0 + 2.5, by1 - 12, bx1 - 2.5, by1 - 7, z0 + 15.7, acc3F, acc3S, 0.8);
     }
 
-    if (bx0 > u0 + 16) {
+    const sideFree = (du, dv) => {
+      const tr = bedPos.ru + du, tv = bedPos.rv + dv;
+      if (tr < 0 || tr >= 3 || tv < 0 || tv >= 4) return false;
+      return typeof findFloorItemAtCell !== "function" || findFloorItemAtCell(s, tr, tv, 4) === null;
+    };
+    if (bx0 > u0 + 16 && sideFree(-1, 0)) {
       isoBox(bx0 - 16, by0 + 2, bx0 - 2, by0 + 18, z0, z0 + 10, wlT, wlL, wlR, OUTLINE_COL, 1.2);
       isoBox(bx0 - 11, by0 + 8, bx0 - 7, by0 + 12, z0 + 10, z0 + 18, lampT, lampL, lampR, OUTLINE_COL, 1.1);
-    } else if (bx1 < u1 - 16) {
+    } else if (bx1 < u1 - 16 && sideFree(1, 0)) {
       isoBox(bx1 + 2, by0 + 2, bx1 + 16, by0 + 18, z0, z0 + 10, wlT, wlL, wlR, OUTLINE_COL, 1.2);
       isoBox(bx1 + 7, by0 + 8, bx1 + 11, by0 + 12, z0 + 10, z0 + 18, lampT, lampL, lampR, OUTLINE_COL, 1.1);
     }
@@ -16401,9 +16874,13 @@ function drawFurnBebek(p, u0, v0, z0, cellU, cellV) {
   ctx.stroke();
   ctx.restore();
 
-  // İç yatak ve yastık
+  // İç yatak ve yastık (rot: 0 -> başucu fx0, rot: 1 -> başucu fy0)
   isoBox(fx0 + 3, fy0 + 3, fx1 - 3, fy1 - 3, z0 + 10, z0 + 15, cribShT, cribShL, cribT, OUTLINE_COL, 1.1);
-  isoBox(fx0 + 4, fy0 + 6, fx0 + 11, fy1 - 6, z0 + 15, z0 + 17.5, pilT, cribShT, cribT, OUTLINE_COL, 0.9);
+  if (!p.rot) {
+    isoBox(fx0 + 4, fy0 + 6, fx0 + 11, fy1 - 6, z0 + 15, z0 + 17.5, pilT, cribShT, cribT, OUTLINE_COL, 0.9);
+  } else {
+    isoBox(fx0 + 6, fy0 + 4, fx1 - 6, fy0 + 11, z0 + 15, z0 + 17.5, pilT, cribShT, cribT, OUTLINE_COL, 0.9);
+  }
 
   // Ön parmaklık dikmeleri & üst ray + ön-sağ köşe direği
   ctx.save();
@@ -16426,7 +16903,7 @@ function drawFurnBebek(p, u0, v0, z0, cellU, cellV) {
   isoBox(fx1 - 3, fy1 - 3, fx1, fy1, z0 + 2, z0 + 28, cribT, cribL, cribR, hi, 1);
 }
 
-// 6) TV (1x1 hücre, h <= 46): stand + kasa + ince açık bezel + ekran parlaması
+// 6) TV (1x1 hücre, h <= 46): stand + kasa + rot'a göre (+v veya +u) ekran
 function drawFurnTv(p, u0, v0, z0, cellU, cellV) {
   const pal = THEME.room;
   const wT = pal.furnWoodTop;
@@ -16434,19 +16911,27 @@ function drawFurnTv(p, u0, v0, z0, cellU, cellV) {
   const wDR = pal.furnWoodDarkR;
 
   const fx0 = u0 + p.ru * cellU + 8, fy0 = v0 + p.rv * cellV + 8;
+  const fx1 = fx0 + cellV - 16, fy1 = fy0 + cellV - 16;
   const hi = furnSelectedKey === ITv ? "#ff8c00" : OUTLINE_COL;
   const lw = furnSelectedKey === ITv ? 3 : 1.6;
-  isoBox(fx0, fy0, fx0 + cellV - 16, fy0 + cellV - 16, z0 + 2, z0 + 20, wT, wDL, wDR, OUTLINE_COL, 1.4);
-  isoBox(fx0 + 4, fy0 + 8, fx0 + cellV - 20, fy0 + 20, z0 + 20, z0 + 46, "#242c36", "#1a2029", "#12161c", hi, lw);
+  isoBox(fx0, fy0, fx1, fy1, z0 + 2, z0 + 20, wT, wDL, wDR, hi, furnSelectedKey === ITv ? 2.4 : 1.4);
 
-  // İnce açık çerçeve (bezel) ve hafif ekran parlaması (açık mavi-gri dolgu)
-  const su0 = fx0 + 5.5, su1 = fx0 + cellV - 21.5, sv = fy0 + 20.2;
-  drawPoly2D([iso(su0, sv, z0 + 22), iso(su1, sv, z0 + 22), iso(su1, sv, z0 + 44), iso(su0, sv, z0 + 44)], "#475569", "#cbd5e1", 1.1);
-  drawPoly2D([iso(su0 + 1.5, sv + 0.1, z0 + 23.5), iso(su1 - 1.5, sv + 0.1, z0 + 23.5), iso(su1 - 1.5, sv + 0.1, z0 + 42.5), iso(su0 + 1.5, sv + 0.1, z0 + 42.5)], "#64748b", null, 0);
-  drawPoly2D([iso(su0 + 2.5, sv + 0.2, z0 + 25), iso(su0 + 8.5, sv + 0.2, z0 + 25), iso(su1 - 2.5, sv + 0.2, z0 + 41), iso(su1 - 8.5, sv + 0.2, z0 + 41)], "rgba(224, 242, 254, 0.38)", null, 0);
+  if (!p.rot) {
+    isoBox(fx0 + 4, fy0 + 8, fx1 - 4, fy0 + 20, z0 + 20, z0 + 46, "#242c36", "#1a2029", "#12161c", hi, lw);
+    const su0 = fx0 + 5.5, su1 = fx1 - 5.5, sv = fy0 + 20.2;
+    drawPoly2D([iso(su0, sv, z0 + 22), iso(su1, sv, z0 + 22), iso(su1, sv, z0 + 44), iso(su0, sv, z0 + 44)], "#475569", "#cbd5e1", 1.1);
+    drawPoly2D([iso(su0 + 1.5, sv + 0.1, z0 + 23.5), iso(su1 - 1.5, sv + 0.1, z0 + 23.5), iso(su1 - 1.5, sv + 0.1, z0 + 42.5), iso(su0 + 1.5, sv + 0.1, z0 + 42.5)], "#64748b", null, 0);
+    drawPoly2D([iso(su0 + 2.5, sv + 0.2, z0 + 25), iso(su0 + 8.5, sv + 0.2, z0 + 25), iso(su1 - 2.5, sv + 0.2, z0 + 41), iso(su1 - 8.5, sv + 0.2, z0 + 41)], "rgba(224, 242, 254, 0.38)", null, 0);
+  } else {
+    isoBox(fx0 + 8, fy0 + 4, fx0 + 20, fy1 - 4, z0 + 20, z0 + 46, "#242c36", "#1a2029", "#12161c", hi, lw);
+    const sv0 = fy0 + 5.5, sv1 = fy1 - 5.5, su = fx0 + 20.2;
+    drawPoly2D([iso(su, sv0, z0 + 22), iso(su, sv1, z0 + 22), iso(su, sv1, z0 + 44), iso(su, sv0, z0 + 44)], "#475569", "#cbd5e1", 1.1);
+    drawPoly2D([iso(su + 0.1, sv0 + 1.5, z0 + 23.5), iso(su + 0.1, sv1 - 1.5, z0 + 23.5), iso(su + 0.1, sv1 - 1.5, z0 + 42.5), iso(su + 0.1, sv0 + 1.5, z0 + 42.5)], "#64748b", null, 0);
+    drawPoly2D([iso(su + 0.2, sv0 + 2.5, z0 + 25), iso(su + 0.2, sv0 + 8.5, z0 + 25), iso(su + 0.2, sv1 - 2.5, z0 + 41), iso(su + 0.2, sv1 - 8.5, z0 + 41)], "rgba(224, 242, 254, 0.38)", null, 0);
+  }
 }
 
-// 7) Buzdolabı (1x1 hücre, h <= 44): koyu ayak, gövde, dondurucu ayrıt çizgisi, iki gümüş kulp
+// 7) Buzdolabı (1x1 hücre, h <= 44): rot:0 kapak +v yüzünde, rot:1 kapak +u yüzünde
 function drawFurnBuzdolabi(p, u0, v0, z0, cellU, cellV) {
   const pal = THEME.room;
   const frT = pal.fridgeTop;
@@ -16463,12 +16948,9 @@ function drawFurnBuzdolabi(p, u0, v0, z0, cellU, cellV) {
   const hi = isSel ? "#ff8c00" : OUTLINE_COL;
   const lw = isSel ? 3 : 1.6;
 
-  // Altta koyu ayak / süpürgelik
   isoBox(fx0 + 1, fy0 + 1, fx1 - 1, fy1 - 1, z0 + 2, z0 + 5, frBT, frBL, frBR, hi, 1.1);
-  // Buzdolabı gövdesi
   isoBox(fx0, fy0, fx1, fy1, z0 + 5, z0 + 44, frT, frL, frR, hi, lw);
 
-  // Dondurucu bölmesi yatay ayrıt çizgisi
   const pL = iso(fx0 + 0.5, fy1, z0 + 32), pM = iso(fx1, fy1, z0 + 32), pR = iso(fx1, fy0 + 0.5, z0 + 32);
   ctx.save();
   ctx.strokeStyle = frSeam;
@@ -16476,17 +16958,141 @@ function drawFurnBuzdolabi(p, u0, v0, z0, cellU, cellV) {
   ctx.beginPath(); ctx.moveTo(pL.x, pL.y); ctx.lineTo(pM.x, pM.y); ctx.lineTo(pR.x, pR.y); ctx.stroke();
   ctx.restore();
 
-  // İki ince gümüş kulp (dondurucu ve soğutucu)
-  isoBox(fx1 - 6, fy1 - 0.5, fx1 - 4, fy1 + 1.5, z0 + 34, z0 + 40, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
-  isoBox(fx1 - 6, fy1 - 0.5, fx1 - 4, fy1 + 1.5, z0 + 18, z0 + 29, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+  if (!p.rot) {
+    isoBox(fx1 - 6, fy1 - 0.5, fx1 - 4, fy1 + 1.5, z0 + 34, z0 + 40, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    isoBox(fx1 - 6, fy1 - 0.5, fx1 - 4, fy1 + 1.5, z0 + 18, z0 + 29, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+  } else {
+    isoBox(fx1 - 0.5, fy1 - 6, fx1 + 1.5, fy1 - 4, z0 + 34, z0 + 40, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    isoBox(fx1 - 0.5, fy1 - 6, fx1 + 1.5, fy1 - 4, z0 + 18, z0 + 29, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+  }
 }
 
-// 4x4 Oda İçi Mobilya Çizimi (Yatak 2x1, Özel Banyo 2x1, Dolap 2x1, Masa 2x1, TV 1x1, Buzdolabı 1x1, Beşik 1x1)
-function drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV) {
+// 8a) Klima: Arka (u0) veya Sol (v0) tam boy duvara monte
+function drawFurnKlima(p, u0, v0, z0, cellU, cellV) {
+  const onLeft = (p.rv === 0 && (p.ru > 0 || p.rot === 1));
+  const isSel = furnSelectedKey === IKlima;
+  const hi = isSel ? "#ff8c00" : OUTLINE_COL;
+  const lw = isSel ? 2.6 : 1.5;
+
+  let b;
+  if (onLeft) {
+    const ku0 = u0 + clamp(p.ru || 0, 0, 2) * cellU + 4;
+    const ku1 = ku0 + cellU - 8;
+    const kv0 = v0 + 10, kv1 = v0 + 21;
+    isoBox(ku0, kv0, ku1, kv1, z0 + 67, z0 + 81, "#ffffff", "#e6edf5", "#cfdbe8", hi, lw);
+    isoBox(ku0 + 3, kv1 - 0.5, ku1 - 3, kv1 + 1, z0 + 68.5, z0 + 71, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    const led = iso(ku1 - 5, kv1 + 0.5, z0 + 78);
+    ctx.save(); ctx.fillStyle = "#22c55e"; ctx.beginPath(); ctx.arc(led.x, led.y, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    b = [ku0 - 2, kv0 - 2, ku1 + 2, kv1 + 2, z0 + 65, z0 + 83];
+  } else {
+    const ku0 = u0 + 10, ku1 = u0 + 21;
+    const kv0 = v0 + clamp(p.rv || 0, 0, 3) * cellV + 4;
+    const kv1 = kv0 + cellV - 8;
+    isoBox(ku0, kv0, ku1, kv1, z0 + 67, z0 + 81, "#ffffff", "#e6edf5", "#cfdbe8", hi, lw);
+    isoBox(ku1 - 0.5, kv0 + 3, ku1 + 1, kv1 - 3, z0 + 68.5, z0 + 71, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
+    const led = iso(ku1 + 0.5, kv1 - 5, z0 + 78);
+    ctx.save(); ctx.fillStyle = "#22c55e"; ctx.beginPath(); ctx.arc(led.x, led.y, 1.8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    b = [ku0 - 2, kv0 - 2, ku1 + 2, kv1 + 2, z0 + 65, z0 + 83];
+  }
+  return b;
+}
+
+// 8b) Güvenlik Kamerası: Seçili duvar hücresinde duvara monte kamera gövdesi + kırmızı kayıt LED'i
+function drawFurnKamera(p, u0, v0, z0, cellU, cellV) {
+  const onLeft = (p.rv === 0 && (p.ru > 0 || p.rot === 1));
+  const isSel = furnSelectedKey === IKamera;
+  const hi = isSel ? "#ff8c00" : OUTLINE_COL;
+  const lw = isSel ? 2.5 : 1.2;
+
+  let cu, cv;
+  if (onLeft) {
+    cu = u0 + (clamp(p.ru || 0, 0, 2) + 0.5) * cellU;
+    cv = v0 + 14;
+    isoBox(cu - 3, v0 + 10, cu + 3, cv, z0 + 76, z0 + 82, "#64748b", "#475569", "#334155", hi, 1);
+    isoBox(cu - 5, cv - 1, cu + 5, cv + 9, z0 + 74, z0 + 81, "#e2e8f0", "#cbd5e1", "#94a3b8", hi, lw);
+    const pt = iso(cu + 2, cv + 9.2, z0 + 77.5);
+    ctx.save();
+    ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(pt.x, pt.y, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    cu = u0 + 14;
+    cv = v0 + (clamp(p.rv || 0, 0, 3) + 0.5) * cellV;
+    isoBox(u0 + 10, cv - 3, cu, cv + 3, z0 + 76, z0 + 82, "#64748b", "#475569", "#334155", hi, 1);
+    isoBox(cu - 1, cv - 5, cu + 9, cv + 5, z0 + 74, z0 + 81, "#e2e8f0", "#cbd5e1", "#94a3b8", hi, lw);
+    const pt = iso(cu + 9.2, cv + 2, z0 + 77.5);
+    ctx.save();
+    ctx.fillStyle = "#1e293b"; ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.arc(pt.x, pt.y, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  return [cu - 9, cv - 9, cu + 9, cv + 9, z0 + 70, z0 + 86];
+}
+
+// 8c) Ampul: Konumuna (p.ru, p.rv) göre duvar apliği veya tavan sarkıtı + sıcak ışık halesi
+function drawFurnAmpul(p, u0, v0, z0, z1, cellU, cellV) {
+  const ru = clamp(p.ru || 0, 0, 2), rv = clamp(p.rv || 0, 0, 3);
+  const lu = (ru === 0 && rv > 0) ? (u0 + 16) : u0 + (ru + 0.5) * cellU;
+  const lv = (rv === 0 && ru > 0) ? (v0 + 16) : v0 + (rv + 0.5) * cellV;
+  const lz = z0 + 76;
+  const isSel = furnSelectedKey === IAmpul;
+
+  if (ru > 0 && rv > 0) {
+    const cTop = iso(lu, lv, z1 - 6), cBot = iso(lu, lv, lz + 4);
+    ctx.save();
+    ctx.strokeStyle = isSel ? "#ff8c00" : "#5c4033";
+    ctx.lineWidth = isSel ? 2.2 : 1.4;
+    ctx.beginPath(); ctx.moveTo(cTop.x, cTop.y); ctx.lineTo(cBot.x, cBot.y); ctx.stroke();
+    ctx.restore();
+  }
+
+  const lp = iso(lu, lv, lz);
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 238, 120, 0.44)";
+  ctx.beginPath(); ctx.arc(lp.x, lp.y, 14, 0, Math.PI * 2); ctx.fill();
+  if (isSel) {
+    ctx.strokeStyle = "#ff8c00";
+    ctx.lineWidth = 2.6;
+    ctx.beginPath(); ctx.arc(lp.x, lp.y, 9, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.fillStyle = "#b45309";
+  ctx.beginPath(); ctx.arc(lp.x, lp.y - 3, 2.8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff3a1";
+  ctx.strokeStyle = isSel ? "#ff8c00" : "#d97706";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(lp.x, lp.y + 0.5, 4.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  return [lu - 10, lv - 10, lu + 10, lv + 10, lz - 10, lz + 12];
+}
+
+function _selectRoomFurnOnTap(s, key, toggleIfSelected) {
+  if (!s || s.type !== "Room") return;
+  ensureRoomFurnLayout(s);
+  if (toggleIfSelected && furnSelectedKey === key) {
+    furnSelectedKey = null;
+    play("tap");
+    refreshPanel();
+    return;
+  }
+  furnSelectedKey = key;
+  const pos = s.furnLayout[key];
+  furnRot = (pos && pos.rot) || 0;
+  play("tap");
+  const fp = ITEM_FOOTPRINTS[key];
+  if (fp) {
+    const cleanNm = fp.name.replace(/\s*\(\dx\d\)/, "");
+    log(fp.icon + " " + cleanNm + " seçildi!");
+  }
+  refreshPanel();
+}
+
+// Oda İçi Mobilya Çizimi + doğrudan 3D tıklama bölgeleri
+function drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV, isInteractiveSel = false) {
   if (typeof cellV !== "number") { cellU = cellS; cellV = cellS; }
   const layout = s.furnLayout || {};
 
-  // 0) Mobilya zemin gölgeleri: ışık sol-üstten gelir, gölge +v yönüne ve hafifçe +u yönüne düşer (oda sınırlarına kırpılır)
+  // 0) Mobilya zemin gölgeleri
   {
     const clampU = (x) => Math.max(u0 + 6, Math.min(u1 - 6, x));
     const clampV = (y) => Math.max(v0 + 6, Math.min(v1 - 6, y));
@@ -16508,46 +17114,50 @@ function drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV) {
     if (s.items[IBuz]) castShadow(IBuz);
   }
 
-  // Zemin eşyalarını ön-sağ köşe derinliğine göre sırala: key = (p.ru + sp.du) + (p.rv + sp.dv)
+  const canPick3DFloor = isInteractiveSel && furnSelectedKey === null && typeof addHitPoly === "function" && typeof isoBoxSilhouette === "function";
+  const canPickWall = isInteractiveSel && typeof addHitPoly === "function" && typeof isoBoxSilhouette === "function";
+
+  // Zemin eşyalarını derinliğe göre sırala
   const itemsToDraw = [];
-  const pushFurn = (key, p, drawFn) => {
+  const pushFurn = (key, p, pad, zMin, zMax, drawFn) => {
     if (!p) return;
     const sp = itemSpan(key, p.rot || 0);
-    itemsToDraw.push({ key, depth: (p.ru + sp.du) + (p.rv + sp.dv), p, sp, drawFn });
+    itemsToDraw.push({ key, depth: (p.ru + sp.du) + (p.rv + sp.dv), p, sp, pad, zMin, zMax, drawFn });
   };
 
-  if (s.hasEnsuite && layout[9]) pushFurn(9, layout[9], (e) => drawFurnBanyo(s, e.p, e.sp, u0, v0, z0, cellU, cellV));
-  pushFurn(4, layout[4] || { ru: 0, rv: 2, rot: 0 }, (e) => drawFurnYatak(s, e.p, e.sp, u0, v0, u1, v1, z0, cellU, cellV));
-  if (s.items[IDolap] && layout[IDolap]) pushFurn(IDolap, layout[IDolap], (e) => drawFurnDolap(e.p, e.sp, u0, v0, z0, cellU, cellV));
-  if (s.items[IMasa] && layout[IMasa]) pushFurn(IMasa, layout[IMasa], (e) => drawFurnMasa(e.p, e.sp, u0, v0, z0, cellU, cellV));
-  if (s.items[IBebek] && layout[IBebek]) pushFurn(IBebek, layout[IBebek], (e) => drawFurnBebek(e.p, u0, v0, z0, cellU, cellV));
-  if (s.items[ITv] && layout[ITv]) pushFurn(ITv, layout[ITv], (e) => drawFurnTv(e.p, u0, v0, z0, cellU, cellV));
-  if (s.items[IBuz] && layout[IBuz]) pushFurn(IBuz, layout[IBuz], (e) => drawFurnBuzdolabi(e.p, u0, v0, z0, cellU, cellV));
+  if (s.hasEnsuite && layout[9]) pushFurn(9, layout[9], 3, z0 + 1, z0 + 64, (e) => drawFurnBanyo(s, e.p, e.sp, u0, v0, z0, cellU, cellV));
+  pushFurn(4, layout[4] || { ru: 0, rv: 2, rot: 0 }, 5, z0, z0 + 24, (e) => drawFurnYatak(s, e.p, e.sp, u0, v0, u1, v1, z0, cellU, cellV));
+  if (s.items[IDolap] && layout[IDolap]) pushFurn(IDolap, layout[IDolap], 6, z0 + 2, z0 + 62, (e) => drawFurnDolap(e.p, e.sp, u0, v0, z0, cellU, cellV));
+  if (s.items[IMasa] && layout[IMasa]) pushFurn(IMasa, layout[IMasa], 5, z0 + 2, z0 + 24, (e) => drawFurnMasa(e.p, e.sp, u0, v0, z0, cellU, cellV));
+  if (s.items[IBebek] && layout[IBebek]) pushFurn(IBebek, layout[IBebek], 6, z0 + 2, z0 + 28, (e) => drawFurnBebek(e.p, u0, v0, z0, cellU, cellV));
+  if (s.items[ITv] && layout[ITv]) pushFurn(ITv, layout[ITv], 8, z0 + 2, z0 + 46, (e) => drawFurnTv(e.p, u0, v0, z0, cellU, cellV));
+  if (s.items[IBuz] && layout[IBuz]) pushFurn(IBuz, layout[IBuz], 8, z0 + 2, z0 + 44, (e) => drawFurnBuzdolabi(e.p, u0, v0, z0, cellU, cellV));
 
   itemsToDraw.sort((a, b) => (a.depth !== b.depth) ? (a.depth - b.depth) : (a.key - b.key));
   for (const entry of itemsToDraw) {
     entry.drawFn(entry);
+    if (canPick3DFloor) {
+      const k = entry.key;
+      const hx0 = u0 + entry.p.ru * cellU + entry.pad;
+      const hy0 = v0 + entry.p.rv * cellV + entry.pad;
+      const hx1 = u0 + (entry.p.ru + entry.sp.du) * cellU - entry.pad;
+      const hy1 = v0 + (entry.p.rv + entry.sp.dv) * cellV - entry.pad;
+      addHitPoly(isoBoxSilhouette(hx0, hy0, hx1, hy1, entry.zMin, entry.zMax), () => _selectRoomFurnOnTap(s, k, false));
+    }
   }
 
-  // 8) Duvar Eşyaları: Klima, Kamera, Ampul (sıralamanın dışında sabit konumlarda)
+  // 8) Duvar/Tavan Eşyaları: Klima, Kamera, Ampul (hem seçilebilir hem taşınabilir!)
   if (s.items[IKlima]) {
-    const p = layout[IKlima] || { ru: 2, rv: 0 };
-    const kx = u0 + p.ru * cellU + 6;
-    isoBox(kx, v0 + 10, kx + 42, v0 + 22, z0 + 66, z0 + 82, "#ffffff", "#e6edf5", "#cfdbe8", furnSelectedKey === IKlima ? "#ff8c00" : OUTLINE_COL, 1.5);
+    const hb = drawFurnKlima(layout[IKlima] || { ru: 0, rv: 3, rot: 0 }, u0, v0, z0, cellU, cellV);
+    if (canPickWall && hb) addHitPoly(isoBoxSilhouette(hb[0], hb[1], hb[2], hb[3], hb[4], hb[5]), () => _selectRoomFurnOnTap(s, IKlima, true));
   }
   if (s.items[IKamera]) {
-    const camPt = iso(u0 + 16, v0 + 16, z0 + 80);
-    ctx.save();
-    ctx.fillStyle = "#e62e2e"; ctx.beginPath(); ctx.arc(camPt.x, camPt.y, 4.5, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
+    const hb = drawFurnKamera(layout[IKamera] || { ru: 0, rv: 0, rot: 0 }, u0, v0, z0, cellU, cellV);
+    if (canPickWall && hb) addHitPoly(isoBoxSilhouette(hb[0], hb[1], hb[2], hb[3], hb[4], hb[5]), () => _selectRoomFurnOnTap(s, IKamera, true));
   }
   if (s.items[IAmpul]) {
-    const lp = iso((u0 + u1) * 0.5, v0 + 14, z0 + 74);
-    ctx.save();
-    ctx.fillStyle = "rgba(255, 238, 120, 0.45)";
-    ctx.beginPath(); ctx.arc(lp.x, lp.y, 14, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#fff3a1"; ctx.beginPath(); ctx.arc(lp.x, lp.y, 4.5, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
+    const hb = drawFurnAmpul(layout[IAmpul] || { ru: 1, rv: 2, rot: 0 }, u0, v0, z0, z1, cellU, cellV);
+    if (canPickWall && hb) addHitPoly(isoBoxSilhouette(hb[0], hb[1], hb[2], hb[3], hb[4], hb[5]), () => _selectRoomFurnOnTap(s, IAmpul, true));
   }
 }
 
