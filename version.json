@@ -1,8 +1,8 @@
 {
-  "versionCode": 55,
-  "versionName": "1.9.47-beta",
+  "versionCode": 56,
+  "versionName": "1.9.48-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "v1.9.47-beta:\n1. Bahçe Süsleri (E2): Otelin ön, sağ ve sol bahçelerinde 24 farklı boyutta yuva (15 küçük, 6 orta, 3 büyük) açıldı.\n2. Elmas Dekor Kataloğu: 💎 elmasla satın alınabilen 13 görsel bahçe süsü eklendi; sokak lambaları gece ışık yayar.\n3. Bahçe Modu & İade: Üst bardaki 🌳 Bahçe düğmesiyle önizlemeli yerleştirme, değiştirme ve %100 elmas iadeli kaldırma desteği geldi."
+  "notes": "v1.9.48-beta:\n1. Bahçe Süsleri Hizalama (E2.1): 24 bahçe yuvasının koordinatları depo rampası, köşe yola paralel parseller, taş yol ve kuyruk hattıyla 0 çakışma olacak şekilde hizalandı; çizimler yuva kutusuna sığdırıldı.\n2. Tek Bahçe Paneli: Eski Palmiye Dik modu kaldırıldı, kaldırım dokunuşu da yeni elmas bahçe panelini açar.\n3. Katman & Geçiş İadesi: Sol şerit (left_*) arka planda, ön/sağ şerit otel önünde çizilir; küçülen yuvalardaki uyumsuz eski süsler yüklemede tam elmas iadesiyle güncellenir."
 }

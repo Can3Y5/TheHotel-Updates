@@ -2692,43 +2692,44 @@ const DECOR_ZONE_LABELS = {
   right: "Sağ Bahçe",
   left: "Sol Bahçe"
 };
+const DECOR_HALF_SIZE = { K: 15, O: 28, B: 38 };
 const DECOR_SIZE_FOOTPRINT = {
-  K: { du: 16, dv: 16 },
-  O: { du: 32, dv: 32 },
-  B: { du: 46, dv: 46 }
+  K: { h: 15, du: 15, dv: 15 },
+  O: { h: 28, du: 28, dv: 28 },
+  B: { h: 38, du: 38, dv: 38 }
 };
 
 // 24 bahçe yuvası: Ön 10×K, Sağ 2×B + 3×O + 2×K, Sol 1×B + 3×O + 3×K
 const DECOR_SLOTS = [
-  // Ön Bahçe (10 × K, u ∈ [1186..1202], rampa/yol/kaldırım/mevcut çalı ve saksı dışı temiz bölgeler)
-  { id: "front_1",  zone: "front", label: "Ön Bahçe #1",  u: 1202, v: -520, size: "K", flip: -1 },
-  { id: "front_2",  zone: "front", label: "Ön Bahçe #2",  u: 1202, v: -415, size: "K", flip: -1 },
-  { id: "front_3",  zone: "front", label: "Ön Bahçe #3",  u: 1202, v: -315, size: "K", flip: -1 },
-  { id: "front_4",  zone: "front", label: "Ön Bahçe #4",  u: 1190, v: -205, size: "K", flip: -1 },
-  { id: "front_5",  zone: "front", label: "Ön Bahçe #5",  u: 1186, v: 201,  size: "K", flip: 1 },
-  { id: "front_6",  zone: "front", label: "Ön Bahçe #6",  u: 1190, v: 1170, size: "K", flip: 1 },
-  { id: "front_7",  zone: "front", label: "Ön Bahçe #7",  u: 1202, v: 1365, size: "K", flip: 1 },
-  { id: "front_8",  zone: "front", label: "Ön Bahçe #8",  u: 1202, v: 1475, size: "K", flip: 1 },
-  { id: "front_9",  zone: "front", label: "Ön Bahçe #9",  u: 1202, v: 1585, size: "K", flip: 1 },
-  { id: "front_10", zone: "front", label: "Ön Bahçe #10", u: 1202, v: 1695, size: "K", flip: 1 },
+  // Ön Şerit (10 × K, u = 1215, h = 15)
+  { id: "front_1",  zone: "front", label: "Ön Bahçe #1",  u: 1215, v: -330, size: "K", h: 15, flip: -1 },
+  { id: "front_2",  zone: "front", label: "Ön Bahçe #2",  u: 1215, v: -195, size: "K", h: 15, flip: -1 },
+  { id: "front_3",  zone: "front", label: "Ön Bahçe #3",  u: 1215, v: 0,    size: "K", h: 15, flip: 1 },
+  { id: "front_4",  zone: "front", label: "Ön Bahçe #4",  u: 1215, v: 195,  size: "K", h: 15, flip: 1 },
+  { id: "front_5",  zone: "front", label: "Ön Bahçe #5",  u: 1215, v: 390,  size: "K", h: 15, flip: 1 },
+  { id: "front_6",  zone: "front", label: "Ön Bahçe #6",  u: 1215, v: 585,  size: "K", h: 15, flip: 1 },
+  { id: "front_7",  zone: "front", label: "Ön Bahçe #7",  u: 1215, v: 780,  size: "K", h: 15, flip: 1 },
+  { id: "front_8",  zone: "front", label: "Ön Bahçe #8",  u: 1215, v: 975,  size: "K", h: 15, flip: 1 },
+  { id: "front_9",  zone: "front", label: "Ön Bahçe #9",  u: 1215, v: 1170, size: "K", h: 15, flip: 1 },
+  { id: "front_10", zone: "front", label: "Ön Bahçe #10", u: 1215, v: 1365, size: "K", h: 15, flip: 1 },
 
-  // Sağ Bahçe (7 yuva: 2×B + 3×O + 2×K, v > 1170 tenis kortu tarafı)
-  { id: "right_1",  zone: "right", label: "Sağ Bahçe #1", u: 90,   v: 1340, size: "B", flip: 1 },
-  { id: "right_2",  zone: "right", label: "Sağ Bahçe #2", u: 920,  v: 1460, size: "B", flip: 1 },
-  { id: "right_3",  zone: "right", label: "Sağ Bahçe #3", u: 90,   v: 1520, size: "O", flip: 1 },
-  { id: "right_4",  zone: "right", label: "Sağ Bahçe #4", u: 920,  v: 1610, size: "O", flip: 1 },
-  { id: "right_5",  zone: "right", label: "Sağ Bahçe #5", u: 1070, v: 1460, size: "O", flip: 1 },
-  { id: "right_6",  zone: "right", label: "Sağ Bahçe #6", u: 485,  v: 1216, size: "K", flip: 1 },
-  { id: "right_7",  zone: "right", label: "Sağ Bahçe #7", u: 635,  v: 1216, size: "K", flip: 1 },
+  // Sağ Şerit (v = 1212; bina kenarı v = 1170 ile tenis kortu v = 1260 arası: 2×B + 3×O + 2×K)
+  { id: "right_1",  zone: "right", label: "Sağ Bahçe #1", u: 90,   v: 1212, size: "K", h: 15, flip: 1 },
+  { id: "right_2",  zone: "right", label: "Sağ Bahçe #2", u: 230,  v: 1212, size: "O", h: 28, flip: 1 },
+  { id: "right_3",  zone: "right", label: "Sağ Bahçe #3", u: 370,  v: 1212, size: "B", h: 38, flip: 1 },
+  { id: "right_4",  zone: "right", label: "Sağ Bahçe #4", u: 510,  v: 1212, size: "O", h: 28, flip: 1 },
+  { id: "right_5",  zone: "right", label: "Sağ Bahçe #5", u: 650,  v: 1212, size: "B", h: 38, flip: 1 },
+  { id: "right_6",  zone: "right", label: "Sağ Bahçe #6", u: 790,  v: 1212, size: "O", h: 28, flip: 1 },
+  { id: "right_7",  zone: "right", label: "Sağ Bahçe #7", u: 910,  v: 1212, size: "K", h: 15, flip: 1 },
 
-  // Sol Bahçe (7 yuva: 1×B + 3×O + 3×K, v < 0 otopark tarafı)
-  { id: "left_1",   zone: "left",  label: "Sol Bahçe #1", u: 1060, v: -450, size: "B", flip: -1 },
-  { id: "left_2",   zone: "left",  label: "Sol Bahçe #2", u: 1035, v: -260, size: "O", flip: -1 },
-  { id: "left_3",   zone: "left",  label: "Sol Bahçe #3", u: 1135, v: -340, size: "O", flip: -1 },
-  { id: "left_4",   zone: "left",  label: "Sol Bahçe #4", u: 90,   v: -450, size: "O", flip: -1 },
-  { id: "left_5",   zone: "left",  label: "Sol Bahçe #5", u: 90,   v: -540, size: "K", flip: -1 },
-  { id: "left_6",   zone: "left",  label: "Sol Bahçe #6", u: 1045, v: -345, size: "K", flip: -1 },
-  { id: "left_7",   zone: "left",  label: "Sol Bahçe #7", u: 1135, v: -245, size: "K", flip: -1 }
+  // Sol Şerit (v = -62; bina kenarı v = 0 ile otopark v = -120 arası: 1×B + 3×O + 3×K)
+  { id: "left_1",   zone: "left",  label: "Sol Bahçe #1", u: 90,   v: -62,  size: "K", h: 15, flip: -1 },
+  { id: "left_2",   zone: "left",  label: "Sol Bahçe #2", u: 230,  v: -62,  size: "O", h: 28, flip: -1 },
+  { id: "left_3",   zone: "left",  label: "Sol Bahçe #3", u: 370,  v: -62,  size: "K", h: 15, flip: -1 },
+  { id: "left_4",   zone: "left",  label: "Sol Bahçe #4", u: 510,  v: -62,  size: "B", h: 38, flip: -1 },
+  { id: "left_5",   zone: "left",  label: "Sol Bahçe #5", u: 650,  v: -62,  size: "O", h: 28, flip: -1 },
+  { id: "left_6",   zone: "left",  label: "Sol Bahçe #6", u: 790,  v: -62,  size: "K", h: 15, flip: -1 },
+  { id: "left_7",   zone: "left",  label: "Sol Bahçe #7", u: 910,  v: -62,  size: "O", h: 28, flip: -1 }
 ];
 
 const DECOR_SLOT_MAP = {};
@@ -2748,27 +2749,45 @@ function withStaticDecorTime(fn) {
   }
 }
 
+// Katalog çizimlerini slot kutusu (u±h, v±h) içinde tutmak için ekran tabanlı ölçekleme
+function drawDecorScaledAt(u, v, scale, fn) {
+  if (typeof ctx === "undefined" || !ctx || typeof iso !== "function" || scale === 1) {
+    fn();
+    return;
+  }
+  const p = iso(u, v, 0);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(scale, scale);
+  ctx.translate(-p.x, -p.y);
+  try {
+    fn();
+  } finally {
+    ctx.restore();
+  }
+}
+
 const DECOR_CATALOG = [
   // K (Küçük)
   {
     id: "planter", name: "Çiçek Kutusu", icon: "🌺", size: "K", cost: DecorPrices.planter,
     drawFn: "drawFlowerPlanterBox", seasonal: false, nightGlow: false,
-    draw(u, v) { if (typeof drawFlowerPlanterBox === "function") drawFlowerPlanterBox(u - 16, v - 6, 0, 32, 12); }
+    draw(u, v) { if (typeof drawFlowerPlanterBox === "function") drawFlowerPlanterBox(u - 14, v - 6, 0, 28, 12); }
   },
   {
     id: "bush", name: "Çalı", icon: "🌿", size: "K", cost: DecorPrices.bush,
     drawFn: "drawResortBush", seasonal: false, nightGlow: false,
-    draw(u, v) { if (typeof drawResortBush === "function") drawResortBush(u, v, 0, 0.92); }
+    draw(u, v) { if (typeof drawResortBush === "function") drawResortBush(u, v, 0, 0.78); }
   },
   {
     id: "potted_plant", name: "Saksı Bitkisi", icon: "🪴", size: "K", cost: DecorPrices.potted_plant,
     drawFn: "drawPottedPlant", seasonal: false, nightGlow: false,
-    draw(u, v) { if (typeof drawPottedPlant === "function") drawPottedPlant(u, v, 0, 1.1); }
+    draw(u, v) { if (typeof drawPottedPlant === "function") drawPottedPlant(u, v, 0, 0.95); }
   },
   {
     id: "flower_bush", name: "Çiçekli Çalı", icon: "🌸", size: "K", cost: DecorPrices.flower_bush,
     drawFn: "drawLushBush", seasonal: true, nightGlow: false,
-    draw(u, v, si) { if (typeof drawLushBush === "function") drawLushBush(u, v, 0, 0.92, "flower", si); }
+    draw(u, v, si) { if (typeof drawLushBush === "function") drawLushBush(u, v, 0, 0.78, "flower", si); }
   },
   {
     id: "street_lamp", name: "Sokak Lambası", icon: "🏮", size: "K", cost: DecorPrices.street_lamp,
@@ -2806,27 +2825,35 @@ const DECOR_CATALOG = [
   {
     id: "shade_tree", name: "Gölgelik Ağaç", icon: "🌳", size: "O", cost: DecorPrices.shade_tree,
     drawFn: "drawParkShadeTree", seasonal: true, nightGlow: false,
-    draw(u, v, si) { if (typeof drawParkShadeTree === "function") drawParkShadeTree(u, v, 0, 0.95, si); }
+    draw(u, v, si) { if (typeof drawParkShadeTree === "function") drawParkShadeTree(u, v, 0, 0.90, si); }
   },
   {
     id: "palm", name: "Palmiye", icon: "🌴", size: "O", cost: DecorPrices.palm,
     drawFn: "drawPalmTree", seasonal: false, nightGlow: false,
     draw(u, v, si, flip) {
       if (typeof drawPalmTree === "function") {
-        withStaticDecorTime(() => drawPalmTree(u, v, 0, 0.95, flip || 1));
+        withStaticDecorTime(() => drawPalmTree(u, v, 0, 0.92, flip || 1));
       }
     }
   },
   {
     id: "kiosk", name: "Kiosk", icon: "🧋", size: "O", cost: DecorPrices.kiosk,
     drawFn: "drawParkKiosk", seasonal: false, nightGlow: false,
-    draw(u, v) { if (typeof drawParkKiosk === "function") drawParkKiosk(u - 24, v, 0, 1.0); }
+    draw(u, v) {
+      if (typeof drawParkKiosk === "function") {
+        drawDecorScaledAt(u, v, 0.84, () => drawParkKiosk(u - 24, v, 0, 1.0));
+      }
+    }
   },
   // B (Büyük)
   {
     id: "gazebo", name: "Çardak", icon: "🏛️", size: "B", cost: DecorPrices.gazebo,
     drawFn: "drawResortGazebo", seasonal: false, nightGlow: false,
-    draw(u, v) { if (typeof drawResortGazebo === "function") drawResortGazebo(u, v, 0, 1.0); }
+    draw(u, v) {
+      if (typeof drawResortGazebo === "function") {
+        drawDecorScaledAt(u, v, 0.94, () => drawResortGazebo(u, v, 0, 1.0));
+      }
+    }
   },
   {
     id: "fountain", name: "Mermer Fıskiye", icon: "⛲", size: "B", cost: DecorPrices.fountain,
@@ -2991,6 +3018,151 @@ function resetDecorState(rawDecor) {
   decorPreviewItemId = null;
   decorReplaceMode = false;
   DECOR.version++;
+}
+
+// v1.9.47 -> v1.9.48 geçişinde boyutu küçülen yuvalara (right_1/left_1/left_3 -> K) sığmayan bilinen süsleri iade et
+function reconcileDecorStateOnLoad() {
+  if (!decor || typeof decor !== "object") return { refundedCount: 0, refundedGems: 0 };
+  let refundedCount = 0;
+  let refundedGems = 0;
+  for (const slotId of Object.keys(decor)) {
+    const slot = DECOR_SLOT_MAP[slotId];
+    if (!slot) continue;
+    const itemId = decor[slotId];
+    if (typeof itemId !== "string") continue;
+    const item = DECOR_CATALOG_MAP[itemId];
+    if (!item) continue;
+    if (!canSlotFitDecor(slot.size, item.size)) {
+      const cost = item.cost || 0;
+      delete decor[slotId];
+      if (cost > 0 && typeof refundGems === "function") {
+        refundGems(cost, "decor_slot_resize_refund:" + slotId + ":" + itemId);
+      }
+      refundedCount++;
+      refundedGems += cost;
+    }
+  }
+  if (refundedCount > 0) {
+    DECOR.version++;
+    if (typeof log === "function") {
+      log("TheHotel: bahçe düzeni güncellendi, süsün iade edildi.");
+    }
+    if (typeof saveGame === "function") saveGame();
+  }
+  return { refundedCount, refundedGems };
+}
+
+function getDecorForbiddenZones() {
+  const zones = [
+    { name: "building_body", u0: 0, u1: 1170, v0: 0, v1: 1170 },
+    { name: "road_parcel_36", u0: 975, u1: 1170, v0: -195, v1: 0 },
+    { name: "road_parcel_37", u0: 975, u1: 1170, v0: 1170, v1: 1365 },
+    { name: "stone_path", u0: 1170, u1: 1260, v0: 437, v1: 537 },
+    { name: "entry_planter_L", u0: 1170, u1: 1260, v0: 415, v1: 429 },
+    { name: "entry_planter_R", u0: 1170, u1: 1260, v0: 545, v1: 559 },
+    { name: "queue_zone", u0: 1050, u1: 1235, v0: 452, v1: 508 },
+    { name: "sidewalk", u0: 1260, u1: 1e6, v0: -1e6, v1: 1e6 },
+    { name: "parking", u0: 180, u1: 960, v0: -600, v1: -120 },
+    { name: "tennis_court", u0: 180, u1: 860, v0: 1260, v1: 1860 },
+    { name: "fixed_palm_front_left", u0: 240, u1: 320, v0: -200, v1: -120 },
+    { name: "fixed_palm_back", u0: -200, u1: -120, v0: 240, v1: 320 },
+    { name: "fixed_bush_front_left", u0: 0, u1: 80, v0: -180, v1: -100 },
+    { name: "fixed_bush_back", u0: -180, u1: -100, v0: 0, v1: 80 }
+  ];
+  for (let k = -1; k <= 6; k++) {
+    if (k === 2) continue;
+    zones.push({ name: "storage_ramp_k" + k, u0: 1170, u1: 1260, v0: k * 195 + 25, v1: (k + 1) * 195 - 25 });
+  }
+  const planterVs = [-280, -80, 240, 720, 1080, 1420];
+  for (let i = 0; i < planterVs.length; i++) {
+    const pv = planterVs[i];
+    zones.push({ name: "sw_planter_" + pv, u0: 1236, u1: 1282, v0: pv, v1: pv + 14 });
+  }
+  return zones;
+}
+
+function decorBoxesOverlap(a, b) {
+  return a.u0 < b.u1 && a.u1 > b.u0 && a.v0 < b.v1 && a.v1 > b.v0;
+}
+
+if (typeof window !== "undefined") {
+  window.__decorSelfTest = function __decorSelfTest() {
+    const forbidden = getDecorForbiddenZones();
+    const seenIds = new Set();
+    const counts = {
+      byZone: { front: 0, right: 0, left: 0 },
+      bySize: { K: 0, O: 0, B: 0 },
+      byZoneSize: {
+        front: { K: 0, O: 0, B: 0 },
+        right: { K: 0, O: 0, B: 0 },
+        left: { K: 0, O: 0, B: 0 }
+      }
+    };
+    const slotBoxes = DECOR_SLOTS.map(s => {
+      const h = s.h || DECOR_HALF_SIZE[s.size] || 15;
+      return { s, box: { u0: s.u - h, u1: s.u + h, v0: s.v - h, v1: s.v + h } };
+    });
+
+    const conflicts = [];
+    const slotOverlaps = [];
+    const rows = [];
+
+    for (let i = 0; i < slotBoxes.length; i++) {
+      const { s, box } = slotBoxes[i];
+      seenIds.add(s.id);
+      if (counts.byZone[s.zone] !== undefined) counts.byZone[s.zone]++;
+      if (counts.bySize[s.size] !== undefined) counts.bySize[s.size]++;
+      if (counts.byZoneSize[s.zone] && counts.byZoneSize[s.zone][s.size] !== undefined) {
+        counts.byZoneSize[s.zone][s.size]++;
+      }
+
+      const zHits = [];
+      for (let z = 0; z < forbidden.length; z++) {
+        if (decorBoxesOverlap(box, forbidden[z])) {
+          zHits.push(forbidden[z].name);
+          conflicts.push({ slotId: s.id, zone: forbidden[z].name, slotBox: box });
+        }
+      }
+
+      const pHits = [];
+      for (let j = 0; j < slotBoxes.length; j++) {
+        if (i === j) continue;
+        if (decorBoxesOverlap(box, slotBoxes[j].box)) {
+          pHits.push(slotBoxes[j].s.id);
+          if (i < j) slotOverlaps.push({ a: s.id, b: slotBoxes[j].s.id });
+        }
+      }
+
+      rows.push({
+        id: s.id, zone: s.zone, size: s.size, u: s.u, v: s.v, h: s.h,
+        conflicts: zHits.join(",") || "NONE",
+        slotOverlaps: pHits.join(",") || "NONE",
+        ok: zHits.length === 0 && pHits.length === 0
+      });
+    }
+
+    const countsOk = (
+      DECOR_SLOTS.length === 24 &&
+      seenIds.size === 24 &&
+      counts.byZone.front === 10 && counts.byZoneSize.front.K === 10 &&
+      counts.byZone.right === 7 && counts.byZoneSize.right.B === 2 && counts.byZoneSize.right.O === 3 && counts.byZoneSize.right.K === 2 &&
+      counts.byZone.left === 7 && counts.byZoneSize.left.B === 1 && counts.byZoneSize.left.O === 3 && counts.byZoneSize.left.K === 3
+    );
+    const ok = countsOk && conflicts.length === 0 && slotOverlaps.length === 0;
+    if (typeof console !== "undefined" && typeof console.table === "function") {
+      console.table(rows);
+    }
+    return {
+      ok,
+      countsOk,
+      total: DECOR_SLOTS.length,
+      uniqueIds: seenIds.size,
+      counts,
+      conflicts,
+      slotOverlaps,
+      rows
+    };
+  };
 }
 
 // ===== BUNDLED: state/daynight.js =====
@@ -4037,6 +4209,9 @@ function loadGame() {
 
     if (typeof checkAchievements === "function") {
       checkAchievements({ retroactive: true });
+    }
+    if (typeof reconcileDecorStateOnLoad === "function") {
+      reconcileDecorStateOnLoad();
     }
 
     return true;
@@ -6283,16 +6458,6 @@ function finishFloor(fl) {
   refresh();
 }
 
-function plantTree() {
-  if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı kur ve kapısını al!"); return; }
-  for (let i = 0; i < treePlanted.length; i++) {
-    if (treePlanted[i]) continue;
-    if (!pay(TreeCost)) return;
-    treePlanted[i] = true; play("build"); log("Ağaç dikildi."); saveGame(); return;
-  }
-  log("Bahçede boş yer kalmadı.");
-}
-
 // ===== BUNDLED: logic/supply.js =====
 // [logic/supply.js] Depo, sipariş sepeti, kargo kamyonu ve koli teslimatı
 function hasStorage() { return storageState === "Built"; }
@@ -7505,7 +7670,7 @@ function onActionBase(i) {
     }
     refresh(); return;
   }
-  if (sel === "Garden") { if (i === 0) plantTree(); refresh(); return; }
+  if (sel === "Decor") return;
   if (sel === "Park") {
     if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı kur ve kapısını al!"); return; }
     if (i === 0) tryBuildPark();
@@ -8410,6 +8575,7 @@ function selectFloor(f) {
   refresh();
 }
 function selectMode(m) {
+  if (m === "Garden") m = "Decor";
   play("tap");
   sel = m;
   selSlot = null;
@@ -8935,10 +9101,6 @@ function refreshPanel() {
     renderAchPanel();
   } else if (sel === "Decor") {
     renderDecorPanel();
-  } else if (sel === "Garden") {
-    const n = treePlanted.filter(Boolean).length;
-    infoText.textContent = "🌴 Tatil Köyü Peyzajı & Palmiyeler  •  Ağaç: " + n + "/" + treePlanted.length + "\nDışarıdaki kirlere dokunup temizle: her 2 kirde +1 Alet kazanırsın.";
-    setAct(0, "🌴 Palmiye Dik\n" + TreeCost + " TL", true, readyOnce && n < treePlanted.length);
   } else if (sel === "Park") {
     if (parkState === "Locked") {
       infoText.textContent = "🏊 Açık Havuz & Park Terası  •  Bedel: " + ParkCost + " TL\nÇocuklu aileler ve tatilciler için açık yüzme havuzu ve güneşlenme terası.";
@@ -9284,8 +9446,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 55;
-const APP_VERSION_NAME = "1.9.47-beta";
+const APP_VERSION_CODE = 56;
+const APP_VERSION_NAME = "1.9.48-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9293,9 +9455,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.48-beta",
+    title: "E2.1 Bahçe Yuvaları Hizalama & Tek Bahçe Paneli",
+    latest: true,
+    notes: "• 📐 Gerçek Koda Hizalı 24 Yuva: Tüm ön, sağ ve sol bahçe yuvaları ek yol parselleri, depo rampaları, taş yol ve kuyruk hattından ayrı olacak şekilde yeniden konumlandırıldı; ürün çizimleri kendi (u±h, v±h) kutusuna sığdırıldı.\n• 🌳 Tek Bahçe Paneli: Eski 'Palmiye Dik (40 TL)' modu kaldırıldı; kaldırım tıklaması da doğrudan Elmas Bahçe (E2) panelini açar.\n• 🎨 Katman & Geçiş Güvenliği: Sol bahçe süsleri bina arkasında, ön ve sağ süsler önde çizilir; v1.9.47 kaydında küçülen yuvaya sığmayan süsler otomatik tam 💎 iadesi alır."
+  },
+  {
     ver: "v1.9.47-beta",
     title: "E2 Bahçe Süsleri (Elmas Dekor Kataloğu & Bahçe Modu)",
-    latest: true,
+    latest: false,
     notes: "• 🌳 Bahçe Modu (24 Yuva): Ön, sağ ve sol bahçelerde Küçük (15), Orta (6) ve Büyük (3) boyutta 24 dekor yuvası açıldı; 🌳 düğmesinden önizlemeli yerleştirme ve değiştirme yapılabilir.\n• 💎 13 Görsel Süs & %100 İade: Çiçeklikten büyük mermer fıskiyeye 13 farklı bahçe süsü elmasla alınabilir, kaldırıldığında veya değiştirildiğinde %100 elmas iade edilir.\n• 🏮 Gece Işıklandırması & Önbellek: Eklenen sokak lambaları gece çevre aydınlatmasına katılır; süsler katman önbelleğinde çizilir."
   },
   {
@@ -13185,7 +13353,6 @@ function drawWorld() {
     { u: 820, v: -90, flip: -1, sc: 1.08 }
   ];
   for (let i = 0; i < palmSpots.length; i++) {
-    if (!treePlanted[i % treePlanted.length] && i > 2) continue;
     const ps = palmSpots[i];
     drawPalmTree(ps.u, ps.v, 0, ps.sc, ps.flip);
   }
@@ -13744,16 +13911,25 @@ function drawDecorModeOverlay(si, isNight, glow) {
     const placedId = (typeof getPlacedDecorItemId === "function") ? getPlacedDecorItemId(slot.id) : null;
     const isKnownPlaced = !!(placedId && DECOR_CATALOG_MAP[placedId]);
 
+    const h = slot.h || ((slot.size === "B") ? 38 : (slot.size === "O") ? 28 : 15);
+    const c0 = iso(slot.u - h, slot.v - h, 0);
+    const c1 = iso(slot.u + h, slot.v - h, 0);
+    const c2 = iso(slot.u + h, slot.v + h, 0);
+    const c3 = iso(slot.u - h, slot.v + h, 0);
     const gp = iso(slot.u, slot.v, 0);
     const bp = iso(slot.u, slot.v, isKnownPlaced ? 30 : 12);
 
     ctx.save();
-    // Zemin yuva halkası
+    // Zemin yuva sınır kutusu (K:30x30, O:56x56, B:76x76 izometrik elmas)
     ctx.fillStyle = isSel ? "rgba(249, 115, 22, 0.28)" : (isKnownPlaced ? "rgba(255, 255, 255, 0.14)" : "rgba(255, 255, 255, 0.24)");
     ctx.strokeStyle = isSel ? "#f97316" : st.border;
     ctx.lineWidth = isSel ? 3 : 2;
     ctx.beginPath();
-    ctx.ellipse(gp.x, gp.y, st.rx, st.ry, 0, 0, Math.PI * 2);
+    ctx.moveTo(c0.x, c0.y);
+    ctx.lineTo(c1.x, c1.y);
+    ctx.lineTo(c2.x, c2.y);
+    ctx.lineTo(c3.x, c3.y);
+    ctx.closePath();
     ctx.fill();
     ctx.stroke();
 
@@ -13775,10 +13951,10 @@ function drawDecorModeOverlay(si, isNight, glow) {
     ctx.fillText((isKnownPlaced ? "✎ " : "+ ") + slot.size, bp.x, bp.y + 0.5);
     ctx.restore();
 
-    const minX = Math.min(gp.x - st.rx - 4, bx - 3);
-    const maxX = Math.max(gp.x + st.rx + 4, bx + pillW + 3);
-    const minY = Math.min(gp.y - st.ry - 4, by - 3);
-    const maxY = Math.max(gp.y + st.ry + 4, by + pillH + 3);
+    const minX = Math.min(c1.x - 4, bx - 3);
+    const maxX = Math.max(c3.x + 4, bx + pillW + 3);
+    const minY = Math.min(c0.y - 4, by - 3);
+    const maxY = Math.max(c2.y + 4, by + pillH + 3);
     addHitPoly([
       { x: minX, y: minY },
       { x: maxX, y: minY },
