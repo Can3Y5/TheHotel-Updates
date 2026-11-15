@@ -9865,8 +9865,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 63;
-const APP_VERSION_NAME = "1.9.55-beta";
+const APP_VERSION_CODE = 64;
+const APP_VERSION_NAME = "1.9.56-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9874,9 +9874,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.56-beta",
+    title: "Tenis Kortu Ağaç Sınırı Derinlik Sırası Düzeltmesi",
+    latest: true,
+    notes: "• 🌳 Doğru Katman Sırası: Tenis kortu çevresindeki ağaç sınırı katmanı kulüp binasının (parsel 38) önüne taşınarak ön plandaki ağacın kulüp binası köşesinin üstünde doğal şekilde görünmesi sağlandı."
+  },
+  {
     ver: "v1.9.55-beta",
     title: "Tenis Kortu Ağaç Sınırı & Kulüp–Kort Taş Bağlantı Yolu",
-    latest: true,
+    latest: false,
     notes: "• 🌳 Tenis Kortu Çevre Sınırı: Tenis kortunun ön-sol ve sağ-alt çim hattı boyunca mevsime göre renk değiştiren 8 gür gölge ağacı ve aralarda çiçekli çalılardan oluşan doğal yeşil sınır eklendi.\n• 🪨 Kulüp–Kort Taş Bağlantı Yolu: Yıkık tenis kulübünün yan eşiğinden kort giriş kapısına uzanan taşlı yol eklendi; kulüp yıkıkken kırık, çatlak ve ot bürümüş taşlı yol olarak görünür, onarım tamamlandığında düzgün kesme taş yola ve açık giriş kapısına dönüşür.\n• 📐 Bahçe Hizalaması: İki sağ bahçe yuvası (right_6, right_7) ve iki çim detayı yeni yol ve ağaç hattıyla çakışmayacak şekilde kaydırıldı."
   },
   {
@@ -13741,7 +13747,7 @@ function drawDistantMountainBackdrop(si) {
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
-const WORLD_STATIC_CACHE_VER = "t1_border_path";
+const WORLD_STATIC_CACHE_VER = "t1_border_front";
 const _GRASS_TUFTS = [
   [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
   [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
@@ -13991,11 +13997,6 @@ function drawWorld() {
     // Çayır detayları: Tatlı çim tutamları ve kır çiçekleri
     drawLushLawnDetails(si);
 
-    // 1.6) Tenis Kortu Çevresi Ağaç & Çiçekli Çalı Sınırı
-    if (typeof drawTennisCourtTreeBorder === "function") {
-      drawTennisCourtTreeBorder(si);
-    }
-
     // Arka peyzaj ağaçları
     drawResortBush(40, -140, 0, 1.15);
     drawResortBush(-140, 40, 0, 1.15);
@@ -14207,6 +14208,13 @@ function drawWorld() {
       drawDecorItemsLayer(frontDecorItems, si, isNight, decorGlow);
     });
   }
+
+  // 5.5) Tenis Kortu Çevresi Ağaç & Çiçekli Çalı Sınırı (parsel 38 ve dekorların önünde)
+  drawCachedLayer("tennisBorder", `${si}|${WORLD_STATIC_CACHE_VER}|${decorShKey}`, () => {
+    if (typeof drawTennisCourtTreeBorder === "function") {
+      drawTennisCourtTreeBorder(si);
+    }
+  });
 
   // 6) Dış Kirler
   for (const d of dirts) {
