@@ -9794,8 +9794,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 59;
-const APP_VERSION_NAME = "1.9.51-beta";
+const APP_VERSION_CODE = 60;
+const APP_VERSION_NAME = "1.9.52-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9803,9 +9803,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.52-beta",
+    title: "Ufuk & Dağ Arka Planı Kenar Düzeltmesi (E2.3)",
+    latest: true,
+    notes: "• 🌄 Ufuk Bandı Hatası Düzeltildi: Kamera uçlarında ve uzaklaştırmada (zoom 0.36–0.55) arka plan dağ ve sis katmanının sol/sağ/üst/alt kenarlarında görünen sert kesim ve koyu yeşil bant kaldırıldı.\n• 🎨 Yumuşak Mevsim Geçişi: Dağ tepeleri yatayda ±8000 birime genişletildi; alt etek ve sis kuşağı dört mevsimde ve gece aydınlatmasında çim zeminle yumuşakça birleşecek şekilde saydamlığa geçirildi."
+  },
+  {
     ver: "v1.9.51-beta",
     title: "E2.2 Bahçe Cilası, Kamera Sınırı & Odada Eşya Dizilimi",
-    latest: true,
+    latest: false,
     notes: "• 🌿 Bahçe Yuvası Çakışması Giderildi: 24 bahçe süsü yuvasıyla çakışan sabit çalı/çim tutamı ve palmiye temizlendi veya güvenli alana taşındı; süs yerleşiminde görsel çakışma kalmadı.\n• 🎥 Daraltılmış Kamera Sınırı: Dünya sürükleme sınırı tüm 24 bahçe yuvasını koruyacak şekilde daraltılarak boş kenarların dışına taşma engellendi.\n• 🛋️ Oda Eşyaları & 3 Akıllı Dizilim: Odadaki eşyalara tıklayıp seçme/taşıma/döndürme, eşya değiştirme ve Otomatik Diz ile 3 farklı oda düzeni arasında tek dokunuşla geçiş eklendi."
   },
   {
@@ -13382,47 +13388,61 @@ function drawParkLake(season = 0) {
 
 // 16) Ufuktaki Katmanlı Dağ ve Orman Silüeti (Distant Mountain & Forest Backdrop)
 function drawDistantMountainBackdrop(si) {
-  // İzometrik dünyanın arka ufuk hattı (u, v negatif değerler: üst ufuk çizgisi)
-  // Dağlar ve tepeler dünyanın en arkasına doğal derinlik ve atmosfer katar
-  const p1 = iso(-800, -800, 0);
-  const p2 = iso(400, -1200, 0);
-  const p3 = iso(1600, -800, 0);
-
+  // E2.3: Yatayda ±8000 dünya birimine yayılır (zoom 0.36'da da keskin yan kenar kalmaz);
+  // alt etek (y = 60..300) ve sis bandı (y = -320..60) C1 eğriyle saydamlığa geçerek alttaki çimle birleşir.
   ctx.save();
-  // 1. Kademe: En Uzak Sisli Dağlar (Far Mountain Peaks)
-  let mtnBase = si === 3 ? "#94a3b8" : si === 2 ? "#b45309" : "#3b82f6";
-  let mtnTop = si === 3 ? "#f8fafc" : si === 2 ? "#fbbf24" : "#93c5fd";
 
-  const mtnGrad = ctx.createLinearGradient(0, -600, 0, -200);
-  mtnGrad.addColorStop(0, mtnTop);
-  mtnGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
-
-  // 2. Kademe: Orta Ormanlık Tepeler (Rolling Forest Hills)
-  const hillGrad = ctx.createLinearGradient(0, -450, 0, -100);
-  let hCol1 = si === 3 ? "#475569" : si === 2 ? "#78350f" : "#166534";
-  let hCol2 = si === 3 ? "#64748b" : si === 2 ? "#9a3412" : "#22c55e";
+  // Orta Ormanlık Tepeler (Rolling Forest Hills)
+  const hCol1 = si === 3 ? "#475569" : si === 2 ? "#78350f" : "#166534";
+  const hCol2Rgb = si === 3 ? "100, 116, 139" : si === 2 ? "154, 52, 18" : "34, 197, 94";
+  const hillTop = -450, hillBot = 300, hillSpan = hillBot - hillTop; // 750
+  const fadeStart = 40;
+  const hillGrad = ctx.createLinearGradient(0, hillTop, 0, hillBot);
   hillGrad.addColorStop(0, hCol1);
-  hillGrad.addColorStop(1, hCol2);
+  hillGrad.addColorStop((-100 - hillTop) / hillSpan, `rgb(${hCol2Rgb})`);
+  const hillSteps = 16;
+  for (let i = 0; i <= hillSteps; i++) {
+    const u = i / hillSteps;
+    const wy = fadeStart + u * (hillBot - fadeStart);
+    const alpha = 1 - (3 * u * u - 2 * u * u * u);
+    hillGrad.addColorStop((wy - hillTop) / hillSpan, `rgba(${hCol2Rgb}, ${alpha.toFixed(4)})`);
+  }
 
-  // Dağ Tepe Eğrileri
+  // Dağ Tepe Eğrileri (-1600..2600 arası orijinal tepe/vadi hattı aynen korunur, iki yana ±8000'e uzanır)
   ctx.fillStyle = hillGrad;
   ctx.beginPath();
-  ctx.moveTo(-1600, -150);
+  ctx.moveTo(-8000, -150);
+  ctx.quadraticCurveTo(-7500, -380, -7000, -210);
+  ctx.quadraticCurveTo(-6500, -420, -6000, -230);
+  ctx.quadraticCurveTo(-5500, -390, -5000, -180);
+  ctx.quadraticCurveTo(-4500, -430, -3900, -220);
+  ctx.quadraticCurveTo(-3350, -370, -2800, -200);
+  ctx.quadraticCurveTo(-2200, -410, -1600, -150);
   ctx.quadraticCurveTo(-1100, -380, -600, -220);
   ctx.quadraticCurveTo(-100, -440, 400, -240);
   ctx.quadraticCurveTo(900, -420, 1500, -180);
   ctx.quadraticCurveTo(2000, -360, 2600, -150);
-  ctx.lineTo(2600, 300);
-  ctx.lineTo(-1600, 300);
+  ctx.quadraticCurveTo(3200, -400, 3800, -220);
+  ctx.quadraticCurveTo(4350, -430, 4900, -190);
+  ctx.quadraticCurveTo(5450, -370, 6000, -210);
+  ctx.quadraticCurveTo(6550, -420, 7100, -180);
+  ctx.quadraticCurveTo(7550, -360, 8000, -150);
+  ctx.lineTo(8000, hillBot);
+  ctx.lineTo(-8000, hillBot);
   ctx.closePath();
   ctx.fill();
 
-  // Ufuk Çizgisi Yumuşak Sis Kuşağı (Atmospheric Mist Band)
-  const mistGrad = ctx.createLinearGradient(0, -220, 0, 50);
-  mistGrad.addColorStop(0, "rgba(255, 255, 255, 0.45)");
-  mistGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+  // Ufuk Çizgisi Yumuşak Sis Kuşağı (Atmospheric Mist Band: üstte y=-320'de 0'dan yumuşakça yükselip y=60'da 0'a söner)
+  const mistTop = -320, mistBot = 60, mistSpan = mistBot - mistTop;
+  const mistGrad = ctx.createLinearGradient(0, mistTop, 0, mistBot);
+  const mistProfile = [
+    [0.0, 0.0], [0.22, 0.16], [0.45, 0.36], [0.65, 0.32], [0.85, 0.12], [1.0, 0.0]
+  ];
+  for (let i = 0; i < mistProfile.length; i++) {
+    mistGrad.addColorStop(mistProfile[i][0], `rgba(255, 255, 255, ${mistProfile[i][1]})`);
+  }
   ctx.fillStyle = mistGrad;
-  ctx.fillRect(-1600, -220, 4200, 270);
+  ctx.fillRect(-8000, mistTop, 16000, mistSpan);
 
   ctx.restore();
 }
@@ -13430,7 +13450,7 @@ function drawDistantMountainBackdrop(si) {
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
-const WORLD_STATIC_CACHE_VER = "e22";
+const WORLD_STATIC_CACHE_VER = "e23";
 const _GRASS_TUFTS = [
   [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
   [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
