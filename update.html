@@ -2084,14 +2084,18 @@ for (let f = 0; f < FloorCount; f++) {
     get BaseY() { return this.idx * FloorH; },
     get WalkY() { return this.idx * FloorH + SlabH; }
   };
-  const slotCount = (f === 0) ? 38 : 36;
+  const slotCount = (f === 0) ? 39 : 36;
   for (let i = 0; i < slotCount; i++) {
     const isInitRec = (f === 0 && i === 32);
-    const isInitStarter = (f === 0 && (i === 32 || i === 26 || i === 25 || i === 31));
+    const isTennisClub = (f === 0 && i === 38);
+    const isInitStarter = (f === 0 && (i === 32 || i === 26 || i === 25 || i === 31 || i === 38));
     const isTreeSlot = (f === 0 && (i === 36 || i === 37));
     const s = {
-      floor: fl, idx: i, type: isInitRec ? "Reception" : "Empty", parcelBuilt: isInitStarter, hasEnsuite: false, furnLayout: {}, roomNo: 0, hasDoor: false, hasBalcony: false,
+      floor: fl, idx: i,
+      type: isInitRec ? "Reception" : (isTennisClub ? "TennisClub" : "Empty"),
+      parcelBuilt: isInitStarter, hasEnsuite: false, furnLayout: {}, roomNo: 0, hasDoor: false, hasBalcony: false,
       hasTree: isTreeSlot,
+      tennisState: isTennisClub ? "Ruin" : null,
       items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
       hasCorpse: false, corpseName: "", corpseSkin: "#fcd9b8", corpseHair: "#1a1412", corpseShirt: "#d94d4d",
       gymLevel: 1, gymBusy: [false, false, false], toiletBusy: [false, false], level: 1,
@@ -2726,8 +2730,8 @@ const DECOR_SLOTS = [
   { id: "right_3",  zone: "right", label: "Sağ Bahçe #3", u: 370,  v: 1212, size: "B", h: 38, flip: 1 },
   { id: "right_4",  zone: "right", label: "Sağ Bahçe #4", u: 510,  v: 1212, size: "O", h: 28, flip: 1 },
   { id: "right_5",  zone: "right", label: "Sağ Bahçe #5", u: 650,  v: 1212, size: "B", h: 38, flip: 1 },
-  { id: "right_6",  zone: "right", label: "Sağ Bahçe #6", u: 790,  v: 1212, size: "O", h: 28, flip: 1 },
-  { id: "right_7",  zone: "right", label: "Sağ Bahçe #7", u: 910,  v: 1212, size: "K", h: 15, flip: 1 },
+  { id: "right_6",  zone: "right", label: "Sağ Bahçe #6", u: 820,  v: 1400, size: "O", h: 28, flip: 1 },
+  { id: "right_7",  zone: "right", label: "Sağ Bahçe #7", u: 930,  v: 1400, size: "K", h: 15, flip: 1 },
 
   // Sol Şerit (v = -62; bina kenarı v = 0 ile otopark v = -120 arası: 1×B + 3×O + 3×K)
   { id: "left_1",   zone: "left",  label: "Sol Bahçe #1", u: 90,   v: -62,  size: "K", h: 15, flip: -1 },
@@ -3064,13 +3068,14 @@ function getDecorForbiddenZones() {
     { name: "building_body", u0: 0, u1: 1170, v0: 0, v1: 1170 },
     { name: "road_parcel_36", u0: 975, u1: 1170, v0: -195, v1: 0 },
     { name: "road_parcel_37", u0: 975, u1: 1170, v0: 1170, v1: 1365 },
+    { name: "tennis_club_38", u0: 780, u1: 975, v0: 1170, v1: 1365 },
     { name: "stone_path", u0: 1170, u1: 1260, v0: 437, v1: 537 },
     { name: "entry_planter_L", u0: 1170, u1: 1260, v0: 415, v1: 429 },
     { name: "entry_planter_R", u0: 1170, u1: 1260, v0: 545, v1: 559 },
     { name: "queue_zone", u0: 1050, u1: 1235, v0: 452, v1: 508 },
     { name: "sidewalk", u0: 1260, u1: 1e6, v0: -1e6, v1: 1e6 },
     { name: "parking", u0: 180, u1: 960, v0: -600, v1: -120 },
-    { name: "tennis_court", u0: 180, u1: 860, v0: 1260, v1: 1860 },
+    { name: "tennis_court", u0: 80, u1: 760, v0: 1260, v1: 1860 },
     { name: "fixed_palm_front_left", u0: 240, u1: 320, v0: -200, v1: -120 },
     { name: "fixed_palm_back", u0: -200, u1: -120, v0: 240, v1: 320 },
     { name: "fixed_bush_front_left", u0: 0, u1: 80, v0: -180, v1: -100 },
@@ -3176,6 +3181,24 @@ if (typeof window !== "undefined") {
             r: obj.r,
             slotId: slotBoxes[j].s.id,
             boxGap: Math.round(gap * 10) / 10,
+            required: Math.round(req * 10) / 10
+          });
+        }
+      }
+      // Tenis kortu + yıkık kulüp parseli ile sabit obje denetimi
+      for (let z = 0; z < forbidden.length; z++) {
+        const fz = forbidden[z];
+        if (fz.name !== "tennis_court" && fz.name !== "tennis_club_38") continue;
+        const gapZ = decorBoxGap(obj, fz);
+        if (gapZ < req) {
+          staticConflicts.push({
+            object: obj.name,
+            group: obj.group,
+            u: obj.u,
+            v: obj.v,
+            r: obj.r,
+            slotId: fz.name,
+            boxGap: Math.round(gapZ * 10) / 10,
             required: Math.round(req * 10) / 10
           });
         }
@@ -3812,17 +3835,36 @@ function testAllRoomFurnCombinations() {
   return { total, totalMasks, presetCount, passed, overlaps, outOfBounds, missing, distinctTriples, failures };
 }
 
-// 6x6 Parsel Komşuluk & İnşa Edilebilirlik Kontrolleri (Zemin Kat Yola Paralel 8 Parsel: gv = -1..6, gu = 5)
+// 6x6 Parsel Komşuluk & İnşa Edilebilirlik Kontrolleri (Zemin Kat Yola Paralel 8 Parsel: gv = -1..6, gu = 5 + Özel Tenis Kulübü 4,6)
 function parcelCoords(idx) {
   if (idx === 36) return { gu: 5, gv: -1 };
   if (idx === 37) return { gu: 5, gv: 6 };
+  if (idx === 38) return { gu: 4, gv: 6 };
   return { gu: Math.floor(idx / 6), gv: idx % 6 };
+}
+
+function slotAtGrid(fl, gu, gv) {
+  if (!fl || !fl.slots) return null;
+  if (gu >= 0 && gu <= 5 && gv >= 0 && gv <= 5) return fl.slots[gu * 6 + gv] || null;
+  if (fl.idx === 0) {
+    if (gu === 5 && gv === -1) return fl.slots[36] || null;
+    if (gu === 5 && gv === 6) return fl.slots[37] || null;
+    if (gu === 4 && gv === 6) return fl.slots[38] || null;
+  }
+  return null;
 }
 
 function isRoofedStructure(type) {
   return type === "Room" || type === "Reception" || type === "Kitchen" ||
          type === "Storage" || type === "Dorm" || type === "Gym" ||
-         type === "Toilet" || type === "Gas" || type === "Corridor" || type === "Elevator";
+         type === "Toilet" || type === "Gas" || type === "Corridor" ||
+         type === "Elevator" || type === "TennisClub";
+}
+
+function isSlotStructurallyConnected(s) {
+  if (!s || !isRoofedStructure(s.type)) return false;
+  if (s.type === "TennisClub" && (s.tennisState || "Ruin") === "Ruin") return false;
+  return true;
 }
 
 function hasAdjacentCorridor(slot) {
@@ -3830,10 +3872,10 @@ function hasAdjacentCorridor(slot) {
   const { gu, gv } = parcelCoords(slot.idx);
   const fl = slot.floor;
   if (!fl) return false;
-  const back = (gu > 0) ? fl.slots[(gu - 1) * 6 + gv] : null;
-  const right = (gv < 5) ? fl.slots[gu * 6 + (gv + 1)] : null;
-  const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
-  const front = (gu < 5) ? fl.slots[(gu + 1) * 6 + gv] : null;
+  const back = slotAtGrid(fl, gu - 1, gv);
+  const right = slotAtGrid(fl, gu, gv + 1);
+  const left = slotAtGrid(fl, gu, gv - 1);
+  const front = slotAtGrid(fl, gu + 1, gv);
   return isCorridor(back) || isCorridor(right) || isCorridor(left) || isCorridor(front);
 }
 
@@ -3842,10 +3884,10 @@ function getElevatorDoorWall(slot) {
   const { gu, gv } = parcelCoords(slot.idx);
   const fl = slot.floor;
   if (!fl) return "front";
-  const front = (gu < 5) ? fl.slots[(gu + 1) * 6 + gv] : null;
-  const left = (gv > 0) ? fl.slots[gu * 6 + (gv - 1)] : null;
-  const right = (gv < 5) ? fl.slots[gu * 6 + (gv + 1)] : null;
-  const back = (gu > 0) ? fl.slots[(gu - 1) * 6 + gv] : null;
+  const front = slotAtGrid(fl, gu + 1, gv);
+  const left = slotAtGrid(fl, gu, gv - 1);
+  const right = slotAtGrid(fl, gu, gv + 1);
+  const back = slotAtGrid(fl, gu - 1, gv);
   if (isCorridor(front)) return "front";
   if (isCorridor(left)) return "left";
   if (isCorridor(right)) return "right";
@@ -3870,18 +3912,23 @@ function getRoomAvailableDoorWalls(s) {
   if (!fl) return [];
   const walls = [];
 
+  const backSlot = slotAtGrid(fl, gu - 1, gv);
+  const rightSlot = slotAtGrid(fl, gu, gv + 1);
+  const leftSlot = slotAtGrid(fl, gu, gv - 1);
+  const frontSlot = slotAtGrid(fl, gu + 1, gv);
+
   // 1. Öncelik: Koridor olan komşular
-  if (gu > 0 && isCorridor(fl.slots[(gu - 1) * 6 + gv])) walls.push("back");
-  if (gv < 5 && isCorridor(fl.slots[gu * 6 + (gv + 1)])) walls.push("right");
-  if (gv > 0 && isCorridor(fl.slots[gu * 6 + (gv - 1)])) walls.push("left");
-  if (gu < 5 && isCorridor(fl.slots[(gu + 1) * 6 + gv])) walls.push("front");
+  if (isCorridor(backSlot)) walls.push("back");
+  if (isCorridor(rightSlot)) walls.push("right");
+  if (isCorridor(leftSlot)) walls.push("left");
+  if (isCorridor(frontSlot)) walls.push("front");
   if (walls.length > 0) return walls;
 
-  // 2. Öncelik: Koridor yoksa inşa edilmiş çatı altı yapılar (Resepsiyon, diğer odalar vs.)
-  if (gu > 0 && fl.slots[(gu - 1) * 6 + gv] && fl.slots[(gu - 1) * 6 + gv].type !== "Empty") walls.push("back");
-  if (gv < 5 && fl.slots[gu * 6 + (gv + 1)] && fl.slots[gu * 6 + (gv + 1)].type !== "Empty") walls.push("right");
-  if (gv > 0 && fl.slots[gu * 6 + (gv - 1)] && fl.slots[gu * 6 + (gv - 1)].type !== "Empty") walls.push("left");
-  if (gu < 5 && fl.slots[(gu + 1) * 6 + gv] && fl.slots[(gu + 1) * 6 + gv].type !== "Empty") walls.push("front");
+  // 2. Öncelik: Koridor yoksa inşa edilmiş çatı altı yapılar (Resepsiyon, diğer odalar vs.; yıkık TennisClub hariç)
+  if (isSlotStructurallyConnected(backSlot)) walls.push("back");
+  if (isSlotStructurallyConnected(rightSlot)) walls.push("right");
+  if (isSlotStructurallyConnected(leftSlot)) walls.push("left");
+  if (isSlotStructurallyConnected(frontSlot)) walls.push("front");
   if (walls.length > 0) return walls;
 
   return ["back"];
@@ -3918,6 +3965,7 @@ function cycleRoomDoorWall(s) {
 }
 
 function isParcelBuildable(fIdx, idx) {
+  if (fIdx === 0 && idx === 38) return false;
   const fl = floors[fIdx];
   if (!fl || fl.state !== "Built") return false;
   const s = fl.slots[idx];
@@ -3928,6 +3976,7 @@ function isParcelBuildable(fIdx, idx) {
     if ((idx === 36 || idx === 37) && !s.hasTree) return true;
     const { gu, gv } = parcelCoords(idx);
     return fl.slots.some(other => {
+      if (other.type === "TennisClub" && (other.tennisState || "Ruin") === "Ruin") return false;
       if (!other.parcelBuilt && other.type === "Empty") return false;
       const oc = parcelCoords(other.idx);
       return Math.abs(oc.gu - gu) + Math.abs(oc.gv - gv) === 1;
@@ -3943,6 +3992,11 @@ function isParcelBuildable(fIdx, idx) {
 // [state/save-load.js] Kalıcı kayıt: saveGame, loadGame, yeni oyun
 // ===== KALICI KAYIT SİSTEMİ (GÜNCELLEMELERDE DE KORUNUR) =====
 const SAVE_KEY = "thehotel_save_v200";
+const VALID_TENNIS_STATES = ["Ruin", "Repaired", "Open"];
+
+function sanitizeTennisState(val) {
+  return (typeof val === "string" && VALID_TENNIS_STATES.includes(val)) ? val : "Ruin";
+}
 
 function saveGame() {
   try {
@@ -3969,6 +4023,7 @@ function saveGame() {
       dormState,
       dormLeft,
       dormLevel, kitchenState, kitchenLeft, cookLevel, towerOrder: towerOrder.slice(),
+      tennisState: (floors[0] && floors[0].slots[38] && floors[0].slots[38].type === "TennisClub") ? sanitizeTennisState(floors[0].slots[38].tennisState) : "Ruin",
       killerActiveThisWeek, killerLetter, killerCaughtWeek, weekMurders, marketEvent, unreadNewspaper, v181KillerRandomized: true, dayStats,
       activeEvent, eventDaysLeft, nextEventDay, nextEventType, vipSpawnedThisEvent,
       receptionistLevel,
@@ -4042,6 +4097,7 @@ function saveGame() {
           type: s.type,
           parcelBuilt: !!s.parcelBuilt,
           hasTree: !!s.hasTree,
+          tennisState: s.type === "TennisClub" ? sanitizeTennisState(s.tennisState) : undefined,
           hasEnsuite: !!s.hasEnsuite,
           furnPresetIdx: (typeof s.furnPresetIdx === "number") ? s.furnPresetIdx : 0,
           furnLayout: (s.furnLayout && typeof s.furnLayout === "object") ? JSON.parse(JSON.stringify(s.furnLayout)) : {},
@@ -4381,6 +4437,16 @@ function loadGame() {
     floors[0].slots[26].parcelBuilt = true;
     floors[0].slots[25].parcelBuilt = true;
     floors[0].slots[31].parcelBuilt = true;
+    // Zemin kat idx 38: Tenis Kulübü (eski 38-slotlu kayıtlarda otomatik Ruin olarak eklenir)
+    if (floors[0] && floors[0].slots[38]) {
+      const tc = floors[0].slots[38];
+      const savedTc = (Array.isArray(data.floors) && data.floors[0] && Array.isArray(data.floors[0].slots)) ? data.floors[0].slots[38] : null;
+      const rawTS = (savedTc && savedTc.type === "TennisClub" && savedTc.tennisState) || data.tennisState || "Ruin";
+      tc.type = "TennisClub";
+      tc.parcelBuilt = true;
+      tc.hasTree = false;
+      tc.tennisState = sanitizeTennisState(rawTS);
+    }
 
     const cCount = Math.min(MaxCleaners, data.cleanerCount || 0);
     const recSlot = floors[0].slots.find(s => s.type === "Reception") || floors[0].slots[32];
@@ -4663,17 +4729,19 @@ function startNewGameClean() {
     fl.buildLeft = 0;
     fl.buildTotal = 0;
     fl.workers.length = 0;
-    const count = (f === 0) ? 38 : 36;
+    const count = (f === 0) ? 39 : 36;
     for (let i = 0; i < count; i++) {
       const s = fl.slots[i];
       let t = "Empty";
       if (f === 0) {
         if (i === 32) t = "Reception";
         else if (i === 26 || i === 25) t = "Corridor";
+        else if (i === 38) t = "TennisClub";
       }
       s.type = t;
-      s.parcelBuilt = (f === 0 && (i === 32 || i === 31 || i === 26 || i === 25));
+      s.parcelBuilt = (f === 0 && (i === 32 || i === 31 || i === 26 || i === 25 || i === 38));
       s.hasTree = (f === 0 && (i === 36 || i === 37));
+      s.tennisState = (f === 0 && i === 38) ? "Ruin" : null;
       s.hasEnsuite = false;
       s.furnPresetIdx = 0;
       s.furnLayout = {};
@@ -6943,10 +7011,10 @@ function getRoomCorridorSlot(room) {
   const fl = room.floor;
   if (!fl) return null;
   const doorWall = getRoomDoorWall(room);
-  if (doorWall === "back" && gu > 0) return fl.slots[(gu - 1) * 6 + gv];
-  if (doorWall === "front" && gu < 5) return fl.slots[(gu + 1) * 6 + gv];
-  if (doorWall === "left" && gv > 0) return fl.slots[gu * 6 + (gv - 1)];
-  if (doorWall === "right" && gv < 5) return fl.slots[gu * 6 + (gv + 1)];
+  if (doorWall === "back") return slotAtGrid(fl, gu - 1, gv);
+  if (doorWall === "front") return slotAtGrid(fl, gu + 1, gv);
+  if (doorWall === "left") return slotAtGrid(fl, gu, gv - 1);
+  if (doorWall === "right") return slotAtGrid(fl, gu, gv + 1);
   return null;
 }
 
@@ -6956,10 +7024,10 @@ function getElevatorCorridorSlot(elevSlot) {
   const fl = elevSlot.floor;
   if (!fl) return null;
   const doorWall = getElevatorDoorWall(elevSlot);
-  if (doorWall === "back" && gu > 0) return fl.slots[(gu - 1) * 6 + gv];
-  if (doorWall === "front" && gu < 5) return fl.slots[(gu + 1) * 6 + gv];
-  if (doorWall === "left" && gv > 0) return fl.slots[gu * 6 + (gv - 1)];
-  if (doorWall === "right" && gv < 5) return fl.slots[gu * 6 + (gv + 1)];
+  if (doorWall === "back") return slotAtGrid(fl, gu - 1, gv);
+  if (doorWall === "front") return slotAtGrid(fl, gu + 1, gv);
+  if (doorWall === "left") return slotAtGrid(fl, gu, gv - 1);
+  if (doorWall === "right") return slotAtGrid(fl, gu, gv + 1);
   return null;
 }
 
@@ -7015,13 +7083,12 @@ function findCorridorSlotPath(fIdx, fromSlotIdx, toSlotIdx) {
       return path;
     }
 
-    const gu = Math.floor(cur / 6);
-    const gv = cur % 6;
+    const { gu, gv } = parcelCoords(cur);
     const neighbors = [];
-    if (gu > 0) neighbors.push((gu - 1) * 6 + gv);
-    if (gu < 5) neighbors.push((gu + 1) * 6 + gv);
-    if (gv > 0) neighbors.push(gu * 6 + (gv - 1));
-    if (gv < 5) neighbors.push(gu * 6 + (gv + 1));
+    const nbBack = slotAtGrid(fl, gu - 1, gv); if (nbBack) neighbors.push(nbBack.idx);
+    const nbFront = slotAtGrid(fl, gu + 1, gv); if (nbFront) neighbors.push(nbFront.idx);
+    const nbLeft = slotAtGrid(fl, gu, gv - 1); if (nbLeft) neighbors.push(nbLeft.idx);
+    const nbRight = slotAtGrid(fl, gu, gv + 1); if (nbRight) neighbors.push(nbRight.idx);
 
     for (const nb of neighbors) {
       if (!visited.has(nb) && isWalkable(nb)) {
@@ -7549,6 +7616,7 @@ function onAction(i) {
   checkStartupSoftlock();
   if (sel === "Slot" && selSlot) {
     const s = selSlot;
+    if (s.type === "TennisClub") return;
     if (s.type === "Empty" && i !== ActCount - 1) {
       // 0) AĞAÇ KESME
       if (s.hasTree) {
@@ -8859,7 +8927,7 @@ document.getElementById("dock-upgrade").onclick = () => {
   } else if (nextLocked && stars() >= nextLocked.idx) {
     selectFloor(nextLocked);
   } else {
-    const s = selSlot || floors[viewFloor].slots.find(sl => sl.type !== "Empty") || floors[viewFloor].slots[21];
+    const s = selSlot || floors[viewFloor].slots.find(sl => sl.type !== "Empty" && sl.type !== "TennisClub") || floors[viewFloor].slots[21];
     selectSlot(s);
   }
   openDrawer("upgrade");
@@ -8873,7 +8941,7 @@ for (const btn of floorTabBtns) {
     const fl = floors[fIdx];
     if (fl.state === "Built") {
       viewFloor = fIdx;
-      const targetS = fl.slots.find(s => s.type !== "Empty") ||
+      const targetS = fl.slots.find(s => s.type !== "Empty" && s.type !== "TennisClub") ||
                       fl.slots.find(s => isParcelBuildable(fIdx, s.idx)) ||
                       fl.slots[21];
       selectSlot(targetS);
@@ -9560,6 +9628,8 @@ function refreshPanel() {
         "\nOdaları, asansörü ve tesisleri birbirine bağlar. Konukların ve personelin rahatça dolaşmasını sağlar.";
     } else if (cur.type === "RoofTerrace") {
       infoText.textContent = "🏖️ Çatı Terası, Şezlong & Çatı Barı " + coordStr + "\nOtelde konaklayan müşteriler burada güneşlenir ve içecek alır, otel memnuniyetini artırır.";
+    } else if (cur.type === "TennisClub") {
+      infoText.textContent = "🎾 Yıkık Tenis Kulübü\nKortun yanındaki bu bina yıkık durumda. Tenisçiler grubu etkinliğine gelen sporcuları ağırlarsan sana tenis malzemeleri verecekler; malzemeleri toplayıp binayı onarınca kulüp açılacak.";
     } else if (cur.type === "Kitchen") {
       infoText.textContent = "🍳 Restoran & Mutfak " + coordStr + "  •  Aşçı: " + (cookLevel > 0 ? ("Sv." + cookLevel) : "Yok") + "  •  Günlük porsiyon: " + CookMeals[cookLevel] +
         "\nHer porsiyon +" + MealPrice + " TL gelir getirir.";
@@ -9794,8 +9864,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 60;
-const APP_VERSION_NAME = "1.9.52-beta";
+const APP_VERSION_CODE = 61;
+const APP_VERSION_NAME = "1.9.53-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9803,9 +9873,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.53-beta",
+    title: "Tenis Kulübü Faz 1: Yıkık Kulüp Binası (T1)",
+    latest: true,
+    notes: "• 🎾 Yıkık Tenis Kulübü (Parsel 38): Tenis kortunun yanındaki özel zemin kat parseline yıkık, kırık duvarlı, çökmüş çatılı ve sarı-siyah güvenlik şeritli kulüp binası eklendi.\n• 🏟️ Kort & Bahçe Hizalaması: Açık tenis kortu kulüp binasına koridor açmak için hafifçe sola kaydırıldı; iki sağ bahçe yuvası (right_6, right_7) ve iki çalı/çiçek noktası çakışmasız yeni yerlerine taşındı.\n• ℹ️ Bilgi Paneli & Kayıt Uyumu: Yıkık binaya tıklandığında yaklaşan 'Tenisçiler grubu' özelliği hakkında bilgi açılır; eski 38 yuvalı kayıtlar otomatik güncellenir."
+  },
+  {
     ver: "v1.9.52-beta",
     title: "Ufuk & Dağ Arka Planı Kenar Düzeltmesi (E2.3)",
-    latest: true,
+    latest: false,
     notes: "• 🌄 Ufuk Bandı Hatası Düzeltildi: Kamera uçlarında ve uzaklaştırmada (zoom 0.36–0.55) arka plan dağ ve sis katmanının sol/sağ/üst/alt kenarlarında görünen sert kesim ve koyu yeşil bant kaldırıldı.\n• 🎨 Yumuşak Mevsim Geçişi: Dağ tepeleri yatayda ±8000 birime genişletildi; alt etek ve sis kuşağı dört mevsimde ve gece aydınlatmasında çim zeminle yumuşakça birleşecek şekilde saydamlığa geçirildi."
   },
   {
@@ -10620,12 +10696,14 @@ function _hideIfBelowViewFloor(uvz, pawn) {
     if (gv >= 0 && gv <= 5) pIdx = gu * 6 + gv;
     else if (pf === 0 && gu === 5 && gv === -1) pIdx = 36;
     else if (pf === 0 && gu === 5 && gv === 6) pIdx = 37;
+    else if (pf === 0 && gu === 4 && gv === 6) pIdx = 38;
   }
   if (pIdx < 0 || typeof floors === "undefined" || !floors[pf] || floors[pf].state !== "Built") {
     return uvz;
   }
   const ps = floors[pf].slots[pIdx];
-  if (!ps || (!ps.parcelBuilt && ps.type === "Empty") || typeof isRoofedStructure !== "function" || !isRoofedStructure(ps.type)) {
+  const isConn = ps && (typeof isSlotStructurallyConnected === "function" ? isSlotStructurallyConnected(ps) : (typeof isRoofedStructure === "function" && isRoofedStructure(ps.type)));
+  if (!ps || (!ps.parcelBuilt && ps.type === "Empty") || !isConn) {
     return uvz;
   }
 
@@ -11165,7 +11243,10 @@ var COSMETIC_CATALOG = {
       facadeWinNightLit: "rgba(253, 224, 128, 0.82)",
       facadeFrameTop: "#fff8eb", facadeFrameL: "#7d5836", facadeFrameR: "#5e4024",
       facadeSillTop: "#f5efe6", facadeSillL: "#d6cab8", facadeSillR: "#b8aa96",
-      facadeShutterL: "#64748b", facadeShutterR: "#475569"
+      facadeShutterL: "#64748b", facadeShutterR: "#475569",
+      ruinWallTop: "#b8aa96", ruinWallL: "#cfc2ae", ruinWallR: "#9e907c",
+      ruinFloorA: "#8c8275", ruinFloorB: "#786e62",
+      ruinTimber: "#6b482c", ruinTimberDark: "#452e1b"
     },
     modern: {
       id: "modern",
@@ -11306,7 +11387,10 @@ var COSMETIC_CATALOG = {
       facadeWinNightLit: "rgba(254, 240, 138, 0.78)",
       facadeFrameTop: "#cbd5e1", facadeFrameL: "#334155", facadeFrameR: "#1e293b",
       facadeSillTop: "#e2e8f0", facadeSillL: "#64748b", facadeSillR: "#475569",
-      facadeShutterL: "#334155", facadeShutterR: "#1e293b"
+      facadeShutterL: "#334155", facadeShutterR: "#1e293b",
+      ruinWallTop: "#9aa0a6", ruinWallL: "#b0b6bc", ruinWallR: "#7d838a",
+      ruinFloorA: "#7a8086", ruinFloorB: "#686e74",
+      ruinTimber: "#56493f", ruinTimberDark: "#382f29"
     },
     seaside: {
       id: "seaside",
@@ -11447,7 +11531,10 @@ var COSMETIC_CATALOG = {
       facadeWinNightLit: "rgba(254, 243, 150, 0.82)",
       facadeFrameTop: "#ffffff", facadeFrameL: "#0e7490", facadeFrameR: "#155e75",
       facadeSillTop: "#ffffff", facadeSillL: "#ccfbf1", facadeSillR: "#99f6e4",
-      facadeShutterL: "#94a3b8", facadeShutterR: "#64748b"
+      facadeShutterL: "#94a3b8", facadeShutterR: "#64748b",
+      ruinWallTop: "#b5bdb8", ruinWallL: "#cad2cd", ruinWallR: "#8f9993",
+      ruinFloorA: "#88918c", ruinFloorB: "#747d78",
+      ruinTimber: "#634e3a", ruinTimberDark: "#403224"
     }
   }
 };
@@ -11762,6 +11849,7 @@ function _shadowSlotIdx(gu, gv) {
   if (gv >= 0 && gv <= 5) return gu * 6 + gv;
   if (gu === 5 && gv === -1) return 36;
   if (gu === 5 && gv === 6) return 37;
+  if (gu === 4 && gv === 6) return 38;
   return -1;
 }
 
@@ -11773,13 +11861,14 @@ function drawBuildingShadows() {
   const shLevel = Math.round(shInt * 4);
   const effInt = shLevel / 4;
 
-  // Her zemin parselinin kat sayısı (yalnızca çatılı yapılar gölge düşürür)
+  // Her zemin parselinin kat sayısı (yalnızca çatılı yapılar gölge düşürür; yıkık kulüp parsel dışı gölge düşürmez)
+  const slotCount = floors[0].slots.length;
   const heights = [];
   let key = viewFloor + "|" + shLevel + "|";
-  for (let idx = 0; idx < 38; idx++) {
+  for (let idx = 0; idx < slotCount; idx++) {
     let h = 0;
     const s0 = floors[0].slots[idx];
-    if (s0 && isRoofedStructure(s0.type)) {
+    if (s0 && (typeof isSlotStructurallyConnected === "function" ? isSlotStructurallyConnected(s0) : isRoofedStructure(s0.type))) {
       h = 1;
       for (let f = 1; f <= viewFloor; f++) {
         const fl = floors[f];
@@ -11794,7 +11883,7 @@ function drawBuildingShadows() {
   drawCachedLayer("bldShadow", key, () => {
     // 1) Yönsel Bina Gölgeleri: gece tamamen kapatılır, gündüz yumuşatılmış / kademeli kenarla çizilir
     if (effInt > 0.05) {
-      for (let idx = 0; idx < 38; idx++) {
+      for (let idx = 0; idx < slotCount; idx++) {
         const h = heights[idx];
         if (!h) continue;
         const b = slotIsoBox(0, idx);
@@ -11848,7 +11937,7 @@ function drawBuildingShadows() {
     // 2) Temas Gölgeleri (Bina diplerindeki zemin temas çizgisi - ortam kapalılığı / Ambient Occlusion)
     // Gündüz net zemin teması verir, gece ise binanın havada yüzmesini önleyecek yumuşaklıkta kalır
     const aoAlpha = (0.10 + 0.14 * effInt).toFixed(3);
-    for (let idx = 0; idx < 38; idx++) {
+    for (let idx = 0; idx < slotCount; idx++) {
       if (!heights[idx]) continue;
       const b = slotIsoBox(0, idx);
       const backN = _shadowSlotIdx(b.gu - 1, b.gv);
@@ -13248,8 +13337,8 @@ function drawResortParkingLot(si) {
 }
 
 // 14) Tatil Köyü Açık Tenis Kortu (Resort Championship Tennis Court)
-function drawResortTennisCourt(si) {
-  const u0 = 180, u1 = 860;
+function drawResortTennisCourt(si, uOffset = -100) {
+  const u0 = 180 + uOffset, u1 = 860 + uOffset;
   const v0 = 1260, v1 = 1860;
 
   // Dış Zemin: Şık Fransız Açık Mavi / Lacivert Akrilik
@@ -13450,7 +13539,7 @@ function drawDistantMountainBackdrop(si) {
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
-const WORLD_STATIC_CACHE_VER = "e23";
+const WORLD_STATIC_CACHE_VER = "t1";
 const _GRASS_TUFTS = [
   [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
   [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
@@ -13475,7 +13564,7 @@ const WORLD_LUSH_BUSHES = [
   { u: 740, v: -100, sc: 1.1, type: "normal" },
   { u: -90, v: 480, sc: 1.05, type: "flower" },
   { u: -100, v: 820, sc: 1.1, type: "normal" },
-  { u: 70, v: 1360, sc: 1.0, type: "flower" },
+  { u: 25, v: 1360, sc: 1.0, type: "flower" },
   { u: 930, v: 1480, sc: 1.1, type: "normal" }
 ];
 
@@ -13484,7 +13573,7 @@ const WORLD_LAWN_SPOTS = [
   { u: 220, v: -110, fl: false }, { u: 90, v: -370, fl: true }, { u: 1020, v: -110, fl: false },
   { u: 1210, v: 100, fl: true }, { u: 1225, v: 280, fl: false }, { u: 1215, v: 480, fl: true },
   { u: 1220, v: 720, fl: false }, { u: 1215, v: 910, fl: true }, { u: 1210, v: 1100, fl: true },
-  { u: 90, v: 1490, fl: false }, { u: 1030, v: 1520, fl: true }, { u: 1180, v: 1350, fl: false },
+  { u: 30, v: 1490, fl: false }, { u: 1030, v: 1520, fl: true }, { u: 1180, v: 1350, fl: false },
   // Karşı park tarafı çimleri
   { u: 1570, v: 120, fl: true }, { u: 1580, v: 460, fl: false }, { u: 1575, v: 820, fl: true },
   { u: 1670, v: -120, fl: false }, { u: 1680, v: 280, fl: true }, { u: 1690, v: 620, fl: false },
@@ -13678,9 +13767,9 @@ function drawWorld() {
       drawResortParkingLot(si);
     }
 
-    // 1.5) Otel Sağ Yanı: Tatil Köyü Açık Tenis Kortu (Resort Championship Tennis Court: u=180..860, v=1260..1860)
+    // 1.5) Otel Sağ Yanı: Tatil Köyü Açık Tenis Kortu (Resort Championship Tennis Court: u=80..760, v=1260..1860)
     if (typeof drawResortTennisCourt === "function") {
-      drawResortTennisCourt(si);
+      drawResortTennisCourt(si, -100);
     }
 
     // Çayır detayları: Tatlı çim tutamları ve kır çiçekleri
@@ -13852,19 +13941,22 @@ function drawWorld() {
   // 3.9) Bina gölgeleri (zemine düşen yumuşak yönlü gölge; önbellekli katman)
   drawBuildingShadows();
 
-  // 4) 6x6 Modüler Parselleri + Zemin Kat Yola Paralel 8 Parseli Arkadan Öne Doğru (Painter's Algorithm: sum = 0..11) Çiz
+  // 4) 6x6 Modüler Parselleri + Zemin Kat Yola Paralel Parseller (36,37) + Tenis Kulübü (38) Arkadan Öne Doğru (sum = 0..11) Çiz
   const showBuildGrid = (drawerOpen && activeDock === "build") || (sel === "Slot" && selSlot && selSlot.type === "Empty");
   for (let sum = 0; sum <= 11; sum++) {
     for (let gu = 0; gu < 6; gu++) {
       const gv = sum - gu;
       const isRoadFront = (gu === 5 && (gv === -1 || gv === 6));
-      if (!isRoadFront && (gv < 0 || gv >= 6)) continue;
+      const isTennisClubParcel = (gu === 4 && gv === 6);
+      const isGroundExtra = isRoadFront || isTennisClubParcel;
+      if (!isGroundExtra && (gv < 0 || gv >= 6)) continue;
       let idx = gu * 6 + gv;
-      if (gv === -1) idx = 36;
-      else if (gv === 6) idx = 37;
+      if (gu === 5 && gv === -1) idx = 36;
+      else if (gu === 5 && gv === 6) idx = 37;
+      else if (gu === 4 && gv === 6) idx = 38;
       for (let f = 0; f <= viewFloor; f++) {
         if (floors[f].state !== "Built") continue;
-        if (f > 0 && isRoadFront) continue; // Yol parselleri sadece zemin kattadır
+        if (f > 0 && isGroundExtra) continue; // Yol parselleri ve kulüp sadece zemin kattadır
         const s = floors[f].slots[idx];
         if (!s) continue;
         const isBuilt = (s.type !== "Empty" || s.parcelBuilt || s.hasTree);
@@ -14486,14 +14578,15 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
   const avail = pending && s.Ready && !s.guest && !s.onFire;
   const activeCount = allSlots.filter(sl => sl.type === "Room" && sl.guest).length;
 
-  const leftSlot = (gv > 0) ? floors[fIdx].slots[gu * 6 + (gv - 1)] : null;
-  const leftConnected = !!(leftSlot && (leftSlot.parcelBuilt || leftSlot.type !== "Empty") && isRoofedStructure(leftSlot.type));
-  const rightSlot = (gv < 5) ? floors[fIdx].slots[gu * 6 + (gv + 1)] : null;
-  const rightConnected = !!(rightSlot && (rightSlot.parcelBuilt || rightSlot.type !== "Empty") && isRoofedStructure(rightSlot.type));
-  const backSlot = (gu > 0) ? floors[fIdx].slots[(gu - 1) * 6 + gv] : null;
-  const backConnected = !!(backSlot && (backSlot.parcelBuilt || backSlot.type !== "Empty") && isRoofedStructure(backSlot.type));
-  const frontSlot = (gu < 5) ? floors[fIdx].slots[(gu + 1) * 6 + gv] : null;
-  const frontConnected = !!(frontSlot && (frontSlot.parcelBuilt || frontSlot.type !== "Empty") && isRoofedStructure(frontSlot.type));
+  const fl = floors[fIdx];
+  const leftSlot = slotAtGrid(fl, gu, gv - 1);
+  const leftConnected = !!(leftSlot && (leftSlot.parcelBuilt || leftSlot.type !== "Empty") && isSlotStructurallyConnected(leftSlot));
+  const rightSlot = slotAtGrid(fl, gu, gv + 1);
+  const rightConnected = !!(rightSlot && (rightSlot.parcelBuilt || rightSlot.type !== "Empty") && isSlotStructurallyConnected(rightSlot));
+  const backSlot = slotAtGrid(fl, gu - 1, gv);
+  const backConnected = !!(backSlot && (backSlot.parcelBuilt || backSlot.type !== "Empty") && isSlotStructurallyConnected(backSlot));
+  const frontSlot = slotAtGrid(fl, gu + 1, gv);
+  const frontConnected = !!(frontSlot && (frontSlot.parcelBuilt || frontSlot.type !== "Empty") && isSlotStructurallyConnected(frontSlot));
   const doorWall = (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") ? getRoomDoorWall(s) : null;
 
   // Bina türüne göre çizim: her tür kendi dosyasındaki fonksiyona devredilir (render/parcel-*.js)
@@ -14517,6 +14610,8 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, leftConnected, rightSlot, rightConnected, backSlot, frontSlot);
   } else if (s.type === "Elevator") {
     drawParcelElevator(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftConnected, rightConnected, backConnected);
+  } else if (s.type === "TennisClub") {
+    drawParcelTennisClub(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel);
   } else {
     // Oda, Tuvalet, Spor odası ve diğer tüm türler
     const roomPoly = drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
@@ -15084,6 +15179,256 @@ function drawParcelRoofTerrace(s, u0, v0, u1, v1, z0, isSel, activeCount) {
       refreshGuest();
     }
   });
+}
+
+// ===== BUNDLED: render/parcel-tennis.js =====
+// [render/parcel-tennis.js] Tenis Kulübü parsel çizimi (Faz 1: Yıkık Kulüp Binası)
+// NOT: ParcelRecorder önbellek uyumu için zamana bağlı (timeNow vb.) ifade kullanılmaz.
+
+function _drawBrokenWallSegment(u0, v0, u1, v1, z0, hA, hB, along, topCol, leftCol, rightCol) {
+  const minH = Math.min(hA, hB);
+  const zBase = z0 + minH;
+  if (minH > 1) {
+    isoBox(u0, v0, u1, v1, z0, zBase, topCol, leftCol, rightCol, OUTLINE_COL, 1.4);
+  }
+  const diff = Math.abs(hA - hB);
+  if (diff > 1.5) {
+    if (along === "v") {
+      const zV0 = z0 + hA, zV1 = z0 + hB;
+      // Ön +u yüzü (u1), sağ +v yüzü (v1) ve eğik üst yüz
+      drawPoly2D([iso(u1, v0, zBase), iso(u1, v1, zBase), iso(u1, v1, zV1), iso(u1, v0, zV0)], leftCol, OUTLINE_COL, 1.2);
+      if (zV1 > zBase + 0.5) {
+        drawPoly2D([iso(u0, v1, zBase), iso(u1, v1, zBase), iso(u1, v1, zV1), iso(u0, v1, zV1)], rightCol, OUTLINE_COL, 1.2);
+      }
+      drawPoly2D([iso(u0, v0, zV0), iso(u0, v1, zV1), iso(u1, v1, zV1), iso(u1, v0, zV0)], topCol, OUTLINE_COL, 1.2);
+    } else {
+      const zU0 = z0 + hA, zU1 = z0 + hB;
+      drawPoly2D([iso(u0, v1, zBase), iso(u1, v1, zBase), iso(u1, v1, zU1), iso(u0, v1, zU0)], rightCol, OUTLINE_COL, 1.2);
+      if (zU1 > zBase + 0.5) {
+        drawPoly2D([iso(u1, v0, zBase), iso(u1, v1, zBase), iso(u1, v1, zU1), iso(u1, v0, zU1)], leftCol, OUTLINE_COL, 1.2);
+      }
+      drawPoly2D([iso(u0, v0, zU0), iso(u0, v1, zU0), iso(u1, v1, zU1), iso(u1, v0, zU1)], topCol, OUTLINE_COL, 1.2);
+    }
+  }
+}
+
+function _drawRubblePile(cu, cv, z0, pal) {
+  isoBox(cu - 14, cv - 12, cu + 12, cv + 10, z0, z0 + 6, "#8a8278", "#736b62", "#5e574f", OUTLINE_COL, 1.0);
+  isoBox(cu - 8, cv - 6, cu + 7, cv + 8, z0 + 6, z0 + 13, "#9e5a40", "#844832", "#6b3826", OUTLINE_COL, 1.0);
+  isoBox(cu + 4, cv + 2, cu + 15, cv + 13, z0, z0 + 8, "#7d766e", "#69625b", "#544e48", OUTLINE_COL, 1.0);
+  isoBox(cu - 16, cv + 4, cu - 4, cv + 14, z0, z0 + 7, pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR, OUTLINE_COL, 1.0);
+  isoBox(cu - 3, cv - 15, cu + 9, cv - 5, z0, z0 + 9, "#a36347", "#874e36", "#6b3c28", OUTLINE_COL, 1.0);
+}
+
+function _drawRuinOvergrowth(cu, cv, z0, sc) {
+  const puffs = [
+    { du: -6, dv: -4, dz: 5, r: 9 * sc, c: "#3b6e28" },
+    { du: 5, dv: -2, dz: 6, r: 8 * sc, c: "#4f8a36" },
+    { du: -1, dv: 5, dz: 8, r: 9.5 * sc, c: "#2d541e" },
+    { du: 2, dv: 0, dz: 12, r: 7 * sc, c: "#5a9a3f" }
+  ];
+  for (let i = 0; i < puffs.length; i++) {
+    const pf = puffs[i];
+    const p = iso(cu + pf.du, cv + pf.dv, z0 + pf.dz);
+    ctx.fillStyle = pf.c;
+    ctx.strokeStyle = "#1e3a14";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, pf.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function _drawHazardTapeSegment(u0, v0, u1, v1, zPos) {
+  const steps = 6;
+  for (let i = 0; i < steps; i++) {
+    const t0 = i / steps;
+    const t1 = (i + 1) / steps;
+    const au = u0 + (u1 - u0) * t0;
+    const av = v0 + (v1 - v0) * t0;
+    const bu = u0 + (u1 - u0) * t1;
+    const bv = v0 + (v1 - v0) * t1;
+    const pa = iso(au, av, zPos);
+    const pb = iso(bu, bv, zPos);
+    ctx.strokeStyle = (i % 2 === 0) ? "#facc15" : "#1e293b";
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(pa.x, pa.y);
+    ctx.lineTo(pb.x, pb.y);
+    ctx.stroke();
+  }
+}
+
+function drawParcelTennisClub(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel) {
+  const pal = getRoomPalette();
+  const p00 = iso(u0, v0, z0);
+  const p10 = iso(u1, v0, z0);
+  const p11 = iso(u1, v1, z0);
+  const p01 = iso(u0, v1, z0);
+
+  // Parsel tıklama poligonu (duvar gövdesi + taban dahil)
+  addHitPoly(isoBoxSilhouette(u0, v0, u1, v1, z0, z0 + 50), () => {
+    if (typeof selectSlot === "function") selectSlot(s);
+  });
+
+  ctx.save();
+
+  // 1. Çatlamış beton temel ve kirli zemin karoları
+  isoBox(u0, v0, u1, v1, Math.max(0, z0 - 4), z0, pal.ruinFloorA, pal.ruinWallL, pal.ruinWallR, OUTLINE_COL, 1.5);
+
+  const inU0 = u0 + 10, inV0 = v0 + 10;
+  const tileN = 5;
+  const tileSize = 35;
+  for (let tu = 0; tu < tileN; tu++) {
+    for (let tv = 0; tv < tileN; tv++) {
+      const cu0 = inU0 + tu * tileSize;
+      const cv0 = inV0 + tv * tileSize;
+      const isMissing = (tu === 1 && tv === 2) || (tu === 3 && tv === 1) || (tu === 2 && tv === 4);
+      const isMossy = (tu === 0 && tv === 0) || (tu === 4 && tv === 3);
+      const col = isMissing ? "#5a4d3b" : (isMossy ? "#5c6f46" : (((tu + tv) % 2 === 0) ? pal.ruinFloorA : pal.ruinFloorB));
+      isoQuad(cu0, cv0, cu0 + tileSize - 1, cv0 + tileSize - 1, z0 + 0.3, col, "rgba(40,32,26,0.35)", 0.8);
+    }
+  }
+
+  // Zeminde belirgin çatlak çizgileri
+  const crackPairs = [
+    [u0 + 38, v0 + 44, u0 + 82, v0 + 72],
+    [u0 + 82, v0 + 72, u0 + 114, v0 + 62],
+    [u0 + 128, v0 + 105, u0 + 162, v0 + 148],
+    [u0 + 52, v0 + 132, u0 + 96, v0 + 164]
+  ];
+  ctx.strokeStyle = "#3b3028";
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < crackPairs.length; i++) {
+    const cr = crackPairs[i];
+    const ca = iso(cr[0], cr[1], z0 + 0.6);
+    const cb = iso(cr[2], cr[3], z0 + 0.6);
+    ctx.beginPath();
+    ctx.moveTo(ca.x, ca.y);
+    ctx.lineTo(cb.x, cb.y);
+    ctx.stroke();
+  }
+
+  // Parsel içi duvar sınırları (güvenlik şeridi için 14 birim içerde)
+  const wU0 = u0 + 14, wU1 = u1 - 14;
+  const wV0 = v0 + 14, wV1 = v1 - 14;
+  const wT = 9;
+
+  // 2. Arka duvar (wU0) — kırık tuğla segmentleri ve yıkık pencere boşluğu
+  _drawBrokenWallSegment(wU0, wV0, wU0 + wT, wV0 + 54, z0, 48, 28, "v", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+  isoBox(wU0, wV0 + 54, wU0 + wT, wV0 + 104, z0, z0 + 16, pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR, OUTLINE_COL, 1.3);
+  isoBox(wU0 + 2, wV0 + 56, wU0 + wT - 2, wV0 + 60, z0 + 16, z0 + 34, pal.ruinTimberDark, pal.ruinTimber, pal.ruinTimberDark, OUTLINE_COL, 1.0);
+  _drawBrokenWallSegment(wU0, wV0 + 104, wU0 + wT, wV1, z0, 22, 54, "v", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+
+  // 3. Sol duvar (wV0) — çökük duvar ve açıkta tuğlalar
+  _drawBrokenWallSegment(wU0 + wT, wV0, wU0 + 72, wV0 + wT, z0, 46, 20, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+  isoBox(wU0 + 72, wV0, wU0 + 116, wV0 + wT, z0, z0 + 14, pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR, OUTLINE_COL, 1.2);
+  _drawBrokenWallSegment(wU0 + 116, wV0, wU1, wV0 + wT, z0, 32, 42, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+
+  // Açıkta kalmış tuğla detayları
+  isoBox(wU0 + 1, wV0 + 18, wU0 + wT - 1, wV0 + 30, z0 + 38, z0 + 44, "#9e5a40", "#824530", "#693624", OUTLINE_COL, 0.9);
+  isoBox(wU0 + 22, wV0 + 1, wU0 + 34, wV0 + wT - 1, z0 + 34, z0 + 40, "#9e5a40", "#824530", "#693624", OUTLINE_COL, 0.9);
+
+  // 4. İç mekân moloz yığınları, zemin kalıntısı ve yabani çalı/sarmaşık
+  _drawRubblePile(wU0 + 36, wV0 + 36, z0, pal);
+  _drawRubblePile(wU0 + 118, wV0 + 52, z0, pal);
+  _drawRubblePile(wU0 + 58, wV1 - 36, z0, pal);
+
+  // Yerde solmuş yeşil kulüp saha motifi / paspas kalıntısı
+  isoQuad(wU0 + 56, wV0 + 68, wU0 + 110, wV0 + 114, z0 + 0.6, "#3f6848", "rgba(255,255,255,0.35)", 1.0);
+
+  // Çökmüş / eğik ahşap çatı kirişleri (açık çatı görüntüsü)
+  isoBox(wU0 + 10, wV0 + 28, wU0 + 96, wV0 + 35, z0 + 34, z0 + 40, pal.ruinTimber, pal.ruinTimberDark, "#2b1d12", OUTLINE_COL, 1.1);
+  // Eğik çökmüş kiriş (köşeden zemine düşmüş)
+  drawPoly2D(
+    [iso(wU0 + 16, wV0 + 124, z0 + 40), iso(wU0 + 22, wV0 + 130, z0 + 40), iso(wU0 + 116, wV0 + 88, z0 + 6), iso(wU0 + 110, wV0 + 82, z0 + 6)],
+    pal.ruinTimber, OUTLINE_COL, 1.2
+  );
+  drawPoly2D(
+    [iso(wU0 + 22, wV0 + 130, z0 + 40), iso(wU0 + 116, wV0 + 88, z0 + 6), iso(wU0 + 116, wV0 + 88, z0 + 1), iso(wU0 + 22, wV0 + 130, z0 + 34)],
+    pal.ruinTimberDark, OUTLINE_COL, 1.1
+  );
+  drawPoly2D(
+    [iso(wU0 + 64, wV0 + 14, z0 + 30), iso(wU0 + 70, wV0 + 20, z0 + 30), iso(wU0 + 138, wV0 + 78, z0 + 4), iso(wU0 + 132, wV0 + 72, z0 + 4)],
+    pal.ruinTimber, OUTLINE_COL, 1.1
+  );
+
+  // Köşelerde yabani ot / sarmaşık öbekleri
+  _drawRuinOvergrowth(wU0 + 18, wV1 - 24, z0, 0.95);
+  _drawRuinOvergrowth(wU1 - 22, wV0 + 20, z0, 0.85);
+
+  // 5. Sağ duvar (wV1) — pencere boşluğu ve kırık duvar
+  _drawBrokenWallSegment(wU0 + wT, wV1 - wT, wU0 + 58, wV1, z0, 50, 22, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+  isoBox(wU0 + 58, wV1 - wT, wU0 + 110, wV1, z0, z0 + 15, pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR, OUTLINE_COL, 1.2);
+  _drawBrokenWallSegment(wU0 + 110, wV1 - wT, wU1, wV1, z0, 24, 40, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+
+  // 6. Ön duvar (wU1) — sol/sağ yıkık duvar + ortada çürümüş kırık ahşap kapı
+  const doorV0 = wV0 + 56, doorV1 = wV0 + 104;
+  _drawBrokenWallSegment(wU1 - wT, wV0, wU1, doorV0, z0, 42, 34, "v", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+  _drawBrokenWallSegment(wU1 - wT, doorV1, wU1, wV1, z0, 32, 44, "v", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+
+  // Çürümüş ahşap kapı kasası ve çapraz çakılmış kalaslar
+  isoBox(wU1 - wT + 1, doorV0, wU1 - 1, doorV0 + 6, z0, z0 + 42, pal.ruinTimberDark, pal.ruinTimber, pal.ruinTimberDark, OUTLINE_COL, 1.1);
+  isoBox(wU1 - wT + 1, doorV1 - 6, wU1 - 1, doorV1, z0, z0 + 40, pal.ruinTimberDark, pal.ruinTimber, pal.ruinTimberDark, OUTLINE_COL, 1.1);
+  isoBox(wU1 - wT + 1, doorV0, wU1 - 1, doorV1, z0 + 38, z0 + 44, pal.ruinTimberDark, pal.ruinTimber, pal.ruinTimberDark, OUTLINE_COL, 1.1);
+  // Menteşeden sarkmış kırık kapı kanadı
+  drawPoly2D(
+    [iso(wU1 - 3, doorV0 + 6, z0 + 2), iso(wU1 - 3, doorV1 - 14, z0 + 4), iso(wU1 - 3, doorV1 - 16, z0 + 36), iso(wU1 - 3, doorV0 + 6, z0 + 38)],
+    pal.ruinTimber, OUTLINE_COL, 1.1
+  );
+  // Kapı üstüne çarpı şeklinde çakılmış uyarı kalası
+  const dpA = iso(wU1 - 1, doorV0 + 4, z0 + 12);
+  const dpB = iso(wU1 - 1, doorV1 - 4, z0 + 26);
+  const dpC = iso(wU1 - 1, doorV0 + 4, z0 + 28);
+  const dpD = iso(wU1 - 1, doorV1 - 4, z0 + 14);
+  ctx.strokeStyle = "#8a623c";
+  ctx.lineWidth = 3.2;
+  ctx.beginPath();
+  ctx.moveTo(dpA.x, dpA.y); ctx.lineTo(dpB.x, dpB.y);
+  ctx.moveTo(dpC.x, dpC.y); ctx.lineTo(dpD.x, dpD.y);
+  ctx.stroke();
+
+  // 7. Ön cephede (kapının sağında, palmiyenin kapatmadığı kısımda) eğri "TENİS KULÜBÜ" tabelası
+  const sV0 = doorV1 + 3, sV1 = wV1 - 4;
+  const sU = wU1 + 0.5;
+  const spTL = iso(sU, sV0, z0 + 29);
+  const spTR = iso(sU, sV1, z0 + 24);
+  const spBR = iso(sU, sV1, z0 + 13);
+  const spBL = iso(sU, sV0, z0 + 18);
+  drawPoly2D([spTL, spTR, spBR, spBL], "#35533c", "#78716c", 1.3);
+
+  ctx.save();
+  const sMid = iso(sU, (sV0 + sV1) * 0.5, z0 + 21.0);
+  const sAng = Math.atan2(spTR.y - spTL.y, spTR.x - spTL.x);
+  ctx.translate(sMid.x, sMid.y);
+  ctx.rotate(sAng);
+  ctx.fillStyle = "rgba(236, 228, 204, 0.85)";
+  ctx.font = "900 5.5px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("TENİS KULÜBÜ", 0, 0);
+  ctx.restore();
+
+  // 8. Parsel çevresinde sarı-siyah güvenlik şeridi ve ahşap kazıklar ([u0+5..u1-5] × [v0+5..v1-5])
+  const pU0 = u0 + 5, pU1 = u1 - 5, pV0 = v0 + 5, pV1 = v1 - 5;
+  const posts = [
+    [pU0, pV0], [pU1, pV0], [pU1, pV1], [pU0, pV1],
+    [(pU0 + pU1) * 0.5, pV0], [(pU0 + pU1) * 0.5, pV1],
+    [pU0, (pV0 + pV1) * 0.5], [pU1, (pV0 + pV1) * 0.5]
+  ];
+  for (let i = 0; i < posts.length; i++) {
+    const pu = posts[i][0], pv = posts[i][1];
+    isoBox(pu - 2, pv - 2, pu + 2, pv + 2, z0, z0 + 16, "#785233", "#5c3d24", "#422a17", OUTLINE_COL, 1.0);
+  }
+  _drawHazardTapeSegment(pU0, pV0, pU1, pV0, z0 + 12);
+  _drawHazardTapeSegment(pU0, pV0, pU0, pV1, z0 + 12);
+  _drawHazardTapeSegment(pU0, pV1, pU1, pV1, z0 + 12);
+  _drawHazardTapeSegment(pU1, pV0, pU1, pV1, z0 + 12);
+
+  // 9. Seçili parsel vurgu çerçevesi (diğer parsellerle aynı standart)
+  drawPoly2D([p00, p10, p11, p01], null, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.4);
+  ctx.restore();
 }
 
 // ===== BUNDLED: render/parcel-corridor.js =====
@@ -16278,6 +16623,7 @@ function drawGasUnit(u0, v0, z0) {
 function drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1) {
   if (typeof viewFloor !== "number" || viewFloor <= fIdx) return;
   if (!s || !isRoofedStructure(s.type) || s.type === "Elevator") return;
+  if (s.type === "TennisClub" && (s.tennisState || "Ruin") === "Ruin") return;
   const aboveFl = (typeof floors !== "undefined" && floors[fIdx + 1]) ? floors[fIdx + 1] : null;
   const aboveSlot = (aboveFl && aboveFl.slots) ? aboveFl.slots[sIdx] : null;
   if (aboveSlot && aboveSlot.type !== "Empty") return;
@@ -16325,12 +16671,10 @@ function drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1) {
   const fl = floors[fIdx];
   const isEdgeClosed = (du, dv) => {
     const nGu = gu + du, nGv = gv + dv;
-    if (nGu < 0 || nGu > 5 || nGv < 0 || nGv > 5) return false;
-    const nIdx = nGu * 6 + nGv;
-    const nAbove = (aboveFl && aboveFl.slots) ? aboveFl.slots[nIdx] : null;
+    const nAbove = slotAtGrid(aboveFl, nGu, nGv);
     if (nAbove && nAbove.type !== "Empty") return true;
-    const nSlot = (fl && fl.slots) ? fl.slots[nIdx] : null;
-    return !!(nSlot && isRoofedStructure(nSlot.type) && nSlot.type !== "Elevator");
+    const nSlot = slotAtGrid(fl, nGu, nGv);
+    return !!(nSlot && isSlotStructurallyConnected(nSlot) && nSlot.type !== "Elevator");
   };
 
   const drawBack = !isEdgeClosed(-1, 0);
@@ -16364,7 +16708,9 @@ function drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1) {
 // [render/parcel-facade.js] V1: Üst kat izlenirken (viewFloor > fIdx) kapalı alt kat cepheleri & pencereler
 
 function _isFacadeSlotBuiltRoofed(slot) {
-  return !!(slot && (slot.parcelBuilt || slot.type !== "Empty") && typeof isRoofedStructure === "function" && isRoofedStructure(slot.type));
+  if (!slot || (!slot.parcelBuilt && slot.type === "Empty")) return false;
+  if (typeof isSlotStructurallyConnected === "function") return isSlotStructurallyConnected(slot);
+  return typeof isRoofedStructure === "function" && isRoofedStructure(slot.type);
 }
 
 function _isFacadeWindowLitNight(s) {
@@ -16503,6 +16849,7 @@ function _drawReceptionLowerFront(s, u0, v0, u1, v1, z0, zWallTop, pal, isNightM
 function drawParcelLowerFloorFacade(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, rightSlot, backSlot, frontSlot) {
   if (typeof viewFloor !== "number" || viewFloor <= fIdx) return;
   if (!s || (!s.parcelBuilt && s.type === "Empty") || typeof isRoofedStructure !== "function" || !isRoofedStructure(s.type)) return;
+  if (s.type === "TennisClub" && (s.tennisState || "Ruin") === "Ruin") return;
 
   let effRight = rightSlot;
   if (fIdx === 0 && sIdx === 35 && typeof floors !== "undefined" && floors[0] && floors[0].slots[37]) {
