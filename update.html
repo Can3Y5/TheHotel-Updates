@@ -1268,12 +1268,36 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
   color: #5c4938;
   line-height: 1.3;
 }
+.decor-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+}
+.decor-filter-btn {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1.5px solid #bfa47a;
+  background: #fff9ec;
+  color: #4a3525;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.decor-filter-btn.active {
+  background: #fde68a;
+  border-color: #d97706;
+  color: #78350f;
+}
 .decor-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
   gap: 5px;
   max-height: 30vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 2px;
 }
 .decor-card {
@@ -1421,6 +1445,8 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
   padding: 4px;
 }
 @media (max-width: 540px) {
+  .decor-filter-bar { gap: 3px; }
+  .decor-filter-btn { font-size: 9.5px; padding: 3px 6px; }
   .decor-grid { grid-template-columns: repeat(2, 1fr); max-height: 26vh; gap: 4px; }
   .decor-thumb { width: 32px; height: 32px; font-size: 16px; }
   .decor-card { padding: 4px 5px; gap: 5px; }
@@ -1803,14 +1829,48 @@ const DecorPrices = {
   potted_plant: 20,
   flower_bush: 25,
   street_lamp: 30,
+  stone_lantern: 30,
+  flower_pot_set: 20,
+  lavender_bed: 25,
+  birdhouse: 25,
+  garden_gnome: 30,
+  mushroom_cluster: 20,
+  mailbox: 25,
+  flagpole: 35,
+  snowman: 25,
+  pumpkin_basket: 25,
+  tulip_bed: 30,
+  sandcastle: 25,
+  telescope_deck: 35,
+  anchor_monument: 30,
   bench: 40,
   umbrella_set: 50,
   cypress: 50,
   shade_tree: 70,
   palm: 70,
   kiosk: 80,
+  ornate_fountain: 75,
+  marble_statue: 70,
+  birdbath: 45,
+  sundial: 55,
+  lily_pond: 65,
+  flower_cart: 65,
+  bbq_corner: 80,
+  cafe_table: 60,
+  bench_lamp: 70,
+  holiday_pine: 65,
+  koipond_bridge: 75,
+  zen_garden: 55,
+  firepit: 70,
   gazebo: 120,
-  fountain: 180
+  fountain: 180,
+  pavilion_gazebo: 150,
+  ivy_pergola: 140,
+  greenhouse: 170,
+  windmill: 190,
+  treehouse: 200,
+  grand_pool_fountain: 220,
+  botanical_arch: 145
 };
 
 const SeasonNames = ["İlkbahar", "Yaz", "Sonbahar", "Kış"];
@@ -3038,6 +3098,230 @@ const DECOR_CATALOG = [
         withStaticDecorTime(() => drawGrandMarbleFountain(u, v, 0, 1.0));
       }
     }
+  },
+  // E3 Küçük (K)
+  {
+    id: "stone_lantern", name: "Taş Fener", icon: "🏮", size: "K", cost: DecorPrices.stone_lantern,
+    drawFn: "drawDecorStoneLantern", seasonal: true, nightGlow: true, glowRad: 110, glowZ: 24, glowIntensity: 0.9,
+    draw(u, v, si, _flip, isNight, glow) {
+      if (typeof drawDecorStoneLantern === "function") drawDecorStoneLantern(u, v, si, isNight, glow);
+    }
+  },
+  {
+    id: "flower_pot_set", name: "Çiçek Saksısı Seti", icon: "🪴", size: "K", cost: DecorPrices.flower_pot_set,
+    drawFn: "drawDecorFlowerPotSet", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorFlowerPotSet === "function") drawDecorFlowerPotSet(u, v, si); }
+  },
+  {
+    id: "lavender_bed", name: "Lavanta Tarhı", icon: "🪻", size: "K", cost: DecorPrices.lavender_bed,
+    drawFn: "drawDecorLavenderBed", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorLavenderBed === "function") drawDecorLavenderBed(u, v, si); }
+  },
+  {
+    id: "birdhouse", name: "Kuş Evi", icon: "🐦", size: "K", cost: DecorPrices.birdhouse,
+    drawFn: "drawDecorBirdhouse", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorBirdhouse === "function") drawDecorBirdhouse(u, v, si); }
+  },
+  {
+    id: "garden_gnome", name: "Bahçe Cücesi", icon: "🍄", size: "K", cost: DecorPrices.garden_gnome,
+    drawFn: "drawDecorGardenGnome", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorGardenGnome === "function") drawDecorGardenGnome(u, v, si); }
+  },
+  {
+    id: "mushroom_cluster", name: "Mantar Kümesi", icon: "🍄", size: "K", cost: DecorPrices.mushroom_cluster,
+    drawFn: "drawDecorMushroomCluster", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorMushroomCluster === "function") drawDecorMushroomCluster(u, v, si); }
+  },
+  {
+    id: "mailbox", name: "Posta Kutusu", icon: "📬", size: "K", cost: DecorPrices.mailbox,
+    drawFn: "drawDecorMailbox", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorMailbox === "function") drawDecorMailbox(u, v, si); }
+  },
+  {
+    id: "flagpole", name: "Bayrak Direği", icon: "🚩", size: "K", cost: DecorPrices.flagpole,
+    drawFn: "drawDecorFlagpole", seasonal: false, nightGlow: false, animated: true,
+    draw(u, v) { if (typeof drawDecorFlagpole === "function") drawDecorFlagpole(u, v); },
+    drawLive(u, v, _si, flip, _isNight, _glow, t) {
+      if (typeof drawLiveDecorFlagpole === "function") drawLiveDecorFlagpole(u, v, flip, t);
+    }
+  },
+  // E3 Mevsimlik
+  {
+    id: "snowman", name: "Kardan Adam", icon: "⛄", size: "K", cost: DecorPrices.snowman,
+    drawFn: "drawDecorSnowman", seasonal: true, nightGlow: false,
+    draw(u, v) { if (typeof drawDecorSnowman === "function") drawDecorSnowman(u, v); }
+  },
+  {
+    id: "pumpkin_basket", name: "Balkabağı Sepeti", icon: "🎃", size: "K", cost: DecorPrices.pumpkin_basket,
+    drawFn: "drawDecorPumpkinBasket", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorPumpkinBasket === "function") drawDecorPumpkinBasket(u, v, si); }
+  },
+  {
+    id: "tulip_bed", name: "Lale Tarhı", icon: "🌷", size: "K", cost: DecorPrices.tulip_bed,
+    drawFn: "drawDecorTulipBed", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorTulipBed === "function") drawDecorTulipBed(u, v, si); }
+  },
+  // E3 Gemini Özgün (K)
+  {
+    id: "sandcastle", name: "Kum Kalesi", icon: "🏰", size: "K", cost: DecorPrices.sandcastle,
+    drawFn: "drawDecorSandcastle", seasonal: false, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorSandcastle === "function") drawDecorSandcastle(u, v, si); }
+  },
+  {
+    id: "telescope_deck", name: "Teleskop Terası", icon: "🔭", size: "K", cost: DecorPrices.telescope_deck,
+    drawFn: "drawDecorTelescopeDeck", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawDecorTelescopeDeck === "function") drawDecorTelescopeDeck(u, v); }
+  },
+  {
+    id: "anchor_monument", name: "Denizci Çıpası", icon: "⚓", size: "K", cost: DecorPrices.anchor_monument,
+    drawFn: "drawDecorAnchorMonument", seasonal: false, nightGlow: false,
+    draw(u, v) { if (typeof drawDecorAnchorMonument === "function") drawDecorAnchorMonument(u, v); }
+  },
+  // E3 Orta (O)
+  {
+    id: "ornate_fountain", name: "Süs Çeşmesi", icon: "⛲", size: "O", cost: DecorPrices.ornate_fountain,
+    drawFn: "drawDecorOrnateFountain", seasonal: false, nightGlow: false, animated: true,
+    draw(u, v, si) { if (typeof drawDecorOrnateFountain === "function") drawDecorOrnateFountain(u, v, si); },
+    drawLive(u, v, si, _flip, _isNight, _glow, t) {
+      if (si !== 3 && typeof drawLiveDecorFountainJet === "function") drawLiveDecorFountainJet(u, v, 37, 13, t);
+    }
+  },
+  {
+    id: "marble_statue", name: "Mermer Heykel", icon: "🗿", size: "O", cost: DecorPrices.marble_statue,
+    drawFn: "drawDecorMarbleStatue", seasonal: false, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorMarbleStatue === "function") drawDecorMarbleStatue(u, v, si); }
+  },
+  {
+    id: "birdbath", name: "Kuş Banyosu", icon: "🕊️", size: "O", cost: DecorPrices.birdbath,
+    drawFn: "drawDecorBirdbath", seasonal: false, nightGlow: false, animated: true,
+    draw(u, v, si) { if (typeof drawDecorBirdbath === "function") drawDecorBirdbath(u, v, si); },
+    drawLive(u, v, si, _flip, _isNight, _glow, t) {
+      if (si !== 3 && typeof drawLiveDecorRipple === "function") drawLiveDecorRipple(u, v, 24.5, 9, t);
+    }
+  },
+  {
+    id: "sundial", name: "Güneş Saati", icon: "🧭", size: "O", cost: DecorPrices.sundial,
+    drawFn: "drawDecorSundial", seasonal: false, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorSundial === "function") drawDecorSundial(u, v, si); }
+  },
+  {
+    id: "lily_pond", name: "Nilüfer Göleti", icon: "🪷", size: "O", cost: DecorPrices.lily_pond,
+    drawFn: "drawDecorLilyPond", seasonal: false, nightGlow: false, animated: true,
+    draw(u, v, si) { if (typeof drawDecorLilyPond === "function") drawDecorLilyPond(u, v, si); },
+    drawLive(u, v, si, _flip, _isNight, _glow, t) {
+      if (si !== 3 && typeof drawLiveDecorRipple === "function") drawLiveDecorRipple(u + 1, v - 1, 2, 13, t);
+    }
+  },
+  {
+    id: "flower_cart", name: "Çiçek Arabası", icon: "💐", size: "O", cost: DecorPrices.flower_cart,
+    drawFn: "drawDecorFlowerCart", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorFlowerCart === "function") drawDecorFlowerCart(u, v, si); }
+  },
+  {
+    id: "bbq_corner", name: "Barbekü Köşesi", icon: "🔥", size: "O", cost: DecorPrices.bbq_corner,
+    drawFn: "drawDecorBbqCorner", seasonal: false, nightGlow: true, animated: true, glowRad: 115, glowZ: 22, glowIntensity: 0.75,
+    draw(u, v, _si, _flip, isNight, glow) {
+      if (typeof drawDecorBbqCorner === "function") drawDecorBbqCorner(u, v, isNight, glow);
+    },
+    drawLive(u, v, _si, _flip, _isNight, _glow, t) {
+      if (typeof drawLiveDecorSmoke === "function") drawLiveDecorSmoke(u - 8, v - 2, 43, t);
+    }
+  },
+  {
+    id: "cafe_table", name: "Şemsiyeli Kafe Masası", icon: "☕", size: "O", cost: DecorPrices.cafe_table,
+    drawFn: "drawDecorCafeTable", seasonal: false, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorCafeTable === "function") drawDecorCafeTable(u, v, si); }
+  },
+  {
+    id: "bench_lamp", name: "Bahçe Bankı + Lamba", icon: "🛋️", size: "O", cost: DecorPrices.bench_lamp,
+    drawFn: "drawDecorBenchLamp", seasonal: false, nightGlow: true, glowRad: 120, glowZ: 40, glowIntensity: 0.95,
+    draw(u, v, si, _flip, isNight, glow) {
+      if (typeof drawDecorBenchLamp === "function") drawDecorBenchLamp(u, v, si, isNight, glow);
+    }
+  },
+  {
+    id: "holiday_pine", name: "Yılbaşı Çamı", icon: "🎄", size: "O", cost: DecorPrices.holiday_pine,
+    drawFn: "drawDecorHolidayPine", seasonal: true, nightGlow: true, animated: true, glowRad: 125, glowZ: 36, glowIntensity: 0.9,
+    draw(u, v, _si, _flip, isNight, glow) {
+      if (typeof drawDecorHolidayPine === "function") drawDecorHolidayPine(u, v, isNight, glow);
+    },
+    drawLive(u, v, _si, _flip, isNight, _glow, t) {
+      if (typeof drawLiveDecorTwinkle === "function") drawLiveDecorTwinkle(u, v, isNight, t);
+    }
+  },
+  // E3 Gemini Özgün (O)
+  {
+    id: "koipond_bridge", name: "Japon Köprüsü", icon: "🌉", size: "O", cost: DecorPrices.koipond_bridge,
+    drawFn: "drawDecorKoiBridge", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorKoiBridge === "function") drawDecorKoiBridge(u, v, si); }
+  },
+  {
+    id: "zen_garden", name: "Zen Taş Bahçesi", icon: "🪨", size: "O", cost: DecorPrices.zen_garden,
+    drawFn: "drawDecorZenGarden", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorZenGarden === "function") drawDecorZenGarden(u, v, si); }
+  },
+  {
+    id: "firepit", name: "Ateş Çukuru", icon: "🪵", size: "O", cost: DecorPrices.firepit,
+    drawFn: "drawDecorFirepit", seasonal: false, nightGlow: true, animated: true, glowRad: 130, glowZ: 16, glowIntensity: 0.95,
+    draw(u, v, _si, _flip, isNight, glow) {
+      if (typeof drawDecorFirepit === "function") drawDecorFirepit(u, v, isNight, glow);
+    },
+    drawLive(u, v, _si, _flip, _isNight, _glow, t) {
+      if (typeof drawLiveDecorFlame === "function") drawLiveDecorFlame(u, v, 6, t);
+    }
+  },
+  // E3 Büyük (B)
+  {
+    id: "pavilion_gazebo", name: "Köşk (Gazebo)", icon: "🏯", size: "B", cost: DecorPrices.pavilion_gazebo,
+    drawFn: "drawDecorPavilionGazebo", seasonal: false, nightGlow: true, glowRad: 140, glowZ: 28, glowIntensity: 0.85,
+    draw(u, v, si, _flip, isNight, glow) {
+      if (typeof drawDecorPavilionGazebo === "function") drawDecorPavilionGazebo(u, v, si, isNight, glow);
+    }
+  },
+  {
+    id: "ivy_pergola", name: "Sarmaşıklı Çardak", icon: "🌿", size: "B", cost: DecorPrices.ivy_pergola,
+    drawFn: "drawDecorIvyPergola", seasonal: true, nightGlow: false,
+    draw(u, v, si) { if (typeof drawDecorIvyPergola === "function") drawDecorIvyPergola(u, v, si); }
+  },
+  {
+    id: "greenhouse", name: "Sera", icon: "🌱", size: "B", cost: DecorPrices.greenhouse,
+    drawFn: "drawDecorGreenhouse", seasonal: true, nightGlow: true, glowRad: 135, glowZ: 24, glowIntensity: 0.8,
+    draw(u, v, si, _flip, isNight, glow) {
+      if (typeof drawDecorGreenhouse === "function") drawDecorGreenhouse(u, v, si, isNight, glow);
+    }
+  },
+  {
+    id: "windmill", name: "Yel Değirmeni", icon: "🌬️", size: "B", cost: DecorPrices.windmill,
+    drawFn: "drawDecorWindmill", seasonal: false, nightGlow: false, animated: true,
+    draw(u, v, si) { if (typeof drawDecorWindmill === "function") drawDecorWindmill(u, v, si); },
+    drawLive(u, v, _si, _flip, _isNight, _glow, t) {
+      if (typeof drawLiveDecorWindmillBlades === "function") drawLiveDecorWindmillBlades(u, v, t);
+    }
+  },
+  {
+    id: "treehouse", name: "Ağaç Ev", icon: "🏡", size: "B", cost: DecorPrices.treehouse,
+    drawFn: "drawDecorTreehouse", seasonal: true, nightGlow: true, glowRad: 130, glowZ: 36, glowIntensity: 0.8,
+    draw(u, v, si, _flip, isNight, glow) {
+      if (typeof drawDecorTreehouse === "function") drawDecorTreehouse(u, v, si, isNight, glow);
+    }
+  },
+  {
+    id: "grand_pool_fountain", name: "Büyük Fıskiyeli Havuz", icon: "💦", size: "B", cost: DecorPrices.grand_pool_fountain,
+    drawFn: "drawDecorGrandPoolFountain", seasonal: false, nightGlow: true, animated: true, glowRad: 150, glowKind: "pool", glowZ: 12, glowIntensity: 0.85,
+    draw(u, v, si, _flip, isNight, glow) {
+      if (typeof drawDecorGrandPoolFountain === "function") drawDecorGrandPoolFountain(u, v, si, isNight, glow);
+    },
+    drawLive(u, v, si, _flip, _isNight, _glow, t) {
+      if (si !== 3 && typeof drawLiveDecorFountainJet === "function") drawLiveDecorFountainJet(u, v, 27, 20, t);
+    }
+  },
+  // E3 Gemini Özgün (B)
+  {
+    id: "botanical_arch", name: "Çiçek Kemeri", icon: "🌸", size: "B", cost: DecorPrices.botanical_arch,
+    drawFn: "drawDecorBotanicalArch", seasonal: true, nightGlow: true, glowRad: 135, glowZ: 46, glowIntensity: 0.78,
+    draw(u, v, si, _flip, isNight, glow) {
+      if (typeof drawDecorBotanicalArch === "function") drawDecorBotanicalArch(u, v, si, isNight, glow);
+    }
   }
 ];
 
@@ -3051,6 +3335,7 @@ const DECOR = { version: 1 };
 let decorSelectedSlotId = null;
 let decorPreviewItemId = null;
 let decorReplaceMode = false;
+let decorFilter = "all";
 
 function canSlotFitDecor(slotSize, itemSize) {
   return (DECOR_SIZE_RANK[slotSize] || 0) >= (DECOR_SIZE_RANK[itemSize] || 99);
@@ -3192,6 +3477,7 @@ function resetDecorState(rawDecor) {
   decorSelectedSlotId = null;
   decorPreviewItemId = null;
   decorReplaceMode = false;
+  decorFilter = "all";
   DECOR.version++;
 }
 
@@ -10302,7 +10588,11 @@ function getDecorThumbUrl(item) {
     const prevCtx = ctx;
     ctx = tctx;
     try {
-      item.draw(0, 0, typeof seasonIdx === "function" ? seasonIdx() : 0, 1, false, 0);
+      const siThumb = (typeof seasonIdx === "function") ? seasonIdx() : 0;
+      item.draw(0, 0, siThumb, 1, false, 0);
+      if (typeof item.drawLive === "function") {
+        item.drawLive(0, 0, siThumb, 1, false, 0, 0.5);
+      }
     } finally {
       ctx = prevCtx;
     }
@@ -10434,12 +10724,52 @@ function renderDecorPanel() {
     return;
   }
 
-  // Boş yuva veya Değiştir modu: uygun süs kataloğu listesi
+  // Boş yuva veya Değiştir modu: boyuta uygun katalog + boyut/mevsim filtre düğmeleri
   const compatItems = DECOR_CATALOG.filter(it => canSlotFitDecor(slot.size, it.size));
+  const curFilter = (typeof decorFilter === "string") ? decorFilter : "all";
+  const filterDefs = [
+    { id: "all", label: "Hepsi", count: compatItems.length },
+    { id: "K", label: "Küçük", count: compatItems.filter(it => it.size === "K").length },
+    { id: "O", label: "Orta", count: compatItems.filter(it => it.size === "O").length },
+    { id: "B", label: "Büyük", count: compatItems.filter(it => it.size === "B").length },
+    { id: "seasonal", label: "Mevsimlik", count: compatItems.filter(it => !!it.seasonal).length }
+  ];
+
+  const filterBar = document.createElement("div");
+  filterBar.className = "decor-filter-bar";
+  for (let i = 0; i < filterDefs.length; i++) {
+    const fd = filterDefs[i];
+    const fb = document.createElement("button");
+    fb.type = "button";
+    fb.className = "decor-filter-btn" + (curFilter === fd.id ? " active" : "");
+    fb.setAttribute("data-decor-filter", fd.id);
+    fb.textContent = fd.label + " (" + fd.count + ")";
+    fb.onclick = () => {
+      if (typeof play === "function") play("tap");
+      decorFilter = fd.id;
+      refreshPanel();
+    };
+    filterBar.appendChild(fb);
+  }
+  frag.appendChild(filterBar);
+
+  const visibleItems = compatItems.filter(it => {
+    if (curFilter === "seasonal") return !!it.seasonal;
+    if (curFilter === "K" || curFilter === "O" || curFilter === "B") return it.size === curFilter;
+    return true;
+  });
+
+  if (visibleItems.length === 0) {
+    const emptyFilter = document.createElement("div");
+    emptyFilter.className = "decor-empty-hint";
+    emptyFilter.textContent = "Bu yuva (" + slot.size + ") boyutuna uygun süs yok. Başka filtre seçebilirsin.";
+    frag.appendChild(emptyFilter);
+  }
+
   const grid = document.createElement("div");
   grid.className = "decor-grid";
-  for (let i = 0; i < compatItems.length; i++) {
-    const it = compatItems[i];
+  for (let i = 0; i < visibleItems.length; i++) {
+    const it = visibleItems[i];
     const isCurrent = !!(decorReplaceMode && placedItem && it.id === placedItem.id);
     const isPreview = decorPreviewItemId === it.id;
 
@@ -11116,8 +11446,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 69;
-const APP_VERSION_NAME = "1.9.61-beta";
+const APP_VERSION_CODE = 70;
+const APP_VERSION_NAME = "1.9.62-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12550,7 +12880,11 @@ var COSMETIC_CATALOG = {
       spaTileTop: "#14b8a6", spaTileL: "#0f766e", spaTileR: "#115e59",
       spaMarbleTop: "#fffdf8", spaMarbleL: "#e7ddd0", spaMarbleR: "#cfc2b2",
       spaWoodTop: "#d99b52", spaWoodL: "#b87a38", spaWoodR: "#8c5823",
-      spaWater: "#2dd4bf", spaSignBg: "#0f766e", spaSignFg: "#ecfeff"
+      spaWater: "#2dd4bf", spaSignBg: "#0f766e", spaSignFg: "#ecfeff",
+      decorStoneTop: "#ede7da", decorStoneL: "#cfc5b4", decorStoneR: "#b0a490",
+      decorWoodTop: "#b87a42", decorWoodL: "#915c2d", decorWoodR: "#6e431e",
+      decorRoofTop: "#b45309", decorRoofL: "#92400e", decorRoofR: "#78350f",
+      decorAccent: "#e11d48", decorGold: "#fbbf24"
     },
     modern: {
       id: "modern",
@@ -12699,7 +13033,11 @@ var COSMETIC_CATALOG = {
       spaTileTop: "#38bdf8", spaTileL: "#0284c7", spaTileR: "#0369a1",
       spaMarbleTop: "#f8fafc", spaMarbleL: "#cbd5e1", spaMarbleR: "#94a3b8",
       spaWoodTop: "#c28e5a", spaWoodL: "#9a6b3e", spaWoodR: "#734e2a",
-      spaWater: "#38bdf8", spaSignBg: "#0369a1", spaSignFg: "#f0f9ff"
+      spaWater: "#38bdf8", spaSignBg: "#0369a1", spaSignFg: "#f0f9ff",
+      decorStoneTop: "#e2e8f0", decorStoneL: "#94a3b8", decorStoneR: "#64748b",
+      decorWoodTop: "#64748b", decorWoodL: "#475569", decorWoodR: "#334155",
+      decorRoofTop: "#334155", decorRoofL: "#1e293b", decorRoofR: "#0f172a",
+      decorAccent: "#f97316", decorGold: "#38bdf8"
     },
     seaside: {
       id: "seaside",
@@ -12848,7 +13186,11 @@ var COSMETIC_CATALOG = {
       spaTileTop: "#2dd4bf", spaTileL: "#0d9488", spaTileR: "#0f766e",
       spaMarbleTop: "#ffffff", spaMarbleL: "#d7f0ee", spaMarbleR: "#b0dbd8",
       spaWoodTop: "#deb278", spaWoodL: "#ba8b52", spaWoodR: "#916838",
-      spaWater: "#22d3ee", spaSignBg: "#0d9488", spaSignFg: "#ffffff"
+      spaWater: "#22d3ee", spaSignBg: "#0d9488", spaSignFg: "#ffffff",
+      decorStoneTop: "#f5efe0", decorStoneL: "#d6ccb8", decorStoneR: "#b8ad96",
+      decorWoodTop: "#d9b482", decorWoodL: "#b58d58", decorWoodR: "#8f6a3b",
+      decorRoofTop: "#0e7490", decorRoofL: "#155e75", decorRoofR: "#0c4a6e",
+      decorAccent: "#fb7185", decorGold: "#facc15"
     }
   }
 };
@@ -13064,11 +13406,12 @@ function collectSceneLights(cw, ch) {
   const uN = streetLampUNear(), uF = streetLampUFar();
   for (const v of STREET_LAMP_VS_NEAR) add(uN, v, 40, 120, "lamp", 1);
   for (const v of STREET_LAMP_VS_FAR) add(uF, v, 40, 120, "lamp", 1);
-  if (typeof decor === "object" && decor && typeof DECOR_SLOT_MAP === "object") {
+  if (typeof decor === "object" && decor && typeof DECOR_SLOT_MAP === "object" && typeof DECOR_CATALOG_MAP === "object") {
     for (const [slotId, itemId] of Object.entries(decor)) {
-      if (itemId !== "street_lamp") continue;
+      const item = DECOR_CATALOG_MAP[itemId];
+      if (!item || !item.nightGlow) continue;
       const slot = DECOR_SLOT_MAP[slotId];
-      if (slot) add(slot.u, slot.v, 40, 120, "lamp", 1);
+      if (slot) add(slot.u, slot.v, item.glowZ || 40, item.glowRad || 120, item.glowKind || "lamp", item.glowIntensity || 1);
     }
   }
   return out;
@@ -15041,10 +15384,706 @@ function drawDistantMountainBackdrop(si) {
   ctx.restore();
 }
 
+// ===== BUNDLED: render/decor-props.js =====
+// [render/decor-props.js] E3: Yeni bahçe süsleri çizimleri (statik önbellek + hafif canlı efektler)
+function _dPal() {
+  const th = (typeof T === "function") ? T() : null;
+  return {
+    sTop: (th && th.decorStoneTop) || "#ede7da",
+    sL:   (th && th.decorStoneL)   || "#cfc5b4",
+    sR:   (th && th.decorStoneR)   || "#b0a490",
+    wTop: (th && th.decorWoodTop)  || "#b87a42",
+    wL:   (th && th.decorWoodL)    || "#915c2d",
+    wR:   (th && th.decorWoodR)    || "#6e431e",
+    rTop: (th && th.decorRoofTop)  || "#b45309",
+    rL:   (th && th.decorRoofL)    || "#92400e",
+    rR:   (th && th.decorRoofR)    || "#78350f",
+    acc:  (th && th.decorAccent)   || "#e11d48",
+    gold: (th && th.decorGold)     || "#fbbf24",
+    water:(th && th.spaWater)      || "#38bdf8"
+  };
+}
+
+function _dFoliage(si) {
+  if (si === 1) return { top: "#22c55e", mid: "#15803d", dark: "#14532d" };
+  if (si === 2) return { top: "#f59e0b", mid: "#d97706", dark: "#92400e" };
+  if (si === 3) return { top: "#cbd5e1", mid: "#64748b", dark: "#475569" };
+  return { top: "#4ade80", mid: "#16a34a", dark: "#166534" };
+}
+
+function _dShadow(u, v, rPxU, rPxV) {
+  const p = iso(u, v, 0);
+  ctx.save();
+  ctx.fillStyle = "rgba(18, 28, 16, 0.18)";
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y + 1, rPxU, rPxV, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function _dCircle(u, v, z, rx, ry, fill, stroke = OUTLINE_COL, lw = 1.6) {
+  const p = iso(u, v, z);
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, rx, ry, 0, 0, Math.PI * 2);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke && lw > 0) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+
+function _dPyramidRoof(u, v, r, zBase, zPeak, colL, colR, colBack) {
+  const pN = iso(u - r, v - r, zBase);
+  const pE = iso(u - r, v + r, zBase);
+  const pS = iso(u + r, v + r, zBase);
+  const pW = iso(u + r, v - r, zBase);
+  const pk = iso(u, v, zPeak);
+  if (colBack) drawPoly2D([pN, pE, pk], colBack, OUTLINE_COL, 1.5);
+  drawPoly2D([pE, pS, pk], colR, OUTLINE_COL, 1.7);
+  drawPoly2D([pS, pW, pk], colL, OUTLINE_COL, 1.7);
+}
+
+function _dNightGlowDot(u, v, z, radPx, glow, col) {
+  if (!glow || glow <= 0.02) return;
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.globalAlpha = Math.min(0.85, glow * 0.8);
+  ctx.fillStyle = col || "#fde047";
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, radPx, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ---------- KÜÇÜK (K) SÜSLER ----------
+
+function drawDecorStoneLantern(u, v, si, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 14, 7);
+  isoBox(u - 9, v - 9, u + 9, v + 9, 0, 5, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.6);
+  isoBox(u - 4, v - 4, u + 4, v + 4, 5, 19, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  const lit = isNight && glow > 0.1;
+  isoBox(u - 7, v - 7, u + 7, v + 7, 19, 28, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.6);
+  const wL = [iso(u + 7, v - 4, 21), iso(u + 7, v + 4, 21), iso(u + 7, v + 4, 26), iso(u + 7, v - 4, 26)];
+  const wR = [iso(u - 4, v + 7, 21), iso(u + 4, v + 7, 21), iso(u + 4, v + 7, 26), iso(u - 4, v + 7, 26)];
+  drawPoly2D(wL, lit ? "#fef08a" : "#78350f", OUTLINE_COL, 1.1);
+  drawPoly2D(wR, lit ? "#fde047" : "#451a03", OUTLINE_COL, 1.1);
+  _dPyramidRoof(u, v, 11, 28, 38, si === 3 ? "#f1f5f9" : c.sL, si === 3 ? "#cbd5e1" : c.sR, c.sTop);
+  _dCircle(u, v, 39, 3, 2, c.gold, OUTLINE_COL, 1.3);
+  if (lit) _dNightGlowDot(u, v, 24, 11, glow, "rgba(253, 224, 71, 0.55)");
+}
+
+function drawDecorFlowerPotSet(u, v, si) {
+  const c = _dPal();
+  const f = _dFoliage(si);
+  const pots = [
+    { du: -6, dv: -5, z: 9, fl: "#fb7185" },
+    { du: 6, dv: -2, z: 12, fl: "#facc15" },
+    { du: -1, dv: 7, z: 7, fl: c.acc }
+  ];
+  _dShadow(u, v, 16, 8);
+  for (const pt of pots) {
+    isoBox(u + pt.du - 5, v + pt.dv - 5, u + pt.du + 5, v + pt.dv + 5, 0, pt.z, "#c2410c", "#9a3412", "#7c2d12", OUTLINE_COL, 1.4);
+    _dCircle(u + pt.du, v + pt.dv, pt.z + 3, 6.5, 4.5, f.mid, OUTLINE_COL, 1.3);
+    _dCircle(u + pt.du - 1, v + pt.dv + 1, pt.z + 6, 3, 2.2, pt.fl, OUTLINE_COL, 1);
+    _dCircle(u + pt.du + 2, v + pt.dv - 1, pt.z + 5, 2.5, 1.8, "#fff", OUTLINE_COL, 0.9);
+  }
+}
+
+function drawDecorLavenderBed(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 17, 9);
+  isoBox(u - 13, v - 11, u + 13, v + 11, 0, 5, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  isoQuad(u - 11, v - 9, u + 11, v + 9, 5, si === 3 ? "#e2e8f0" : "#5c4033", OUTLINE_COL, 1.1);
+  const colStem = si === 3 ? "#94a3b8" : "#15803d";
+  const colTip = si === 3 ? "#cbd5e1" : "#8b5cf6";
+  const colHi = si === 3 ? "#f8fafc" : "#c084fc";
+  for (let i = -8; i <= 8; i += 5) {
+    for (let j = -5; j <= 5; j += 5) {
+      const p0 = iso(u + i, v + j, 5);
+      const p1 = iso(u + i, v + j, 15);
+      ctx.strokeStyle = colStem;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      ctx.fillStyle = (i + j) % 2 === 0 ? colTip : colHi;
+      ctx.beginPath(); ctx.ellipse(p1.x, p1.y - 2, 2.3, 3.6, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawDecorBirdhouse(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 11, 6);
+  isoBox(u - 6, v - 6, u + 6, v + 6, 0, 3, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.4);
+  isoBox(u - 2.2, v - 2.2, u + 2.2, v + 2.2, 3, 28, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  isoBox(u - 7, v - 7, u + 7, v + 7, 28, 39, c.wTop, "#e7d3b0", "#c9ae82", OUTLINE_COL, 1.6);
+  _dCircle(u + 7, v, 34, 2.4, 2.8, "#1e1b18", OUTLINE_COL, 1);
+  _dPyramidRoof(u, v, 9.5, 39, 48, si === 3 ? "#f8fafc" : c.rL, si === 3 ? "#cbd5e1" : c.rR, c.rTop);
+  _dCircle(u + 4, v - 4, 45, 2.5, 2, "#38bdf8", OUTLINE_COL, 1);
+}
+
+function drawDecorGardenGnome(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 11, 6);
+  isoBox(u - 8, v - 8, u + 8, v + 8, 0, 4, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.4);
+  _dCircle(u, v, 11, 6.5, 8, "#2563eb", OUTLINE_COL, 1.5);
+  _dCircle(u, v, 18, 5, 4.5, "#f8fafc", OUTLINE_COL, 1.2);
+  _dCircle(u, v, 23, 4.5, 4.5, "#fed7aa", OUTLINE_COL, 1.3);
+  const baseL = iso(u - 5, v + 5, 25);
+  const baseR = iso(u + 5, v - 5, 25);
+  const baseC = iso(u + 5, v + 5, 25);
+  const tip = iso(u, v, 40);
+  drawPoly2D([baseL, baseC, baseR, tip], si === 3 ? "#dc2626" : "#ef4444", OUTLINE_COL, 1.6);
+}
+
+function drawDecorMushroomCluster(u, v, si) {
+  const f = _dFoliage(si);
+  _dShadow(u, v, 15, 8);
+  _dCircle(u, v, 2, 13, 7, si === 3 ? "#e2e8f0" : f.dark, OUTLINE_COL, 1.3);
+  const shrooms = [
+    { du: -4, dv: -2, h: 11, cap: "#ef4444", rw: 7.5, rh: 5 },
+    { du: 6, dv: 3, h: 8, cap: "#f97316", rw: 5.5, rh: 3.8 },
+    { du: -1, dv: 6, h: 6, cap: "#ef4444", rw: 4.5, rh: 3 }
+  ];
+  for (const m of shrooms) {
+    isoBox(u + m.du - 2, v + m.dv - 2, u + m.du + 2, v + m.dv + 2, 2, 2 + m.h, "#fef3c7", "#fde68a", "#fcd34d", OUTLINE_COL, 1.2);
+    _dCircle(u + m.du, v + m.dv, 2 + m.h + 1, m.rw, m.rh, m.cap, OUTLINE_COL, 1.4);
+    const cp = iso(u + m.du, v + m.dv, 2 + m.h + 2);
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(cp.x - 2, cp.y, 1.3, 0, Math.PI * 2);
+    ctx.arc(cp.x + 2.2, cp.y - 0.8, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawDecorMailbox(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 11, 5);
+  isoBox(u - 3, v - 3, u + 3, v + 3, 0, 22, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  isoBox(u - 8, v - 5, u + 8, v + 5, 22, 31, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.6);
+  _dCircle(u, v, 31, 8, 4.5, si === 3 ? "#f1f5f9" : "#64748b", OUTLINE_COL, 1.3);
+  const f0 = iso(u + 1, v + 5.5, 26);
+  const f1 = iso(u + 1, v + 5.5, 35);
+  ctx.strokeStyle = "#dc2626";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(f0.x, f0.y); ctx.lineTo(f1.x, f1.y); ctx.stroke();
+  drawPoly2D([f1, { x: f1.x + 5, y: f1.y }, { x: f1.x + 5, y: f1.y + 4 }, { x: f1.x, y: f1.y + 4 }], "#ef4444", OUTLINE_COL, 1);
+}
+
+function drawDecorFlagpole(u, v) {
+  const c = _dPal();
+  _dShadow(u, v, 13, 6);
+  isoBox(u - 9, v - 9, u + 9, v + 9, 0, 5, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  const b = iso(u, v, 5);
+  const top = iso(u, v, 58);
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+  _dCircle(u, v, 59, 2.5, 2.2, c.gold, OUTLINE_COL, 1.2);
+}
+
+function drawLiveDecorFlagpole(u, v, flip, t) {
+  const c = _dPal();
+  const p = iso(u, v, 55);
+  const dir = flip >= 0 ? 1 : -1;
+  const wv = Math.sin((t || 0) * 3.4 + u * 0.03) * 2.4;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.quadraticCurveTo(p.x + dir * 10, p.y - 2 + wv, p.x + dir * 20, p.y + 4 - wv * 0.7);
+  ctx.lineTo(p.x, p.y + 11);
+  ctx.closePath();
+  ctx.fillStyle = c.acc;
+  ctx.fill();
+  ctx.strokeStyle = OUTLINE_COL;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- MEVSİMLİK (K / O) & GEMİNİ ÖZGÜN (K) ----------
+
+function drawDecorSnowman(u, v) {
+  _dShadow(u, v, 14, 7);
+  _dCircle(u, v, 7, 10, 8, "#f8fafc", OUTLINE_COL, 1.6);
+  _dCircle(u, v, 18, 7.5, 6.2, "#ffffff", OUTLINE_COL, 1.5);
+  _dCircle(u, v, 27, 5.5, 4.8, "#ffffff", OUTLINE_COL, 1.5);
+  const hd = iso(u, v, 27);
+  ctx.strokeStyle = "#e11d48"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(hd.x - 5, hd.y + 4); ctx.lineTo(hd.x + 5, hd.y + 4); ctx.stroke();
+  ctx.fillStyle = "#f97316";
+  ctx.beginPath(); ctx.moveTo(hd.x + 1, hd.y); ctx.lineTo(hd.x + 7, hd.y + 1); ctx.lineTo(hd.x + 1, hd.y + 2.5); ctx.fill();
+  isoBox(u - 4, v - 4, u + 4, v + 4, 31, 37, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.3);
+  _dCircle(u, v, 31, 7, 3.5, "#1e293b", OUTLINE_COL, 1.2);
+}
+
+function drawDecorPumpkinBasket(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 14, 7);
+  isoBox(u - 10, v - 9, u + 10, v + 9, 0, 8, "#d97706", "#b45309", "#92400e", OUTLINE_COL, 1.5);
+  const pCols = ["#f97316", "#ea580c", "#fb923c"];
+  const pts = [[-4, -2, 11], [4, 2, 11], [0, -3, 13]];
+  for (let i = 0; i < pts.length; i++) {
+    const [du, dv, z] = pts[i];
+    _dCircle(u + du, v + dv, z, 5, 4.2, pCols[i], OUTLINE_COL, 1.3);
+    const sp = iso(u + du, v + dv, z + 3.5);
+    ctx.strokeStyle = "#15803d"; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(sp.x, sp.y); ctx.lineTo(sp.x, sp.y - 3); ctx.stroke();
+  }
+  if (si === 3) _dCircle(u, v, 15, 4, 2, "#f8fafc", null, 0);
+  else _dCircle(u + 7, v + 6, 3, 3, 2, c.acc, OUTLINE_COL, 0.9);
+}
+
+function drawDecorTulipBed(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 16, 8);
+  isoBox(u - 12, v - 10, u + 12, v + 10, 0, 5, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.5);
+  isoQuad(u - 10, v - 8, u + 10, v + 8, 5, si === 3 ? "#f1f5f9" : "#452719", OUTLINE_COL, 1);
+  const cols = ["#ef4444", "#facc15", "#ec4899", "#fb923c"];
+  let idx = 0;
+  for (let i = -7; i <= 7; i += 7) {
+    for (let j = -5; j <= 5; j += 5) {
+      const p0 = iso(u + i, v + j, 5);
+      const p1 = iso(u + i, v + j, 15);
+      ctx.strokeStyle = "#16a34a"; ctx.lineWidth = 1.7;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      ctx.fillStyle = si === 3 ? "#cbd5e1" : cols[idx++ % cols.length];
+      ctx.beginPath(); ctx.arc(p1.x, p1.y - 1.5, 2.7, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 0.9; ctx.stroke();
+    }
+  }
+}
+
+function drawDecorSandcastle(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 15, 8);
+  isoBox(u - 12, v - 12, u + 12, v + 12, 0, 3, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  const s1 = si === 3 ? "#e2e8f0" : "#fde68a";
+  const s2 = si === 3 ? "#cbd5e1" : "#f59e0b";
+  const s3 = si === 3 ? "#94a3b8" : "#d97706";
+  isoBox(u - 8, v - 8, u + 8, v + 8, 3, 12, s1, s2, s3, OUTLINE_COL, 1.4);
+  isoBox(u - 4, v - 4, u + 4, v + 4, 12, 22, s1, s2, s3, OUTLINE_COL, 1.4);
+  _dPyramidRoof(u, v, 5, 22, 30, c.acc, "#be123c", "#fb7185");
+}
+
+function drawDecorTelescopeDeck(u, v) {
+  const c = _dPal();
+  _dShadow(u, v, 14, 7);
+  isoBox(u - 10, v - 10, u + 10, v + 10, 0, 4, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.5);
+  const cen = iso(u, v, 4);
+  const top = iso(u, v, 22);
+  ctx.strokeStyle = "#334155"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cen.x - 6, cen.y + 3); ctx.lineTo(top.x, top.y);
+  ctx.moveTo(cen.x + 6, cen.y + 3); ctx.lineTo(top.x, top.y);
+  ctx.moveTo(cen.x, cen.y - 3); ctx.lineTo(top.x, top.y);
+  ctx.stroke();
+  ctx.save();
+  ctx.strokeStyle = c.gold; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(top.x - 7, top.y + 3); ctx.lineTo(top.x + 9, top.y - 8); ctx.stroke();
+  ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.restore();
+}
+
+function drawDecorAnchorMonument(u, v) {
+  const c = _dPal();
+  _dShadow(u, v, 14, 7);
+  isoBox(u - 10, v - 10, u + 10, v + 10, 0, 6, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  const b = iso(u, v, 6);
+  const tp = iso(u, v, 31);
+  ctx.save();
+  ctx.strokeStyle = "#334155"; ctx.lineWidth = 3.5; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(tp.x, tp.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tp.x - 6, tp.y + 5); ctx.lineTo(tp.x + 6, tp.y + 5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(b.x, b.y - 5, 8.5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  ctx.strokeStyle = c.gold; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(tp.x, tp.y - 2, 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- ORTA (O) SÜSLER ----------
+
+function drawDecorOrnateFountain(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 27, 14);
+  isoBox(u - 21, v - 21, u + 21, v + 21, 0, 7, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.8);
+  isoQuad(u - 17, v - 17, u + 17, v + 17, 7, si === 3 ? "#cbd5e1" : c.water, OUTLINE_COL, 1.2);
+  isoBox(u - 6, v - 6, u + 6, v + 6, 7, 25, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.6);
+  isoBox(u - 11, v - 11, u + 11, v + 11, 23, 28, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  isoBox(u - 3, v - 3, u + 3, v + 3, 28, 37, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.4);
+}
+
+function drawLiveDecorFountainJet(u, v, zTop, spanPx, t) {
+  const c = iso(u, v, zTop);
+  const pulse = Math.sin((t || 0) * 5.2) * 2.5;
+  ctx.save();
+  for (let s = -1; s <= 1; s += 2) {
+    ctx.beginPath();
+    ctx.moveTo(c.x, c.y);
+    ctx.quadraticCurveTo(c.x + s * spanPx * 0.5, c.y - 17 - pulse, c.x + s * spanPx, c.y + 6);
+    ctx.strokeStyle = "#0284c7";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.strokeStyle = "#e0f2fe";
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#38bdf8";
+  ctx.beginPath(); ctx.arc(c.x, c.y - 12 - pulse * 0.6, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath(); ctx.arc(c.x, c.y - 12 - pulse * 0.6, 1.4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+function drawDecorMarbleStatue(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 22, 11);
+  isoBox(u - 16, v - 16, u + 16, v + 16, 0, 7, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.8);
+  isoBox(u - 10, v - 10, u + 10, v + 10, 7, 26, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.6);
+  _dCircle(u, v, 31, 6.5, 9, si === 3 ? "#f8fafc" : c.sTop, OUTLINE_COL, 1.5);
+  _dCircle(u, v, 42, 4.5, 4.5, "#ffffff", OUTLINE_COL, 1.5);
+  _dCircle(u, v, 45, 5.2, 2, c.gold, OUTLINE_COL, 1.1);
+}
+
+function drawDecorBirdbath(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 19, 10);
+  isoBox(u - 11, v - 11, u + 11, v + 11, 0, 5, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.6);
+  isoBox(u - 4, v - 4, u + 4, v + 4, 5, 22, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  _dCircle(u, v, 23, 14, 7.5, c.sL, OUTLINE_COL, 1.7);
+  _dCircle(u, v, 24.5, 11, 5.5, si === 3 ? "#e2e8f0" : c.water, OUTLINE_COL, 1.2);
+  _dCircle(u + 9, v + 5, 27, 2.8, 2.2, "#0284c7", OUTLINE_COL, 1.1);
+}
+
+function drawLiveDecorRipple(u, v, z, maxRx, t) {
+  const ph = ((t || 0) * 0.7) % 1;
+  const rx = 3 + ph * maxRx;
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.globalAlpha = 0.65 * (1 - ph);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.ellipse(p.x, p.y, rx, rx * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawDecorSundial(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 20, 10);
+  isoBox(u - 14, v - 14, u + 14, v + 14, 0, 5, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.6);
+  isoBox(u - 6, v - 6, u + 6, v + 6, 5, 24, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  _dCircle(u, v, 25.5, 11, 6, c.gold, OUTLINE_COL, 1.5);
+  const p0 = iso(u, v, 25.5);
+  drawPoly2D([p0, { x: p0.x + 6, y: p0.y - 8 }, { x: p0.x + 1, y: p0.y + 1 }], si === 3 ? "#94a3b8" : "#92400e", OUTLINE_COL, 1.2);
+}
+
+function drawDecorLilyPond(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 28, 15);
+  _dCircle(u, v, 1, 25, 13, c.sL, OUTLINE_COL, 1.8);
+  _dCircle(u, v, 2, 21, 10.5, si === 3 ? "#cbd5e1" : c.water, OUTLINE_COL, 1.2);
+  _dCircle(u - 7, v - 3, 2.5, 5, 2.8, "#16a34a", OUTLINE_COL, 1.1);
+  _dCircle(u + 6, v + 4, 2.5, 4.5, 2.5, "#15803d", OUTLINE_COL, 1.1);
+  _dCircle(u - 6, v - 3, 3.8, 2.5, 2, "#f472b6", OUTLINE_COL, 0.9);
+  _dCircle(u + 6, v + 4, 3.8, 2.2, 1.7, "#fdf2f8", OUTLINE_COL, 0.9);
+}
+
+function drawDecorFlowerCart(u, v, si) {
+  const c = _dPal();
+  const f = _dFoliage(si);
+  _dShadow(u, v, 26, 13);
+  isoBox(u - 16, v - 11, u + 14, v + 11, 5, 16, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.6);
+  _dCircle(u - 2, v + 12, 7, 6.5, 6.5, c.wR, OUTLINE_COL, 1.6);
+  _dCircle(u - 2, v + 12, 7, 2.2, 2.2, c.gold, OUTLINE_COL, 1);
+  const h0 = iso(u + 14, v, 11);
+  const h1 = iso(u + 23, v, 14);
+  ctx.strokeStyle = c.wR; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(h0.x, h0.y); ctx.lineTo(h1.x, h1.y); ctx.stroke();
+  _dCircle(u - 5, v, 18, 8, 5, f.mid, OUTLINE_COL, 1.3);
+  _dCircle(u + 5, v - 2, 18, 7, 4.5, f.top, OUTLINE_COL, 1.3);
+  _dCircle(u - 6, v + 1, 21, 3, 2, c.acc, OUTLINE_COL, 0.9);
+  _dCircle(u + 4, v - 3, 21, 3, 2, "#facc15", OUTLINE_COL, 0.9);
+}
+
+function drawDecorBbqCorner(u, v, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 26, 13);
+  isoBox(u - 18, v - 18, u + 18, v + 18, 0, 3, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+  isoBox(u - 12, v - 10, u + 4, v + 10, 3, 20, "#b91c1c", "#991b1b", "#7f1d1d", OUTLINE_COL, 1.6);
+  isoQuad(u - 10, v - 8, u + 2, v + 8, 20, "#1e293b", OUTLINE_COL, 1.2);
+  isoBox(u - 12, v - 6, u - 4, v + 2, 20, 42, "#991b1b", "#7f1d1d", "#450a0a", OUTLINE_COL, 1.6);
+  isoBox(u + 7, v - 10, u + 15, v + 8, 3, 14, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  if (isNight && glow > 0.1) _dNightGlowDot(u - 4, v, 21, 9, glow, "rgba(251, 146, 60, 0.7)");
+}
+
+function drawLiveDecorSmoke(u, v, z, t) {
+  ctx.save();
+  for (let i = 0; i < 3; i++) {
+    const ph = ((t || 0) * 0.5 + i * 0.33) % 1;
+    const sp = iso(u, v, z + ph * 22);
+    ctx.globalAlpha = 0.38 * (1 - ph);
+    ctx.fillStyle = "#e2e8f0";
+    ctx.beginPath();
+    ctx.arc(sp.x + Math.sin(ph * 5 + i) * 4, sp.y, 3 + ph * 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawDecorCafeTable(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 25, 13);
+  const chairs = [[-16, 0], [16, 0]];
+  for (const [du, dv] of chairs) {
+    isoBox(u + du - 4, v + dv - 4, u + du + 4, v + dv + 4, 0, 9, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  }
+  isoBox(u - 3, v - 3, u + 3, v + 3, 0, 14, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.4);
+  _dCircle(u, v, 15, 11, 5.8, c.sTop, OUTLINE_COL, 1.5);
+  _dCircle(u - 2, v + 1, 16.5, 2.2, 1.5, "#78350f", OUTLINE_COL, 1);
+  if (typeof drawIsoUmbrella === "function") {
+    drawIsoUmbrella(u, v, 15, si === 3 ? "#64748b" : c.acc, 0.75);
+  }
+}
+
+function drawDecorBenchLamp(u, v, si, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 25, 13);
+  if (typeof drawParkBench === "function") drawParkBench(u + 4, v - 4, 0, 0.85);
+  const lu = u - 14, lv = v + 14;
+  isoBox(lu - 3, lv - 3, lu + 3, lv + 3, 0, 38, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.4);
+  const lit = isNight && glow > 0.1;
+  _dCircle(lu, lv, 41, 5, 5, lit ? "#fef08a" : (si === 3 ? "#f1f5f9" : "#e2e8f0"), OUTLINE_COL, 1.4);
+  _dCircle(lu, lv, 45, 3, 2, c.gold, OUTLINE_COL, 1);
+  if (lit) _dNightGlowDot(lu, lv, 41, 12, glow, "rgba(253, 224, 71, 0.55)");
+}
+
+function drawDecorHolidayPine(u, v, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 24, 12);
+  isoBox(u - 4, v - 4, u + 4, v + 4, 0, 10, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.5);
+  const tiers = [
+    { z0: 9, z1: 27, r: 19 },
+    { z0: 21, z1: 40, r: 14.5 },
+    { z0: 33, z1: 52, r: 9.5 }
+  ];
+  for (const t of tiers) _dPyramidRoof(u, v, t.r, t.z0, t.z1, "#166534", "#14532d", "#15803d");
+  const baubles = [[-7, 5, 22, "#ef4444"], [7, -4, 24, "#fbbf24"], [-3, -6, 34, "#38bdf8"], [5, 5, 35, "#ef4444"], [0, 3, 44, "#fbbf24"]];
+  for (const [du, dv, z, col] of baubles) _dCircle(u + du, v + dv, z, 2.2, 2.2, col, OUTLINE_COL, 0.9);
+  _dCircle(u, v, 54, 3.6, 3.6, "#fde047", OUTLINE_COL, 1.2);
+  if (isNight && glow > 0.1) _dNightGlowDot(u, v, 36, 15, glow, "rgba(254, 240, 138, 0.48)");
+}
+
+function drawLiveDecorTwinkle(u, v, isNight, t) {
+  if (!isNight) return;
+  const cols = ["#fde047", "#fb7185", "#38bdf8"];
+  ctx.save();
+  for (let i = 0; i < 3; i++) {
+    const a = 0.4 + 0.6 * Math.abs(Math.sin((t || 0) * 3 + i * 1.9));
+    const p = iso(u + (i - 1) * 5, v + (1 - i) * 4, 24 + i * 9);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = cols[i];
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ---------- GEMİNİ ÖZGÜN (O) ----------
+
+function drawDecorKoiBridge(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 27, 14);
+  isoQuad(u - 22, v - 18, u + 22, v + 18, 0, si === 3 ? "#cbd5e1" : c.water, OUTLINE_COL, 1.4);
+  isoBox(u - 20, v - 10, u - 6, v + 10, 0, 9, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1.5);
+  isoBox(u - 7, v - 10, u + 7, v + 10, 6, 15, "#ef4444", "#dc2626", "#b91c1c", OUTLINE_COL, 1.5);
+  isoBox(u + 6, v - 10, u + 20, v + 10, 0, 9, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1.5);
+  isoBox(u - 8, v + 9, u + 8, v + 11, 15, 22, c.gold, "#b91c1c", "#991b1b", OUTLINE_COL, 1.2);
+}
+
+function drawDecorZenGarden(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 27, 14);
+  isoBox(u - 23, v - 23, u + 23, v + 23, 0, 4, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.7);
+  isoQuad(u - 20, v - 20, u + 20, v + 20, 4, si === 3 ? "#f8fafc" : "#f1efe9", OUTLINE_COL, 1.1);
+  ctx.save();
+  ctx.strokeStyle = "rgba(100, 116, 139, 0.45)";
+  ctx.lineWidth = 1.3;
+  for (let k = -12; k <= 12; k += 6) {
+    const a = iso(u - 16, v + k, 4.5);
+    const b = iso(u + 16, v + k, 4.5);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  ctx.restore();
+  isoBox(u - 7, v - 5, u + 2, v + 4, 4, 14, "#94a3b8", "#64748b", "#475569", OUTLINE_COL, 1.4);
+  isoBox(u + 6, v + 6, u + 12, v + 12, 4, 10, "#94a3b8", "#64748b", "#475569", OUTLINE_COL, 1.3);
+  isoBox(u - 14, v + 8, u - 9, v + 13, 4, 18, "#4ade80", "#16a34a", "#15803d", OUTLINE_COL, 1.3);
+}
+
+function drawDecorFirepit(u, v, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 26, 13);
+  isoBox(u - 22, v - 6, u - 14, v + 8, 0, 7, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  isoBox(u + 14, v - 8, u + 22, v + 6, 0, 7, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  _dCircle(u, v, 2, 13, 7, c.sL, OUTLINE_COL, 1.7);
+  _dCircle(u, v, 3, 9.5, 5, "#27272a", OUTLINE_COL, 1.2);
+  isoBox(u - 5, v - 2, u + 5, v + 2, 3, 6, c.wL, c.wR, "#451a03", OUTLINE_COL, 1.1);
+  if (isNight && glow > 0.1) _dNightGlowDot(u, v, 11, 14, glow, "rgba(251, 146, 60, 0.72)");
+}
+
+function drawLiveDecorFlame(u, v, z, t) {
+  const p = iso(u, v, z);
+  const w = Math.sin((t || 0) * 8) * 1.8;
+  ctx.save();
+  ctx.fillStyle = "#f97316";
+  ctx.beginPath(); ctx.moveTo(p.x - 5, p.y); ctx.quadraticCurveTo(p.x + w, p.y - 16, p.x + 5, p.y); ctx.fill();
+  ctx.fillStyle = "#fde047";
+  ctx.beginPath(); ctx.moveTo(p.x - 2.5, p.y); ctx.quadraticCurveTo(p.x - w * 0.6, p.y - 10, p.x + 2.5, p.y); ctx.fill();
+  ctx.restore();
+}
+
+// ---------- BÜYÜK (B) SÜSLER ----------
+
+function drawDecorPavilionGazebo(u, v, si, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 37, 19);
+  isoBox(u - 30, v - 30, u + 30, v + 30, 0, 7, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.9);
+  const posts = [[-25, -25], [25, -25], [25, 25], [-25, 25]];
+  for (const [du, dv] of posts) {
+    isoBox(u + du - 2.5, v + dv - 2.5, u + du + 2.5, v + dv + 2.5, 7, 40, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.4);
+  }
+  _dPyramidRoof(u, v, 33, 40, 64, si === 3 ? "#f8fafc" : c.rL, si === 3 ? "#cbd5e1" : c.rR, c.rTop);
+  _dCircle(u, v, 66, 3.5, 3, c.gold, OUTLINE_COL, 1.3);
+  if (isNight && glow > 0.1) _dNightGlowDot(u, v, 28, 16, glow, "rgba(253, 224, 71, 0.62)");
+}
+
+function drawDecorIvyPergola(u, v, si) {
+  const c = _dPal();
+  const f = _dFoliage(si);
+  _dShadow(u, v, 36, 18);
+  isoQuad(u - 30, v - 30, u + 30, v + 30, 0, c.sTop, OUTLINE_COL, 1.5);
+  const cols = [[-26, -26], [26, -26], [26, 26], [-26, 26]];
+  for (const [du, dv] of cols) isoBox(u + du - 3, v + dv - 3, u + du + 3, v + dv + 3, 0, 38, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.5);
+  for (let off = -24; off <= 24; off += 12) {
+    isoBox(u - 29, v + off - 2, u + 29, v + off + 2, 38, 42, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.2);
+  }
+  const vineSpots = [[-16, -12], [0, 0], [16, 10], [-14, 14], [12, -14]];
+  for (const [du, dv] of vineSpots) {
+    _dCircle(u + du, v + dv, 44, 10, 5.5, f.mid, OUTLINE_COL, 1.3);
+    _dCircle(u + du + 2, v + dv - 1, 45, 4, 2.5, si === 3 ? "#f8fafc" : c.acc, OUTLINE_COL, 0.9);
+  }
+}
+
+function drawDecorGreenhouse(u, v, si, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 37, 19);
+  isoBox(u - 28, v - 28, u + 28, v + 28, 0, 10, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.8);
+  const lit = isNight && glow > 0.1;
+  const gWall = lit ? "rgba(254, 240, 138, 0.72)" : "rgba(186, 230, 253, 0.65)";
+  const gSide = lit ? "rgba(253, 224, 71, 0.60)" : "rgba(125, 211, 252, 0.55)";
+  isoBox(u - 25, v - 25, u + 25, v + 25, 10, 36, gWall, gWall, gSide, OUTLINE_COL, 1.6);
+  _dCircle(u - 6, v, 15, 7, 5, "#16a34a", OUTLINE_COL, 1.1);
+  _dCircle(u + 8, v + 4, 15, 6, 4.5, "#22c55e", OUTLINE_COL, 1.1);
+  _dPyramidRoof(u, v, 27, 36, 54, si === 3 ? "rgba(241,245,249,0.9)" : gWall, si === 3 ? "rgba(203,213,225,0.88)" : gSide, "#e0f2fe");
+  if (lit) _dNightGlowDot(u, v, 24, 18, glow, "rgba(253, 224, 71, 0.55)");
+}
+
+function drawDecorWindmill(u, v, si) {
+  const c = _dPal();
+  _dShadow(u, v, 32, 16);
+  isoBox(u - 22, v - 22, u + 22, v + 22, 0, 8, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.8);
+  isoBox(u - 14, v - 14, u + 14, v + 14, 8, 52, "#f8fafc", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.8);
+  isoBox(u + 13, v - 4, u + 15, v + 4, 8, 20, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.2);
+  _dPyramidRoof(u, v, 16, 52, 66, si === 3 ? "#f1f5f9" : c.rL, si === 3 ? "#cbd5e1" : c.rR, c.rTop);
+}
+
+function drawLiveDecorWindmillBlades(u, v, t) {
+  const c = _dPal();
+  const hub = iso(u + 14, v + 14, 48);
+  const ang = (t || 0) * 1.15;
+  ctx.save();
+  ctx.translate(hub.x, hub.y);
+  ctx.rotate(ang);
+  for (let i = 0; i < 4; i++) {
+    ctx.rotate(Math.PI * 0.5);
+    ctx.fillStyle = "#fffdf5";
+    ctx.strokeStyle = OUTLINE_COL;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.rect(-2.5, 2, 5, 22);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = c.wR;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 24); ctx.stroke();
+  }
+  ctx.fillStyle = c.gold;
+  ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = OUTLINE_COL; ctx.stroke();
+  ctx.restore();
+}
+
+function drawDecorTreehouse(u, v, si, isNight, glow) {
+  const c = _dPal();
+  const f = _dFoliage(si);
+  _dShadow(u, v, 36, 18);
+  isoBox(u - 9, v - 9, u + 9, v + 9, 0, 26, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.8);
+  _dCircle(u - 10, v - 8, 33, 21, 13, f.dark, OUTLINE_COL, 1.6);
+  _dCircle(u + 10, v + 8, 33, 18, 11, f.mid, OUTLINE_COL, 1.6);
+  isoBox(u - 21, v - 21, u + 21, v + 21, 25, 29, c.wTop, c.wL, c.wR, OUTLINE_COL, 1.7);
+  isoBox(u - 13, v - 13, u + 13, v + 13, 29, 44, c.wTop, "#e7c99f", "#c9a372", OUTLINE_COL, 1.7);
+  _dPyramidRoof(u, v, 15, 44, 58, si === 3 ? "#f8fafc" : c.rL, si === 3 ? "#cbd5e1" : c.rR, c.rTop);
+  _dCircle(u - 14, v - 8, 49, 13, 8, f.top, OUTLINE_COL, 1.5);
+  _dCircle(u + 12, v - 12, 46, 10, 6, f.mid, OUTLINE_COL, 1.4);
+  const lp0 = iso(u + 9, v + 9, 2);
+  const lp1 = iso(u + 9, v + 9, 25);
+  ctx.save();
+  ctx.strokeStyle = c.wR; ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(lp0.x - 3, lp0.y); ctx.lineTo(lp1.x - 3, lp1.y);
+  ctx.moveTo(lp0.x + 3, lp0.y); ctx.lineTo(lp1.x + 3, lp1.y);
+  for (let k = 1; k <= 3; k++) {
+    const ry = lp0.y + (lp1.y - lp0.y) * (k / 4);
+    ctx.moveTo(lp0.x - 3, ry); ctx.lineTo(lp0.x + 3, ry);
+  }
+  ctx.stroke();
+  ctx.restore();
+  const lit = isNight && glow > 0.1;
+  _dCircle(u + 13, v + 3, 37, 3.2, 3.2, lit ? "#fde047" : "#38bdf8", OUTLINE_COL, 1.2);
+  if (lit) _dNightGlowDot(u + 13, v + 3, 37, 12, glow, "rgba(253, 224, 71, 0.58)");
+}
+
+function drawDecorGrandPoolFountain(u, v, si, isNight, glow) {
+  const c = _dPal();
+  _dShadow(u, v, 38, 19);
+  isoBox(u - 33, v - 33, u + 33, v + 33, 0, 7, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.9);
+  isoQuad(u - 28, v - 28, u + 28, v + 28, 7, si === 3 ? "#cbd5e1" : c.water, OUTLINE_COL, 1.3);
+  isoBox(u - 7, v - 7, u + 7, v + 7, 7, 26, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.6);
+  _dCircle(u, v, 27, 12, 6, c.sTop, OUTLINE_COL, 1.5);
+  if (isNight && glow > 0.1) _dNightGlowDot(u, v, 10, 20, glow, "rgba(56, 189, 248, 0.45)");
+}
+
+function drawDecorBotanicalArch(u, v, si, isNight, glow) {
+  const c = _dPal();
+  const f = _dFoliage(si);
+  _dShadow(u, v, 36, 18);
+  isoQuad(u - 28, v - 16, u + 28, v + 16, 0, c.sTop, OUTLINE_COL, 1.5);
+  isoBox(u - 26, v - 4, u - 18, v + 4, 0, 44, c.sTop, "#f8fafc", "#cbd5e1", OUTLINE_COL, 1.6);
+  isoBox(u + 18, v - 4, u + 26, v + 4, 0, 44, c.sTop, "#f8fafc", "#cbd5e1", OUTLINE_COL, 1.6);
+  const pL = iso(u - 22, v, 44);
+  const pR = iso(u + 22, v, 44);
+  const pM = iso(u, v, 58);
+  ctx.save();
+  ctx.strokeStyle = "#f8fafc"; ctx.lineWidth = 7; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(pL.x, pL.y); ctx.quadraticCurveTo(pM.x, pM.y - 6, pR.x, pR.y); ctx.stroke();
+  ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.restore();
+  _dCircle(u - 16, v, 49, 8, 5, f.top, OUTLINE_COL, 1.3);
+  _dCircle(u, v, 55, 9, 5, f.mid, OUTLINE_COL, 1.3);
+  _dCircle(u + 16, v, 49, 8, 5, f.top, OUTLINE_COL, 1.3);
+  _dCircle(u - 2, v + 2, 56, 3.2, 2.5, si === 3 ? "#f8fafc" : c.acc, OUTLINE_COL, 0.9);
+  if (isNight && glow > 0.1) _dNightGlowDot(u, v, 52, 16, glow, "rgba(253, 224, 71, 0.55)");
+}
+
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
-const WORLD_STATIC_CACHE_VER = "t1_border_front";
+const WORLD_STATIC_CACHE_VER = "e3_decor_v1";
 const _GRASS_TUFTS = [
   [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
   [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
@@ -15309,6 +16348,7 @@ function drawWorld() {
     drawCachedLayer("decorBack", decorKey, () => {
       drawDecorItemsLayer(backDecorItems, si, isNight, decorGlow);
     });
+    drawDecorLiveLayer(backDecorItems, si, isNight, decorGlow, timeNow);
   }
 
   // 3) Ön Kaldırım ve Kesintisiz İzometrik Otoyol (Kuzey Tüneli v=-1150 ile Güney Tüneli v=2250 Arasında)
@@ -15504,6 +16544,7 @@ function drawWorld() {
     drawCachedLayer("decorFront", decorKey, () => {
       drawDecorItemsLayer(frontDecorItems, si, isNight, decorGlow);
     });
+    drawDecorLiveLayer(frontDecorItems, si, isNight, decorGlow, timeNow);
   }
 
   // 5.5) Tenis Kortu Çevresi Ağaç & Çiçekli Çalı Sınırı (parsel 38 ve dekorların önünde)
@@ -16011,6 +17052,17 @@ function drawDecorItemsLayer(entries, si, isNight, glow) {
   }
 }
 
+function drawDecorLiveLayer(entries, si, isNight, glow, t) {
+  const tm = t || 0;
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    if (typeof e.item.drawLive !== "function") continue;
+    ctx.save();
+    e.item.drawLive(e.slot.u, e.slot.v, si, e.slot.flip || 1, isNight, glow, tm);
+    ctx.restore();
+  }
+}
+
 const _DECOR_MARKER_STYLES = {
   K: { bg: "#dcfce7", border: "#16a34a", text: "#14532d", rx: 18, ry: 9 },
   O: { bg: "#dbeafe", border: "#2563eb", text: "#1e3a8a", rx: 28, ry: 14 },
@@ -16028,6 +17080,9 @@ function drawDecorModeOverlay(si, isNight, glow) {
       ctx.save();
       ctx.globalAlpha = 0.62;
       pItem.draw(pSlot.u, pSlot.v, si, pSlot.flip || 1, isNight, glow);
+      if (typeof pItem.drawLive === "function") {
+        pItem.drawLive(pSlot.u, pSlot.v, si, pSlot.flip || 1, isNight, glow, typeof timeNow !== "undefined" ? timeNow : 0);
+      }
       ctx.restore();
     }
   }
