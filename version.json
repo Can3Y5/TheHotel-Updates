@@ -1,8 +1,8 @@
 {
-  "versionCode": 64,
-  "versionName": "1.9.56-beta",
+  "versionCode": 65,
+  "versionName": "1.9.57-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Tenis kortu ağaç sınırı bina katmanının önüne alındı"
+  "notes": "Tenisçiler grubu etkinliği ve tenis malzemesi toplama"
 }

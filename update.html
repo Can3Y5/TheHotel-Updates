@@ -1846,12 +1846,35 @@ const FirstNames = [
 ];
 const KillerLetters = ["A", "B", "C", "D", "E", "H", "K", "M", "S", "T", "Y"];
 const VipNames = ["Tarkan", "Kıvanç", "Serenay", "Kenan", "Hadise", "Haluk", "Ajda", "Cem"];
-const EventTypes = ["VIP", "Wedding", "Festival"];
+const EventTypes = ["VIP", "Wedding", "Festival", "Tennis"];
 const EventTitles = {
   VIP: "🌟 Ünlü Konuk Ziyareti",
   Wedding: "💍 Sosyete Düğünü",
-  Festival: "🎪 Şehir Festivali & Turist Akını"
+  Festival: "🎪 Şehir Festivali & Turist Akını",
+  Tennis: "🎾 Tenisçiler Grubu Turnuvası"
 };
+const TennisKitKeys = ["raket", "top", "file", "boya"];
+const TennisKitNeeds = { raket: 3, top: 2, file: 1, boya: 2 };
+const TennisKitTotal = 8;
+const TennisKitLabels = {
+  raket: "Tenis Raketi",
+  top: "Tenis Topu Kutusu",
+  file: "Kort Filesi",
+  boya: "Çizgi Boyası"
+};
+const TennisKitShortLabels = {
+  raket: "Raket",
+  top: "Top",
+  file: "File",
+  boya: "Boya"
+};
+const TennisKitEmojis = {
+  raket: "🏸",
+  top: "🎾",
+  file: "🥅",
+  boya: "🪣"
+};
+const TennisMaxGuestsPerEvent = 4;
 const BodyguardDailyPrice = 80;
 const LastNames = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Aydın", "Öztürk", "Arslan", "Koç", "Polat"];
 const CnNames = ["李伟", "王芳", "张敏", "刘洋", "陈静", "杨磊"];
@@ -2142,7 +2165,9 @@ let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
 let marketEvent = { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 0 };
 let unreadNewspaper = false;
 let paperboyPawn = null;
-let activeEvent = "", eventDaysLeft = 0, nextEventDay = 0, nextEventType = "VIP", vipSpawnedThisEvent = false;
+let activeEvent = "", eventDaysLeft = 0, nextEventDay = 0, nextEventType = "VIP", vipSpawnedThisEvent = false, tennisGuestsThisEvent = 0;
+let tennisKit = { raket: 0, top: 0, file: 0, boya: 0 };
+let tennisKitAnnounced = false;
 // Faz 2 Personeller: Resepsiyonist & Güvenlik
 let receptionistLevel = 0, recNoKids = false, recMinPrice = 0, recAllowFree = true, recAutoPlace = true, recAutoTimer = 0;
 let receptionistPawn = null;
@@ -2237,6 +2262,34 @@ spawnBirdFlock(1150);
 const parts = [];
 for (let i = 0; i < 40; i++) {
   parts.push({ x: Math.random(), y: Math.random(), spd: rnd(0.06, 0.16) });
+}
+
+function sanitizeTennisKit(raw) {
+  const out = { raket: 0, top: 0, file: 0, boya: 0 };
+  if (raw && typeof raw === "object") {
+    for (const k of TennisKitKeys) {
+      const v = Math.floor(Number(raw[k]));
+      if (Number.isFinite(v) && v > 0) {
+        out[k] = Math.min(TennisKitNeeds[k], v);
+      }
+    }
+  }
+  return out;
+}
+
+function tennisMaterialsCount() {
+  let sum = 0;
+  for (const k of TennisKitKeys) {
+    sum += Math.min(TennisKitNeeds[k], Math.max(0, Math.floor(Number(tennisKit && tennisKit[k]) || 0)));
+  }
+  return sum;
+}
+
+function tennisMaterialsComplete() {
+  for (const k of TennisKitKeys) {
+    if ((Number(tennisKit && tennisKit[k]) || 0) < TennisKitNeeds[k]) return false;
+  }
+  return true;
 }
 
 // ===== BUNDLED: state/achievements.js =====
@@ -4027,6 +4080,9 @@ function saveGame() {
       tennisState: (floors[0] && floors[0].slots[38] && floors[0].slots[38].type === "TennisClub") ? sanitizeTennisState(floors[0].slots[38].tennisState) : "Ruin",
       killerActiveThisWeek, killerLetter, killerCaughtWeek, weekMurders, marketEvent, unreadNewspaper, v181KillerRandomized: true, dayStats,
       activeEvent, eventDaysLeft, nextEventDay, nextEventType, vipSpawnedThisEvent,
+      tennisGuestsThisEvent: Math.max(0, Math.min(TennisMaxGuestsPerEvent, Math.floor(Number(tennisGuestsThisEvent) || 0))),
+      tennisKit: sanitizeTennisKit(tennisKit),
+      tennisKitAnnounced: !!tennisKitAnnounced,
       receptionistLevel,
       recNoKids,
       recMinPrice,
@@ -4236,14 +4292,14 @@ function loadGame() {
     if (data.dayStats && typeof data.dayStats === "object") {
       dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation }, data.dayStats);
     }
-    activeEvent = data.activeEvent || "";
-    eventDaysLeft = data.eventDaysLeft || 0;
-    nextEventDay = data.nextEventDay || 0;
-    nextEventType = (data.nextEventType && EventTypes.includes(data.nextEventType)) ? data.nextEventType : pick(EventTypes);
+    activeEvent = (data.activeEvent && EventTypes.includes(data.activeEvent)) ? data.activeEvent : "";
+    eventDaysLeft = Math.max(0, Math.floor(Number(data.eventDaysLeft) || 0));
+    nextEventDay = Math.max(0, Math.floor(Number(data.nextEventDay) || 0));
+    tennisGuestsThisEvent = Math.max(0, Math.min(TennisMaxGuestsPerEvent, Math.floor(Number(data.tennisGuestsThisEvent) || 0)));
+    tennisKit = sanitizeTennisKit(data.tennisKit);
+    tennisKitAnnounced = !!data.tennisKitAnnounced || tennisMaterialsComplete();
+    nextEventType = (data.nextEventType && EventTypes.includes(data.nextEventType)) ? data.nextEventType : pickEventType();
     vipSpawnedThisEvent = !!data.vipSpawnedThisEvent;
-    if (typeof stars === "function" && stars() >= 1 && !activeEvent && nextEventDay <= day && typeof scheduleNextEventIfEligible === "function") {
-      scheduleNextEventIfEligible();
-    }
     receptionistLevel = data.receptionistLevel || 0;
     recNoKids = !!data.recNoKids;
     recMinPrice = data.recMinPrice || 0;
@@ -4447,6 +4503,12 @@ function loadGame() {
       tc.parcelBuilt = true;
       tc.hasTree = false;
       tc.tennisState = sanitizeTennisState(rawTS);
+    }
+    if (nextEventType === "Tennis" && typeof isTennisEventEligible === "function" && !isTennisEventEligible()) {
+      nextEventType = pickEventType();
+    }
+    if (typeof stars === "function" && stars() >= 1 && !activeEvent && nextEventDay <= day && typeof scheduleNextEventIfEligible === "function") {
+      scheduleNextEventIfEligible();
     }
 
     const cCount = Math.min(MaxCleaners, data.cleanerCount || 0);
@@ -4696,6 +4758,9 @@ function startNewGameClean() {
   nextEventDay = 0;
   nextEventType = "VIP";
   vipSpawnedThisEvent = false;
+  tennisGuestsThisEvent = 0;
+  tennisKit = { raket: 0, top: 0, file: 0, boya: 0 };
+  tennisKitAnnounced = false;
   dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney };
   summaryOpen = false;
   document.getElementById("day-modal").style.display = "none";
@@ -5042,6 +5107,13 @@ function spawnGuest() {
   }
 
   g.kids = (g.type !== "Threat" && g.role === "None" && !g.isVip && Math.random() < ChanceFamily) ? rndInt(1, 3) : 0;
+  if (activeEvent === "Tennis" && g.type === "Normal" && g.role === "None" && !g.isVip && !g.chinese && g.kids === 0 && tennisGuestsThisEvent < TennisMaxGuestsPerEvent) {
+    if (Math.random() < 0.60) {
+      g.eventTag = "Tennis";
+      g.hint = "Tenis turnuvası için geldik, dinlendirici bir oda rica ederiz!";
+      tennisGuestsThisEvent++;
+    }
+  }
   g.wantsBalcony = (g.type === "Normal" && floors[1].state === "Built" && (g.eventTag === "Festival" || (g.isVip && Math.random() < 0.6) || Math.random() < 0.35));
 
   let wantCount = 0;
@@ -5050,6 +5122,7 @@ function spawnGuest() {
     if (g.isVip) b = rndInt(125, 185) * (1 + stars() * 0.25) * 2.1;
     else if (g.eventTag === "Wedding") b *= 1.35;
     else if (g.eventTag === "Festival") b *= 1.25;
+    else if (g.eventTag === "Tennis") b *= 1.2;
     if (g.chinese) b *= 1.4;
     if (g.kids > 0) b *= 1.2;
     if (g.wantsBalcony) b *= 1.25;
@@ -5693,6 +5766,9 @@ function checkout(s) {
     floatText(g.pawn.pos.x, g.pawn.pos.y + 175, "+" + n + " alet (hediye)", "#2666cc");
     log(g.name + " hediye olarak " + n + " alet bıraktı.");
   }
+  if (g.eventTag === "Tennis" && st >= 4) {
+    awardTennisKitForGuest(g, st);
+  }
 
   const rLeave = s; s.guest = null; g.room = null; g.prevRoom = rLeave;
   startLeaving(g, rLeave);
@@ -6212,11 +6288,62 @@ function gasExplode() {
 }
 
 // ===== BUNDLED: logic/events.js =====
-// [logic/events.js] Etkinlikler: ünlü konuk, koruma, düğün, festival
+// [logic/events.js] Etkinlikler: ünlü konuk, koruma, düğün, festival, tenisçiler
+function isTennisEventEligible() {
+  const club = floors && floors[0] && floors[0].slots && floors[0].slots[38];
+  const st = (club && club.type === "TennisClub" && club.tennisState) ? club.tennisState : "Ruin";
+  return st === "Ruin" && !tennisMaterialsComplete();
+}
+
+function pickEventType() {
+  if (isTennisEventEligible()) {
+    return pick(["VIP", "Wedding", "Festival", "Tennis", "Tennis"]);
+  }
+  return pick(["VIP", "Wedding", "Festival"]);
+}
+
+function pickMissingTennisKitItem() {
+  const missing = TennisKitKeys.filter(k => (tennisKit[k] || 0) < TennisKitNeeds[k]);
+  if (!missing.length) return null;
+  return pick(missing);
+}
+
+function awardTennisKitForGuest(g, rVal) {
+  if (!g || g.eventTag !== "Tennis" || rVal < 4) return [];
+  if (tennisMaterialsComplete()) return [];
+  const awarded = [];
+  const first = pickMissingTennisKitItem();
+  if (first) {
+    tennisKit[first] = Math.min(TennisKitNeeds[first], (tennisKit[first] || 0) + 1);
+    awarded.push(first);
+  }
+  if (rVal >= 5 && !tennisMaterialsComplete() && Math.random() < 0.5) {
+    const second = pickMissingTennisKitItem();
+    if (second) {
+      tennisKit[second] = Math.min(TennisKitNeeds[second], (tennisKit[second] || 0) + 1);
+      awarded.push(second);
+    }
+  }
+  if (awarded.length > 0) {
+    const fx = (g.pawn && g.pawn.pos) ? g.pawn.pos.x : ((typeof ElevX !== "undefined") ? ElevX + 260 : 500);
+    const fy = (g.pawn && g.pawn.pos) ? (g.pawn.pos.y + 205) : ((floors[0] && floors[0].WalkY ? floors[0].WalkY : 0) + 180);
+    const parts = awarded.map(k => "+1 " + TennisKitEmojis[k] + " " + TennisKitShortLabels[k]);
+    floatText(fx, fy, parts.join(" "), "#16a34a");
+    const logLabels = awarded.map(k => TennisKitEmojis[k] + " " + TennisKitLabels[k] + " (" + tennisKit[k] + "/" + TennisKitNeeds[k] + ")");
+    log("🎾 Tenisçi konuk memnun ayrıldı ve malzeme bıraktı: " + logLabels.join(", ") + " [Toplam: " + tennisMaterialsCount() + "/" + TennisKitTotal + "]");
+    if (tennisMaterialsComplete() && !tennisKitAnnounced) {
+      tennisKitAnnounced = true;
+      floatText(fx, fy + 40, "🎾 Tenis Malzemeleri Tamam (8/8)!", "#d97706");
+      log("🏆 Tüm tenis kulübü malzemeleri toplandı (8/8)! Yıkık Tenis Kulübü'nün onarımı yakında yapılabilecek.");
+    }
+  }
+  return awarded;
+}
+
 function scheduleNextEventIfEligible() {
   if (stars() >= 1 && !activeEvent && nextEventDay <= 0) {
     nextEventDay = day + rndInt(8, 11);
-    nextEventType = pick(EventTypes);
+    nextEventType = pickEventType();
     log("⭐ Otelin 1 Yıldız oldu! Artık 8–10 günde bir özel etkinlikler başlayacak. (İlk etkinlik: Gün " + nextEventDay + " - " + EventTitles[nextEventType] + ")");
   }
 }
@@ -7308,19 +7435,24 @@ function newDay() {
       log("🏁 Etkinlik sona erdi: " + (EventTitles[activeEvent] || activeEvent) + ".");
       activeEvent = "";
       vipSpawnedThisEvent = false;
+      tennisGuestsThisEvent = 0;
       if (stars() >= 1) {
         nextEventDay = day + rndInt(8, 11);
-        nextEventType = pick(EventTypes);
+        nextEventType = pickEventType();
       }
     }
   } else if (stars() >= 1) {
     if (nextEventDay <= 0) {
       nextEventDay = day + rndInt(8, 11);
-      nextEventType = pick(EventTypes);
+      nextEventType = pickEventType();
     } else if (day >= nextEventDay) {
-      activeEvent = nextEventType || pick(EventTypes);
+      if (nextEventType === "Tennis" && !isTennisEventEligible()) {
+        nextEventType = pickEventType();
+      }
+      activeEvent = nextEventType || pickEventType();
       eventDaysLeft = 2;
       vipSpawnedThisEvent = false;
+      tennisGuestsThisEvent = 0;
       nextEventDay = 0;
       play("done");
       floatText(ElevX + 360, floors[0].WalkY + 180, "🎉 ETKİNLİK: " + EventTitles[activeEvent], "#d97706");
@@ -7537,8 +7669,13 @@ function showWeeklyNewspaper(isWeekEnd = false) {
   h += "<div class='news-col-body'>";
   if (activeEvent) {
     h += "🎉 <b>AKTİF ETKİNLİK:</b> Şehirde <b>" + EventTitles[activeEvent] + "</b> devam ediyor! (Kalan: <b>" + eventDaysLeft + " gün</b>).";
+    if (activeEvent === "Tennis") h += " Şehirde tenis turnuvası var, sporcular konaklama arıyor!";
   } else if (stars() >= 1 && nextEventDay > day) {
+    if (nextEventType === "Tennis" && !isTennisEventEligible()) {
+      nextEventType = pickEventType();
+    }
     h += "📅 <b>YAKLAŞAN ETKİNLİK:</b> <b>" + (nextEventDay - day) + " gün sonra (Gün " + nextEventDay + ")</b> şehirde <b>" + EventTitles[nextEventType] + "</b> başlayacak!";
+    if (nextEventType === "Tennis") h += " Şehirde tenis turnuvası var, sporcular konaklama arıyor!";
   } else {
     h += "⭐ <b>TURİZM TAKVİMİ:</b> Mevsim <b>" + SeasonNames[seasonIdx()] + "</b>. 1 Yıldız (250 İtibar) olduğunda şehirde büyük festivaller ve ünlü konuklar başlayacak.";
   }
@@ -8355,11 +8492,11 @@ function refreshHud() {
 
   const isDayPart = brightness() > 0.35;
   const part = isDayPart ? "☀️" : "🌙";
-  const evBadge = activeEvent ? (" • " + (activeEvent === "VIP" ? "🌟 Ünlü" : activeEvent === "Wedding" ? "💍 Düğün" : "🎪 Festival")) : "";
+  const evBadge = activeEvent ? (" • " + (activeEvent === "VIP" ? "🌟 Ünlü" : activeEvent === "Wedding" ? "💍 Düğün" : activeEvent === "Tennis" ? "🎾 Tenis" : "🎪 Festival")) : "";
   let evHtml = "";
   if (activeEvent) {
-    const evIco = activeEvent === "VIP" ? "🌟" : activeEvent === "Wedding" ? "💍" : "🎪";
-    const evTxt = activeEvent === "VIP" ? "Ünlü" : activeEvent === "Wedding" ? "Düğün" : "Festival";
+    const evIco = activeEvent === "VIP" ? "🌟" : activeEvent === "Wedding" ? "💍" : activeEvent === "Tennis" ? "🎾" : "🎪";
+    const evTxt = activeEvent === "VIP" ? "Ünlü" : activeEvent === "Wedding" ? "Düğün" : activeEvent === "Tennis" ? "Tenis" : "Festival";
     evHtml = '<span class="tm-ev"><span class="tm-sep"> • </span>' + evIco + '<span class="tm-ev-txt"> ' + evTxt + '</span></span>';
   }
   topMid.innerHTML = '<span class="tm-day">Gün ' + day + '</span><span class="tm-sep"> • </span><span class="tm-season">' +
@@ -9630,7 +9767,23 @@ function refreshPanel() {
     } else if (cur.type === "RoofTerrace") {
       infoText.textContent = "🏖️ Çatı Terası, Şezlong & Çatı Barı " + coordStr + "\nOtelde konaklayan müşteriler burada güneşlenir ve içecek alır, otel memnuniyetini artırır.";
     } else if (cur.type === "TennisClub") {
-      infoText.textContent = "🎾 Yıkık Tenis Kulübü\nKortun yanındaki bu bina ve korta uzanan taş bağlantı yolu yıkık durumda. Tenisçiler grubu etkinliğine gelen sporcuları ağırlarsan sana tenis malzemeleri verecekler; malzemeleri toplayıp binayı ve yolu onarınca kulüp açılacak.";
+      const rk = (tennisKit && tennisKit.raket) || 0;
+      const tp = (tennisKit && tennisKit.top) || 0;
+      const fl = (tennisKit && tennisKit.file) || 0;
+      const by = (tennisKit && tennisKit.boya) || 0;
+      const progLine = "Malzemeler: 🏸 Raket " + rk + "/3" + (rk >= 3 ? "✓" : "") +
+        " · 🎾 Top " + tp + "/2" + (tp >= 2 ? "✓" : "") +
+        " · 🥅 File " + fl + "/1" + (fl >= 1 ? "✓" : "") +
+        " · 🪣 Boya " + by + "/2" + (by >= 2 ? "✓" : "");
+      let statusLine = "Kortun yanındaki bu bina yıkık durumda. Tenisçiler grubu etkinliğine gelen sporcuları 4–5★ memnuniyetle ağırlayarak malzemeleri topla.";
+      if (activeEvent === "Tennis") {
+        statusLine = "Şu an tenis turnuvası var, tenisçileri iyi ağırla!";
+      } else if (tennisMaterialsComplete()) {
+        statusLine = "Malzemeler tamam! Onarım ve koridor bağlantısı yakında.";
+      } else if (stars() >= 1 && nextEventDay > day && nextEventType === "Tennis") {
+        statusLine = "Sonraki tenis etkinliği: Gün " + nextEventDay + " (" + (nextEventDay - day) + " gün sonra).";
+      }
+      infoText.textContent = "🎾 Yıkık Tenis Kulübü (" + tennisMaterialsCount() + "/" + TennisKitTotal + ")\n" + progLine + "\n" + statusLine;
     } else if (cur.type === "Kitchen") {
       infoText.textContent = "🍳 Restoran & Mutfak " + coordStr + "  •  Aşçı: " + (cookLevel > 0 ? ("Sv." + cookLevel) : "Yok") + "  •  Günlük porsiyon: " + CookMeals[cookLevel] +
         "\nHer porsiyon +" + MealPrice + " TL gelir getirir.";
@@ -9865,18 +10018,24 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 64;
-const APP_VERSION_NAME = "1.9.56-beta";
+const APP_VERSION_CODE = 65;
+const APP_VERSION_NAME = "1.9.57-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
-  "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
+  "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.57-beta",
+    title: "Tenisçiler Grubu Etkinliği & Malzeme Toplama (Faz 2)",
+    latest: true,
+    notes: "• 🎾 Yeni Etkinlik — Tenisçiler Grubu Turnuvası: 1 Yıldız sonrasında etkinlik havuzuna eklenen tenisçiler, otelin yıkık tenis kulübü onarılmayı beklerken daha sık uğrar ve bütçeleri %20 daha yüksektir.\n• 🏸 Tenis Malzemesi Toplama (8 Parça): 4–5★ memnuniyetle uğurlanan tenisçi konuklar kulüp için gereken malzemeleri (3 Raket, 2 Top Kutusu, 1 Kort Filesi, 2 Çizgi Boyası) bırakır; yıkık tenis kulübü bilgi panelinden eksik malzemeleri takip edebilirsin."
+  },
+  {
     ver: "v1.9.56-beta",
     title: "Tenis Kortu Ağaç Sınırı Derinlik Sırası Düzeltmesi",
-    latest: true,
+    latest: false,
     notes: "• 🌳 Doğru Katman Sırası: Tenis kortu çevresindeki ağaç sınırı katmanı kulüp binasının (parsel 38) önüne taşınarak ön plandaki ağacın kulüp binası köşesinin üstünde doğal şekilde görünmesi sağlandı."
   },
   {
