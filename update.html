@@ -9864,8 +9864,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 61;
-const APP_VERSION_NAME = "1.9.53-beta";
+const APP_VERSION_CODE = 62;
+const APP_VERSION_NAME = "1.9.54-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9873,9 +9873,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.54-beta",
+    title: "Tenis Kortu Filesi & Çizgi Yönü Düzeltmesi",
+    latest: true,
+    notes: "• 🎾 Tenis Filesi & Saha Çizgileri: Tenis filesi kortun uzun ekseni boyunca değil kısa eni boyunca gerilecek şekilde döndürüldü; dış beyaz saha çizgileri, tekler yan çizgileri, servis kutuları, dip çizgi orta işaretleri ve orta file gergi şeridi gerçek kort oranlarına hizalandı.\n• 🪑 Hakem Koltuğu Konumu: Yüksek hakem koltuğu yeni file direğinin yanına taşındı."
+  },
+  {
     ver: "v1.9.53-beta",
     title: "Tenis Kulübü Faz 1: Yıkık Kulüp Binası (T1)",
-    latest: true,
+    latest: false,
     notes: "• 🎾 Yıkık Tenis Kulübü (Parsel 38): Tenis kortunun yanındaki özel zemin kat parseline yıkık, kırık duvarlı, çökmüş çatılı ve sarı-siyah güvenlik şeritli kulüp binası eklendi.\n• 🏟️ Kort & Bahçe Hizalaması: Açık tenis kortu kulüp binasına koridor açmak için hafifçe sola kaydırıldı; iki sağ bahçe yuvası (right_6, right_7) ve iki çalı/çiçek noktası çakışmasız yeni yerlerine taşındı.\n• ℹ️ Bilgi Paneli & Kayıt Uyumu: Yıkık binaya tıklandığında yaklaşan 'Tenisçiler grubu' özelliği hakkında bilgi açılır; eski 38 yuvalı kayıtlar otomatik güncellenir."
   },
   {
@@ -13349,62 +13355,87 @@ function drawResortTennisCourt(si, uOffset = -100) {
   const iv0 = v0 + 60, iv1 = v1 - 60;
   isoQuad(iu0, iv0, iu1, iv1, 0.5, "#15803d", OUTLINE_COL, 1.8);
 
-  // Beyaz Çizgiler: Dış Çizgiler, Çiftler Koridoru, Servis Kutuları
-  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2.0;
+  // Beyaz Çizgiler: Dış Çizgiler, Çiftler Koridoru, Servis Kutuları (Uzun eksen u boyunca)
+  const midU = (iu0 + iu1) * 0.5;
+  const midV = (iv0 + iv1) * 0.5;
+  const sV0 = iv0 + 55, sV1 = iv1 - 55;       // Tekler yan çizgileri (uzun eksen u'ya paralel)
+  const servU0 = midU - 150, servU1 = midU + 150; // Servis çizgileri (kısa eksen v boyunca)
 
-  // Tekler Yan Çizgileri
-  const sU0 = iu0 + 50, sU1 = iu1 - 50;
-  const pA = iso(sU0, iv0, 1), pB = iso(sU0, iv1, 1);
-  const pC = iso(sU1, iv0, 1), pD = iso(sU1, iv1, 1);
+  ctx.save();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2.0;
+
+  // Dış saha sınırı (Dip çizgiler u=iu0/iu1 + Çiftler yan çizgileri v=iv0/iv1)
+  const c00 = iso(iu0, iv0, 1), c10 = iso(iu1, iv0, 1);
+  const c11 = iso(iu1, iv1, 1), c01 = iso(iu0, iv1, 1);
+  ctx.beginPath();
+  ctx.moveTo(c00.x, c00.y); ctx.lineTo(c10.x, c10.y);
+  ctx.lineTo(c11.x, c11.y); ctx.lineTo(c01.x, c01.y);
+  ctx.closePath(); ctx.stroke();
+
+  // Tekler Yan Çizgileri (u boyunca)
+  const pA = iso(iu0, sV0, 1), pB = iso(iu1, sV0, 1);
+  const pC = iso(iu0, sV1, 1), pD = iso(iu1, sV1, 1);
   ctx.beginPath(); ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(pC.x, pC.y); ctx.lineTo(pD.x, pD.y); ctx.stroke();
 
-  // Servis Çizgileri
-  const midV = (iv0 + iv1) * 0.5;
-  const servV0 = midV - 140, servV1 = midV + 140;
-  const pS0A = iso(sU0, servV0, 1), pS0B = iso(sU1, servV0, 1);
-  const pS1A = iso(sU0, servV1, 1), pS1B = iso(sU1, servV1, 1);
+  // Servis Çizgileri (v boyunca, tekler yan çizgileri arası)
+  const pS0A = iso(servU0, sV0, 1), pS0B = iso(servU0, sV1, 1);
+  const pS1A = iso(servU1, sV0, 1), pS1B = iso(servU1, sV1, 1);
   ctx.beginPath(); ctx.moveTo(pS0A.x, pS0A.y); ctx.lineTo(pS0B.x, pS0B.y); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(pS1A.x, pS1A.y); ctx.lineTo(pS1B.x, pS1B.y); ctx.stroke();
 
-  // Orta Servis Çizgisi
-  const midU = (iu0 + iu1) * 0.5;
-  const pMC0 = iso(midU, servV0, 1), pMC1 = iso(midU, servV1, 1);
+  // Orta Servis Çizgisi (u boyunca iki servis çizgisi arası) + Dip Çizgi Orta İşaretleri
+  const pMC0 = iso(servU0, midV, 1), pMC1 = iso(servU1, midV, 1);
   ctx.beginPath(); ctx.moveTo(pMC0.x, pMC0.y); ctx.lineTo(pMC1.x, pMC1.y); ctx.stroke();
+  const pBM0A = iso(iu0, midV, 1), pBM0B = iso(iu0 + 12, midV, 1);
+  const pBM1A = iso(iu1 - 12, midV, 1), pBM1B = iso(iu1, midV, 1);
+  ctx.beginPath(); ctx.moveTo(pBM0A.x, pBM0A.y); ctx.lineTo(pBM0B.x, pBM0B.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pBM1A.x, pBM1A.y); ctx.lineTo(pBM1B.x, pBM1B.y); ctx.stroke();
+  ctx.restore();
 
-  // Tenis Filesi (Tennis Net across middle V)
+  // Arka Çevre Tel Örgü Direkleri (v0 ve u0 kenarları, file ve hakem koltuğunun arkasında)
+  for (let u = u0; u <= u1; u += 85) {
+    isoBox(u - 2, v0 - 2, u + 2, v0 + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
+  }
+  for (let v = v0; v <= v1; v += 85) {
+    isoBox(u0 - 2, v - 2, u0 + 2, v + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
+  }
+
+  // Hakem Yüksek Koltuğu (Umpire High Chair: file direği yanında midU, iv0 - 28)
+  const ucU = midU, ucV = iv0 - 28;
+  isoBox(ucU - 6, ucV - 4, ucU + 6, ucV + 4, 0, 36, "#1e293b", "#334155", "#0f172a", OUTLINE_COL, 1.2);
+  isoBox(ucU - 8, ucV - 8, ucU + 8, ucV + 8, 36, 42, "#38bdf8", "#0284c7", "#0369a1", OUTLINE_COL, 1.2);
+
+  // Tenis Filesi (Tennis Net across u = midU, kısa eksen v boyunca)
   const netH = 18;
-  const nP0 = iso(iu0 - 15, midV, 0), nP1 = iso(iu1 + 15, midV, 0);
-  const nT0 = iso(iu0 - 15, midV, netH), nT1 = iso(iu1 + 15, midV, netH);
+  const nP0 = iso(midU, iv0 - 15, 0), nP1 = iso(midU, iv1 + 15, 0);
+  const nT0 = iso(midU, iv0 - 15, netH), nT1 = iso(midU, iv1 + 15, netH);
+  const nMid0 = iso(midU, midV, 0), nMidT = iso(midU, midV, netH);
 
   // File Direkleri
   ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 3; ctx.lineCap = "round";
   ctx.beginPath(); ctx.moveTo(nP0.x, nP0.y); ctx.lineTo(nT0.x, nT0.y + 3); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(nP1.x, nP1.y); ctx.lineTo(nT1.x, nT1.y + 3); ctx.stroke();
 
-  // File Gövdesi (Translucent Netting with grid texture)
+  // File Gövdesi (Translucent Netting)
   ctx.fillStyle = "rgba(241, 245, 249, 0.45)"; ctx.strokeStyle = "rgba(255, 255, 255, 0.75)"; ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(nP0.x, nP0.y); ctx.lineTo(nP1.x, nP1.y);
   ctx.lineTo(nT1.x, nT1.y); ctx.lineTo(nT0.x, nT0.y);
   ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // Beyaz Üst File Bandı
-  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2.4;
+  // Orta File Gergi Şeridi + Beyaz Üst File Bandı
+  ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(nMid0.x, nMid0.y); ctx.lineTo(nMidT.x, nMidT.y); ctx.stroke();
+  ctx.lineWidth = 2.4;
   ctx.beginPath(); ctx.moveTo(nT0.x, nT0.y); ctx.lineTo(nT1.x, nT1.y); ctx.stroke();
 
-  // Hakem Yüksek Koltuğu (Umpire High Chair: iu0 - 30, midV)
-  const ucU = iu0 - 32, ucV = midV;
-  isoBox(ucU - 4, ucV - 6, ucU + 4, ucV + 6, 0, 36, "#1e293b", "#334155", "#0f172a", OUTLINE_COL, 1.2);
-  isoBox(ucU - 8, ucV - 8, ucU + 8, ucV + 8, 36, 42, "#38bdf8", "#0284c7", "#0369a1", OUTLINE_COL, 1.2);
-
-  // Çevre Tel Örgüsü (Chain-link Fence around court)
+  // Ön Çevre Tel Örgü Direkleri (v1 ve u1 kenarları, kortun önünde)
   for (let u = u0; u <= u1; u += 85) {
-    isoBox(u - 2, v0 - 2, u + 2, v0 + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
     isoBox(u - 2, v1 - 2, u + 2, v1 + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
   }
   for (let v = v0; v <= v1; v += 85) {
-    isoBox(u0 - 2, v - 2, u0 + 2, v + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
     isoBox(u1 - 2, v - 2, u1 + 2, v + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
   }
 
@@ -13539,7 +13570,7 @@ function drawDistantMountainBackdrop(si) {
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
-const WORLD_STATIC_CACHE_VER = "t1";
+const WORLD_STATIC_CACHE_VER = "t1_net";
 const _GRASS_TUFTS = [
   [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
   [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
