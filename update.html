@@ -1886,6 +1886,15 @@ const TennisFeeMax = 80;
 const TennisFeeStep = 10;
 const TennisSessionSec = 14;
 const TennisPoints = 2;
+const CostSpa = 400;
+const SpaFeeDefault = 40;
+const SpaFeeMin = 20;
+const SpaFeeMax = 120;
+const SpaFeeStep = 10;
+const SpaSessionSec = 12;
+const SpaPoints = 3;
+const SpaDailyCost = 15;
+const SpaMaxCount = 2;
 const BodyguardDailyPrice = 80;
 const LastNames = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Aydın", "Öztürk", "Arslan", "Koç", "Polat"];
 const CnNames = ["李伟", "王芳", "张敏", "刘洋", "陈静", "杨磊"];
@@ -1923,7 +1932,7 @@ const StorageX = -680, StorageW = 380, StorageH = 230;
 const DormX = TotalW + 40, DormW = 380, DormH = 240;
 const ParkX = TotalW + 460, ParkW = 600;
 const WalkSpeed = 150, ClimbSpeed = 230;
-const FloorCount = 4, ActCount = 12;
+const FloorCount = 4, ActCount = 13;
 const TreeX = [-780, -1000, -1220, -1440, TotalW + 1140, TotalW + 1360, TotalW + 1580];
 
 const Pencil = "#1f1f26", Orange = "#ff8c00", Green = "#33cc4d", GhostLine = "rgba(77,89,115,0.9)";
@@ -2132,7 +2141,7 @@ for (let f = 0; f < FloorCount; f++) {
       tennisState: isTennisClub ? "Ruin" : null,
       items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
       hasCorpse: false, corpseName: "", corpseSkin: "#fcd9b8", corpseHair: "#1a1412", corpseShirt: "#d94d4d",
-      gymLevel: 1, gymBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], level: 1,
+      gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], level: 1,
       onFire: false, fireLeft: 0,
       wall: pick(WallColors), picColor: pick(PictureColors),
       get X0() { return ElevW + this.idx * SlotW; },
@@ -2169,7 +2178,7 @@ let kitchenState = "Locked", kitchenLeft = 0, cookLevel = 0, cookPawn = null;
 const kitchenWorkers = [];
 let towerOrder = [];
 // Haftalık Gazete & Muhasebe Raporu + Seri Katil + Etkinlikler + Piyasa Olayları (v1.9.17)
-let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0 };
+let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0 };
 let summaryOpen = false;
 let killerActiveThisWeek = false;
 let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
@@ -2186,6 +2195,12 @@ let tennisSessionsToday = 0;
 let tennisRevenueToday = 0;
 let tennisSessionsTotal = 0;
 let tennisRevenueTotal = 0;
+let spaFee = SpaFeeDefault;
+let spaSessionsToday = 0;
+let spaRevenueToday = 0;
+let spaSessionsTotal = 0;
+let spaIncomeTotal = 0;
+let spaDailyCostToday = 0;
 // Faz 2 Personeller: Resepsiyonist & Güvenlik
 let receptionistLevel = 0, recNoKids = false, recMinPrice = 0, recAllowFree = true, recAutoPlace = true, recAutoTimer = 0;
 let receptionistPawn = null;
@@ -2333,8 +2348,15 @@ function sanitizeTennisFee(val) {
   return Math.min(TennisFeeMax, Math.max(TennisFeeMin, stepped));
 }
 
+function sanitizeSpaFee(val) {
+  const n = Number(val);
+  if (!Number.isFinite(n)) return SpaFeeDefault;
+  const stepped = Math.round(n / SpaFeeStep) * SpaFeeStep;
+  return Math.min(SpaFeeMax, Math.max(SpaFeeMin, stepped));
+}
+
 // ===== BUNDLED: state/achievements.js =====
-// [state/achievements.js] Elmas (💎) ekonomisi ve 40 başarımlı veri odaklı başarım sistemi
+// [state/achievements.js] Elmas (💎) ekonomisi ve veri odaklı başarım sistemi
 
 function addGems(n, reason = "", opts = {}) {
   const amt = Number(n);
@@ -2530,6 +2552,30 @@ const ACHIEVEMENTS = [
     gems: 20, tl: 0, done: false,
     check: () => (typeof tennisSessionsTotal === "number" ? tennisSessionsTotal : 0) >= 50,
     progress: () => ({ cur: Math.min(50, Math.max(0, Math.floor(typeof tennisSessionsTotal === "number" ? tennisSessionsTotal : 0))), max: 50 })
+  },
+  {
+    id: "spa_build", group: "Tesisler", title: "Rahatlama Zamanı", desc: "Otelinde bir Spa & Hamam kur",
+    gems: 10, tl: 0, done: false,
+    check: () => hasBuiltParcel("Spa"),
+    progress: null
+  },
+  {
+    id: "spa_lvl3", group: "Tesisler", title: "Tam Teşekküllü Hamam", desc: "Bir Spa & Hamam'ı Sv.3'e yükselt",
+    gems: 10, tl: 0, done: false,
+    check: () => allSlots.some(s => s.type === "Spa" && s.floor && s.floor.state === "Built" && (s.spaLevel || 1) >= 3),
+    progress: () => {
+      let maxLv = 0;
+      for (const s of allSlots) {
+        if (s.type === "Spa" && s.floor && s.floor.state === "Built") maxLv = Math.max(maxLv, s.spaLevel || 1);
+      }
+      return { cur: Math.min(3, maxLv), max: 3 };
+    }
+  },
+  {
+    id: "spa_50", group: "Tesisler", title: "Kese & Buhar Ustası", desc: "Toplam 50 Spa seansı tamamla",
+    gems: 20, tl: 0, done: false,
+    check: () => (typeof spaSessionsTotal === "number" ? spaSessionsTotal : 0) >= 50,
+    progress: () => ({ cur: Math.min(50, Math.max(0, Math.floor(typeof spaSessionsTotal === "number" ? spaSessionsTotal : 0))), max: 50 })
   },
 
   // 3) Personel (4)
@@ -3970,8 +4016,8 @@ function slotAtGrid(fl, gu, gv) {
 function isRoofedStructure(type) {
   return type === "Room" || type === "Reception" || type === "Kitchen" ||
          type === "Storage" || type === "Dorm" || type === "Gym" ||
-         type === "Toilet" || type === "Gas" || type === "Corridor" ||
-         type === "Elevator" || type === "TennisClub";
+         type === "Spa" || type === "Toilet" || type === "Gas" ||
+         type === "Corridor" || type === "Elevator" || type === "TennisClub";
 }
 
 function isSlotStructurallyConnected(s) {
@@ -4029,7 +4075,7 @@ function getRoomAvailableDoorWalls(s) {
     const leftSlot = slotAtGrid(s.floor, gu, gv - 1);
     return (leftSlot && leftSlot.type === "Corridor") ? ["left"] : [];
   }
-  if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym") return [];
+  if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym" && s.type !== "Spa") return [];
   const { gu, gv } = parcelCoords(s.idx);
   const fl = s.floor;
   if (!fl) return [];
@@ -4064,7 +4110,7 @@ function getRoomDoorWall(s) {
     const avail = getRoomAvailableDoorWalls(s);
     return avail[0] || null;
   }
-  if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym") return null;
+  if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym" && s.type !== "Spa") return null;
   const avail = getRoomAvailableDoorWalls(s);
   if (s.doorWall && avail.includes(s.doorWall)) return s.doorWall;
   return avail[0] || "back";
@@ -4085,7 +4131,7 @@ function cycleRoomDoorWall(s) {
   const curIdx = avail.indexOf(curWall);
   const nextIdx = (curIdx + 1) % avail.length;
   s.doorWall = avail[nextIdx];
-  const name = s.roomNo ? s.roomNo + ". oda" : (s.type === "Toilet" ? "Genel WC" : "Spor salonu");
+  const name = s.roomNo ? s.roomNo + ". oda" : (s.type === "Toilet" ? "Genel WC" : (s.type === "Spa" ? "Spa & Hamam" : "Spor salonu"));
   if (typeof log === "function") log("🚪 " + name + " giriş kapısı " + getWallTrName(s.doorWall) + " koridora yönlendirildi!");
   if (typeof play === "function") play("tap");
   if (typeof refresh === "function") refresh();
@@ -4158,6 +4204,11 @@ function saveGame() {
       tennisRevenueToday: Math.max(0, Math.floor(Number(tennisRevenueToday) || 0)),
       tennisSessionsTotal: Math.max(0, Math.floor(Number(tennisSessionsTotal) || 0)),
       tennisRevenueTotal: Math.max(0, Math.floor(Number(tennisRevenueTotal) || 0)),
+      spaFee: sanitizeSpaFee(spaFee),
+      spaSessionsToday: Math.max(0, Math.floor(Number(spaSessionsToday) || 0)),
+      spaRevenueToday: Math.max(0, Math.floor(Number(spaRevenueToday) || 0)),
+      spaSessionsTotal: Math.max(0, Math.floor(Number(spaSessionsTotal) || 0)),
+      spaIncomeTotal: Math.max(0, Math.floor(Number(spaIncomeTotal) || 0)),
       killerActiveThisWeek, killerLetter, killerCaughtWeek, weekMurders, marketEvent, unreadNewspaper, v181KillerRandomized: true, dayStats,
       activeEvent, eventDaysLeft, nextEventDay, nextEventType, vipSpawnedThisEvent,
       tennisGuestsThisEvent: Math.max(0, Math.min(TennisMaxGuestsPerEvent, Math.floor(Number(tennisGuestsThisEvent) || 0))),
@@ -4226,7 +4277,9 @@ function saveGame() {
         sneaky: !!g.sneaky,
         sneakyDays: g.sneakyDays || 0,
         tennisToday: Math.max(0, Math.floor(Number(g.tennisToday) || 0)),
-        tennisPlayed: !!g.tennisPlayed
+        tennisPlayed: !!g.tennisPlayed,
+        spaDay: !!g.spaDay,
+        spaRelaxed: !!g.spaRelaxed
       })),
       floors: floors.map(fl => ({
         state: fl.state,
@@ -4251,6 +4304,7 @@ function saveGame() {
           wall: s.wall,
           picColor: s.picColor,
           gymLevel: s.gymLevel,
+          spaLevel: s.type === "Spa" ? Math.max(1, Math.min(3, Math.floor(Number(s.spaLevel) || 1))) : 1,
           level: s.level || 1,
           onFire: s.onFire,
           fireLeft: s.fireLeft,
@@ -4280,7 +4334,9 @@ function saveGame() {
             sneaky: !!s.guest.sneaky,
             sneakyDays: s.guest.sneakyDays || 0,
             tennisToday: Math.max(0, Math.floor(Number(s.guest.tennisToday) || 0)),
-            tennisPlayed: !!s.guest.tennisPlayed
+            tennisPlayed: !!s.guest.tennisPlayed,
+            spaDay: !!s.guest.spaDay,
+            spaRelaxed: !!s.guest.spaRelaxed
           } : null
         }))
       }))
@@ -4374,7 +4430,7 @@ function loadGame() {
     marketEvent = (data.marketEvent && typeof data.marketEvent === "object") ? data.marketEvent : { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 0 };
     unreadNewspaper = !!data.unreadNewspaper;
     if (data.dayStats && typeof data.dayStats === "object") {
-      dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation }, data.dayStats);
+      dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation, spaSessions: 0, spaIncome: 0, spaCost: 0 }, data.dayStats);
     }
     activeEvent = (data.activeEvent && EventTypes.includes(data.activeEvent)) ? data.activeEvent : "";
     eventDaysLeft = Math.max(0, Math.floor(Number(data.eventDaysLeft) || 0));
@@ -4389,6 +4445,12 @@ function loadGame() {
     tennisRevenueToday = Math.max(0, Math.floor(Number(data.tennisRevenueToday) || 0));
     tennisSessionsTotal = Math.max(0, Math.floor(Number(data.tennisSessionsTotal) || 0));
     tennisRevenueTotal = Math.max(0, Math.floor(Number(data.tennisRevenueTotal) || 0));
+    spaFee = sanitizeSpaFee(data.spaFee);
+    spaSessionsToday = Math.max(0, Math.floor(Number(data.spaSessionsToday) || 0));
+    spaRevenueToday = Math.max(0, Math.floor(Number(data.spaRevenueToday) || 0));
+    spaSessionsTotal = Math.max(0, Math.floor(Number(data.spaSessionsTotal) || 0));
+    spaIncomeTotal = Math.max(0, Math.floor(Number(data.spaIncomeTotal) || 0));
+    spaDailyCostToday = 0;
     nextEventType = (data.nextEventType && EventTypes.includes(data.nextEventType)) ? data.nextEventType : pickEventType();
     vipSpawnedThisEvent = !!data.vipSpawnedThisEvent;
     receptionistLevel = data.receptionistLevel || 0;
@@ -4495,6 +4557,8 @@ function loadGame() {
             if (sd.picColor) s.picColor = sd.picColor;
             s.gymLevel = sd.gymLevel || 1;
             s.gymBusy = [false, false, false];
+            s.spaLevel = Math.max(1, Math.min(3, Math.floor(Number(sd.spaLevel) || 1)));
+            s.spaBusy = [false, false, false];
             s.toiletBusy = [false, false];
             s.tennisCourtBusy = [false, false];
             s.level = sd.level || 1;
@@ -4530,6 +4594,7 @@ function loadGame() {
                 atSpot: false, arrivedOnce: true, state: "InRoom",
                 room: s, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
                 gymTimer: rnd(10, 25), toiletTimer: rnd(12, 28), parkTimer: rnd(12, 28),
+                spaTimer: rnd(12, 30), spaDay: !!gd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!gd.spaRelaxed, spaInFlow: false, spaElapsed: 0,
                 tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(gd.tennisToday) || 0)),
                 tennis: null, tennisIdx: 0, tennisPlayed: !!gd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
                 crimeTimer: rnd(10, 18), crimeDone: !!gd.crimeDone,
@@ -4686,6 +4751,7 @@ function loadGame() {
           state: "Queued",
           room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
           gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
+          spaTimer: rnd(12, 30), spaDay: !!qd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!qd.spaRelaxed, spaInFlow: false, spaElapsed: 0,
           tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(qd.tennisToday) || 0)),
           tennis: null, tennisIdx: 0, tennisPlayed: !!qd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
           crimeTimer: rnd(10, 18), crimeDone: !!qd.crimeDone,
@@ -4880,7 +4946,13 @@ function startNewGameClean() {
   tennisRevenueToday = 0;
   tennisSessionsTotal = 0;
   tennisRevenueTotal = 0;
-  dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0 };
+  spaFee = SpaFeeDefault;
+  spaSessionsToday = 0;
+  spaRevenueToday = 0;
+  spaSessionsTotal = 0;
+  spaIncomeTotal = 0;
+  spaDailyCostToday = 0;
+  dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0 };
   summaryOpen = false;
   document.getElementById("day-modal").style.display = "none";
 
@@ -4940,6 +5012,8 @@ function startNewGameClean() {
       s.guest = null;
       s.gymLevel = 1;
       s.gymBusy = [false, false, false];
+      s.spaLevel = 1;
+      s.spaBusy = [false, false, false];
       s.toiletBusy = [false, false];
       s.tennisCourtBusy = [false, false];
       s.level = 1;
@@ -4998,6 +5072,19 @@ function toiletCost() { return CostToilet + CostRoomStep * builtRooms; }
 function gasCost() { return CostGas + CostRoomStep * builtRooms; }
 
 function gymUpgradeCost(lv) { return lv <= 1 ? 200 : 350; }
+
+function spaCost() { return CostSpa + CostRoomStep * builtRooms; }
+
+function spaUpgradeCost(lv) { return lv <= 1 ? 300 : 500; }
+
+function countBuiltSpas() {
+  return allSlots.filter(s => s.type === "Spa" && s.floor && s.floor.state === "Built").length;
+}
+
+function spaDailyCost(s) {
+  if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built") return 0;
+  return SpaDailyCost * Math.max(1, s.spaLevel || 1);
+}
 
 function maintCost(s) { return CostMaint + Math.round((100 - s.maintenance) * 0.5); }
 
@@ -5179,6 +5266,7 @@ function spawnGuest() {
     atSpot: false, arrivedOnce: false, state: "Queued",
     room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
     gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
+    spaTimer: rnd(12, 30), spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
     tennisTimer: rnd(10, 25), tennisToday: 0, tennis: null, tennisIdx: 0, tennisPlayed: false, tennisInFlow: false, tennisElapsed: 0,
     crimeTimer: rnd(10, 18), crimeDone: false,
     parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
@@ -5556,14 +5644,16 @@ function startLeaving(g, fromRoom = null) {
   p.sleeping = false;
   if (g.gym) { g.gym.gymBusy[g.gymIdx] = false; g.gym = null; }
   if (g.toilet) { g.toilet.toiletBusy[g.toiletIdx] = false; g.toilet = null; }
+  if (typeof freeSpaSlot === "function") freeSpaSlot(g);
   const wasTennis = !!(g.tennis || g.tennisInFlow || g.state === "ToTennis" || g.state === "PlayingTennis" || (p && p.iso && p.iso.v >= 1150));
+  const wasSpa = !!(g.spa || g.spaInFlow || g.state === "ToSpa" || g.state === "InSpa");
   if (typeof freeTennisSlot === "function") freeTennisSlot(g);
   for (const kid of g.kidPawns) {
     kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = p;
   }
   g.kidsAtPark = false;
-  p.wander = false; p.exercise = false; p.tennis = false; p.speed = 110; p.path = []; p.isoPath = []; p.onIsoArrive = null;
-  if (wasTennis && leaveRoom) p.iso = null;
+  p.wander = false; p.exercise = false; p.tennis = false; p.spa = false; p.spaIdx = 0; p.speed = 110; p.path = []; p.isoPath = []; p.onIsoArrive = null;
+  if ((wasTennis || wasSpa) && leaveRoom) p.iso = null;
 
   const exitPath = [];
 
@@ -5877,7 +5967,11 @@ function checkout(s) {
   if (g.overstay >= 2) { r -= 1; reasons.push("çıkışı geciktirildi"); }
   if (g.fed && r < 5) { r += 1; reasons.push("yemekten memnun kaldı"); }
 
-  const st = clamp(Math.round(r), 1, 5);
+  let st = clamp(Math.round(r), 1, 5);
+  if (g.spaRelaxed && (st === 3 || st === 4)) {
+    st = Math.min(5, st + 1);
+    reasons.push("spa & hamamdan çok rahatladı");
+  }
   const words = ["", "Berbat", "Kötü", "İdare eder", "Güzeldi", "Harika"];
   applyRating(st);
   const extra = reasons.length > 0 ? " (" + reasons.join(", ") + ")" : "";
@@ -5937,20 +6031,33 @@ function returnToRoom(g) {
   p.wander = false;
   p.speed = WalkSpeed;
   if (p.iso) {
-    const fromTennis = p.iso.v >= 1150;
+    const fromSpaSlot = g._returnSpaSlot || (g.spaInFlow ? g.spa : null);
+    g._returnSpaSlot = null;
+    if (g.spa) freeSpaSlot(g);
+    const fromTennis = !fromSpaSlot && p.iso.v >= 1150;
     const rRoute = (fromTennis && typeof buildIsoRouteFromTennisCourtToRoom === "function")
       ? buildIsoRouteFromTennisCourtToRoom(p.iso, g.tennisIdx || 0, g.room)
-      : null;
-    if (rRoute && rRoute.length > 0 && typeof isTennisClubConnected === "function" && isTennisClubConnected()) {
+      : (fromSpaSlot && typeof buildIsoRouteFromSpaToRoom === "function")
+        ? buildIsoRouteFromSpaToRoom(fromSpaSlot, g.room)
+        : null;
+    const connOk = fromTennis
+      ? (typeof isTennisClubConnected === "function" && isTennisClubConnected())
+      : (fromSpaSlot && typeof isSpaConnected === "function" && isSpaConnected(fromSpaSlot));
+    if (rRoute && rRoute.length > 0 && connOk) {
       g.state = "ToRoom";
-      g.tennisInFlow = true;
+      if (fromTennis) g.tennisInFlow = true;
+      if (fromSpaSlot) g.spaInFlow = true;
       p.path = [];
       p.onArrive = null;
+      p.visible = true;
       p.isoPath = rRoute;
       p.onIsoArrive = () => {
         p.iso = null;
+        p.visible = true;
         g.tennisInFlow = false;
         g.tennisElapsed = 0;
+        g.spaInFlow = false;
+        g.spaElapsed = 0;
         onGuestInRoom(g);
       };
       return;
@@ -5958,8 +6065,11 @@ function returnToRoom(g) {
     p.iso = null;
     p.isoPath = [];
     p.onIsoArrive = null;
+    p.visible = true;
     g.tennisInFlow = false;
     g.tennisElapsed = 0;
+    g.spaInFlow = false;
+    g.spaElapsed = 0;
   }
   g.state = "ToRoom"; p.path = [];
   addPath(p, floorOf(p.pos.y), g.room.floor.idx, g.room.X0 + SlotW * 0.5);
@@ -6168,6 +6278,160 @@ function bringKidsBack(g) {
   for (const kid of g.kidPawns) {
     kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = g.pawn;
   }
+}
+
+function getSpaJoinProb(fee = (typeof spaFee === "number" ? spaFee : SpaFeeDefault)) {
+  return clamp(0.40 - (fee - 40) * 0.006, 0.08, 0.40);
+}
+
+function isGuestSpaEligible(g) {
+  return !!(g && g.type === "Normal" && (g.role || "None") === "None" && !g.spaDay && g.room && !g.expired && !g.sneaky);
+}
+
+function freeSpaSlot(g) {
+  if (!g) return;
+  if (g.spa && Array.isArray(g.spa.spaBusy)) {
+    g.spa.spaBusy[g.spaIdx] = false;
+  }
+  g.spa = null;
+  g.spaIdx = 0;
+  g.spaInFlow = false;
+  g.spaElapsed = 0;
+  if (g.pawn) {
+    g.pawn.spa = false;
+    g.pawn.spaIdx = 0;
+    g.pawn.visible = true;
+  }
+}
+
+function reconcileSpaBusy() {
+  for (const s of allSlots) {
+    if (s.type !== "Spa" || !Array.isArray(s.spaBusy)) continue;
+    for (let k = 0; k < 3; k++) {
+      if (s.spaBusy[k] && !guests.some(g => g && g.spa === s && g.spaIdx === k && (g.state === "ToSpa" || g.state === "InSpa"))) {
+        s.spaBusy[k] = false;
+      }
+    }
+  }
+}
+
+function _refreshPanelIfSpaOpen() {
+  if (typeof sel !== "undefined" && sel === "Slot" && typeof selSlot !== "undefined" && selSlot && selSlot.type === "Spa" && typeof refreshPanel === "function") {
+    refreshPanel();
+  }
+}
+
+function trySpa(g) {
+  if (!isGuestSpaEligible(g) || g.state !== "InRoom") return false;
+  if (Math.random() > getSpaJoinProb()) return false;
+
+  reconcileSpaBusy();
+  for (const s of allSlots) {
+    if (s.type !== "Spa" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+    if (typeof isSpaConnected === "function" && !isSpaConnected(s)) continue;
+    const cap = Math.max(1, Math.min(3, s.spaLevel || 1));
+    let freeK = -1;
+    for (let k = 0; k < cap; k++) {
+      if (!s.spaBusy[k]) { freeK = k; break; }
+    }
+    if (freeK < 0) continue;
+
+    const route = (typeof buildIsoRouteToSpa === "function") ? buildIsoRouteToSpa(g.room, s, freeK) : null;
+    if (!route || route.length === 0) continue;
+
+    s.spaBusy[freeK] = true;
+    g.spa = s;
+    g.spaIdx = freeK;
+    g.state = "ToSpa";
+    g.spaInFlow = true;
+    g.spaElapsed = 0;
+
+    const p = g.pawn;
+    const startUvz = (typeof logicalToIsoUVZ === "function") ? logicalToIsoUVZ(p.pos.x, p.pos.y, p) : getSlotCenterIso(g.room.floor.idx, g.room.idx);
+    p.guest = g;
+    p.wander = false;
+    p.exercise = false;
+    p.tennis = false;
+    p.spa = false;
+    p.sleeping = false;
+    p.visible = true;
+    p.speed = WalkSpeed;
+    p.path = [];
+    p.onArrive = null;
+    p.iso = { u: startUvz.u, v: startUvz.v, z: startUvz.z };
+    p.isoPath = route;
+    p.onIsoArrive = () => {
+      if (g.state !== "ToSpa") return;
+      if (s.type !== "Spa" || s.onFire || (typeof isSpaConnected === "function" && !isSpaConnected(s))) {
+        rescueSpaGuest(g);
+        return;
+      }
+      g.state = "InSpa";
+      g.exLeft = SpaSessionSec;
+      p.spa = true;
+      p.spaIdx = freeK;
+      p.visible = false;
+      _refreshPanelIfSpaOpen();
+    };
+    _refreshPanelIfSpaOpen();
+    return true;
+  }
+  return false;
+}
+
+function endSpa(g) {
+  if (!g || g.state !== "InSpa") return;
+  const s = g.spa;
+  const fee = (typeof sanitizeSpaFee === "function") ? sanitizeSpaFee(spaFee) : (spaFee || SpaFeeDefault);
+  money += fee;
+  if (typeof dayStats === "object" && dayStats) {
+    dayStats.income = (dayStats.income || 0) + fee;
+    dayStats.spaSessions = (dayStats.spaSessions || 0) + 1;
+    dayStats.spaIncome = (dayStats.spaIncome || 0) + fee;
+  }
+  reputation += SpaPoints;
+  spaSessionsToday = (spaSessionsToday || 0) + 1;
+  spaRevenueToday = (spaRevenueToday || 0) + fee;
+  spaSessionsTotal = (spaSessionsTotal || 0) + 1;
+  spaIncomeTotal = (spaIncomeTotal || 0) + fee;
+  g.spaDay = true;
+  g.spaRelaxed = true;
+  if (s && s.floor) {
+    floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.58, "+" + fee + " TL (spa)", "#0f766e");
+  }
+  play("coin");
+  freeSpaSlot(g);
+  g._returnSpaSlot = s;
+  g.spaInFlow = true;
+  if (typeof checkAchievements === "function") checkAchievements();
+  if (typeof refreshHud === "function") refreshHud();
+  _refreshPanelIfSpaOpen();
+  returnToRoom(g);
+}
+
+function rescueSpaGuest(g) {
+  if (!g) return;
+  freeSpaSlot(g);
+  g._returnSpaSlot = null;
+  const p = g.pawn;
+  if (p) {
+    p.spa = false;
+    p.exercise = false;
+    p.sleeping = false;
+    p.visible = true;
+    p.iso = null;
+    p.isoPath = [];
+    p.onIsoArrive = null;
+    p.path = [];
+    p.onArrive = null;
+  }
+  if (!g.room) { startLeaving(g); return; }
+  if (p) p.pos = { x: g.room.X0 + SlotW * 0.5, y: g.room.floor.WalkY };
+  g.state = "InRoom";
+  g.spaElapsed = 0;
+  g.spaInFlow = false;
+  if (typeof startWander === "function") startWander(g);
+  _refreshPanelIfSpaOpen();
 }
 
 // ===== BUNDLED: logic/crime.js =====
@@ -6502,12 +6766,15 @@ function startFire(s) {
   log(s.roomNo + ". odada YANGIN çıktı! Odayı seçip söndür.");
   floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.6, "YANGIN!", "#d91a1a");
   const g = s.guest;
-  if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis")) {
+  if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis" || g.state === "ToSpa" || g.state === "InSpa")) {
     if (typeof freeTennisSlot === "function") freeTennisSlot(g);
+    if (typeof freeSpaSlot === "function") freeSpaSlot(g);
     const p = g.pawn;
     g.state = "Fleeing";
+    p.visible = true;
     p.sleeping = false;
     p.tennis = false;
+    p.spa = false;
     p.iso = null;
     p.isoPath = [];
     p.onIsoArrive = null;
@@ -6680,7 +6947,8 @@ function spawnBodyguardInRoom(vipGuest, bgRoom) {
     wants: new Array(ItemCount).fill(false), patience: 25, maxPatience: 25,
     atSpot: false, arrivedOnce: true, state: "ToRoom",
     room: bgRoom, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
-    gymTimer: 999, toiletTimer: 999, parkTimer: 999,
+    gymTimer: 999, toiletTimer: 999, parkTimer: 999, spaTimer: 999,
+    spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
     crimeTimer: 999, crimeDone: true,
     parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
     hasBubble: false, bubbleLines: ["", ""]
@@ -7880,6 +8148,91 @@ function buildIsoRouteFromTennisCourtToRoom(curIso, spotIdx, room) {
   return path;
 }
 
+function _checkCorridorConnection(fIdx, fromCorrIdx, toCorrIdx) {
+  if (fromCorrIdx === toCorrIdx) {
+    const fl = floors[fIdx];
+    const sl = fl && fl.slots[fromCorrIdx];
+    return !!(sl && (sl.type === "Corridor" || sl.type === "Elevator"));
+  }
+  const slotPath = findCorridorSlotPath(fIdx, fromCorrIdx, toCorrIdx);
+  return isSlotCorridorPathValid(fIdx, slotPath);
+}
+
+function isSpaConnected(s) {
+  if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built") return false;
+  const corrSlot = getRoomCorridorSlot(s);
+  if (!corrSlot || corrSlot.type !== "Corridor") return false;
+  const fIdx = s.floor.idx;
+  if (fIdx === 0) return _checkCorridorConnection(0, 26, corrSlot.idx);
+  const elev0 = floors[0] && floors[0].slots.find(sl => sl.type === "Elevator");
+  const elevF = s.floor.slots.find(sl => sl.type === "Elevator");
+  const ec0 = getElevatorCorridorSlot(elev0);
+  const ecF = getElevatorCorridorSlot(elevF);
+  if (!ec0 || ec0.type !== "Corridor" || !ecF || ecF.type !== "Corridor") return false;
+  return _checkCorridorConnection(0, 26, ec0.idx) && _checkCorridorConnection(fIdx, ecF.idx, corrSlot.idx);
+}
+
+function getSpaStationIso(spaSlot, stationIdx = 0) {
+  const b = slotIsoBox(spaSlot.floor.idx, spaSlot.idx);
+  if (stationIdx === 1) return { u: b.u0 + 160, v: b.v0 + 153, z: b.z0 + 8 };
+  if (stationIdx === 2) return { u: b.u0 + 44, v: b.v0 + 73, z: b.z0 + 8 };
+  return { u: b.u0 + 160, v: b.v0 + 33, z: b.z0 + 8 };
+}
+
+function _appendDoorSlotCorridorRoute(path, fromF, fromCorrIdx, toF, toCorrIdx) {
+  if (fromF === toF) {
+    const slotPath = findCorridorSlotPath(fromF, fromCorrIdx, toCorrIdx);
+    if (!isSlotCorridorPathValid(fromF, slotPath)) return false;
+    for (const sIdx of slotPath) path.push(getSlotCenterIso(fromF, sIdx));
+    return true;
+  }
+  const elevFrom = floors[fromF] && floors[fromF].slots.find(sl => sl.type === "Elevator");
+  const ecFrom = getElevatorCorridorSlot(elevFrom);
+  const elevTo = floors[toF] && floors[toF].slots.find(sl => sl.type === "Elevator");
+  const ecTo = getElevatorCorridorSlot(elevTo);
+  if (!elevFrom || !ecFrom || !elevTo || !ecTo) return false;
+  const p1 = findCorridorSlotPath(fromF, fromCorrIdx, ecFrom.idx);
+  if (!isSlotCorridorPathValid(fromF, p1)) return false;
+  const p2 = findCorridorSlotPath(toF, ecTo.idx, toCorrIdx);
+  if (!isSlotCorridorPathValid(toF, p2)) return false;
+  for (const sIdx of p1) path.push(getSlotCenterIso(fromF, sIdx));
+  const elevB = slotIsoBox(0, elevFrom.idx);
+  const eu = (elevB.u0 + elevB.u1) * 0.5, ev = (elevB.v0 + elevB.v1) * 0.5;
+  path.push({ u: eu, v: ev, z: getSlotCenterIso(fromF, 0).z });
+  path.push({ u: eu, v: ev, z: getSlotCenterIso(toF, 0).z });
+  for (const sIdx of p2) path.push(getSlotCenterIso(toF, sIdx));
+  return true;
+}
+
+function buildIsoRouteBetweenDoorSlots(fromSlot, toSlot, finalTarget) {
+  if (!fromSlot || !fromSlot.floor || !toSlot || !toSlot.floor) return null;
+  const fromDoor = getRoomDoorPoints(fromSlot);
+  const toDoor = getRoomDoorPoints(toSlot);
+  const fromCorr = getRoomCorridorSlot(fromSlot);
+  const toCorr = getRoomCorridorSlot(toSlot);
+  if (!fromDoor || !toDoor || !fromCorr || !toCorr) return null;
+  if (fromCorr.type !== "Corridor" || toCorr.type !== "Corridor") return null;
+  const path = [fromDoor.inside, fromDoor.outside];
+  if (!_appendDoorSlotCorridorRoute(path, fromSlot.floor.idx, fromCorr.idx, toSlot.floor.idx, toCorr.idx)) {
+    return null;
+  }
+  path.push(toDoor.outside);
+  path.push(toDoor.inside);
+  path.push(finalTarget || toDoor.roomTarget);
+  return path;
+}
+
+function buildIsoRouteToSpa(room, spaSlot, stationIdx = 0) {
+  if (!isSpaConnected(spaSlot)) return null;
+  return buildIsoRouteBetweenDoorSlots(room, spaSlot, getSpaStationIso(spaSlot, stationIdx));
+}
+
+function buildIsoRouteFromSpaToRoom(spaSlot, room) {
+  if (!spaSlot || !room || !room.floor) return null;
+  const toDoor = getRoomDoorPoints(room);
+  return buildIsoRouteBetweenDoorSlots(spaSlot, room, toDoor ? toDoor.roomTarget : null);
+}
+
 // ===== BUNDLED: logic/day.js =====
 // [logic/day.js] Gün döngüsü: yeni gün, gazete, gün sonu özeti, otel aç/kapa, başarımlar
 function unlock(i) {
@@ -7895,7 +8248,27 @@ function newDay() {
   }
   tennisSessionsToday = 0;
   tennisRevenueToday = 0;
-  for (const g of guests) g.tennisToday = 0;
+  let spaOpCostTotal = 0;
+  for (const s of allSlots) {
+    if (s.type === "Spa" && s.floor.state === "Built") {
+      spaOpCostTotal += SpaDailyCost * Math.max(1, s.spaLevel || 1);
+    }
+  }
+  const spaPaidCost = spaOpCostTotal > 0 ? Math.min(spaOpCostTotal, money) : 0;
+  if (spaPaidCost > 0) {
+    money = Math.max(0, money - spaPaidCost);
+    dayStats.spaCost = (dayStats.spaCost || 0) + spaPaidCost;
+  }
+  if ((typeof spaSessionsToday === "number" && spaSessionsToday > 0) || spaPaidCost > 0) {
+    log("♨️ Spa: " + (spaSessionsToday || 0) + " seans, +" + (spaRevenueToday || 0) + " TL, gider −" + spaPaidCost + " TL");
+  }
+  spaSessionsToday = 0;
+  spaRevenueToday = 0;
+  spaDailyCostToday = 0;
+  for (const g of guests) {
+    g.tennisToday = 0;
+    g.spaDay = false;
+  }
   let paid = false;
   let mealsLeft = (hasKitchen() && cookLevel > 0) ? CookMeals[cookLevel] : 0;
   for (const s of allSlots) {
@@ -8170,7 +8543,7 @@ function showWeeklyNewspaper(isWeekEnd = false) {
   const weekNo = Math.max(1, Math.floor((day - 1) / 7) + (isWeekEnd ? 0 : 1));
   const st = dayStats;
   const net = money - (st.money0 !== undefined ? st.money0 : money);
-  const known = st.income + st.meals - st.mealCost - st.wage - st.gas - st.spent;
+  const known = st.income + st.meals - st.mealCost - st.wage - st.gas - (st.spaCost || 0) - st.spent;
   const other = net - known;
   const avg = st.rCnt > 0 ? (st.rSum / st.rCnt).toFixed(1) : "-";
   const repD = reputation - st.rep0;
@@ -8246,6 +8619,7 @@ function showWeeklyNewspaper(isWeekEnd = false) {
   h += row("🛏️ Oda gelirleri", "+" + st.income + " TL", "#166534");
   if (st.meals > 0) h += row("🍳 Yemek geliri (net)", sg(st.meals - st.mealCost), "#166534");
   if (st.wage > 0) h += row("👷 Personel maaşları", "-" + st.wage + " TL", "#991b1b");
+  if ((st.spaCost || 0) > 0) h += row("♨️ Spa işletme gideri", "-" + st.spaCost + " TL", "#991b1b");
   if (st.gas > 0) h += row("🔥 Doğalgaz faturası", "-" + st.gas + " TL", "#991b1b");
   if (st.orders > 0) h += row("📦 Depo siparişleri", "-" + st.orders + " TL", "#991b1b");
   if (st.spent - st.orders > 0) h += row("🏗️ Yapı, eşya ve bakım", "-" + (st.spent - st.orders) + " TL", "#991b1b");
@@ -8269,7 +8643,7 @@ function showWeeklyNewspaper(isWeekEnd = false) {
 
   if (isWeekEnd) {
     weekMurders = 0;
-    dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: reputation, bonus: 0, money0: money, tennisSessions: 0, tennisIncome: 0 };
+    dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: reputation, bonus: 0, money0: money, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0 };
   }
 }
 
@@ -8558,6 +8932,28 @@ function onAction(i) {
         play("build"); log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
         refresh(); saveGame(); return;
       }
+      if (i === 11) {
+        if (countBuiltSpas() >= SpaMaxCount) {
+          play("reject");
+          log("⚠️ Otelde en fazla " + SpaMaxCount + " Spa & Hamam kurulabilir!");
+          return;
+        }
+        if (pay(spaCost())) {
+          s.type = "Spa";
+          s.parcelBuilt = true;
+          s.spaLevel = 1;
+          s.spaBusy = [false, false, false];
+          builtRooms++;
+          play("build");
+          const conn = (typeof isSpaConnected === "function") ? isSpaConnected(s) : true;
+          log(conn
+            ? "♨️ Spa & Hamam seçilen parsele kuruldu! Konuklar hamam ve saunadan faydalanabilir."
+            : "♨️ Spa & Hamam kuruldu! Açılması için bir koridorla bağlamayı unutma.");
+          if (typeof checkAchievements === "function") checkAchievements();
+          refresh(); saveGame();
+        }
+        return;
+      }
       return;
     }
 
@@ -8591,6 +8987,31 @@ function onAction(i) {
     }
     if (s.type === "Toilet" && i === 1 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1) {
       cycleRoomDoorWall(s);
+      return;
+    }
+    if (s.type === "Spa" && i !== ActCount - 1) {
+      if (i === 0 || i === 1) {
+        const delta = (i === 0) ? -SpaFeeStep : SpaFeeStep;
+        const base = (typeof sanitizeSpaFee === "function") ? sanitizeSpaFee(spaFee) : SpaFeeDefault;
+        const nextFee = clamp(base + delta, SpaFeeMin, SpaFeeMax);
+        if (nextFee !== spaFee) {
+          spaFee = nextFee;
+          play("tap");
+          refresh();
+          saveGame();
+        }
+      } else if (i === 2) {
+        const curLv = s.spaLevel || 1;
+        if (curLv < 3 && pay(spaUpgradeCost(curLv))) {
+          s.spaLevel = curLv + 1;
+          play("build");
+          log("♨️ Spa & Hamam Seviye " + s.spaLevel + "'e yükseltildi! Kapasite: " + s.spaLevel + " kişi.");
+          if (typeof checkAchievements === "function") checkAchievements();
+          refresh(); saveGame();
+        }
+      } else if (i === 3 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1) {
+        cycleRoomDoorWall(s);
+      }
       return;
     }
 
@@ -10105,7 +10526,7 @@ function refreshPanel() {
     selPanelEl.classList.toggle("ach-mode", sel === "Ach");
     selPanelEl.classList.toggle("decor-mode", sel === "Decor");
   }
-  const isTennisSel = (sel === "Slot" && selSlot && selSlot.type === "TennisClub");
+  const isTennisSel = (sel === "Slot" && selSlot && (selSlot.type === "TennisClub" || selSlot.type === "Spa"));
   if (infoText) infoText.classList.toggle("tennis-mode", !!isTennisSel);
   for (let i = 0; i < ActCount; i++) {
     setAct(i, "", false, true, false, false);
@@ -10338,6 +10759,9 @@ function refreshPanel() {
       const adjCorr = hasAdjacentCorridor(cur);
       const elevLbl = adjCorr ? ("🛗 Asansör\n" + CostElevator + " TL") : "🛗 Asansör\n(Koridor Gerekli)";
       setAct(9, elevLbl, true, canBuildHere && readyOnce && adjCorr);
+      const spaCnt = (typeof countBuiltSpas === "function") ? countBuiltSpas() : 0;
+      const spaFull = spaCnt >= SpaMaxCount;
+      setAct(11, spaFull ? "✅ Spa Dolu (2/2)" : ("♨️ Spa & Hamam\n" + spaCost() + " TL"), true, canBuildHere && readyOnce && !spaFull, spaFull);
     } else if (cur.type === "Elevator") {
       infoText.textContent = "🛗 Lüks Otel Asansörü " + coordStr +
         "\nKatlar arasında hızlı ve konforlu ulaşım sağlar. Üst kat odalarının açılması ve müşteri memnuniyeti için gereklidir.";
@@ -10468,6 +10892,36 @@ function refreshPanel() {
         const curW = getRoomDoorWall(cur);
         const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
         setAct(1, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
+      }
+    } else if (cur.type === "Spa") {
+      const lv = cur.spaLevel || 1;
+      const conn = (typeof isSpaConnected === "function") ? isSpaConnected(cur) : true;
+      const curFee = (typeof sanitizeSpaFee === "function") ? sanitizeSpaFee(spaFee) : (spaFee || SpaFeeDefault);
+      const busyArr = Array.isArray(cur.spaBusy) ? cur.spaBusy : [false, false, false];
+      const busyCnt = busyArr.slice(0, lv).filter(Boolean).length;
+      const opCost = (typeof spaDailyCost === "function") ? spaDailyCost(cur) : (SpaDailyCost * lv);
+      const lvDesc = lv === 1 ? "Kurna & Göbek Taşı" : (lv === 2 ? "Kurna + Sauna" : "Kurna + Sauna + Masaj");
+      infoText.textContent = "♨️ Spa & Hamam (Seviye " + lv + "/3 • " + lvDesc + ") " + coordStr + "\n" +
+        (conn ? "🟢 Açık" : "⚠️ Spa kapalı: koridorla bağla") +
+        " • Dolu: " + busyCnt + "/" + lv +
+        " • Ücret: " + curFee + " TL • Gider: " + opCost + " TL/gün • +1★ (3–4★)\n" +
+        "Bugün: " + (spaSessionsToday || 0) + " seans (+" + (spaRevenueToday || 0) + " TL)" +
+        " • Toplam: " + (spaSessionsTotal || 0) + " seans (+" + (spaIncomeTotal || 0) + " TL)";
+      setAct(0, "➖ Ücret\n-" + SpaFeeStep + " TL", true, curFee > SpaFeeMin);
+      setAct(1, "➕ Ücret\n+" + SpaFeeStep + " TL", true, curFee < SpaFeeMax);
+      if (actBtns[0]) actBtns[0].classList.add("tennis-fee-btn");
+      if (actBtns[1]) actBtns[1].classList.add("tennis-fee-btn");
+      if (lv < 3) {
+        const upCost = spaUpgradeCost(lv);
+        setAct(2, "⬆️ Yükselt\n" + upCost + " TL", true, money >= upCost);
+      } else {
+        setAct(2, "✅ Son Seviye", true, false, true);
+      }
+      const availWalls = getRoomAvailableDoorWalls(cur);
+      if (availWalls.length > 1) {
+        const curW = getRoomDoorWall(cur);
+        const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
+        setAct(3, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
       }
     } else if (cur.type === "Toilet") {
       infoText.textContent = "🚽 Genel Banyo & WC (2 Kabin) " + coordStr + "  •  Bakım: %" + Math.round(cur.maintenance);
@@ -10641,8 +11095,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 67;
-const APP_VERSION_NAME = "1.9.59-beta";
+const APP_VERSION_CODE = 68;
+const APP_VERSION_NAME = "1.9.60-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12070,7 +12524,12 @@ var COSMETIC_CATALOG = {
       facadeShutterL: "#64748b", facadeShutterR: "#475569",
       ruinWallTop: "#b8aa96", ruinWallL: "#cfc2ae", ruinWallR: "#9e907c",
       ruinFloorA: "#8c8275", ruinFloorB: "#786e62",
-      ruinTimber: "#6b482c", ruinTimberDark: "#452e1b"
+      ruinTimber: "#6b482c", ruinTimberDark: "#452e1b",
+      spaFloorA: "#f5efe6", spaFloorB: "#dfece9", spaFloorLine: "rgba(15, 118, 110, 0.22)",
+      spaTileTop: "#14b8a6", spaTileL: "#0f766e", spaTileR: "#115e59",
+      spaMarbleTop: "#fffdf8", spaMarbleL: "#e7ddd0", spaMarbleR: "#cfc2b2",
+      spaWoodTop: "#d99b52", spaWoodL: "#b87a38", spaWoodR: "#8c5823",
+      spaWater: "#2dd4bf", spaSignBg: "#0f766e", spaSignFg: "#ecfeff"
     },
     modern: {
       id: "modern",
@@ -12214,7 +12673,12 @@ var COSMETIC_CATALOG = {
       facadeShutterL: "#334155", facadeShutterR: "#1e293b",
       ruinWallTop: "#9aa0a6", ruinWallL: "#b0b6bc", ruinWallR: "#7d838a",
       ruinFloorA: "#7a8086", ruinFloorB: "#686e74",
-      ruinTimber: "#56493f", ruinTimberDark: "#382f29"
+      ruinTimber: "#56493f", ruinTimberDark: "#382f29",
+      spaFloorA: "#cbd5e1", spaFloorB: "#94a3b8", spaFloorLine: "rgba(14, 165, 233, 0.24)",
+      spaTileTop: "#38bdf8", spaTileL: "#0284c7", spaTileR: "#0369a1",
+      spaMarbleTop: "#f8fafc", spaMarbleL: "#cbd5e1", spaMarbleR: "#94a3b8",
+      spaWoodTop: "#c28e5a", spaWoodL: "#9a6b3e", spaWoodR: "#734e2a",
+      spaWater: "#38bdf8", spaSignBg: "#0369a1", spaSignFg: "#f0f9ff"
     },
     seaside: {
       id: "seaside",
@@ -12358,7 +12822,12 @@ var COSMETIC_CATALOG = {
       facadeShutterL: "#94a3b8", facadeShutterR: "#64748b",
       ruinWallTop: "#b5bdb8", ruinWallL: "#cad2cd", ruinWallR: "#8f9993",
       ruinFloorA: "#88918c", ruinFloorB: "#747d78",
-      ruinTimber: "#634e3a", ruinTimberDark: "#403224"
+      ruinTimber: "#634e3a", ruinTimberDark: "#403224",
+      spaFloorA: "#e6faf8", spaFloorB: "#b8ece7", spaFloorLine: "rgba(13, 148, 136, 0.24)",
+      spaTileTop: "#2dd4bf", spaTileL: "#0d9488", spaTileR: "#0f766e",
+      spaMarbleTop: "#ffffff", spaMarbleL: "#d7f0ee", spaMarbleR: "#b0dbd8",
+      spaWoodTop: "#deb278", spaWoodL: "#ba8b52", spaWoodR: "#916838",
+      spaWater: "#22d3ee", spaSignBg: "#0d9488", spaSignFg: "#ffffff"
     }
   }
 };
@@ -12556,6 +13025,7 @@ function collectSceneLights(cw, ch) {
         case "Corridor": case "Elevator": k = 0.8; rad = 165; break;
         case "Kitchen": k = 0.9; break;
         case "Gym": k = 0.8; break;
+        case "Spa": k = (typeof isSpaConnected === "function" && isSpaConnected(s)) ? 0.92 : 0.45; rad = 185; break;
         case "Toilet": k = 0.7; break;
         case "Dorm": k = 0.7; break;
         case "Storage": k = 0.55; break;
@@ -15059,6 +15529,7 @@ function drawWorld() {
     drawIsoPawn(mp.p, mp.pt, mp.uvz);
   }
   drawLiveTennisBall();
+  if (typeof drawLiveSpaSteam === "function") drawLiveSpaSteam();
 
   // 9) Caddeden Geçen İzometrik Arabalar ve Kargo Kamyonları
   for (const car of cars) drawIsoCar(car);
@@ -15660,7 +16131,7 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
   const backConnected = !!(backSlot && (backSlot.parcelBuilt || backSlot.type !== "Empty") && isSlotStructurallyConnected(backSlot));
   const frontSlot = slotAtGrid(fl, gu + 1, gv);
   const frontConnected = !!(frontSlot && (frontSlot.parcelBuilt || frontSlot.type !== "Empty") && isSlotStructurallyConnected(frontSlot));
-  const doorWall = (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") ? getRoomDoorWall(s) : null;
+  const doorWall = (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa") ? getRoomDoorWall(s) : null;
 
   // Bina türüne göre çizim: her tür kendi dosyasındaki fonksiyona devredilir (render/parcel-*.js)
   if (s.type === "Empty") {
@@ -15685,6 +16156,8 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     drawParcelElevator(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftConnected, rightConnected, backConnected);
   } else if (s.type === "TennisClub") {
     drawParcelTennisClub(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel);
+  } else if (s.type === "Spa") {
+    drawParcelSpa(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
   } else {
     // Oda, Tuvalet, Spor odası ve diğer tüm türler
     const roomPoly = drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
@@ -16828,6 +17301,269 @@ function drawParcelTennisClub(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel) {
   ctx.restore();
 }
 
+// ===== BUNDLED: render/parcel-spa.js =====
+// [render/parcel-spa.js] Spa & Hamam parseli: mermer zemin, göbek taşı, kurna, sauna, masaj yatağı ve dinlenen misafir pose'u
+
+function _findSpaStationGuest(spaSlot, stationIdx) {
+  if (typeof guests === "undefined" || !Array.isArray(guests)) return null;
+  return guests.find(g => g && g.spa === spaSlot && g.spaIdx === stationIdx && g.state === "InSpa") || null;
+}
+
+function drawSpaGuestRelaxPose(u, v, z, guestPawn, facingFront = true) {
+  const gp = guestPawn || {};
+  const skin = gp.skin || "#fcd9b8";
+  const hair = gp.hair || "#3a281f";
+  const robeCol = "#ffffff";
+  const towelTrim = "#2dd4bf";
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  if (!facingFront) ctx.scale(-1, 1);
+
+  // Havuz şezlong dinlenme pozu (reclining body + bathrobe + baş havlusu)
+  ctx.fillStyle = skin;
+  ctx.strokeStyle = OUTLINE_COL;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.roundRect(-10, -4, 20, 8, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  // Bornoz / havlu sarılı gövde
+  ctx.fillStyle = robeCol;
+  ctx.beginPath();
+  ctx.roundRect(-5, -4.5, 11, 9, 2.5);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = towelTrim;
+  ctx.fillRect(-3, -4.2, 2, 8.4);
+
+  // Saç ve yüz (şezlong yastığına yaslı)
+  ctx.fillStyle = hair;
+  ctx.beginPath();
+  ctx.arc(-11, -7, 7.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = skin;
+  ctx.beginPath();
+  ctx.arc(-10, -5, 5.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Başında küçük beyaz hamam havlusu aksesuarı (türban / baş bandı)
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = OUTLINE_COL;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.ellipse(-11.5, -10.5, 6.2, 3.6, -0.25, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.roundRect(-15, -13, 6.5, 4, 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawSpaLoungerStation(u, v, z, busy, guestPawn, towelCol, P) {
+  const wTop = P.spaWoodTop || "#d99b52";
+  const wL = P.spaWoodL || "#b87a38";
+  const wR = P.spaWoodR || "#8c5823";
+  isoBox(u, v, u + 40, v + 22, z, z + 6, wTop, wL, wR, OUTLINE_COL, 1.5);
+  isoBox(u, v, u + 12, v + 22, z + 6, z + 13, "#fffdf9", "#e5ddd0", "#cfc2b2", OUTLINE_COL, 1.3);
+  isoQuad(u + 12, v + 3, u + 37, v + 19, z + 6.4, towelCol, OUTLINE_COL, 1.0);
+  if (busy) {
+    drawSpaGuestRelaxPose(u + 22, v + 11, z + 11, guestPawn, true);
+  }
+}
+
+function drawSpaKurna(u0, v0, z0, P) {
+  const mTop = P.spaMarbleTop || "#fffdf8";
+  const mL = P.spaMarbleL || "#e7ddd0";
+  const mR = P.spaMarbleR || "#cfc2b2";
+  const wat = P.spaWater || "#2dd4bf";
+  const gTop = P.goldTop || "#ffd633";
+  const gL = P.goldL || "#d97706";
+  const gR = P.goldR || "#b45309";
+
+  // Yükseltilmiş hamam seki & mermer kurna kaidesi
+  isoBox(u0 + 14, v0 + 18, u0 + 48, v0 + 54, z0, z0 + 5, mTop, mL, mR, OUTLINE_COL, 1.3);
+  isoBox(u0 + 16, v0 + 22, u0 + 40, v0 + 48, z0 + 5, z0 + 22, mTop, mL, mR, OUTLINE_COL, 1.4);
+  isoQuad(u0 + 19, v0 + 25, u0 + 37, v0 + 45, z0 + 22.3, wat, "#0f766e", 1.1);
+  // Pirinç musluklar
+  isoBox(u0 + 11, v0 + 30, u0 + 17, v0 + 33, z0 + 28, z0 + 33, gTop, gL, gR, OUTLINE_COL, 1);
+  isoBox(u0 + 11, v0 + 37, u0 + 17, v0 + 40, z0 + 28, z0 + 33, gTop, gL, gR, OUTLINE_COL, 1);
+  // Bakır hamam tası & katlı havlu
+  isoBox(u0 + 24, v0 + 49, u0 + 33, v0 + 56, z0 + 5, z0 + 9, gTop, gL, gR, OUTLINE_COL, 1);
+  isoBox(u0 + 16, v0 + 55, u0 + 27, v0 + 64, z0 + 1, z0 + 7, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1);
+}
+
+function drawSpaGobekTasi(u0, v0, z0, P) {
+  const mTop = P.spaMarbleTop || "#fffdf8";
+  const mL = P.spaMarbleL || "#e7ddd0";
+  const mR = P.spaMarbleR || "#cfc2b2";
+  const tTop = P.spaTileTop || "#14b8a6";
+  const tL = P.spaTileL || "#0f766e";
+  const tR = P.spaTileR || "#115e59";
+  const gTop = P.goldTop || "#ffd633";
+  const gL = P.goldL || "#d97706";
+  const gR = P.goldR || "#b45309";
+
+  // Sekizgen hisseli çift kademeli sıcak mermer göbek taşı
+  isoBox(u0 + 72, v0 + 72, u0 + 124, v0 + 124, z0 + 0.5, z0 + 6, tTop, tL, tR, OUTLINE_COL, 1.4);
+  isoBox(u0 + 77, v0 + 77, u0 + 119, v0 + 119, z0 + 6, z0 + 13, mTop, mL, mR, OUTLINE_COL, 1.5);
+  isoQuad(u0 + 83, v0 + 83, u0 + 113, v0 + 113, z0 + 13.3, "#fdfaf2", P.spaFloorLine || "rgba(15,118,110,0.3)", 1.0);
+  // Üstünde pirinç kâse ve peştemal
+  isoBox(u0 + 94, v0 + 94, u0 + 102, v0 + 102, z0 + 13, z0 + 17, gTop, gL, gR, OUTLINE_COL, 0.9);
+  isoBox(u0 + 84, v0 + 103, u0 + 96, v0 + 112, z0 + 13, z0 + 16, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 0.9);
+}
+
+function drawSpaSaunaCabin(u0, v0, z0, P) {
+  const wTop = P.spaWoodTop || "#d99b52";
+  const wL = P.spaWoodL || "#b87a38";
+  const wR = P.spaWoodR || "#8c5823";
+  const sx0 = u0 + 16, sy0 = v0 + 138, sx1 = u0 + 62, sy1 = v0 + 182;
+
+  // Ahşap taban ve ısıtıcı taş ocağı
+  isoBox(sx0, sy0, sx1, sy1, z0 + 0.5, z0 + 3, wTop, wL, wR, OUTLINE_COL, 1.2);
+  // Arka ve sağ sedir duvarlar (kesit görünüm için ön duvar açık camlı)
+  isoBox(sx0, sy0, sx0 + 4, sy1, z0 + 3, z0 + 44, wTop, wL, wR, OUTLINE_COL, 1.4);
+  isoBox(sx0, sy0, sx1, sy0 + 4, z0 + 3, z0 + 44, wTop, wL, wR, OUTLINE_COL, 1.4);
+  isoBox(sx0, sy1 - 4, sx1, sy1, z0 + 3, z0 + 36, wTop, wL, wR, OUTLINE_COL, 1.3);
+  // İki katlı ahşap sauna oturma bankı
+  isoBox(sx0 + 5, sy0 + 6, sx0 + 18, sy1 - 5, z0 + 3, z0 + 14, "#e6b87a", wL, wR, OUTLINE_COL, 1.1);
+  isoBox(sx0 + 5, sy0 + 6, sx0 + 13, sy1 - 5, z0 + 14, z0 + 23, "#efc78e", wL, wR, OUTLINE_COL, 1.1);
+  // Sauna taş sobası (kızıl kor parıltısı)
+  isoBox(sx1 - 16, sy1 - 16, sx1 - 5, sy1 - 5, z0 + 3, z0 + 17, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.2);
+  isoQuad(sx1 - 15, sy1 - 15, sx1 - 6, sy1 - 6, z0 + 17.3, "#f97316", "#ea580c", 1.0);
+  // Çatı tacı ve ön yarı cam kapı
+  isoBox(sx0 - 1, sy0 - 1, sx1 + 1, sy0 + 5, z0 + 42, z0 + 46, wTop, wL, wR, OUTLINE_COL, 1.2);
+  isoBox(sx1 - 3, sy0 + 6, sx1, sy0 + 24, z0 + 3, z0 + 38, "rgba(186,230,253,0.45)", "rgba(125,211,252,0.4)", "rgba(56,189,248,0.4)", OUTLINE_COL, 1.1);
+}
+
+function drawSpaMassageBed(u, v, z, occupied, guestPawn, P) {
+  const wTop = P.spaWoodTop || "#d99b52";
+  const wL = P.spaWoodL || "#b87a38";
+  const wR = P.spaWoodR || "#8c5823";
+
+  // Ahşap ayaklar ve masa gövdesi
+  isoBox(u + 3, v + 3, u + 8, v + 8, z, z + 11, wTop, wL, wR, OUTLINE_COL, 1.1);
+  isoBox(u + 32, v + 3, u + 37, v + 8, z, z + 11, wTop, wL, wR, OUTLINE_COL, 1.1);
+  isoBox(u + 3, v + 15, u + 8, v + 20, z, z + 11, wTop, wL, wR, OUTLINE_COL, 1.1);
+  isoBox(u + 32, v + 15, u + 37, v + 20, z, z + 11, wTop, wL, wR, OUTLINE_COL, 1.1);
+  isoBox(u, v, u + 40, v + 23, z + 11, z + 17, "#fffaf0", "#e6dfd3", "#d1c7b8", OUTLINE_COL, 1.4);
+  isoQuad(u + 2, v + 2, u + 38, v + 21, z + 17.3, "#ccfbf1", "#14b8a6", 1.0);
+  // Baş yastığı
+  isoBox(u + 1, v + 5, u + 10, v + 18, z + 17, z + 20, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 1.0);
+  if (occupied) {
+    drawSpaGuestRelaxPose(u + 21, v + 11.5, z + 20.5, guestPawn, true);
+  }
+}
+
+function drawParcelSpa(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall) {
+  const P = (typeof getRoomPalette === "function") ? getRoomPalette() : THEME.room;
+  const roomPoly = drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
+  const lv = Math.max(1, Math.min(3, s.spaLevel || 1));
+  const busyArr = Array.isArray(s.spaBusy) ? s.spaBusy : [false, false, false];
+  const busyCnt = busyArr.slice(0, lv).filter(Boolean).length;
+  const conn = (typeof isSpaConnected === "function") ? isSpaConnected(s) : true;
+
+  // Hamam duvar çini bandı (arka & sol duvarlarda kapıyı kapatmadan)
+  const tileTop = P.spaTileTop || "#14b8a6";
+  const tileL = P.spaTileL || "#0f766e";
+  const tileR = P.spaTileR || "#115e59";
+  if (doorWall !== "back") {
+    isoBox(u0 + 10, v0 + 14, u0 + 12.5, v1 - 12, z0 + 12, z0 + 36, tileTop, tileL, tileR, null, 0);
+  } else {
+    isoBox(u0 + 10, v0 + 14, u0 + 12.5, v0 + 90, z0 + 12, z0 + 36, tileTop, tileL, tileR, null, 0);
+    isoBox(u0 + 10, v0 + 140, u0 + 12.5, v1 - 12, z0 + 12, z0 + 36, tileTop, tileL, tileR, null, 0);
+  }
+  if (doorWall !== "left") {
+    isoBox(u0 + 14, v0 + 10, u1 - 12, v0 + 12.5, z0 + 12, z0 + 36, tileTop, tileL, tileR, null, 0);
+  }
+
+  // 1) Kurna & Merkezi Göbek Taşı (Sv.1+)
+  drawSpaKurna(u0, v0, z0, P);
+  drawSpaGobekTasi(u0, v0, z0, P);
+
+  // 2) İstasyon 0: Ön-sol Hamam Sediri (Sv.1+)
+  const g0 = busyArr[0] ? _findSpaStationGuest(s, 0) : null;
+  drawSpaLoungerStation(u0 + 138, v0 + 22, z0, !!busyArr[0], g0 ? g0.pawn : null, "#ccfbf1", P);
+
+  // 3) Seviye 2+: Arka-sağ Ahşap Sauna Kabini + İstasyon 1 Dinlenme Sediri
+  if (lv >= 2) {
+    drawSpaSaunaCabin(u0, v0, z0, P);
+    const g1 = busyArr[1] ? _findSpaStationGuest(s, 1) : null;
+    drawSpaLoungerStation(u0 + 138, v0 + 142, z0, !!busyArr[1], g1 ? g1.pawn : null, "#fef3c7", P);
+  }
+
+  // 4) Seviye 3: Masaj Yatağı (İstasyon 2)
+  if (lv >= 3) {
+    const g2 = busyArr[2] ? _findSpaStationGuest(s, 2) : null;
+    drawSpaMassageBed(u0 + 26, v0 + 58, z0, !!busyArr[2], g2 ? g2.pawn : null, P);
+  }
+
+  // 5) Durum Rozeti (Açık / Bağlı değil uyarı)
+  if (!conn) {
+    isoLabel("⚠️ SPA (Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 78, 10.5, "#991b1b", "#fef2f2", 5, 2.2);
+  } else {
+    const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
+    isoLabel("♨️ SPA Sv." + lv + occStr, (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10.5, P.spaSignFg || "#ecfeff", P.spaSignBg || "#0f766e", 5, 2.2);
+  }
+
+  addHitPoly(roomPoly, () => {
+    if (pending && s.Ready && !s.guest && !s.onFire) {
+      selSlot = s;
+      placeGuestIntoRoom(pending, s, pendingPrice, false);
+      refresh();
+      return;
+    }
+    selectSlot(s);
+  });
+}
+
+// Hareketli buhar parçacıkları: önbelleğe alınan statik Spa çiziminden ayrı olarak dünya döngüsünde çizilir (<= 24/parsel)
+function drawLiveSpaSteam() {
+  if (typeof allSlots === "undefined" || !Array.isArray(allSlots)) return;
+  const maxFloor = (typeof viewFloor === "number") ? viewFloor : 0;
+  const tNow = (typeof timeNow === "number") ? timeNow : 0;
+  for (let i = 0; i < allSlots.length; i++) {
+    const s = allSlots[i];
+    if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built" || s.floor.idx > maxFloor) continue;
+    if (typeof isSpaConnected === "function" && !isSpaConnected(s)) continue;
+    if (typeof isParcelInViewport === "function" && !isParcelInViewport(s.floor.idx, s.idx)) continue;
+
+    const b = slotIsoBox(s.floor.idx, s.idx);
+    const busyArr = Array.isArray(s.spaBusy) ? s.spaBusy : [false, false, false];
+    const lv = Math.max(1, Math.min(3, s.spaLevel || 1));
+    const active = busyArr.slice(0, lv).some(Boolean);
+    const count = active ? 16 : 6;
+    const baseAlpha = active ? 0.34 : 0.16;
+
+    ctx.save();
+    for (let k = 0; k < count; k++) {
+      const phase = (tNow * (active ? 0.55 : 0.30) + k * 0.173 + (s.idx % 7) * 0.11) % 1;
+      const src = k % 2 === 0
+        ? { u: b.u0 + 28, v: b.v0 + 35, z: b.z0 + 24 }
+        : { u: b.u0 + 98, v: b.v0 + 98, z: b.z0 + 18 };
+      const su = src.u + Math.sin(phase * Math.PI * 2 + k) * 9;
+      const sv = src.v + Math.cos(phase * Math.PI * 2 + k * 0.7) * 9;
+      const sz = src.z + phase * (active ? 42 : 28);
+      const pt = iso(su, sv, sz);
+      const r = (active ? 6.5 : 4.5) + phase * (active ? 9.5 : 6.0);
+      const a = baseAlpha * Math.sin(phase * Math.PI);
+      if (a <= 0.01) continue;
+      ctx.fillStyle = "rgba(255, 255, 255, " + a.toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
 // ===== BUNDLED: render/parcel-corridor.js =====
 // [render/parcel-corridor.js] Koridor parseli
 // 7.5) Lüks Kat Koridoru & Holü (Corridor)
@@ -16874,14 +17610,14 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
   const leftCorr = !!(leftSlot && (leftSlot.type === "Corridor" || leftSlot.type === "Elevator" || leftSlot.type === "Pool" || leftSlot.type === "Park"));
   const rightCorr = !!(rightSlot && (rightSlot.type === "Corridor" || rightSlot.type === "Elevator" || rightSlot.type === "Pool" || rightSlot.type === "Park"));
   const rightRunnerCorr = rightCorr || !!(rightSlot && rightSlot.type === "TennisClub" && isSlotStructurallyConnected(rightSlot));
-  const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Pool" || backSlot.type === "Park"));
+  const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Pool" || backSlot.type === "Park"));
   const frontCorr = !!(frontSlot && (frontSlot.type === "Corridor" || frontSlot.type === "Elevator" || (fIdx === 0 && frontSlot.type === "Reception") || frontSlot.type === "Pool" || frontSlot.type === "Park"));
 
   // Lüks Kırmızı & Altın Koridor Yolluğu (L-Dönüş, T-Kavşak, + ve Düz Koridor)
   drawCorridorRunnerCarpet(u0, v0, u1, v1, z0, leftCorr, rightRunnerCorr, backCorr, frontCorr);
 
   // Arka Duvar (u = u0)
-  const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym") && getRoomDoorWall(backSlot) === "front");
+  const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa") && getRoomDoorWall(backSlot) === "front");
   const backIsOutdoorAmenity = !!(backSlot && (backSlot.type === "Pool" || backSlot.type === "Park"));
   if (backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
     // Arkada Koridor veya Asansör varsa geçiş tamamen açık, kesintisiz hol
@@ -16941,6 +17677,10 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
       isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, gsTop, gsL, gsR, OUTLINE_COL, 1.3);
       isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
       isoLabel("GYM 🏋️", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#ffffff", null, 0, 0);
+    } else if (backSlot.type === "Spa") {
+      isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, P.spaWoodTop || gsTop, P.spaWoodL || gsL, P.spaWoodR || gsR, OUTLINE_COL, 1.3);
+      isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, P.spaTileTop || "#14b8a6", P.spaSignBg || "#0f766e", P.spaTileR || "#115e59", OUTLINE_COL, 1);
+      isoLabel("SPA ♨️", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#ffffff", null, 0, 0);
     }
   } else {
     // Arka Duvar: Sıcak Krem Sıva, Süpürgelik & Ahşap Lambri
@@ -16956,7 +17696,7 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
 
   // Sol Bölme Duvarı (v = v0)
   const leftIsElev = leftSlot && leftSlot.type === "Elevator";
-  const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym") && getRoomDoorWall(leftSlot) === "right");
+  const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym" || leftSlot.type === "Spa") && getRoomDoorWall(leftSlot) === "right");
   const leftIsOutdoorAmenity = !!(leftSlot && (leftSlot.type === "Pool" || leftSlot.type === "Park"));
   if (leftSlot && leftSlot.type === "Corridor") {
     // İki koridor yan yana bağlandığında ferah, geniş ve kesintisiz tek bir lüks hol oluşur (kiriş veya engel kolon çizilmez)
@@ -17002,7 +17742,7 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
   // Sağ Bölme Duvarı (v = v1)
   const rightIsElev = rightSlot && rightSlot.type === "Elevator";
   const rightHasDoorToCorr = !!(rightSlot && (
-    ((rightSlot.type === "Toilet" || rightSlot.type === "Room" || rightSlot.type === "Gym") && getRoomDoorWall(rightSlot) === "left") ||
+    ((rightSlot.type === "Toilet" || rightSlot.type === "Room" || rightSlot.type === "Gym" || rightSlot.type === "Spa") && getRoomDoorWall(rightSlot) === "left") ||
     (rightSlot.type === "TennisClub" && isSlotStructurallyConnected(rightSlot))
   ));
   const rightIsOutdoorAmenity = !!(rightSlot && (rightSlot.type === "Pool" || rightSlot.type === "Park"));
@@ -17424,10 +18164,15 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
   const dTop = P.doorTop, dL = P.doorL, dR = P.doorR;
   const tdTop = P.toiletDoorTop, tdL = P.toiletDoorL, tdR = P.toiletDoorR;
   const gsTop = P.gymSubTop, gsL = P.gymSubL, gsR = P.gymSubR;
+  const swTop = P.spaWoodTop || dTop, swL = P.spaWoodL || dL, swR = P.spaWoodR || dR;
+  const stTop = P.spaTileTop || "#14b8a6", stBg = P.spaSignBg || "#0f766e", stR = P.spaTileR || "#115e59";
+  const stFg = P.spaSignFg || "#ecfeff";
+  const fSpa = P.spaFloorA || fToilet, fSpaB = P.spaFloorB || "#dfece9", fSpaLine = P.spaFloorLine || "rgba(15, 118, 110, 0.22)";
 
   const floorCol = s.type === "Toilet" ? fToilet :
                    s.type === "Gym" ? fGym :
-                   s.type === "Gas" ? fGas : fWood;
+                   s.type === "Gas" ? fGas :
+                   s.type === "Spa" ? fSpa : fWood;
 
   // A) Oda Tabanı: Sıcak Meşe Ahşap Parke Zemin
   const roomSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 6));
@@ -17455,6 +18200,15 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
   } else if (s.type === "Toilet") {
     if (typeof drawIsoTexturedFloor === "function") {
       drawIsoTexturedFloor(u0, v0, u1, v1, z0, "marble", fToilet);
+    }
+    if (typeof drawRoomFloorAO === "function") drawRoomFloorAO(u0, v0, u1, v1, z0);
+  } else if (s.type === "Spa") {
+    const du_s = (u1 - u0) / 6, dv_s = (v1 - v0) / 6;
+    for (let iu = 0; iu < 6; iu++) {
+      for (let iv = 0; iv < 6; iv++) {
+        const col = (iu + iv) % 2 === 0 ? fSpa : fSpaB;
+        isoQuad(u0 + iu * du_s + 0.6, v0 + iv * dv_s + 0.6, u0 + (iu + 1) * du_s - 0.6, v0 + (iv + 1) * dv_s - 0.6, z0 + 0.28, col, fSpaLine, 0.7);
+      }
     }
     if (typeof drawRoomFloorAO === "function") drawRoomFloorAO(u0, v0, u1, v1, z0);
   }
@@ -17506,6 +18260,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(u0 + 2, vd0 + 4, u0 + 5, vd0 + 7, z0 + 30, z0 + 33, "#94a3b8", "#64748b", "#475569", null, 0);
       isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 12, u0 + 0.5, (vd0 + vd1) * 0.5 + 12, z0 + 48, z0 + 55, "#2563eb", "#1d4ed8", "#1e40af", OUTLINE_COL, 1);
       isoLabel("WC 🚻", u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+    } else if (s.type === "Spa") {
+      isoBox(u0 + 1, vd0 + 2, u0 + wallThick + 6, vd0 + 6, z0, z0 + 63, swTop, swL, swR, OUTLINE_COL, 1.3);
+      isoBox(u0 + 2, vd0 + 4, u0 + 5, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 14, u0 + 0.5, (vd0 + vd1) * 0.5 + 14, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
+      isoLabel("SPA ♨️", u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 7, stFg, null, 0, 0);
     } else if (!s.hasDoor) {
       isoQuad(u0 + wallThick * 0.5, vd0 + 4, u0 + wallThick * 0.5, vd1 - 4, z0 + 28, "#fbbf24", "#d97706", 1.8);
       isoLabel("🚪 Kapı Al!", u0 + wallThick + 3, (vd0 + vd1) * 0.5, z0 + 32, 7.5, "#995200", "#fff3cd", 4, 1.5);
@@ -17551,6 +18310,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       // Mavi WC Tabelası
       isoBox((ud0 + ud1) * 0.5 - 12, v0 - 1.5, (ud0 + ud1) * 0.5 + 12, v0 + 0.5, z0 + 48, z0 + 55, "#2563eb", "#1d4ed8", "#1e40af", OUTLINE_COL, 1);
       isoLabel("WC 🚻", (ud0 + ud1) * 0.5, v0 - 2, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+    } else if (s.type === "Spa") {
+      isoBox(ud0 + 2, v0 + 1, ud0 + 6, v0 + wallThick + 6, z0, z0 + 63, swTop, swL, swR, OUTLINE_COL, 1.3);
+      isoBox(ud0 + 4, v0 + 2, ud0 + 7, v0 + 5, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox((ud0 + ud1) * 0.5 - 14, v0 - 1.5, (ud0 + ud1) * 0.5 + 14, v0 + 0.5, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
+      isoLabel("SPA ♨️", (ud0 + ud1) * 0.5, v0 - 2, z0 + 51.5, 7, stFg, null, 0, 0);
     } else if (s.type === "Room") {
       isoBox((ud0 + ud1) * 0.5 - 6, v0 - 1.5, (ud0 + ud1) * 0.5 + 6, v0 + wallThick + 2, z0 + 48, z0 + 55, gaTop, gaL, gaR, OUTLINE_COL, 1);
       isoLabel(String(s.roomNo || 102), (ud0 + ud1) * 0.5, v0 + wallThick + 3, z0 + 51.5, 7, "#3a281f", null, 0, 0);
@@ -17596,6 +18360,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(ud0 + 2, v1 - wallThick - 6, ud0 + 6, v1 - 1, z0, z0 + 63, gsTop, gsL, gsR, OUTLINE_COL, 1.3);
       isoBox((ud0 + ud1) * 0.5 - 14, v1 - 0.5, (ud0 + ud1) * 0.5 + 14, v1 + 1.5, z0 + 48, z0 + 55, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
       isoLabel("GYM 🏋️", (ud0 + ud1) * 0.5, v1 + 2, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+    } else if (s.type === "Spa") {
+      isoBox(ud0 + 2, v1 - wallThick - 6, ud0 + 6, v1 - 1, z0, z0 + 63, swTop, swL, swR, OUTLINE_COL, 1.3);
+      isoBox(ud0 + 4, v1 - 5, ud0 + 7, v1 - 2, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox((ud0 + ud1) * 0.5 - 14, v1 - 0.5, (ud0 + ud1) * 0.5 + 14, v1 + 1.5, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
+      isoLabel("SPA ♨️", (ud0 + ud1) * 0.5, v1 + 2, z0 + 51.5, 7, stFg, null, 0, 0);
     } else if (s.type === "Room") {
       // Pirinç Oda Plaketi (v1 yüzeyinde)
       isoBox((ud0 + ud1) * 0.5 - 6, v1 - wallThick - 2, (ud0 + ud1) * 0.5 + 6, v1 + 1, z0 + 48, z0 + 55, gaTop, gaL, gaR, OUTLINE_COL, 1);
@@ -17611,7 +18380,7 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
     }
   } else if (rightSlot && rightSlot.type === "Reception") {
     // Resepsiyon ile otel odaları arasında tek duvar: Resepsiyon'un sol duvarı ortak duvardır, oda tarafında ikinci bir duvar çizilmez!
-  } else if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") {
+  } else if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa") {
     // Sağlam kapalı sağ duvar -> Alçak kesit süpürgelik & pervaz
     isoBox(u0, v1 - wallThick, u1, v1, z0, z0 + 14, wTop, wL, wR, OUTLINE_COL, 1.2);
     isoBox(u0, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0 + 12, z0 + 15, tTop, tL, tR, null, 0);
@@ -17655,6 +18424,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(u1 - 8, vd0 + 2, u1 + 2, vd0 + 6, z0, z0 + 63, gsTop, gsL, gsR, OUTLINE_COL, 1.3);
       isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 14, u1 + 3.5, (vd0 + vd1) * 0.5 + 14, z0 + 48, z0 + 55, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
       isoLabel("GYM 🏋️", u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+    } else if (s.type === "Spa") {
+      isoBox(u1 - 8, vd0 + 2, u1 + 2, vd0 + 6, z0, z0 + 63, swTop, swL, swR, OUTLINE_COL, 1.3);
+      isoBox(u1 - 6, vd0 + 4, u1 - 3, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 14, u1 + 3.5, (vd0 + vd1) * 0.5 + 14, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
+      isoLabel("SPA ♨️", u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 7, stFg, null, 0, 0);
     }
   } else {
     // Kapı önde değil: Kesintisiz alçak süpürgelik & pervaz
@@ -17663,7 +18437,7 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
   }
 
   // F) 4 Köşe Taşıyıcı Kolonları ve 4 Yöne Bağlantı Çerçevesi (Kullanıcı Şeması)
-  if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym") {
+  if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa") {
     const colSize = 7;
     // Arka köşe, sol köşe ve sağ köşe tam boy taşıyıcı kolonlar (duvar birleşim noktaları)
     const backCorners = [
@@ -18117,7 +18891,7 @@ function _isFacadeSlotBuiltRoofed(slot) {
 function _isFacadeWindowLitNight(s) {
   if (!s) return false;
   if (s.type === "Room") return !!(s.guest && !s.guest.sleeping);
-  return s.type === "Reception" || s.type === "Kitchen" || s.type === "Corridor" || s.type === "Elevator" || s.type === "Gym" || (s.type === "TennisClub" && s.tennisState === "Open");
+  return s.type === "Reception" || s.type === "Kitchen" || s.type === "Corridor" || s.type === "Elevator" || s.type === "Gym" || s.type === "Spa" || (s.type === "TennisClub" && s.tennisState === "Open");
 }
 
 function _facadeFacePts(axis, u1, v1, t0, t1, d, zb, zt) {
@@ -18299,6 +19073,10 @@ function drawParcelLowerFloorFacade(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel
       _drawFacadeWindowBatch(axis, u1, v1, [[tm - 22, tm + 22, z0 + 18, zWallTop - 12]], pal, litNight, isNightMode, false);
     } else if (s.type === "Toilet") {
       _drawFacadeWindowBatch(axis, u1, v1, [[tm - 23, tm + 23, z0 + 45, z0 + 67]], pal, false, isNightMode, true);
+    } else if (s.type === "Spa") {
+      _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 28, t0 + 76, z0 + 26, z0 + 62], [t1 - 76, t1 - 28, z0 + 26, z0 + 62]], pal, litNight, isNightMode, !isNightMode);
+      _drawFacadeFaceQuad(axis, u1, v1, t0 + 26, t0 + 78, 0.55, z0 + 62, z0 + 66, pal.spaTileL || "#0f766e", OUTLINE_COL, 0.9);
+      _drawFacadeFaceQuad(axis, u1, v1, t1 - 78, t1 - 26, 0.55, z0 + 62, z0 + 66, pal.spaTileL || "#0f766e", OUTLINE_COL, 0.9);
     } else if (s.type === "Gas") {
       _drawFacadeWindowBatch(axis, u1, v1, [[tm - 28, tm + 28, z0 + 26, z0 + 62]], pal, false, isNightMode, true);
       _drawFacadeFaceQuad(axis, u1, v1, tm - 28, tm + 28, 0.6, z0 + 62, z0 + 66, axis === "front" ? pal.goldL : pal.goldR, OUTLINE_COL, 0.9);
@@ -19574,6 +20352,13 @@ function loop(now) {
           g.tennisTimer = rnd(25, 50);
         }
       }
+      if (g.state === "InRoom") {
+        g.spaTimer -= dt;
+        if (g.spaTimer <= 0) {
+          if (typeof trySpa === "function") trySpa(g);
+          g.spaTimer = rnd(20, 40);
+        }
+      }
       if (g.state === "InRoom" && g.kids > 0 && !g.kidsAtPark) {
         g.parkTimer -= dt;
         if (g.parkTimer <= 0) { g.parkTimer = rnd(15, 30); sendKidsToPark(g); }
@@ -19581,6 +20366,16 @@ function loop(now) {
       if (g.state === "InRoom" && g.role === "Vampire" && isNight && !g.crimeDone) {
         g.crimeTimer -= dt;
         if (g.crimeTimer <= 0) triggerVampireHunt(g);
+      }
+    } else if (g.state === "ToSpa" || g.state === "InSpa") {
+      g.spaElapsed = (g.spaElapsed || 0) + dt;
+      if (g.spaElapsed > 90) {
+        if (typeof rescueSpaGuest === "function") rescueSpaGuest(g);
+      } else if (!g.spa || g.spa.type !== "Spa" || g.spa.onFire || (typeof isSpaConnected === "function" && !isSpaConnected(g.spa))) {
+        if (typeof rescueSpaGuest === "function") rescueSpaGuest(g);
+      } else if (g.state === "InSpa") {
+        g.exLeft -= dt;
+        if (g.exLeft <= 0 && typeof endSpa === "function") endSpa(g);
       }
     } else if (g.state === "ToTennis" || g.state === "PlayingTennis") {
       g.tennisElapsed = (g.tennisElapsed || 0) + dt;
@@ -19596,6 +20391,9 @@ function loop(now) {
     } else if (g.state === "ToRoom" && g.tennisInFlow) {
       g.tennisElapsed = (g.tennisElapsed || 0) + dt;
       if (g.tennisElapsed > 90 && typeof rescueTennisGuest === "function") rescueTennisGuest(g);
+    } else if (g.state === "ToRoom" && g.spaInFlow) {
+      g.spaElapsed = (g.spaElapsed || 0) + dt;
+      if (g.spaElapsed > 90 && typeof rescueSpaGuest === "function") rescueSpaGuest(g);
     } else if (g.state === "Exercising") {
       g.exLeft -= dt;
       if (g.exLeft <= 0) endExercise(g);
