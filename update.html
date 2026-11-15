@@ -1834,18 +1834,17 @@ const ItemCn = ["灯泡", "桌子", "衣柜", "摄像头", "床", "儿童床", "
 const ItemCosts = [30, 40, 40, 60, 80, 60, 120, 100, 110];
 
 const FirstNames = [
-  "Ahmet", "Ayşe", "Ali", "Arda",
-  "Burak", "Buse", "Berk",
-  "Can", "Cem", "Ceren",
-  "Deniz", "Defne", "Doruk",
-  "Elif", "Emre", "Ece",
-  "Fatma", "Furkan",
-  "Hakan", "Hande", "Halil",
-  "Kerem", "Kaan", "Kübra",
-  "Mehmet", "Mustafa", "Merve", "Murat",
-  "Selin", "Serkan", "Sinan", "Seda",
-  "Tolga", "Tuğba", "Tamer",
-  "Yusuf", "Yasemin", "Yiğit", "Zeynep"
+  "Ahmet", "Ali", "Alp", "Arda", "Aslı", "Aylin", "Ayşe", "Barış", "Berk",
+  "Bora", "Burak", "Burçak", "Burçin", "Buse", "Büşra", "Cahide", "Can", "Canan",
+  "Cem", "Ceren", "Çağla", "Damla", "Defne", "Deniz", "Doruk", "Duygu", "Ebru",
+  "Ece", "Efe", "Elif", "Emine", "Emre", "Eylül", "Fatma", "Furkan", "Gamze",
+  "Gizem", "Gökhan", "Hakan", "Halil", "Hande", "Hasan", "Hatice", "Hülya", "Hüseyin",
+  "İbrahim", "İlkay", "İrem", "İsmail", "Kaan", "Kemal", "Kerem", "Kübra", "Leyla",
+  "Mehmet", "Melis", "Memdullah", "Mert", "Merve", "Metin", "Murat", "Mustafa", "Nazlı",
+  "Nihat", "Nurcan", "Oğuz", "Onur", "Orçun", "Osman", "Ömer", "Özge", "Pınar",
+  "Rabia", "Seda", "Selin", "Serkan", "Sevgi", "Sevim", "Sibel", "Sinan", "Şeyma",
+  "Şirin", "Tamer", "Taner", "Tolga", "Tuğba", "Umut", "Volkan", "Xedice", "Yasemin",
+  "Yasin", "Yiğit", "Yusuf", "Zahide", "Zehra", "Zeki", "Zeynep"
 ];
 const KillerLetters = ["A", "B", "C", "D", "E", "H", "K", "M", "S", "T", "Y"];
 const VipNames = ["Tarkan", "Kıvanç", "Serenay", "Kenan", "Hadise", "Haluk", "Ajda", "Cem"];
@@ -1896,7 +1895,14 @@ const SpaPoints = 3;
 const SpaDailyCost = 15;
 const SpaMaxCount = 2;
 const BodyguardDailyPrice = 80;
-const LastNames = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Aydın", "Öztürk", "Arslan", "Koç", "Polat"];
+const LastNames = [
+  "Acar", "Akbaba", "Aksoy", "Aktaş", "Arslan", "Aslan", "Ateş", "Avcı", "Aydın",
+  "Bozkurt", "Bulut", "Çakır", "Çelik", "Çetin", "Demir", "Doğan", "Duman", "Eren",
+  "Güler", "Gündoğdu", "Güneş", "Kara", "Karaca", "Karahan", "Kaya", "Kılıç", "Koç",
+  "Koçak", "Korkmaz", "Köse", "Kurt", "Özdemir", "Özkan", "Öztürk", "Polat", "Saydam",
+  "Sezer", "Sönmez", "Şahin", "Şimşek", "Tanrıverdi", "Taş", "Tekin", "Türkmen", "Uçar",
+  "Uysal", "Yalçın", "Yavuz", "Yıldırım", "Yıldız", "Yılmaz"
+];
 const CnNames = ["李伟", "王芳", "张敏", "刘洋", "陈静", "杨磊"];
 const NeedyStories = [
   "Param yok... Evimde elektrik kesildi, sular da yok. Depremzedeyim, kalabilir miyim?",
@@ -5242,6 +5248,21 @@ function setBubbleText(g, index) {
   else g.bubbleLines = [g.name, g.offer + " TL"];
 }
 
+function isFullNameInUse(fullName) {
+  for (let i = 0; i < guests.length; i++) if (guests[i] && guests[i].name === fullName) return true;
+  for (let i = 0; i < queue.length; i++) if (queue[i] && queue[i].name === fullName) return true;
+  return false;
+}
+
+function pickUniqueFullName() {
+  let fullName = "";
+  for (let attempt = 0; attempt < 8; attempt++) {
+    fullName = pick(FirstNames) + " " + pick(LastNames);
+    if (!isFullNameInUse(fullName)) return fullName;
+  }
+  return fullName;
+}
+
 function spawnGuest() {
   resetSpawn();
   if (queue.length >= MaxQueue) return;
@@ -5273,7 +5294,7 @@ function spawnGuest() {
     hasBubble: true, bubbleLines: ["", ""]
   };
   g.chinese = g.type === "Normal" && Math.random() < ChanceChinese;
-  g.name = g.chinese ? pick(CnNames) : pick(FirstNames) + " " + pick(LastNames);
+  g.name = g.chinese ? pick(CnNames) : pickUniqueFullName();
 
   // Aktif Etkinlik Kontrolü: Ünlü Ziyareti (VIP), Sosyete Düğünü veya Festival
   if (activeEvent === "VIP" && !vipSpawnedThisEvent && g.type !== "Needy") {
@@ -11095,8 +11116,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 68;
-const APP_VERSION_NAME = "1.9.60-beta";
+const APP_VERSION_CODE = 69;
+const APP_VERSION_NAME = "1.9.61-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"

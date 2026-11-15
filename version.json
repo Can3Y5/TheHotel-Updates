@@ -1,8 +1,8 @@
 {
-  "versionCode": 68,
-  "versionName": "1.9.60-beta",
+  "versionCode": 69,
+  "versionName": "1.9.61-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Spa & Hamam odası: 3 seviye, göbek taşı & sauna, ücret ayarı ve 3 yeni başarım"
+  "notes": "Yeni misafir isimleri ve soyisimleri"
 }
