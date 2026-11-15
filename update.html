@@ -2730,8 +2730,8 @@ const DECOR_SLOTS = [
   { id: "right_3",  zone: "right", label: "Sağ Bahçe #3", u: 370,  v: 1212, size: "B", h: 38, flip: 1 },
   { id: "right_4",  zone: "right", label: "Sağ Bahçe #4", u: 510,  v: 1212, size: "O", h: 28, flip: 1 },
   { id: "right_5",  zone: "right", label: "Sağ Bahçe #5", u: 650,  v: 1212, size: "B", h: 38, flip: 1 },
-  { id: "right_6",  zone: "right", label: "Sağ Bahçe #6", u: 820,  v: 1400, size: "O", h: 28, flip: 1 },
-  { id: "right_7",  zone: "right", label: "Sağ Bahçe #7", u: 930,  v: 1400, size: "K", h: 15, flip: 1 },
+  { id: "right_6",  zone: "right", label: "Sağ Bahçe #6", u: 830,  v: 1545, size: "O", h: 28, flip: 1 },
+  { id: "right_7",  zone: "right", label: "Sağ Bahçe #7", u: 830,  v: 1650, size: "K", h: 15, flip: 1 },
 
   // Sol Şerit (v = -62; bina kenarı v = 0 ile otopark v = -120 arası: 1×B + 3×O + 3×K)
   { id: "left_1",   zone: "left",  label: "Sol Bahçe #1", u: 90,   v: -62,  size: "K", h: 15, flip: -1 },
@@ -3069,6 +3069,7 @@ function getDecorForbiddenZones() {
     { name: "road_parcel_36", u0: 975, u1: 1170, v0: -195, v1: 0 },
     { name: "road_parcel_37", u0: 975, u1: 1170, v0: 1170, v1: 1365 },
     { name: "tennis_club_38", u0: 780, u1: 975, v0: 1170, v1: 1365 },
+    { name: "tennis_club_path", u0: 760, u1: 905, v0: 1365, v1: 1440 },
     { name: "stone_path", u0: 1170, u1: 1260, v0: 437, v1: 537 },
     { name: "entry_planter_L", u0: 1170, u1: 1260, v0: 415, v1: 429 },
     { name: "entry_planter_R", u0: 1170, u1: 1260, v0: 545, v1: 559 },
@@ -3185,10 +3186,10 @@ if (typeof window !== "undefined") {
           });
         }
       }
-      // Tenis kortu + yıkık kulüp parseli ile sabit obje denetimi
+      // Tenis kortu + yıkık kulüp parseli + taş bağlantı yolu ile sabit obje denetimi
       for (let z = 0; z < forbidden.length; z++) {
         const fz = forbidden[z];
-        if (fz.name !== "tennis_court" && fz.name !== "tennis_club_38") continue;
+        if (fz.name !== "tennis_court" && fz.name !== "tennis_club_38" && fz.name !== "tennis_club_path") continue;
         const gapZ = decorBoxGap(obj, fz);
         if (gapZ < req) {
           staticConflicts.push({
@@ -9629,7 +9630,7 @@ function refreshPanel() {
     } else if (cur.type === "RoofTerrace") {
       infoText.textContent = "🏖️ Çatı Terası, Şezlong & Çatı Barı " + coordStr + "\nOtelde konaklayan müşteriler burada güneşlenir ve içecek alır, otel memnuniyetini artırır.";
     } else if (cur.type === "TennisClub") {
-      infoText.textContent = "🎾 Yıkık Tenis Kulübü\nKortun yanındaki bu bina yıkık durumda. Tenisçiler grubu etkinliğine gelen sporcuları ağırlarsan sana tenis malzemeleri verecekler; malzemeleri toplayıp binayı onarınca kulüp açılacak.";
+      infoText.textContent = "🎾 Yıkık Tenis Kulübü\nKortun yanındaki bu bina ve korta uzanan taş bağlantı yolu yıkık durumda. Tenisçiler grubu etkinliğine gelen sporcuları ağırlarsan sana tenis malzemeleri verecekler; malzemeleri toplayıp binayı ve yolu onarınca kulüp açılacak.";
     } else if (cur.type === "Kitchen") {
       infoText.textContent = "🍳 Restoran & Mutfak " + coordStr + "  •  Aşçı: " + (cookLevel > 0 ? ("Sv." + cookLevel) : "Yok") + "  •  Günlük porsiyon: " + CookMeals[cookLevel] +
         "\nHer porsiyon +" + MealPrice + " TL gelir getirir.";
@@ -9864,8 +9865,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 62;
-const APP_VERSION_NAME = "1.9.54-beta";
+const APP_VERSION_CODE = 63;
+const APP_VERSION_NAME = "1.9.55-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Game/main/version.json"
@@ -9873,9 +9874,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.55-beta",
+    title: "Tenis Kortu Ağaç Sınırı & Kulüp–Kort Taş Bağlantı Yolu",
+    latest: true,
+    notes: "• 🌳 Tenis Kortu Çevre Sınırı: Tenis kortunun ön-sol ve sağ-alt çim hattı boyunca mevsime göre renk değiştiren 8 gür gölge ağacı ve aralarda çiçekli çalılardan oluşan doğal yeşil sınır eklendi.\n• 🪨 Kulüp–Kort Taş Bağlantı Yolu: Yıkık tenis kulübünün yan eşiğinden kort giriş kapısına uzanan taşlı yol eklendi; kulüp yıkıkken kırık, çatlak ve ot bürümüş taşlı yol olarak görünür, onarım tamamlandığında düzgün kesme taş yola ve açık giriş kapısına dönüşür.\n• 📐 Bahçe Hizalaması: İki sağ bahçe yuvası (right_6, right_7) ve iki çim detayı yeni yol ve ağaç hattıyla çakışmayacak şekilde kaydırıldı."
+  },
+  {
     ver: "v1.9.54-beta",
     title: "Tenis Kortu Filesi & Çizgi Yönü Düzeltmesi",
-    latest: true,
+    latest: false,
     notes: "• 🎾 Tenis Filesi & Saha Çizgileri: Tenis filesi kortun uzun ekseni boyunca değil kısa eni boyunca gerilecek şekilde döndürüldü; dış beyaz saha çizgileri, tekler yan çizgileri, servis kutuları, dip çizgi orta işaretleri ve orta file gergi şeridi gerçek kort oranlarına hizalandı.\n• 🪑 Hakem Koltuğu Konumu: Yüksek hakem koltuğu yeni file direğinin yanına taşındı."
   },
   {
@@ -13342,10 +13349,153 @@ function drawResortParkingLot(si) {
   isoLabel("🅿️ Otopark & VIP", u0 + 60, v1 - 30, 0, 11, "#ffffff", "#1e3a8a", 6, 3);
 }
 
-// 14) Tatil Köyü Açık Tenis Kortu (Resort Championship Tennis Court)
-function drawResortTennisCourt(si, uOffset = -100) {
+// 14) Tatil Köyü Açık Tenis Kortu, Taşlı Bağlantı Yolu & Ağaç Sınırı
+const WORLD_TENNIS_BORDER_TREES = [
+  { u: 1080, v: 1480, sc: 1.05 },
+  { u: 1030, v: 1635, sc: 1.10 },
+  { u: 975,  v: 1790, sc: 1.05 },
+  { u: 910,  v: 1940, sc: 1.12 },
+  { u: 730,  v: 1945, sc: 1.08 },
+  { u: 540,  v: 1945, sc: 1.12 },
+  { u: 350,  v: 1945, sc: 1.06 },
+  { u: 160,  v: 1945, sc: 1.10 }
+];
+
+const WORLD_TENNIS_BORDER_BUSHES = [
+  { u: 1055, v: 1558, sc: 0.95, type: "flower" },
+  { u: 1002, v: 1712, sc: 0.95, type: "flower" },
+  { u: 820,  v: 1942, sc: 1.00, type: "flower" },
+  { u: 635,  v: 1945, sc: 0.95, type: "flower" },
+  { u: 445,  v: 1945, sc: 1.00, type: "flower" },
+  { u: 255,  v: 1945, sc: 0.95, type: "flower" }
+];
+
+function drawTennisCourtTreeBorder(si = 0) {
+  const items = [];
+  for (let i = 0; i < WORLD_TENNIS_BORDER_TREES.length; i++) {
+    const t = WORLD_TENNIS_BORDER_TREES[i];
+    items.push({ kind: "tree", u: t.u, v: t.v, sc: t.sc });
+  }
+  for (let i = 0; i < WORLD_TENNIS_BORDER_BUSHES.length; i++) {
+    const b = WORLD_TENNIS_BORDER_BUSHES[i];
+    items.push({ kind: "bush", u: b.u, v: b.v, sc: b.sc, type: b.type || "flower" });
+  }
+  items.sort((a, b) => (a.u + a.v) - (b.u + b.v));
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (it.kind === "tree") {
+      if (typeof drawParkShadeTree === "function") drawParkShadeTree(it.u, it.v, 0, it.sc, si);
+    } else {
+      if (typeof drawLushBush === "function") drawLushBush(it.u, it.v, 0, it.sc, it.type, si);
+    }
+  }
+}
+
+function drawTennisClubStonePath(si = 0, courtU1 = 760, tennisState = "Ruin") {
+  const isRepaired = (tennisState === "Repaired" || tennisState === "Open");
+  const bedDirt = (si === 3) ? "#64748b" : "#6b5b4b";
+  const bedDark = (si === 3) ? "#475569" : "#57483a";
+
+  if (isRepaired) {
+    // Onarılmış düzgün arnavut kaldırımı / kesme taş yürüyüş yolu (kulüp v=1365 -> kort u=courtU1)
+    isoQuad(850, 1365, 904, 1430, 0.25, "#a8a29e", OUTLINE_COL, 1.1);
+    isoQuad(courtU1, 1372, 904, 1430, 0.25, "#cbd5e1", OUTLINE_COL, 1.1);
+
+    // Düzgün yan bordür taşları
+    isoBox(846, 1365, 851, 1372, 0, 2.0, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 0.8);
+    isoBox(901, 1365, 906, 1433, 0, 2.0, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 0.8);
+    isoBox(courtU1, 1369, 850, 1374, 0, 2.0, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 0.8);
+    isoBox(courtU1, 1428, 906, 1433, 0, 2.0, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 0.8);
+
+    // Düzgün döşenmiş taş plakalar (kulüp çıkış kolu + kort giriş kolu)
+    const cleanPavers = [
+      [854, 1367, 876, 1384, "#e2e8f0"], [878, 1367, 899, 1384, "#d6d3d1"],
+      [854, 1386, 876, 1403, "#d6d3d1"], [878, 1386, 899, 1403, "#e2e8f0"],
+      [878, 1405, 899, 1426, "#cbd5e1"], [854, 1405, 876, 1426, "#e2e8f0"],
+      [830, 1376, 852, 1400, "#d6d3d1"], [830, 1402, 852, 1426, "#cbd5e1"],
+      [806, 1376, 828, 1400, "#e2e8f0"], [806, 1402, 828, 1426, "#d6d3d1"],
+      [782, 1376, 804, 1400, "#cbd5e1"], [782, 1402, 804, 1426, "#e2e8f0"],
+      [courtU1 + 2, 1376, 780, 1400, "#e2e8f0"], [courtU1 + 2, 1402, 780, 1426, "#d6d3d1"]
+    ];
+    for (let i = 0; i < cleanPavers.length; i++) {
+      const pv = cleanPavers[i];
+      isoBox(pv[0], pv[1], pv[2], pv[3], 0.3, 1.9, pv[4], "#94a3b8", "#64748b", OUTLINE_COL, 0.75);
+    }
+    return;
+  }
+
+  // Bozuk, toprak-çakıl tabanlı, kırık taşlı ve ot bürümüş yol (tennisState === "Ruin")
+  drawPoly2D([
+    iso(848, 1365, 0.15), iso(904, 1365, 0.15), iso(906, 1435, 0.15),
+    iso(courtU1 + 2, 1436, 0.15), iso(courtU1 + 2, 1373, 0.15), iso(845, 1375, 0.15)
+  ], bedDirt, "rgba(59, 40, 30, 0.45)", 1.0);
+  drawPoly2D([
+    iso(856, 1372, 0.25), iso(896, 1372, 0.25), iso(898, 1427, 0.25),
+    iso(courtU1 + 8, 1427, 0.25), iso(courtU1 + 8, 1381, 0.25), iso(855, 1384, 0.25)
+  ], bedDark, null, 0);
+
+  // Kırık, yerinden oynamış ve aralıklı doğal taş plakalar
+  const brokenStones = [
+    { u0: 856, v0: 1367, u1: 881, v1: 1384, h: 1.8, col: "#94a3b8", crack: true },
+    { u0: 885, v0: 1371, u1: 901, v1: 1388, h: 1.4, col: "#78716c", crack: false },
+    { u0: 853, v0: 1389, u1: 874, v1: 1409, h: 1.6, col: "#a8a29e", crack: true },
+    { u0: 880, v0: 1396, u1: 902, v1: 1421, h: 2.0, col: "#64748b", crack: true },
+    { u0: 858, v0: 1414, u1: 884, v1: 1432, h: 1.5, col: "#8a8278", crack: false },
+    { u0: 829, v0: 1378, u1: 850, v1: 1401, h: 1.7, col: "#78716c", crack: true },
+    { u0: 825, v0: 1408, u1: 849, v1: 1429, h: 1.3, col: "#94a3b8", crack: false },
+    { u0: 799, v0: 1384, u1: 822, v1: 1411, h: 1.9, col: "#a8a29e", crack: true },
+    { u0: 792, v0: 1416, u1: 816, v1: 1433, h: 1.4, col: "#64748b", crack: false },
+    { u0: 766, v0: 1377, u1: 792, v1: 1399, h: 1.8, col: "#78716c", crack: true },
+    { u0: 768, v0: 1405, u1: 790, v1: 1425, h: 1.5, col: "#94a3b8", crack: false }
+  ];
+  for (let i = 0; i < brokenStones.length; i++) {
+    const st = brokenStones[i];
+    isoBox(st.u0, st.v0, st.u1, st.v1, 0.3, st.h, st.col, "#69625b", "#4b4640", OUTLINE_COL, 0.9);
+    if (st.crack) {
+      const cu = (st.u0 + st.u1) * 0.5, cv = (st.v0 + st.v1) * 0.5;
+      const p1 = iso(st.u0 + 2, st.v0 + 3, st.h + 0.1);
+      const p2 = iso(cu + 1, cv - 1, st.h + 0.1);
+      const p3 = iso(st.u1 - 2, st.v1 - 3, st.h + 0.1);
+      ctx.strokeStyle = "#292524";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y);
+      ctx.stroke();
+    }
+  }
+
+  // Yol kenarına ve taş aralarına dağılmış küçük moloz parçaları
+  const pebbles = [
+    [844, 1392, 7, 6], [898, 1428, 8, 6], [835, 1431, 6, 5],
+    [814, 1374, 7, 5], [774, 1429, 7, 6], [891, 1368, 6, 5]
+  ];
+  for (let i = 0; i < pebbles.length; i++) {
+    const pb = pebbles[i];
+    isoBox(pb[0], pb[1], pb[0] + pb[2], pb[1] + pb[3], 0.2, 1.6, "#8a8278", "#69625b", "#524c47", OUTLINE_COL, 0.7);
+  }
+
+  // Kırık taş aralarından çıkan yabani ot / yosun tutamları
+  const weedCol = (si === 3) ? "#64748b" : (si === 2 ? "#716221" : "#3f6212");
+  const weedTuftCol = (si === 3) ? "#94a3b8" : (si === 2 ? "#856b1d" : "#4d7c0f");
+  const weeds = [
+    [881, 1391], [854, 1411], [826, 1403], [795, 1412], [776, 1401], [895, 1424]
+  ];
+  for (let i = 0; i < weeds.length; i++) {
+    const w = weeds[i];
+    const wp = iso(w[0], w[1], 0.4);
+    ctx.fillStyle = weedCol;
+    ctx.beginPath(); ctx.ellipse(wp.x, wp.y, 4.5, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+    if (typeof drawGrassTuft === "function") drawGrassTuft(w[0], w[1], weedTuftCol, 0.85);
+  }
+}
+
+function drawResortTennisCourt(si, uOffset = -100, tennisState = "Ruin") {
   const u0 = 180 + uOffset, u1 = 860 + uOffset;
   const v0 = 1260, v1 = 1860;
+  const isRepaired = (tennisState === "Repaired" || tennisState === "Open");
+
+  // Kulüp binası (v=1365) -> tenis kortu (u=u1) taşlı bağlantı yolu (ön çit direklerinin altında)
+  drawTennisClubStonePath(si, u1, tennisState);
 
   // Dış Zemin: Şık Fransız Açık Mavi / Lacivert Akrilik
   isoQuad(u0, v0, u1, v1, 0, "#0284c7", OUTLINE_COL, 2.2);
@@ -13431,12 +13581,33 @@ function drawResortTennisCourt(si, uOffset = -100) {
   ctx.lineWidth = 2.4;
   ctx.beginPath(); ctx.moveTo(nT0.x, nT0.y); ctx.lineTo(nT1.x, nT1.y); ctx.stroke();
 
-  // Ön Çevre Tel Örgü Direkleri (v1 ve u1 kenarları, kortun önünde)
+  // Ön Çevre Tel Örgü Direkleri (v1 ve u1 kenarları; u1 tarafında v=1372..1428 giriş kapısı açıklığı)
   for (let u = u0; u <= u1; u += 85) {
     isoBox(u - 2, v1 - 2, u + 2, v1 + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
   }
   for (let v = v0; v <= v1; v += 85) {
+    if (Math.abs(v - 1400) < 35) continue;
     isoBox(u1 - 2, v - 2, u1 + 2, v + 2, 0, 38, "#64748b", "#475569", "#334155", null, 0);
+  }
+
+  // Kort Giriş Kapısı (u1, v = 1372..1428: taş yol bağlantısı ucu)
+  const gateV0 = 1372, gateV1 = 1428;
+  isoBox(u1 - 8, gateV0, u1 + 4, gateV1, 0, 2.0, isRepaired ? "#cbd5e1" : "#78716c", "#64748b", "#475569", OUTLINE_COL, 1.0);
+  isoBox(u1 - 3, gateV0 - 2, u1 + 3, gateV0 + 2, 0, 42, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.0);
+  isoBox(u1 - 3, gateV1 - 2, u1 + 3, gateV1 + 2, 0, 42, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.0);
+  if (isRepaired) {
+    // Onarılmış durumda üste temiz geçiş kemeri ve içeri doğru açık düzgün kapı kanadı
+    isoBox(u1 - 2, gateV0 - 2, u1 + 2, gateV1 + 2, 40, 43, "#0ea5e9", "#0284c7", "#0369a1", OUTLINE_COL, 0.9);
+    drawPoly2D(
+      [iso(u1, gateV0 + 2, 3), iso(u1 - 26, gateV0 + 10, 3), iso(u1 - 26, gateV0 + 10, 36), iso(u1, gateV0 + 2, 36)],
+      "rgba(148, 163, 184, 0.35)", "#334155", 2.0
+    );
+  } else {
+    // Yıkık durumda yarı aralık, hafif sarkmış paslı tel kapı kanadı
+    drawPoly2D(
+      [iso(u1, gateV0 + 2, 3), iso(u1 + 14, gateV0 + 30, 1), iso(u1 + 14, gateV0 + 30, 29), iso(u1, gateV0 + 2, 36)],
+      "rgba(120, 113, 108, 0.38)", "#7c2d12", 1.8
+    );
   }
 
   // Tabela
@@ -13570,7 +13741,7 @@ function drawDistantMountainBackdrop(si) {
 // ===== BUNDLED: render/world.js =====
 // [render/world.js] Ana dünya çizimi, koridor halısı, bölme duvarı, giriş yolu
 // ===== DOKU & ZEMİN DETAYLARI (DURAĞAN KATMAN ÖNBELLEĞİNDE ÇİZİLİR) =====
-const WORLD_STATIC_CACHE_VER = "t1_net";
+const WORLD_STATIC_CACHE_VER = "t1_border_path";
 const _GRASS_TUFTS = [
   [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
   [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
@@ -13596,7 +13767,7 @@ const WORLD_LUSH_BUSHES = [
   { u: -90, v: 480, sc: 1.05, type: "flower" },
   { u: -100, v: 820, sc: 1.1, type: "normal" },
   { u: 25, v: 1360, sc: 1.0, type: "flower" },
-  { u: 930, v: 1480, sc: 1.1, type: "normal" }
+  { u: 945, v: 1485, sc: 1.1, type: "normal" }
 ];
 
 const WORLD_LAWN_SPOTS = [
@@ -13604,7 +13775,7 @@ const WORLD_LAWN_SPOTS = [
   { u: 220, v: -110, fl: false }, { u: 90, v: -370, fl: true }, { u: 1020, v: -110, fl: false },
   { u: 1210, v: 100, fl: true }, { u: 1225, v: 280, fl: false }, { u: 1215, v: 480, fl: true },
   { u: 1220, v: 720, fl: false }, { u: 1215, v: 910, fl: true }, { u: 1210, v: 1100, fl: true },
-  { u: 30, v: 1490, fl: false }, { u: 1030, v: 1520, fl: true }, { u: 1180, v: 1350, fl: false },
+  { u: 30, v: 1490, fl: false }, { u: 990, v: 1470, fl: true }, { u: 1180, v: 1350, fl: false },
   // Karşı park tarafı çimleri
   { u: 1570, v: 120, fl: true }, { u: 1580, v: 460, fl: false }, { u: 1575, v: 820, fl: true },
   { u: 1670, v: -120, fl: false }, { u: 1680, v: 280, fl: true }, { u: 1690, v: 620, fl: false },
@@ -13658,6 +13829,18 @@ function getWorldStaticGroundObjects() {
   for (let i = 0; i < WORLD_LAWN_SPOTS.length; i++) {
     const sp = WORLD_LAWN_SPOTS[i];
     out.push({ group: "lush_spots", name: "lushSpot[" + i + "](" + sp.u + "," + sp.v + ")", u: sp.u, v: sp.v, r: 8 });
+  }
+  if (typeof WORLD_TENNIS_BORDER_TREES !== "undefined") {
+    for (let i = 0; i < WORLD_TENNIS_BORDER_TREES.length; i++) {
+      const tt = WORLD_TENNIS_BORDER_TREES[i];
+      out.push({ group: "tennis_border_trees", name: "tennisBorderTree[" + i + "](" + tt.u + "," + tt.v + ")", u: tt.u, v: tt.v, r: 30 * tt.sc });
+    }
+  }
+  if (typeof WORLD_TENNIS_BORDER_BUSHES !== "undefined") {
+    for (let i = 0; i < WORLD_TENNIS_BORDER_BUSHES.length; i++) {
+      const tb = WORLD_TENNIS_BORDER_BUSHES[i];
+      out.push({ group: "tennis_border_bushes", name: "tennisBorderBush[" + i + "](" + tb.u + "," + tb.v + ")", u: tb.u, v: tb.v, r: 22 * tb.sc });
+    }
   }
   return out;
 }
@@ -13787,8 +13970,10 @@ function drawWorld() {
     drawGrandMarbleFountain(-110, 585, 0, 1.05);
   }
 
-  // KATMAN B (önbellekli): çardak, otopark, tenis kortu, çim detayları, arka çalılar
-  drawCachedLayer("garden", `${si}|${WORLD_STATIC_CACHE_VER}`, () => {
+  // KATMAN B (önbellekli): çardak, otopark, tenis kortu, taş yol & ağaç sınırı, çim detayları, arka çalılar
+  const decorShKey = isNight ? 0 : Math.round(((typeof shadowIntensity === "function") ? shadowIntensity() : 1) * 4);
+  const tcState = (typeof floors !== "undefined" && floors[0] && floors[0].slots && floors[0].slots[38] && floors[0].slots[38].tennisState) || "Ruin";
+  drawCachedLayer("garden", `${si}|${WORLD_STATIC_CACHE_VER}|${tcState}|${decorShKey}`, () => {
     if (typeof drawResortGazebo === "function") {
       drawResortGazebo(-120, 240, 0, 1.0);
     }
@@ -13798,13 +13983,18 @@ function drawWorld() {
       drawResortParkingLot(si);
     }
 
-    // 1.5) Otel Sağ Yanı: Tatil Köyü Açık Tenis Kortu (Resort Championship Tennis Court: u=80..760, v=1260..1860)
+    // 1.5) Otel Sağ Yanı: Tatil Köyü Açık Tenis Kortu & Taş Bağlantı Yolu (u=80..760, v=1260..1860)
     if (typeof drawResortTennisCourt === "function") {
-      drawResortTennisCourt(si, -100);
+      drawResortTennisCourt(si, -100, tcState);
     }
 
     // Çayır detayları: Tatlı çim tutamları ve kır çiçekleri
     drawLushLawnDetails(si);
+
+    // 1.6) Tenis Kortu Çevresi Ağaç & Çiçekli Çalı Sınırı
+    if (typeof drawTennisCourtTreeBorder === "function") {
+      drawTennisCourtTreeBorder(si);
+    }
 
     // Arka peyzaj ağaçları
     drawResortBush(40, -140, 0, 1.15);
@@ -13814,7 +14004,6 @@ function drawWorld() {
   drawPalmTree(280, -160, 0, 1.1, -1);
   drawPalmTree(-160, 280, 0, 1.1, 1);
 
-  const decorShKey = isNight ? 0 : Math.round(((typeof shadowIntensity === "function") ? shadowIntensity() : 1) * 4);
   const decorGlow = Math.round(clamp(1 - b, 0, 1) * 10) / 10;
   const decorKey = (typeof DECOR !== "undefined" ? DECOR.version : 0) + "|" + si + "|" + (isNight ? 1 : 0) + "|" + decorShKey + "|" + decorGlow;
   const backDecorItems = (typeof getKnownPlacedDecorInZones === "function") ? getKnownPlacedDecorInZones(["left", "back"]) : [];
@@ -15389,10 +15578,15 @@ function drawParcelTennisClub(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel) {
   _drawRuinOvergrowth(wU0 + 18, wV1 - 24, z0, 0.95);
   _drawRuinOvergrowth(wU1 - 22, wV0 + 20, z0, 0.85);
 
-  // 5. Sağ duvar (wV1) — pencere boşluğu ve kırık duvar
-  _drawBrokenWallSegment(wU0 + wT, wV1 - wT, wU0 + 58, wV1, z0, 50, 22, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
-  isoBox(wU0 + 58, wV1 - wT, wU0 + 110, wV1, z0, z0 + 15, pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR, OUTLINE_COL, 1.2);
-  _drawBrokenWallSegment(wU0 + 110, wV1 - wT, wU1, wV1, z0, 24, 40, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+  // 5. Sağ duvar (wV1) — kort taş yoluna açılan yıkık yan çıkış eşiği ve kırık duvar
+  _drawBrokenWallSegment(wU0 + wT, wV1 - wT, wU0 + 58, wV1, z0, 50, 26, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
+  // Kırık taş basamak / eşik (u: wU0+58..wU0+110 = 852..904, v: wV1-wT..v1 = 1342..1365)
+  isoBox(wU0 + 58, wV1 - wT, wU0 + 110, v1, z0, z0 + 3, "#8a8278", "#736b62", "#5e574f", OUTLINE_COL, 1.0);
+  isoBox(wU0 + 66, wV1, wU0 + 102, v1 - 2, z0 + 3, z0 + 4.5, "#9ca3af", "#78716c", "#57534e", OUTLINE_COL, 0.8);
+  // İki yanında kırık ahşap/taş söve dikmeleri
+  isoBox(wU0 + 58, wV1 - wT + 1, wU0 + 64, wV1 - 1, z0, z0 + 28, pal.ruinTimberDark, pal.ruinTimber, pal.ruinTimberDark, OUTLINE_COL, 1.0);
+  isoBox(wU0 + 104, wV1 - wT + 1, wU0 + 110, wV1 - 1, z0, z0 + 24, pal.ruinTimberDark, pal.ruinTimber, pal.ruinTimberDark, OUTLINE_COL, 1.0);
+  _drawBrokenWallSegment(wU0 + 110, wV1 - wT, wU1, wV1, z0, 26, 40, "u", pal.ruinWallTop, pal.ruinWallL, pal.ruinWallR);
 
   // 6. Ön duvar (wU1) — sol/sağ yıkık duvar + ortada çürümüş kırık ahşap kapı
   const doorV0 = wV0 + 56, doorV1 = wV0 + 104;
