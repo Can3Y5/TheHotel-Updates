@@ -1587,6 +1587,16 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
 .onl-btn.up { background: #bbf7d0; }
 .onl-btn.down { background: #e0e7ff; }
 .onl-btn.out { background: #fee2e2; }
+.onl-btn.del { background: #fecaca; color: #7f1d1d; }
+#onl-delete-confirm-box, #onl-conflict-box {
+  display: none; flex-direction: column; gap: 6px;
+  border-radius: 9px; padding: 8px 10px;
+}
+#onl-delete-confirm-box { background: #fff5f5; border: 2px solid #dc2626; }
+#onl-conflict-box { background: #fffbeb; border: 2px solid #d97706; }
+.onl-warn-txt { font-size: 11.5px; font-weight: 800; color: #78350f; }
+#onl-delete-confirm-box .onl-warn-txt { color: #991b1b; }
+#onl-conflict-summary { font-size: 11px; font-weight: 700; color: #4a3322; line-height: 1.4; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1806,7 +1816,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.69-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.70-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -1912,7 +1922,23 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
           <div class="onl-acc-btns">
             <button type="button" id="btn-login-guest" class="onl-btn guest">👤 Misafir Girişi</button>
             <button type="button" id="btn-logout-online" class="onl-btn out">Çıkış</button>
+            <button type="button" id="btn-delete-account" class="onl-btn del" title="Hesabı ve Bulut Verisini Sil">🗑️</button>
             <button type="button" id="btn-reset-fb-config" class="onl-btn reset" title="Firebase Ayarını Sıfırla">⚙️</button>
+          </div>
+        </div>
+        <div id="onl-delete-confirm-box">
+          <div class="onl-warn-txt">⚠️ Hesabın ve Firebase üzerindeki bulut kaydın kalıcı olarak silinecek! Emin misin?</div>
+          <div class="onl-sync-btns">
+            <button type="button" id="btn-confirm-delete-acc" class="onl-btn del">✔ Evet, Hesabı Sil</button>
+            <button type="button" id="btn-cancel-delete-acc" class="onl-btn">✖ Vazgeç</button>
+          </div>
+        </div>
+        <div id="onl-conflict-box">
+          <div class="onl-warn-txt">⚠️ Kayıt Çakışması: Bu cihazdaki kayıt ile buluttaki kayıt farklı!</div>
+          <div id="onl-conflict-summary"></div>
+          <div class="onl-sync-btns">
+            <button type="button" id="btn-conflict-use-cloud" class="onl-btn down">⬇ Bulut Kaydını Yükle</button>
+            <button type="button" id="btn-conflict-use-local" class="onl-btn up">☁️ Yerel Kaydı Buluta Yaz</button>
           </div>
         </div>
         <div id="onl-email-row" class="onl-email-form">
@@ -12154,8 +12180,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 77;
-const APP_VERSION_NAME = "1.9.69-beta";
+const APP_VERSION_CODE = 78;
+const APP_VERSION_NAME = "1.9.70-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12163,9 +12189,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.70-beta",
+    title: "Bulut Kayıt Çakışma Kontrolü & Hesap Silme",
+    latest: true,
+    notes: "• ⚖️ Çakışma Sorusu: Yerel ve bulut kaydı farklıysa hangisinin kullanılacağını soran seçim ekranı eklendi.\n• 🗑️ Hesap Silme: Oyun içinden Firebase hesabını ve saves/{uid} bulut kaydını kalıcı olarak silme desteği eklendi."
+  },
+  {
     ver: "v1.9.69-beta",
     title: "Canlı Firebase Bağlantısı (hotelore-online)",
-    latest: true,
+    latest: false,
     notes: "• 🔥 HoteLore-online Firebase projesi gömüldü; Anonim ve E-posta/Şifre hesaplarıyla doğrudan buluta yedekleme ve cihazlar arası geri yükleme aktif."
   },
   {
@@ -22872,6 +22904,53 @@ async function signOutOnline() {
   }
 }
 
+async function deleteOnlineAccount() {
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+    return { ok: false, error: "Silinecek aktif bir çevrimiçi hesap yok." };
+  }
+  const user = ONLINE_STATE.user;
+  const uid = user.uid;
+  try {
+    // Önce kullanıcının /saves/{uid} bulut kaydını sil (kimlik hala geçerliyken)
+    try {
+      await ONLINE_STATE.db.collection("saves").doc(uid).delete();
+    } catch (docErr) {
+      if (docErr && docErr.code !== "not-found") throw docErr;
+    }
+    await user.delete();
+    ONLINE_STATE.user = null;
+    ONLINE_STATE.lastCloudMeta = null;
+    ONLINE_STATE.lastSyncMs = 0;
+    notifyOnlineStateChange();
+    return { ok: true };
+  } catch (err) {
+    if (err && err.code === "auth/requires-recent-login") {
+      return { ok: false, error: "Güvenlik için hesabını silmeden önce çıkış yapıp yeniden giriş yapmalısın." };
+    }
+    return { ok: false, error: _translateFirebaseError(err) };
+  }
+}
+
+function checkCloudSaveConflict() {
+  const m = ONLINE_STATE.lastCloudMeta;
+  if (!m || !ONLINE_STATE.user) return { hasConflict: false };
+  const localRaw = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
+  const cloudRaw = m.rawJson || "";
+  if (!cloudRaw || localRaw === cloudRaw) return { hasConflict: false };
+  // Yerel tarafta ilerleme varsa veya iki kayıt arasında gün/oda/otel adı farkı varsa çakışma göster
+  const localStat = _computeSaveMeta();
+  const hasLocalProgress = (typeof hadSavedGame !== "undefined" && hadSavedGame) ||
+    localStat.day > 1 || localStat.builtRooms > 0 ||
+    (typeof money === "number" && money !== (typeof StartMoney === "number" ? StartMoney : 600)) ||
+    localStat.hotelName !== "HoteLore";
+  if (!hasLocalProgress) return { hasConflict: false };
+  return {
+    hasConflict: true,
+    local: localStat,
+    cloud: { hotelName: m.hotelName, day: m.day, reputation: m.reputation, builtRooms: m.builtRooms, updatedAt: m.updatedAt }
+  };
+}
+
 function _computeSaveMeta() {
   const cleanName = String((typeof hotelName === "string" && hotelName.trim()) ? hotelName.trim() : "HoteLore").slice(0, 24) || "HoteLore";
   return {
@@ -22893,7 +22972,8 @@ async function refreshCloudSaveMeta() {
       day: d.day || 1,
       reputation: d.reputation || 0,
       builtRooms: d.builtRooms || 0,
-      updatedAt: d.updatedAt || 0
+      updatedAt: d.updatedAt || 0,
+      rawJson: d.rawJson || ""
     };
   } else {
     ONLINE_STATE.lastCloudMeta = null;
@@ -22932,7 +23012,8 @@ async function uploadCloudSave() {
       day: meta.day,
       reputation: meta.reputation,
       builtRooms: meta.builtRooms,
-      updatedAt: nowMs
+      updatedAt: nowMs,
+      rawJson
     };
     return { ok: true, updatedAt: nowMs };
   } catch (err) {
@@ -22972,7 +23053,8 @@ async function downloadCloudSave() {
       day: data.day || day,
       reputation: data.reputation || reputation,
       builtRooms: data.builtRooms || builtRooms,
-      updatedAt: data.updatedAt || Date.now()
+      updatedAt: data.updatedAt || Date.now(),
+      rawJson: data.rawJson
     };
     return { ok: true };
   } catch (err) {
@@ -23018,6 +23100,14 @@ const btnLoginEmail = document.getElementById("btn-login-email");
 const btnRegisterEmail = document.getElementById("btn-register-email");
 const btnLoginGuest = document.getElementById("btn-login-guest");
 const btnLogoutOnline = document.getElementById("btn-logout-online");
+const btnDeleteAccount = document.getElementById("btn-delete-account");
+const onlDeleteConfirmBox = document.getElementById("onl-delete-confirm-box");
+const btnConfirmDeleteAcc = document.getElementById("btn-confirm-delete-acc");
+const btnCancelDeleteAcc = document.getElementById("btn-cancel-delete-acc");
+const onlConflictBox = document.getElementById("onl-conflict-box");
+const onlConflictSummary = document.getElementById("onl-conflict-summary");
+const btnConflictUseCloud = document.getElementById("btn-conflict-use-cloud");
+const btnConflictUseLocal = document.getElementById("btn-conflict-use-local");
 
 const onlSyncRow = document.getElementById("onl-sync-row");
 const btnCloudUpload = document.getElementById("btn-cloud-upload");
@@ -23041,6 +23131,21 @@ function _fmtTimeAgo(ms) {
   const hr = Math.floor(min / 60);
   if (hr < 24) return hr + " sa önce";
   return Math.floor(hr / 24) + " gün önce";
+}
+
+function renderConflictBox() {
+  if (!onlConflictBox) return;
+  const cf = (typeof checkCloudSaveConflict === "function") ? checkCloudSaveConflict() : { hasConflict: false };
+  if (!cf.hasConflict) {
+    onlConflictBox.style.display = "none";
+    return;
+  }
+  onlConflictBox.style.display = "flex";
+  if (onlConflictSummary) {
+    onlConflictSummary.innerHTML =
+      "📱 <b>Bu Cihaz:</b> " + cf.local.hotelName + " • Gün " + cf.local.day + " • " + cf.local.builtRooms + " Oda<br>" +
+      "☁️ <b>Bulut:</b> " + cf.cloud.hotelName + " • Gün " + cf.cloud.day + " • " + cf.cloud.builtRooms + " Oda (" + _fmtTimeAgo(cf.cloud.updatedAt) + ")";
+  }
 }
 
 function renderOnlineModalState() {
@@ -23069,6 +23174,7 @@ function renderOnlineModalState() {
     if (btnRegisterEmail) btnRegisterEmail.textContent = user.isAnonymous ? "🔗 E-postaya Bağla" : "📝 Kayıt Ol";
     if (btnLoginGuest) btnLoginGuest.style.display = "none";
     if (btnLogoutOnline) btnLogoutOnline.style.display = "inline-flex";
+    if (btnDeleteAccount) btnDeleteAccount.style.display = "inline-flex";
     if (onlSyncRow) onlSyncRow.style.display = "flex";
     if (onlCloudMeta) {
       const m = ONLINE_STATE.lastCloudMeta;
@@ -23076,12 +23182,16 @@ function renderOnlineModalState() {
         ? ("☁️ Bulut: " + m.hotelName + " • Gün " + m.day + " • " + m.builtRooms + " Oda (" + _fmtTimeAgo(m.updatedAt) + ")")
         : "☁️ Bulutta henüz kayıtlı otelin yok.";
     }
+    renderConflictBox();
   } else {
     if (onlUserStatus) onlUserStatus.textContent = "🔌 Çevrimdışı — Cihazlar arası kayıt için giriş yap";
     if (onlEmailRow) onlEmailRow.style.display = "flex";
     if (btnRegisterEmail) btnRegisterEmail.textContent = "📝 Kayıt Ol";
     if (btnLoginGuest) btnLoginGuest.style.display = "inline-flex";
     if (btnLogoutOnline) btnLogoutOnline.style.display = "none";
+    if (btnDeleteAccount) btnDeleteAccount.style.display = "none";
+    if (onlDeleteConfirmBox) onlDeleteConfirmBox.style.display = "none";
+    if (onlConflictBox) onlConflictBox.style.display = "none";
     if (onlSyncRow) onlSyncRow.style.display = "none";
     if (onlCloudMeta) onlCloudMeta.textContent = "";
   }
@@ -23089,6 +23199,7 @@ function renderOnlineModalState() {
 
 function openOnlineModal() {
   setOnlineStatusMsg("");
+  if (onlDeleteConfirmBox) onlDeleteConfirmBox.style.display = "none";
   renderOnlineModalState();
   if (onlineModal) onlineModal.style.display = "flex";
 }
@@ -23162,6 +23273,7 @@ if (btnLoginGuest) {
     setOnlineStatusMsg("⏳ Misafir oturumu açılıyor...");
     const res = await signInOnlineGuest();
     if (res.ok) {
+      await refreshCloudSaveMeta();
       setOnlineStatusMsg("✅ Misafir oturumu açıldı! İstersen e-posta bağlayabilir veya hemen buluta yedekleyebilirsin.");
     } else {
       setOnlineStatusMsg(res.error || "Misafir girişi başarısız.", true);
@@ -23181,6 +23293,7 @@ if (btnLoginEmail) {
     setOnlineStatusMsg("⏳ Giriş yapılıyor...");
     const res = await signInOnlineEmail(email, pass);
     if (res.ok) {
+      await refreshCloudSaveMeta();
       setOnlineStatusMsg("✅ E-posta hesabıyla giriş yapıldı!");
     } else {
       setOnlineStatusMsg(res.error || "Giriş başarısız.", true);
@@ -23197,7 +23310,7 @@ if (btnRegisterEmail) {
       setOnlineStatusMsg("Geçerli e-posta ve en az 6 haneli şifre gir.", true);
       return;
     }
-    setOnlineStatusMsg("⏳ Hesap oluşturuluyor...");
+    setOnlineStatusMsg("⏳ Hesap kaydediliyor...");
     const res = await registerOnlineEmail(email, pass);
     if (res.ok) {
       setOnlineStatusMsg("✅ Hesap kaydedildi ve bağlandı!");
@@ -23212,6 +23325,52 @@ if (btnLogoutOnline) {
     if (typeof play === "function") play("tap");
     await signOutOnline();
     setOnlineStatusMsg("Çıkış yapıldı.");
+  };
+}
+
+if (btnDeleteAccount && onlDeleteConfirmBox) {
+  btnDeleteAccount.onclick = () => {
+    if (typeof play === "function") play("tap");
+    onlDeleteConfirmBox.style.display = onlDeleteConfirmBox.style.display === "flex" ? "none" : "flex";
+  };
+}
+if (btnCancelDeleteAcc && onlDeleteConfirmBox) {
+  btnCancelDeleteAcc.onclick = () => {
+    if (typeof play === "function") play("tap");
+    onlDeleteConfirmBox.style.display = "none";
+  };
+}
+if (btnConfirmDeleteAcc) {
+  btnConfirmDeleteAcc.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    setOnlineStatusMsg("⏳ Hesap ve bulut kaydı siliniyor...");
+    const res = await deleteOnlineAccount();
+    if (onlDeleteConfirmBox) onlDeleteConfirmBox.style.display = "none";
+    if (res.ok) {
+      setOnlineStatusMsg("🗑️ Çevrimiçi hesap ve bulut kaydı silindi.");
+    } else {
+      setOnlineStatusMsg(res.error || "Hesap silinemedi.", true);
+    }
+  };
+}
+
+if (btnConflictUseCloud) {
+  btnConflictUseCloud.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    setOnlineStatusMsg("⬇ Buluttaki kayıt yükleniyor...");
+    const res = await downloadCloudSave();
+    if (res.ok) setOnlineStatusMsg("✅ Buluttaki kayıt bu cihaza yüklendi!");
+    else setOnlineStatusMsg(res.error || "Bulut kaydı yüklenemedi.", true);
+  };
+}
+
+if (btnConflictUseLocal) {
+  btnConflictUseLocal.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    setOnlineStatusMsg("☁️ Bu cihazdaki kayıt buluta yazılıyor...");
+    const res = await uploadCloudSave();
+    if (res.ok) setOnlineStatusMsg("✅ Bu cihazdaki kayıt buluta yazıldı!");
+    else setOnlineStatusMsg(res.error || "Yedekleme başarısız.", true);
   };
 }
 
@@ -23231,6 +23390,12 @@ if (btnCloudUpload) {
 if (btnCloudDownload) {
   btnCloudDownload.onclick = async () => {
     if (typeof play === "function") play("tap");
+    const cf = (typeof checkCloudSaveConflict === "function") ? checkCloudSaveConflict() : { hasConflict: false };
+    if (cf.hasConflict && onlConflictBox && onlConflictBox.style.display !== "flex") {
+      renderConflictBox();
+      setOnlineStatusMsg("⚠️ İki kayıt farklı — yukarıdan hangisini kullanacağını seç.");
+      return;
+    }
     setOnlineStatusMsg("⬇ Buluttaki kayıt yükleniyor...");
     const res = await downloadCloudSave();
     if (res.ok) {
