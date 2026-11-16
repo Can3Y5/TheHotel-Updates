@@ -1511,9 +1511,34 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
 }
 
 /* ===== BULUT KAYIT & HESAP MODALI ===== */
-#btn-online-menu {
-  background: linear-gradient(90deg, rgba(224,242,254,0.92), rgba(224,242,254,0.28));
-  color: #0c4a6e; font-size: clamp(13px, 2.2vw, 15px); font-weight: 900; padding: 8px 12px;
+.menu-row-online {
+  gap: 6px;
+}
+.menu-row-online #btn-online-menu {
+  flex: 1.45 1 0;
+  min-width: 0;
+  background: linear-gradient(90deg, rgba(224,242,254,0.92), rgba(224,242,254,0.35));
+  color: #0c4a6e;
+  border: 1.5px solid rgba(12, 74, 110, 0.28);
+  font-size: clamp(10.5px, 2.7vw, 13px);
+  font-weight: 900;
+  padding: 7px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#btn-feedback-menu {
+  flex: 1 1 0;
+  min-width: 0;
+  background: linear-gradient(90deg, rgba(254,243,199,0.96), rgba(253,230,138,0.68));
+  color: #78350f;
+  border: 1.5px solid rgba(180, 83, 9, 0.35);
+  font-size: clamp(10.5px, 2.7vw, 13px);
+  font-weight: 900;
+  padding: 7px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cloud-status-pill {
   display: inline-flex; align-items: center; gap: 5px;
@@ -1957,6 +1982,121 @@ body.is-visiting-mode #visit-banner {
   background: #fde68a;
   color: #78350f;
 }
+
+/* ===== ÖNERİLER & GERİ BİLDİRİM MODALI (F1) ===== */
+#feedback-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 960;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.fb-box {
+  max-width: 440px;
+  width: 100%;
+  max-height: 90dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+#btn-close-feedback {
+  background: #fee2e2;
+  border: 2px solid #3a281f;
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-weight: 900;
+  font-size: 12px;
+  color: #7f1d1d;
+  cursor: pointer;
+}
+.fb-desc {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #5a3e26;
+  line-height: 1.35;
+}
+.fb-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.fb-chip-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1.5px solid #3a281f;
+  border-radius: 999px;
+  padding: 6px 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  background: #fffdf8;
+  color: #3a281f;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fb-chip-btn.active {
+  background: #fde68a;
+  color: #78350f;
+  box-shadow: 0 2px 0 #3a281f;
+}
+#fb-message-input {
+  width: 100%;
+  min-height: 88px;
+  max-height: 32dvh;
+  border: 2px solid #3a281f;
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1e293b;
+  background: #ffffff;
+  resize: vertical;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.fb-meta-row {
+  display: flex;
+  justify-content: flex-end;
+}
+#fb-char-count {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748b;
+}
+#fb-char-count.is-warn {
+  color: #b45309;
+}
+#fb-status-msg {
+  display: none;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #dcfce7;
+  border: 1.5px solid #16a34a;
+  color: #14532d;
+  word-break: break-word;
+}
+#fb-status-msg.is-err {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #7f1d1d;
+}
+.fb-actions {
+  display: flex;
+  gap: 8px;
+}
+.fb-actions .onl-btn {
+  flex: 1 1 0;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  text-align: center;
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -2177,7 +2317,7 @@ body.is-visiting-mode #visit-banner {
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.76-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.77-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -2218,7 +2358,10 @@ body.is-visiting-mode #visit-banner {
         </div>
         <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
         <button id="btn-new-game" class="m-btn" style="display:none">🆕 YENİ OYUN BAŞLAT</button>
-        <button id="btn-online-menu" class="m-btn">☁️ BULUT KAYIT &amp; HESAP</button>
+        <div class="menu-row-2 menu-row-online">
+          <button id="btn-online-menu" class="m-btn">☁️ BULUT KAYIT &amp; HESAP</button>
+          <button id="btn-feedback-menu" class="m-btn">💡 ÖNERİLER</button>
+        </div>
         <button id="btn-friends-menu" class="m-btn">👥 ARKADAŞLAR <span class="fr-badge" id="fr-menu-badge" style="display:none;">0</span></button>
         <div id="newgame-confirm-box">
           <div class="ngc-text">⚠️ Mevcut kayıtlı otel silinecek ve 1. günden sıfırdan yeni bir oyun başlayacak. Emin misin?</div>
@@ -2370,6 +2513,30 @@ body.is-visiting-mode #visit-banner {
         </div>
         <div id="fr-status-msg" class="onl-status-msg"></div>
         <div id="fr-list"></div>
+      </div>
+    </div>
+  </div>
+  <!-- ÖNERİLER & GERİ BİLDİRİM MODALI (F1) -->
+  <div id="feedback-modal">
+    <div class="onl-box fb-box">
+      <div class="gb-header">
+        <div class="gb-title">💡 Öneri &amp; Geri Bildirim</div>
+        <button type="button" id="btn-close-feedback">✕ Kapat</button>
+      </div>
+      <div class="fb-desc">Fikirlerini, hataları ve istediğin özellikleri bana yazabilirsin.</div>
+      <div class="fb-chips" role="group" aria-label="Kategori">
+        <button type="button" class="fb-chip-btn active" data-cat="oneri">💡 Öneri</button>
+        <button type="button" class="fb-chip-btn" data-cat="hata">🐞 Hata</button>
+        <button type="button" class="fb-chip-btn" data-cat="diger">💬 Diğer</button>
+      </div>
+      <textarea id="fb-message-input" rows="4" maxlength="1000" placeholder="Mesajını buraya yaz (5–1000 karakter)..."></textarea>
+      <div class="fb-meta-row">
+        <span id="fb-char-count">0 / 1000</span>
+      </div>
+      <div id="fb-status-msg" class="onl-status-msg"></div>
+      <div class="fb-actions">
+        <button type="button" id="btn-send-feedback" class="onl-btn up">📤 Gönder</button>
+        <button type="button" id="btn-close-feedback-bottom" class="onl-btn">Kapat</button>
       </div>
     </div>
   </div>
@@ -12912,8 +13079,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 84;
-const APP_VERSION_NAME = "1.9.76-beta";
+const APP_VERSION_CODE = 85;
+const APP_VERSION_NAME = "1.9.77-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12921,9 +13088,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.77-beta",
+    title: "Öneriler düğmesi",
+    latest: true,
+    notes: "• 💡 Öneriler: Ana menüden geliştiriciye kategori seçerek öneri, hata veya geri bildirim gönderebilme eklendi."
+  },
+  {
     ver: "v1.9.76-beta",
     title: "Etiket konumu cilası",
-    latest: true,
+    latest: false,
     notes: "• 🏷️ Resepsiyon & Kafe etiketleri karakterlerin üstünde ve çakışmayacak şekilde yukarı alındı."
   },
   {
@@ -25688,6 +25861,257 @@ if (btnExitVisit) {
   btnExitVisit.onclick = () => {
     if (typeof play === "function") play("tap");
     exitVisitMode();
+  };
+}
+
+// ===== BUNDLED: online/feedback-service.js =====
+// [online/feedback-service.js] Gelistiriciye Oneri & Geri Bildirim Gonderimi (F1)
+const FB_RATE_KEY = "hotelore_fb_rate_v1";
+const FB_COOLDOWN_MS = 60000;
+const FB_DAILY_MAX = 5;
+const FB_CATEGORIES = ["oneri", "hata", "diger"];
+
+function detectFeedbackPlatform() {
+  try {
+    if (typeof window !== "undefined" && window.AndroidUpdater) return "android-webview";
+    const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "";
+    if (/electron/i.test(ua) || (typeof window !== "undefined" && window.process && window.process.versions && window.process.versions.electron)) {
+      return "electron";
+    }
+    if (/android/i.test(ua) && /; wv\)|Version\/[0-9.]+ Chrome\//i.test(ua)) {
+      return "android-webview";
+    }
+  } catch (_) {}
+  return "web";
+}
+
+function _getTodayKey() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dayNum = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + dayNum;
+}
+
+function _readFeedbackRateState() {
+  const today = _getTodayKey();
+  try {
+    const raw = localStorage.getItem(FB_RATE_KEY);
+    if (!raw) return { lastMs: 0, dayKey: today, dayCount: 0 };
+    const p = JSON.parse(raw);
+    const sameDay = p && p.dayKey === today;
+    return {
+      lastMs: Number(p && p.lastMs) || 0,
+      dayKey: today,
+      dayCount: sameDay ? Math.max(0, Number(p.dayCount) || 0) : 0
+    };
+  } catch (_) {
+    return { lastMs: 0, dayKey: today, dayCount: 0 };
+  }
+}
+
+function _recordFeedbackSent() {
+  const cur = _readFeedbackRateState();
+  cur.lastMs = Date.now();
+  cur.dayCount = (cur.dayCount || 0) + 1;
+  try { localStorage.setItem(FB_RATE_KEY, JSON.stringify(cur)); } catch (_) {}
+}
+
+function checkFeedbackRateLimit() {
+  const st = _readFeedbackRateState();
+  const now = Date.now();
+  if (st.lastMs > 0 && (now - st.lastMs) < FB_COOLDOWN_MS) {
+    return { ok: false, reason: "cooldown" };
+  }
+  if (st.dayCount >= FB_DAILY_MAX) {
+    return { ok: false, reason: "daily" };
+  }
+  return { ok: true };
+}
+
+async function submitPlayerFeedback(category, rawMessage) {
+  const cat = FB_CATEGORIES.includes(category) ? category : "oneri";
+  const msg = String(rawMessage || "").trim();
+  if (msg.length < 5) {
+    return { ok: false, preserveText: true, error: "Mesaj en az 5 karakter olmalı." };
+  }
+  if (msg.length > 1000) {
+    return { ok: false, preserveText: true, error: "Mesaj en fazla 1000 karakter olabilir." };
+  }
+
+  const rl = checkFeedbackRateLimit();
+  if (!rl.ok) {
+    return { ok: false, preserveText: true, rateLimited: true, error: "Biraz bekleyip tekrar dene." };
+  }
+
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, preserveText: true, offline: true, error: "İnternet bağlantısı yok, mesajın silinmedi; bağlanınca tekrar dene." };
+  }
+
+  if (typeof ONLINE_STATE === "undefined") {
+    return { ok: false, preserveText: true, error: "İnternet bağlantısı yok, mesajın silinmedi; bağlanınca tekrar dene." };
+  }
+
+  if (!ONLINE_STATE.initialized && typeof initFirebaseOnline === "function") {
+    initFirebaseOnline(false);
+  }
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.db || !ONLINE_STATE.auth) {
+    return { ok: false, preserveText: true, offline: true, error: "İnternet bağlantısı yok, mesajın silinmedi; bağlanınca tekrar dene." };
+  }
+
+  if (!ONLINE_STATE.user) {
+    try {
+      const authRes = await ONLINE_STATE.auth.signInAnonymously();
+      if (authRes && authRes.user) {
+        ONLINE_STATE.user = authRes.user;
+        if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+      }
+    } catch (_) {}
+  }
+
+  if (!ONLINE_STATE.user) {
+    return { ok: false, preserveText: true, offline: true, error: "İnternet bağlantısı yok, mesajın silinmedi; bağlanınca tekrar dene." };
+  }
+
+  try {
+    const cleanName = (typeof ensurePlayerName === "function") ? ensurePlayerName() : "Misafir1000";
+    const curVer = (typeof APP_VERSION_NAME === "string") ? APP_VERSION_NAME : "1.9.77-beta";
+    const curTheme = (typeof cosmetics === "object" && cosmetics && cosmetics.roomTheme) ? cosmetics.roomTheme : "classic";
+    const curDay = Math.max(1, Math.floor(Number(typeof day !== "undefined" ? day : 1) || 1));
+    const ts = (typeof firebase !== "undefined" && firebase.firestore && firebase.firestore.FieldValue && typeof firebase.firestore.FieldValue.serverTimestamp === "function")
+      ? firebase.firestore.FieldValue.serverTimestamp()
+      : Date.now();
+
+    const docRef = await Promise.race([
+      ONLINE_STATE.db.collection("feedback").add({
+        uid: ONLINE_STATE.user.uid,
+        category: cat,
+        message: msg,
+        displayName: cleanName,
+        appVersion: curVer,
+        platform: detectFeedbackPlatform(),
+        day: curDay,
+        theme: curTheme,
+        createdAt: ts
+      }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
+    ]);
+
+    _recordFeedbackSent();
+    return { ok: true, docId: docRef && docRef.id ? docRef.id : "" };
+  } catch (err) {
+    const netLike = (typeof _isNetworkLikeError === "function" && _isNetworkLikeError(err)) || (typeof navigator !== "undefined" && navigator.onLine === false);
+    if (netLike) {
+      return { ok: false, preserveText: true, offline: true, error: "İnternet bağlantısı yok, mesajın silinmedi; bağlanınca tekrar dene." };
+    }
+    return { ok: false, preserveText: true, error: "Gönderilemedi, tekrar dene." };
+  }
+}
+
+// ===== BUNDLED: online/feedback-ui.js =====
+// [online/feedback-ui.js] Oneri & Geri Bildirim Penceresi Arayuzu (F1)
+const feedbackModal = document.getElementById("feedback-modal");
+const btnFeedbackMenu = document.getElementById("btn-feedback-menu");
+const btnCloseFeedback = document.getElementById("btn-close-feedback");
+const btnCloseFeedbackBottom = document.getElementById("btn-close-feedback-bottom");
+const btnSendFeedback = document.getElementById("btn-send-feedback");
+const fbMessageInput = document.getElementById("fb-message-input");
+const fbCharCountEl = document.getElementById("fb-char-count");
+const fbStatusMsg = document.getElementById("fb-status-msg");
+const fbChipBtns = document.querySelectorAll(".fb-chip-btn");
+
+let _selectedFeedbackCat = "oneri";
+let _fbSending = false;
+
+function setFeedbackStatusMsg(msg, isErr = false) {
+  if (!fbStatusMsg) return;
+  fbStatusMsg.textContent = msg || "";
+  fbStatusMsg.style.display = msg ? "block" : "none";
+  fbStatusMsg.classList.toggle("is-err", !!isErr);
+}
+
+function updateFeedbackCharCounter() {
+  if (!fbMessageInput || !fbCharCountEl) return;
+  const len = fbMessageInput.value.length;
+  fbCharCountEl.textContent = len + " / 1000";
+  fbCharCountEl.classList.toggle("is-warn", len > 920 || (len > 0 && fbMessageInput.value.trim().length < 5));
+}
+
+function selectFeedbackCategory(cat) {
+  _selectedFeedbackCat = (cat === "hata" || cat === "diger") ? cat : "oneri";
+  fbChipBtns.forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-cat") === _selectedFeedbackCat);
+  });
+}
+
+function openFeedbackModal() {
+  setFeedbackStatusMsg("");
+  updateFeedbackCharCounter();
+  if (feedbackModal) feedbackModal.style.display = "flex";
+}
+
+function closeFeedbackModal() {
+  if (feedbackModal) feedbackModal.style.display = "none";
+}
+
+if (btnFeedbackMenu) {
+  btnFeedbackMenu.onclick = () => {
+    if (typeof play === "function") play("tap");
+    openFeedbackModal();
+  };
+}
+if (btnCloseFeedback) {
+  btnCloseFeedback.onclick = () => {
+    if (typeof play === "function") play("tap");
+    closeFeedbackModal();
+  };
+}
+if (btnCloseFeedbackBottom) {
+  btnCloseFeedbackBottom.onclick = () => {
+    if (typeof play === "function") play("tap");
+    closeFeedbackModal();
+  };
+}
+if (feedbackModal) {
+  feedbackModal.onclick = (e) => {
+    if (e.target === feedbackModal) {
+      if (typeof play === "function") play("tap");
+      closeFeedbackModal();
+    }
+  };
+}
+
+fbChipBtns.forEach(btn => {
+  btn.onclick = () => {
+    if (typeof play === "function") play("tap");
+    selectFeedbackCategory(btn.getAttribute("data-cat"));
+  };
+});
+
+if (fbMessageInput) {
+  fbMessageInput.addEventListener("input", updateFeedbackCharCounter);
+}
+
+if (btnSendFeedback) {
+  btnSendFeedback.onclick = async () => {
+    if (_fbSending) return;
+    if (typeof play === "function") play("tap");
+    const rawMsg = fbMessageInput ? fbMessageInput.value : "";
+    _fbSending = true;
+    btnSendFeedback.disabled = true;
+    setFeedbackStatusMsg("⏳ Gönderiliyor…");
+
+    const res = await submitPlayerFeedback(_selectedFeedbackCat, rawMsg);
+    _fbSending = false;
+    btnSendFeedback.disabled = false;
+
+    if (res.ok) {
+      if (fbMessageInput) fbMessageInput.value = "";
+      updateFeedbackCharCounter();
+      setFeedbackStatusMsg("Teşekkürler! Mesajın bana ulaştı.");
+    } else {
+      setFeedbackStatusMsg(res.error || "Gönderilemedi, tekrar dene", true);
+    }
   };
 }
 
