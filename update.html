@@ -1955,18 +1955,18 @@ const SpaPoints = 3;
 const SpaDailyCost = 15;
 const SpaMaxCount = 2;
 const CostCafe = 500;
-const CafeFeeDefault = 25;
+const CafeFeeDefault = 35;
 const CafeFeeMin = 10;
 const CafeFeeMax = 60;
 const CafeFeeStep = 5;
-const CafeSessionSec = 1.5;
+const CafeSessionSec = 6;
 const CafePoints = 1;
 const CafeDailyCost = 10;
 const CafeMaxCount = 1;
 const CafeNightMult = 1.5;
 const CafeNightProbMult = 0.8;
 const BarmenHireCost = 150;
-const BarmenWage = 60;
+const BarmenWage = 50;
 const BodyguardDailyPrice = 80;
 const LastNames = [
   "Acar", "Akbaba", "Aksoy", "Aktaş", "Arslan", "Aslan", "Ateş", "Avcı", "Aydın",
@@ -3750,7 +3750,7 @@ function getGameHour() {
 }
 function getCafeTimePeriod() {
   const h = getGameHour();
-  if (h >= 8 && h < 18) return "cafe";
+  if (h >= 6 && h < 18) return "cafe";
   if (h >= 18 && h < 24) return "bar";
   return "closed";
 }
@@ -4971,7 +4971,7 @@ function loadGame() {
                 room: s, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
                 gymTimer: rnd(10, 25), toiletTimer: rnd(12, 28), parkTimer: rnd(12, 28),
                 spaTimer: rnd(12, 30), spaDay: !!gd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!gd.spaRelaxed, spaInFlow: false, spaElapsed: 0,
-                cafeTimer: rnd(4, 10), cafeDay: !!gd.cafeDay, cafeNight: !!gd.cafeNight, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
+                cafeTimer: rnd(1, 3), cafeDay: !!gd.cafeDay, cafeNight: !!gd.cafeNight, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
                 tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(gd.tennisToday) || 0)),
                 tennis: null, tennisIdx: 0, tennisPlayed: !!gd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
                 crimeTimer: rnd(10, 18), crimeDone: !!gd.crimeDone,
@@ -5685,7 +5685,7 @@ function spawnGuest() {
     room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
     gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
     spaTimer: rnd(12, 30), spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
-    cafeTimer: rnd(4, 10), cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
+    cafeTimer: rnd(1, 3), cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
     tennisTimer: rnd(10, 25), tennisToday: 0, tennis: null, tennisIdx: 0, tennisPlayed: false, tennisInFlow: false, tennisElapsed: 0,
     crimeTimer: rnd(10, 18), crimeDone: false,
     parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
@@ -6870,7 +6870,7 @@ function rescueSpaGuest(g) {
 function getCafeJoinProb(fee = (typeof cafeFee === "number" ? cafeFee : CafeFeeDefault), period = null) {
   const curPeriod = period || ((typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe");
   if (curPeriod === "closed") return 0;
-  const base = clamp(0.85 - (fee - 25) * 0.01, 0.15, 0.85);
+  const base = clamp(0.92 - (fee - 35) * 0.018, 0.15, 0.92);
   return curPeriod === "bar" ? base * CafeNightProbMult : base;
 }
 
@@ -8981,6 +8981,7 @@ function newDay() {
     g.spaDay = false;
     g.cafeDay = false;
     g.cafeNight = false;
+    g.cafeTimer = Math.min(g.cafeTimer || 2, rnd(0.2, 1.5));
   }
   let paid = false;
   let mealsLeft = (hasKitchen() && cookLevel > 0) ? CookMeals[cookLevel] : 0;
@@ -11752,7 +11753,7 @@ function refreshPanel() {
         ? "⚠️ Koridorla bağla"
         : (!hired
           ? "⚠️ Barmen işe al"
-          : (period === "bar" ? "🌙 Bar (18–24 · 1.5×)" : (period === "cafe" ? "☀️ Kafe (08–18)" : "🔒 Gece Kapalı (00–08)")));
+          : (period === "bar" ? "🌙 Bar (18–24 · 1.5×)" : (period === "cafe" ? "☀️ Kafe (06–18)" : "🔒 Gece Kapalı (00–06)")));
       infoText.textContent = "☕ Kafe & Bar (Seviye " + lv + "/3 • " + lvDesc + ") " + coordStr + "\n" +
         statusTxt + " • Dolu: " + busyCnt + "/" + lv +
         " • Ücret: " + curFee + " TL • Gider: " + totDailyCost + " TL/gün\n" +
@@ -11951,8 +11952,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 71;
-const APP_VERSION_NAME = "1.9.63-beta";
+const APP_VERSION_CODE = 72;
+const APP_VERSION_NAME = "1.9.64-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -16416,11 +16417,68 @@ function drawLiveDecorTwinkle(u, v, isNight, t) {
 function drawDecorKoiBridge(u, v, si) {
   const c = _dPal();
   _dShadow(u, v, 27, 14);
-  isoQuad(u - 22, v - 18, u + 22, v + 18, 0, si === 3 ? "#cbd5e1" : c.water, OUTLINE_COL, 1.4);
-  isoBox(u - 20, v - 10, u - 6, v + 10, 0, 9, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1.5);
-  isoBox(u - 7, v - 10, u + 7, v + 10, 6, 15, "#ef4444", "#dc2626", "#b91c1c", OUTLINE_COL, 1.5);
-  isoBox(u + 6, v - 10, u + 20, v + 10, 0, 9, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1.5);
-  isoBox(u - 8, v + 9, u + 8, v + 11, 15, 22, c.gold, "#b91c1c", "#991b1b", OUTLINE_COL, 1.2);
+  // 1) Altında taş bordürlü mavi su göleti
+  _dCircle(u, v, 0.8, 26, 14, c.sL, OUTLINE_COL, 1.5);
+  _dCircle(u, v, 1.5, 22, 11.2, si === 3 ? "#cbd5e1" : c.water, OUTLINE_COL, 1.1);
+  // 2) Kemerli (yay şeklinde) kırmızı-ahşap köprü güvertesi + arka ve ön korkuluklar
+  const steps = 6;
+  const u0 = u - 21, u1 = u + 21, vL = v - 9, vR = v + 9;
+  const arcZ = (t) => 3 + Math.sin(t * Math.PI) * 12;
+  // Arka korkuluk dikmeleri ve yay korkuluk
+  const backTopPts = [], frontTopPts = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const ui = u0 + (u1 - u0) * t;
+    const zi = arcZ(t);
+    backTopPts.push(iso(ui, vL, zi + 7.5));
+    frontTopPts.push(iso(ui, vR, zi + 7.5));
+    if (i % 2 === 0) {
+      const b0 = iso(ui, vL, zi);
+      const b1 = iso(ui, vL, zi + 8.5);
+      ctx.strokeStyle = "#991b1b"; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(b0.x, b0.y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
+      ctx.fillStyle = c.gold; ctx.beginPath(); ctx.arc(b1.x, b1.y, 1.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.strokeStyle = "#dc2626"; ctx.lineWidth = 2.4; ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(backTopPts[0].x, backTopPts[0].y);
+  for (let i = 1; i <= steps; i++) ctx.lineTo(backTopPts[i].x, backTopPts[i].y);
+  ctx.stroke();
+
+  // Köprü yürüyüş güvertesi (dilimli yay şeritleri -> gerçek kemer kavisli silüet!)
+  for (let i = 0; i < steps; i++) {
+    const tA = i / steps, tB = (i + 1) / steps;
+    const uA = u0 + (u1 - u0) * tA, uB = u0 + (u1 - u0) * tB;
+    const zA = arcZ(tA), zB = arcZ(tB);
+    const dPts = [iso(uA, vL, zA), iso(uB, vL, zB), iso(uB, vR, zB), iso(uA, vR, zA)];
+    drawPoly2D(dPts, (i % 2 === 0) ? "#c2410c" : "#ea580c", OUTLINE_COL, 1.1);
+    const sidePts = [iso(uA, vR, zA), iso(uB, vR, zB), iso(uB, vR, zB - 3), iso(uA, vR, zA - 3)];
+    drawPoly2D(sidePts, "#991b1b", OUTLINE_COL, 1.0);
+  }
+
+  // Ön korkuluk dikmeleri ve kavisli trabzan
+  for (let i = 0; i <= steps; i += 2) {
+    const t = i / steps;
+    const ui = u0 + (u1 - u0) * t;
+    const zi = arcZ(t);
+    const f0 = iso(ui, vR, zi);
+    const f1 = iso(ui, vR, zi + 8.5);
+    ctx.strokeStyle = "#991b1b"; ctx.lineWidth = 2.3;
+    ctx.beginPath(); ctx.moveTo(f0.x, f0.y); ctx.lineTo(f1.x, f1.y); ctx.stroke();
+    ctx.fillStyle = c.gold; ctx.beginPath(); ctx.arc(f1.x, f1.y, 1.6, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(frontTopPts[0].x, frontTopPts[0].y);
+  for (let i = 1; i <= steps; i++) ctx.lineTo(frontTopPts[i].x, frontTopPts[i].y);
+  ctx.stroke();
+
+  // 3) Köprü başında küçük taş/ahşap fener direği
+  const lu = u - 18, lv = v + 14;
+  isoBox(lu - 2, lv - 2, lu + 2, lv + 2, 1, 13, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.0);
+  isoBox(lu - 3, lv - 3, lu + 3, lv + 3, 13, 18, "#fde047", "#facc15", "#eab308", OUTLINE_COL, 1.0);
+  _dPyramidRoof(lu, lv, 4.5, 18, 22, si === 3 ? "#f8fafc" : "#78350f", "#451a03", "#92400e");
 }
 
 function drawDecorZenGarden(u, v, si) {
@@ -19347,7 +19405,7 @@ function drawParcelCafe(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, right
   } else if (!hired) {
     isoLabel("⚠️ Barmen İşe Al", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 78, 10.5, "#92400e", "#fef3c7", 5, 2.2);
   } else if (period === "closed") {
-    isoLabel("🌙 KAFE (00–08 Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10, "#cbd5e1", "#1e293b", 5, 2.2);
+    isoLabel("🌙 KAFE (00–06 Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10, "#cbd5e1", "#1e293b", 5, 2.2);
   } else if (period === "bar") {
     const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
     isoLabel("🍸 BAR Sv." + lv + occStr, (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10.5, "#fef08a", "#4c0519", 5, 2.2);
@@ -22250,7 +22308,7 @@ function loop(now) {
         g.cafeTimer -= dt;
         if (g.cafeTimer <= 0) {
           if (typeof tryCafe === "function") tryCafe(g);
-          g.cafeTimer = rnd(1.5, 4);
+          g.cafeTimer = rnd(1, 3);
         }
       }
       if (g.state === "InRoom" && g.kids > 0 && !g.kidsAtPark) {
@@ -22318,7 +22376,7 @@ function loop(now) {
         g.cafeTimer -= dt;
         if (g.cafeTimer <= 0) {
           if (typeof tryCafe === "function") tryCafe(g);
-          g.cafeTimer = rnd(1.5, 4);
+          g.cafeTimer = rnd(1, 3);
         }
       }
       g.zTimer -= dt;
