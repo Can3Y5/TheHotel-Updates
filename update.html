@@ -2177,7 +2177,7 @@ body.is-visiting-mode #visit-banner {
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.75-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.76-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -12912,8 +12912,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 83;
-const APP_VERSION_NAME = "1.9.75-beta";
+const APP_VERSION_CODE = 84;
+const APP_VERSION_NAME = "1.9.76-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12921,9 +12921,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.76-beta",
+    title: "Etiket konumu cilası",
+    latest: true,
+    notes: "• 🏷️ Resepsiyon & Kafe etiketleri karakterlerin üstünde ve çakışmayacak şekilde yukarı alındı."
+  },
+  {
     ver: "v1.9.75-beta",
     title: "Resepsiyonist hareketi ve oyuncu adı işaretleri",
-    latest: true,
+    latest: false,
     notes: "• 🛎️ Canlı Resepsiyonist & Barmen Idle: Banko ve bar arkasındaki karakterlere sakin nefes, küçük yan adım, kuyruğa bakış/selam ve yazı yazma hareketi eklendi.\n• 🏷️ Oyuncu Adı İşaretleri: - ve . karakterleri serbest bırakıldı, işaret/harf tekrarı normalizasyonuyla filtre güçlendirildi."
   },
   {
@@ -18263,6 +18269,7 @@ function drawWorld() {
     for (const mp of mappedPawns) {
       drawIsoPawn(mp.p, mp.pt, mp.uvz);
     }
+    if (typeof drawLiveCounterLabels === "function") drawLiveCounterLabels();
     drawLiveTennisBall();
     if (typeof drawLiveSpaSteam === "function") drawLiveSpaSteam();
     if (typeof drawLiveCafeSteam === "function") drawLiveCafeSteam();
@@ -18911,6 +18918,24 @@ function drawLiveCounterStaff() {
   }
 }
 
+function drawLiveCounterLabels() {
+  if (typeof isParcelInViewport === "function") {
+    const recSlot = floors[0] && floors[0].slots.find(s => s.type === "Reception");
+    if (recSlot && isParcelInViewport(0, recSlot.idx) && typeof drawReceptionParcelLabel === "function") {
+      drawReceptionParcelLabel(slotIsoBox(0, recSlot.idx));
+    }
+    for (let f = 0; f <= viewFloor; f++) {
+      const fl = floors[f];
+      if (!fl || fl.state !== "Built") continue;
+      for (const s of fl.slots) {
+        if (s && s.type === "Cafe" && isParcelInViewport(f, s.idx) && typeof drawCafeParcelLabel === "function") {
+          drawCafeParcelLabel(s, slotIsoBox(f, s.idx));
+        }
+      }
+    }
+  }
+}
+
 // ===== BUNDLED: render/parcel.js =====
 // [render/parcel.js] Modüler parsel çizici (oda, lobi, restoran, havuz, depo, lojman, çatı)
 // ===== 5x5 MODÜLER PARSEL ÇİZİCİ (ODA, LOBİ, RESTORAN, HAVUZ, DEPO, LOJMAN, ÇATI TERASI) =====
@@ -19233,7 +19258,6 @@ function drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlo
   isoBox(u0 + 118, v0 + 155, u1 - 45, v1 - 35, z0 + 1, z0 + 14, railTop, railR, railL, OUTLINE_COL, 1.2);
   drawPottedPlant(u0 + 40, v1 - 35, z0, 0.9);
 
-  isoLabel("🛎️ RESEPSİYON & LOBİ", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 88, 11, "#3a281f", "#fffdf5", 6, 2.5);
   addHitPoly(poly, () => {
     selectSlot(s);
     if (queue.length > 0) {
@@ -19241,6 +19265,11 @@ function drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlo
       refreshGuest();
     }
   });
+}
+
+function drawReceptionParcelLabel(b) {
+  if (!b) return;
+  isoLabel("🛎️ RESEPSİYON & LOBİ", (b.u0 + b.u1) * 0.5, (b.v0 + b.v1) * 0.5, b.z0 + 102, 11, "#3a281f", "#fffdf5", 6, 2.5);
 }
 
 function drawReceptionDeskFront(u0, v0, z0, pal) {
@@ -20542,21 +20571,6 @@ function drawParcelCafe(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, right
   if (lv >= 2) drawCafeLoungeCorner(u0, v0, z0, P);
   if (lv >= 3) drawCafeMusicStage(u0, v0, z0, P);
 
-  // Durum / Neon / Tente Rozeti
-  if (!conn) {
-    isoLabel("⚠️ KAFE (Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 78, 10.5, "#991b1b", "#fef2f2", 5, 2.2);
-  } else if (!hired) {
-    isoLabel("⚠️ Barmen İşe Al", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 78, 10.5, "#92400e", "#fef3c7", 5, 2.2);
-  } else if (period === "closed") {
-    isoLabel("🌙 KAFE (00–06 Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10, "#cbd5e1", "#1e293b", 5, 2.2);
-  } else if (period === "bar") {
-    const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
-    isoLabel("🍸 BAR Sv." + lv + occStr, (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10.5, "#fef08a", "#4c0519", 5, 2.2);
-  } else {
-    const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
-    isoLabel("☕ KAFE Sv." + lv + occStr, (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10.5, "#fffbeb", P.cafeCounterTop || "#78350f", 5, 2.2);
-  }
-
   addHitPoly(roomPoly, () => {
     if (pending && s.Ready && !s.guest && !s.onFire) {
       selSlot = s;
@@ -20566,6 +20580,31 @@ function drawParcelCafe(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, right
     }
     selectSlot(s);
   });
+}
+
+function drawCafeParcelLabel(s, b) {
+  if (!s || !b) return;
+  const P = (typeof getRoomPalette === "function") ? getRoomPalette() : THEME.room;
+  const lv = Math.max(1, Math.min(3, s.cafeLevel || 1));
+  const busyArr = Array.isArray(s.cafeBusy) ? s.cafeBusy : [false, false, false];
+  const busyCnt = busyArr.slice(0, lv).filter(Boolean).length;
+  const conn = (typeof isCafeConnected === "function") ? isCafeConnected(s) : true;
+  const hired = (typeof barmenHired !== "undefined") && !!barmenHired;
+  const period = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+  const cu = (b.u0 + b.u1) * 0.5, cv = (b.v0 + b.v1) * 0.5, cz = b.z0 + 90;
+  if (!conn) {
+    isoLabel("⚠️ KAFE (Kapalı)", cu, cv, cz, 10.5, "#991b1b", "#fef2f2", 5, 2.2);
+  } else if (!hired) {
+    isoLabel("⚠️ Barmen İşe Al", cu, cv, cz, 10.5, "#92400e", "#fef3c7", 5, 2.2);
+  } else if (period === "closed") {
+    isoLabel("🌙 KAFE (00–06 Kapalı)", cu, cv, cz, 10, "#cbd5e1", "#1e293b", 5, 2.2);
+  } else if (period === "bar") {
+    const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
+    isoLabel("🍸 BAR Sv." + lv + occStr, cu, cv, cz, 10.5, "#fef08a", "#4c0519", 5, 2.2);
+  } else {
+    const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
+    isoLabel("☕ KAFE Sv." + lv + occStr, cu, cv, cz, 10.5, "#fffbeb", P.cafeCounterTop || "#78350f", 5, 2.2);
+  }
 }
 
 // Canlı fincan/espresso buharı: önbellek dışında çizilir, parsel başına <= 12 parçacık
