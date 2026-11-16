@@ -1,8 +1,8 @@
 {
-  "versionCode": 81,
-  "versionName": "1.9.73-beta",
+  "versionCode": 82,
+  "versionName": "1.9.74-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Arkadaş kodu ve otel ziyareti"
+  "notes": "Takip sistemi"
 }

@@ -198,6 +198,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
     box-shadow: 0 3px 0 rgba(0,0,0,0.28);
   }
   .sub-icon-btn {
+    position: relative;
     width: 30px; height: 28px; border-radius: 8px; border: 2px solid #3a281f;
     background: linear-gradient(180deg, #f5efe2 0%, #d9cbb5 100%);
     font-size: 15px; display: flex; align-items: center; justify-content: center;
@@ -1620,11 +1621,83 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
 .onl-warn-txt { font-size: 11.5px; font-weight: 800; color: #1e3a8a; }
 #onl-delete-confirm-box .onl-warn-txt { color: #991b1b; }
 
-/* ===== ARKADAŞLAR PENCERESİ & ZİYARET MODU (O2) ===== */
+/* ===== ARKADAŞLAR PENCERESİ & ZİYARET MODU (O2 / O2.1) ===== */
 #btn-friends-menu {
   background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
   color: #1e3a8a !important;
   border-color: #2563eb !important;
+}
+.fr-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  border: 1.5px solid #ffffff;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.fr-hud-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  font-size: 9px;
+  pointer-events: none;
+}
+.fr-tabs {
+  display: flex;
+  gap: 6px;
+}
+.fr-tab-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 6px;
+  border: 2px solid #3a281f;
+  border-radius: 9px;
+  background: #f5efe2;
+  color: #5a3e26;
+  font-size: 11.5px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.fr-tab-btn.active {
+  background: #fde68a;
+  color: #3a281f;
+}
+.fr-player-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.fr-mutual-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #dcfce7;
+  border: 1px solid #16a34a;
+  color: #14532d;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.fr-deleted-item {
+  opacity: 0.78;
+  background: #fef2f2 !important;
 }
 #friends-modal {
   position: fixed;
@@ -1927,7 +2000,7 @@ body.is-visiting-mode #visit-banner {
         <button class="sub-icon-btn" id="hud-rotate-btn" title="Yatay / Dikey Görünüm">🔄</button>
         <button class="sub-icon-btn" id="hud-theme-btn" title="Otel Teması">🎨</button>
         <button class="sub-icon-btn" id="hud-garden-btn" title="Bahçe Süsleri (💎)">🌳</button>
-        <button class="sub-icon-btn" id="hud-friends-btn" title="Arkadaşlar">👥</button>
+        <button class="sub-icon-btn" id="hud-friends-btn" title="Arkadaşlar">👥<span class="fr-badge fr-hud-badge" id="fr-hud-badge" style="display:none;">0</span></button>
         <button class="sub-icon-btn" id="hud-online-btn" title="Bulut Kayıt &amp; Hesap">☁️</button>
         <button class="sub-icon-btn" id="hud-gear-btn" title="Menü & Ayarlar">⚙️</button>
       </div>
@@ -2098,7 +2171,7 @@ body.is-visiting-mode #visit-banner {
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.73-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.74-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -2140,7 +2213,7 @@ body.is-visiting-mode #visit-banner {
         <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
         <button id="btn-new-game" class="m-btn" style="display:none">🆕 YENİ OYUN BAŞLAT</button>
         <button id="btn-online-menu" class="m-btn">☁️ BULUT KAYIT &amp; HESAP</button>
-        <button id="btn-friends-menu" class="m-btn">👥 ARKADAŞLAR</button>
+        <button id="btn-friends-menu" class="m-btn">👥 ARKADAŞLAR <span class="fr-badge" id="fr-menu-badge" style="display:none;">0</span></button>
         <div id="newgame-confirm-box">
           <div class="ngc-text">⚠️ Mevcut kayıtlı otel silinecek ve 1. günden sıfırdan yeni bir oyun başlayacak. Emin misin?</div>
           <div class="ngc-row">
@@ -2276,11 +2349,15 @@ body.is-visiting-mode #visit-banner {
           </div>
         </div>
         <div class="fr-card">
-          <label for="fr-add-input" class="fr-card-lbl">Arkadaş Ekle (8 Haneli Kod)</label>
+          <label for="fr-add-input" class="fr-card-lbl">Takip Et (8 Haneli Kod)</label>
           <div class="fr-add-row">
             <input type="text" id="fr-add-input" maxlength="10" placeholder="Örn: K7M2XP9Q" autocomplete="off" spellcheck="false" />
-            <button type="button" id="btn-add-friend" class="onl-btn up">➕ Ekle</button>
+            <button type="button" id="btn-add-friend" class="onl-btn up">➕ Takip Et</button>
           </div>
+        </div>
+        <div class="fr-tabs">
+          <button type="button" id="fr-tab-following" class="fr-tab-btn active">Takip Ettiklerim <span id="fr-following-count">(0)</span></button>
+          <button type="button" id="fr-tab-followers" class="fr-tab-btn">Takipçilerim <span id="fr-followers-count">(0)</span> <span id="fr-followers-tab-badge" class="fr-badge" style="display:none;">0</span></button>
         </div>
         <div id="fr-status-msg" class="onl-status-msg"></div>
         <div id="fr-list"></div>
@@ -12815,8 +12892,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 81;
-const APP_VERSION_NAME = "1.9.73-beta";
+const APP_VERSION_CODE = 82;
+const APP_VERSION_NAME = "1.9.74-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12824,9 +12901,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.74-beta",
+    title: "Takip sistemi",
+    latest: true,
+    notes: "• 👥 Takip Ettiklerim & Takipçilerim: Kodla takip etme/bırakma, yeni takipçi rozeti, geri takip ve Karşılıklı ✓ rozeti, silinmiş oyuncu temizliği eklendi."
+  },
+  {
     ver: "v1.9.73-beta",
     title: "Arkadaş kodu ve otel ziyareti",
-    latest: true,
+    latest: false,
     notes: "• 👥 Arkadaş Kodu & Arkadaş Listesi: Her hesaba 8 karakterlik arkadaş kodu atanır; kod ile arkadaş ekleyebilir, otelinin özetini görebilirsin.\n• 🏨 Otel Ziyareti (Salt Okunur): Arkadaşının otelini gerçek zamanlı gezebilir, katlar arası geçiş yapıp kamera ile inceleyebilir ve tek dokunuşla kendi oteline dönebilirsin."
   },
   {
@@ -23425,6 +23508,8 @@ const ONLINE_STATE = {
   showcaseDirty: false,
   showcaseBusy: false,
   friendCode: null,
+  followerCount: 0,
+  migratedFollowersDone: false,
   autoSyncTimer: null,
   retryTimer: null,
   retryAttempt: 0,
@@ -23540,9 +23625,13 @@ async function _silentStartupCheck() {
       ONLINE_STATE.dirty = true;
       await uploadCloudSave({ auto: true, reason: "initial_upload", _metaChecked: true });
       if (typeof uploadProfileShowcase === "function") uploadProfileShowcase({ immediate: true });
+      if (typeof migrateLegacyFollowingFollowers === "function") migrateLegacyFollowingFollowers();
+      if (typeof refreshFollowerCountBadge === "function") refreshFollowerCountBadge();
       return;
     }
     if (typeof ensureFriendCodeAndProfile === "function") ensureFriendCodeAndProfile();
+    if (typeof migrateLegacyFollowingFollowers === "function") migrateLegacyFollowingFollowers();
+    if (typeof refreshFollowerCountBadge === "function") refreshFollowerCountBadge();
     const cloudHash = (typeof computeSaveHash === "function") ? computeSaveHash(meta.rawJson || "") : "";
     if (cloudHash === localHash) {
       ONLINE_STATE.lastUploadedHash = localHash;
@@ -23713,6 +23802,8 @@ async function signOutOnline() {
     ONLINE_STATE.lastShowcaseHash = "";
     ONLINE_STATE.lastShowcaseMs = 0;
     ONLINE_STATE.showcaseDirty = false;
+    ONLINE_STATE.followerCount = 0;
+    ONLINE_STATE.migratedFollowersDone = false;
     ONLINE_STATE.status = "idle";
     notifyOnlineStateChange();
     return { ok: true };
@@ -23745,6 +23836,8 @@ async function deleteOnlineAccount() {
     ONLINE_STATE.lastShowcaseHash = "";
     ONLINE_STATE.lastShowcaseMs = 0;
     ONLINE_STATE.showcaseDirty = false;
+    ONLINE_STATE.followerCount = 0;
+    ONLINE_STATE.migratedFollowersDone = false;
     ONLINE_STATE.lastSyncMs = 0;
     ONLINE_STATE.lastUploadedHash = "";
     _writeLS(LAST_CLOUD_HASH_KEY, "");
@@ -24395,6 +24488,9 @@ const FRIEND_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 0, O, 1, I, L
 const SHOWCASE_INTERVAL_MS = 300000; // En çok 5 dakikada bir otomatik vitrin güncellemesi
 const LAST_SHOWCASE_HASH_KEY = "hotelore_last_showcase_hash_v1";
 const LAST_SHOWCASE_MS_KEY = "hotelore_last_showcase_ms_v1";
+const FOLLOWERS_SEEN_COUNT_KEY = "hotelore_followers_seen_count_v1";
+const HIDDEN_DELETED_FOLLOWERS_KEY = "hotelore_hidden_deleted_followers_v1";
+let _migratingFollowers = false;
 
 function _withTimeout(promise, ms = 6000) {
   return Promise.race([
@@ -24575,6 +24671,143 @@ async function uploadProfileShowcase(opts = {}) {
   }
 }
 
+function _getHiddenDeletedFollowers() {
+  try {
+    const arr = JSON.parse(_readLS(HIDDEN_DELETED_FOLLOWERS_KEY, "[]"));
+    return Array.isArray(arr) ? arr : [];
+  } catch (_) { return []; }
+}
+
+function _addHiddenDeletedFollower(fid) {
+  if (!fid) return;
+  const list = _getHiddenDeletedFollowers();
+  if (!list.includes(fid)) {
+    list.push(fid);
+    _writeLS(HIDDEN_DELETED_FOLLOWERS_KEY, JSON.stringify(list.slice(-100)));
+  }
+}
+
+function getNewFollowerCount() {
+  if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.user) return 0;
+  const seen = Number(_readLS(FOLLOWERS_SEEN_COUNT_KEY, "0")) || 0;
+  const cur = Number(ONLINE_STATE.followerCount || 0);
+  return Math.max(0, cur - seen);
+}
+
+function markFollowersSeen(countOverride) {
+  const cur = (typeof countOverride === "number")
+    ? Math.max(0, countOverride)
+    : Math.max(0, Number((typeof ONLINE_STATE !== "undefined" ? ONLINE_STATE.followerCount : 0) || 0));
+  _writeLS(FOLLOWERS_SEEN_COUNT_KEY, cur);
+  if (typeof ONLINE_STATE !== "undefined") ONLINE_STATE.followerCount = cur;
+  if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+}
+
+async function refreshFollowerCountBadge() {
+  if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) return 0;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return ONLINE_STATE.followerCount || 0;
+  try {
+    const myUid = ONLINE_STATE.user.uid;
+    const snap = await _withTimeout(ONLINE_STATE.db.collection("followers").doc(myUid).collection("list").get(), 6000);
+    const hidden = new Set(_getHiddenDeletedFollowers());
+    let cnt = 0;
+    snap.forEach(doc => { if (!hidden.has(doc.id)) cnt++; });
+    ONLINE_STATE.followerCount = cnt;
+    const seen = Number(_readLS(FOLLOWERS_SEEN_COUNT_KEY, "0")) || 0;
+    if (seen > cnt) _writeLS(FOLLOWERS_SEEN_COUNT_KEY, cnt);
+    if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+    return cnt;
+  } catch (_) {
+    return ONLINE_STATE.followerCount || 0;
+  }
+}
+
+async function migrateLegacyFollowingFollowers() {
+  if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) return false;
+  if (ONLINE_STATE.migratedFollowersDone || _migratingFollowers) return ONLINE_STATE.migratedFollowersDone;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return false;
+  _migratingFollowers = true;
+  try {
+    const db = ONLINE_STATE.db;
+    const myUid = ONLINE_STATE.user.uid;
+    const snap = await _withTimeout(db.collection("friends").doc(myUid).collection("list").get(), 6000);
+    const myMeta = _computeShowcaseSummary();
+    let allOk = true;
+    const items = [];
+    snap.forEach(doc => items.push({ fid: doc.id, data: doc.data() || {} }));
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (!it.fid || it.fid === myUid) continue;
+      try {
+        const fRef = db.collection("followers").doc(it.fid).collection("list").doc(myUid);
+        const fSnap = await _withTimeout(fRef.get(), 4500);
+        if (!fSnap.exists) {
+          await _withTimeout(fRef.set({
+            followedAt: Number(it.data.addedAt || Date.now()),
+            displayName: myMeta.displayName,
+            hotelName: myMeta.hotelName,
+            stars: myMeta.stars,
+            day: myMeta.day
+          }), 4500);
+        }
+      } catch (_) {
+        allOk = false;
+      }
+    }
+    if (allOk) ONLINE_STATE.migratedFollowersDone = true;
+    return allOk;
+  } catch (_) {
+    return false;
+  } finally {
+    _migratingFollowers = false;
+  }
+}
+
+async function followUserByProfile(friendUid, profileData) {
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+    return { ok: false, error: "Çevrimiçi oturum henüz bağlanmadı." };
+  }
+  const db = ONLINE_STATE.db;
+  const myUid = ONLINE_STATE.user.uid;
+  if (!friendUid) return { ok: false, error: "Bu kodla bir otel bulunamadı" };
+  if (friendUid === myUid) return { ok: false, error: "Kendi arkadaş kodunu takip edemezsin." };
+
+  const listRef = db.collection("friends").doc(myUid).collection("list").doc(friendUid);
+  const followerRef = db.collection("followers").doc(friendUid).collection("list").doc(myUid);
+  const existing = await _withTimeout(listRef.get(), 5000);
+  if (existing.exists) return { ok: false, error: "Bu kişiyi zaten takip ediyorsun." };
+
+  const p = profileData || {};
+  const safeName = sanitizeFriendDisplayName(p.displayName);
+  const targetHotel = String(p.hotelName || "HoteLore").slice(0, 24);
+  const nowMs = Date.now();
+  const myMeta = _computeShowcaseSummary();
+
+  await _withTimeout(listRef.set({
+    addedAt: nowMs,
+    displayName: safeName,
+    hotelName: targetHotel,
+    stars: Number(p.stars || 0),
+    day: Number(p.day || 1)
+  }), 5000);
+
+  try {
+    await _withTimeout(followerRef.set({
+      followedAt: nowMs,
+      displayName: myMeta.displayName,
+      hotelName: myMeta.hotelName,
+      stars: myMeta.stars,
+      day: myMeta.day
+    }), 5000);
+  } catch (err) {
+    // Yarıda kalmaması için ilk kaydı geri al
+    try { await _withTimeout(listRef.delete(), 4500); } catch (_) {}
+    throw err;
+  }
+
+  return { ok: true, friendUid, displayName: safeName, hotelName: targetHotel };
+}
+
 async function addFriendByCode(rawInput) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return { ok: false, error: "Çevrimdışı — İnternet bağlantısı gerekli." };
@@ -24594,107 +24827,190 @@ async function addFriendByCode(rawInput) {
     if (!codeSnap.exists) return { ok: false, error: "Bu kodla bir otel bulunamadı" };
     const friendUid = (codeSnap.data() || {}).uid;
     if (!friendUid) return { ok: false, error: "Bu kodla bir otel bulunamadı" };
-    if (friendUid === myUid) return { ok: false, error: "Kendi arkadaş kodunu ekleyemezsin." };
-
-    const listRef = db.collection("friends").doc(myUid).collection("list").doc(friendUid);
-    const existing = await _withTimeout(listRef.get(), 5000);
-    if (existing.exists) return { ok: false, error: "Bu arkadaş zaten listende." };
+    if (friendUid === myUid) return { ok: false, error: "Kendi arkadaş kodunu takip edemezsin." };
 
     const profSnap = await _withTimeout(db.collection("profiles").doc(friendUid).get(), 6000);
     if (!profSnap.exists) return { ok: false, error: "Bu kodla bir otel bulunamadı" };
-    const p = profSnap.data() || {};
-    const safeName = sanitizeFriendDisplayName(p.displayName);
-
-    await _withTimeout(listRef.set({
-      addedAt: Date.now(),
-      displayName: safeName,
-      hotelName: String(p.hotelName || "HoteLore").slice(0, 24),
-      stars: Number(p.stars || 0),
-      day: Number(p.day || 1)
-    }), 5000);
-
-    return { ok: true, friendUid, displayName: safeName, hotelName: p.hotelName || "HoteLore" };
+    return await followUserByProfile(friendUid, profSnap.data() || {});
   } catch (err) {
     if (typeof console !== "undefined" && console.warn) console.warn("[AddFriend]", err);
     return { ok: false, error: (typeof navigator !== "undefined" && navigator.onLine === false) ? "Çevrimdışı — İnternet bağlantısı gerekli." : "Bu kodla bir otel bulunamadı" };
   }
 }
 
-async function fetchFriendsList() {
+async function followBackByUid(friendUid) {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    return { ok: false, offline: true, items: [] };
+    return { ok: false, error: "Çevrimdışı — İnternet bağlantısı gerekli." };
+  }
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db || !friendUid) {
+    return { ok: false, error: "Çevrimiçi oturum henüz bağlanmadı." };
+  }
+  try {
+    const profSnap = await _withTimeout(ONLINE_STATE.db.collection("profiles").doc(friendUid).get(), 6000);
+    if (!profSnap.exists) return { ok: false, error: "Silinmiş oyuncu" };
+    return await followUserByProfile(friendUid, profSnap.data() || {});
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[FollowBack]", err);
+    return { ok: false, error: "Takip tamamlanamadı, tekrar dene." };
+  }
+}
+
+async function _hydrateUserListWithProfiles(rawItems, oppositeIdsSet, timeKey) {
+  const db = ONLINE_STATE.db;
+  return await Promise.all(rawItems.map(async (item) => {
+    const ts = Number(item[timeKey] || item.addedAt || item.followedAt || 0);
+    const isMutual = !!(oppositeIdsSet && oppositeIdsSet.has(item.fid));
+    try {
+      const ps = await _withTimeout(db.collection("profiles").doc(item.fid).get(), 4500);
+      if (ps.exists) {
+        const pd = ps.data() || {};
+        return {
+          fid: item.fid,
+          displayName: sanitizeFriendDisplayName(pd.displayName || item.displayName),
+          hotelName: String(pd.hotelName || item.hotelName || "HoteLore").slice(0, 24),
+          stars: Number(pd.stars !== undefined ? pd.stars : (item.stars || 0)),
+          day: Number(pd.day !== undefined ? pd.day : (item.day || 1)),
+          updatedAt: Number(pd.updatedAt || ts || 0),
+          available: !!pd.showcase,
+          deleted: false,
+          isMutual
+        };
+      }
+      return {
+        fid: item.fid,
+        displayName: "Silinmiş oyuncu",
+        hotelName: "",
+        stars: 0,
+        day: 0,
+        updatedAt: ts,
+        available: false,
+        deleted: true,
+        isMutual
+      };
+    } catch (_) {
+      return {
+        fid: item.fid,
+        displayName: sanitizeFriendDisplayName(item.displayName),
+        hotelName: String(item.hotelName || "HoteLore").slice(0, 24),
+        stars: Number(item.stars || 0),
+        day: Number(item.day || 1),
+        updatedAt: ts,
+        available: true,
+        deleted: false,
+        isMutual
+      };
+    }
+  }));
+}
+
+async function fetchFollowingAndFollowers() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, offline: true, following: [], followers: [] };
   }
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
-    return { ok: false, error: "Çevrimdışı", items: [] };
+    return { ok: false, error: "Çevrimdışı", following: [], followers: [] };
   }
   const db = ONLINE_STATE.db;
   const myUid = ONLINE_STATE.user.uid;
   try {
-    const snap = await _withTimeout(db.collection("friends").doc(myUid).collection("list").get(), 6000);
-    const rawItems = [];
-    snap.forEach(doc => {
-      rawItems.push(Object.assign({ fid: doc.id }, doc.data() || {}));
-    });
-    rawItems.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    const [fSnap, flwSnap] = await Promise.all([
+      _withTimeout(db.collection("friends").doc(myUid).collection("list").get(), 6000),
+      _withTimeout(db.collection("followers").doc(myUid).collection("list").get(), 6000)
+    ]);
 
-    // Profillerden güncel vitrin özeti yenile
-    const refreshed = await Promise.all(rawItems.map(async (item) => {
-      try {
-        const ps = await _withTimeout(db.collection("profiles").doc(item.fid).get(), 4500);
-        if (ps.exists) {
-          const pd = ps.data() || {};
-          return {
-            fid: item.fid,
-            displayName: sanitizeFriendDisplayName(pd.displayName || item.displayName),
-            hotelName: String(pd.hotelName || item.hotelName || "HoteLore").slice(0, 24),
-            stars: Number(pd.stars !== undefined ? pd.stars : (item.stars || 0)),
-            day: Number(pd.day !== undefined ? pd.day : (item.day || 1)),
-            updatedAt: Number(pd.updatedAt || item.addedAt || 0),
-            available: !!pd.showcase
-          };
-        }
-        return {
-          fid: item.fid,
-          displayName: sanitizeFriendDisplayName(item.displayName),
-          hotelName: String(item.hotelName || "HoteLore").slice(0, 24),
-          stars: Number(item.stars || 0),
-          day: Number(item.day || 1),
-          updatedAt: Number(item.addedAt || 0),
-          available: false
-        };
-      } catch (_) {
-        return {
-          fid: item.fid,
-          displayName: sanitizeFriendDisplayName(item.displayName),
-          hotelName: String(item.hotelName || "HoteLore").slice(0, 24),
-          stars: Number(item.stars || 0),
-          day: Number(item.day || 1),
-          updatedAt: Number(item.addedAt || 0),
-          available: true
-        };
-      }
-    }));
-    return { ok: true, items: refreshed };
+    const hidden = new Set(_getHiddenDeletedFollowers());
+    const rawFollowing = [];
+    const followingIds = new Set();
+    fSnap.forEach(doc => {
+      rawFollowing.push(Object.assign({ fid: doc.id }, doc.data() || {}));
+      followingIds.add(doc.id);
+    });
+    rawFollowing.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+
+    const rawFollowers = [];
+    const followerIds = new Set();
+    flwSnap.forEach(doc => {
+      if (hidden.has(doc.id)) return;
+      rawFollowers.push(Object.assign({ fid: doc.id }, doc.data() || {}));
+      followerIds.add(doc.id);
+    });
+    rawFollowers.sort((a, b) => (b.followedAt || 0) - (a.followedAt || 0));
+
+    const [following, followers] = await Promise.all([
+      _hydrateUserListWithProfiles(rawFollowing, followerIds, "addedAt"),
+      _hydrateUserListWithProfiles(rawFollowers, followingIds, "followedAt")
+    ]);
+
+    ONLINE_STATE.followerCount = followers.length;
+    const seen = Number(_readLS(FOLLOWERS_SEEN_COUNT_KEY, "0")) || 0;
+    if (seen > followers.length) _writeLS(FOLLOWERS_SEEN_COUNT_KEY, followers.length);
+    if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+
+    return { ok: true, following, followers };
   } catch (err) {
-    if (typeof console !== "undefined" && console.warn) console.warn("[FetchFriends]", err);
-    return { ok: false, offline: _isNetworkLikeError(err), items: [] };
+    if (typeof console !== "undefined" && console.warn) console.warn("[FetchFollowing]", err);
+    return { ok: false, offline: _isNetworkLikeError(err), following: [], followers: [] };
   }
+}
+
+async function fetchFriendsList() {
+  const res = await fetchFollowingAndFollowers();
+  return { ok: res.ok, offline: res.offline, error: res.error, items: res.following || [] };
+}
+
+async function fetchFollowersList() {
+  const res = await fetchFollowingAndFollowers();
+  return { ok: res.ok, offline: res.offline, error: res.error, items: res.followers || [] };
 }
 
 async function removeFriendById(fid) {
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db || !fid) {
     return { ok: false };
   }
+  const db = ONLINE_STATE.db;
+  const myUid = ONLINE_STATE.user.uid;
+  const listRef = db.collection("friends").doc(myUid).collection("list").doc(fid);
+  const followerRef = db.collection("followers").doc(fid).collection("list").doc(myUid);
+  let backupData = null;
   try {
-    await _withTimeout(
-      ONLINE_STATE.db.collection("friends").doc(ONLINE_STATE.user.uid).collection("list").doc(fid).delete(),
-      5000
-    );
+    const snap = await _withTimeout(listRef.get(), 4500);
+    if (snap.exists) backupData = snap.data() || {};
+  } catch (_) {}
+
+  try {
+    await _withTimeout(listRef.delete(), 5000);
+    let flwDeleted = false;
+    for (let att = 0; att < 2 && !flwDeleted; att++) {
+      try {
+        await _withTimeout(followerRef.delete(), 5000);
+        flwDeleted = true;
+      } catch (flwErr) {
+        if (flwErr && flwErr.code === "not-found") {
+          flwDeleted = true;
+        } else if (att === 1) {
+          throw flwErr;
+        }
+      }
+    }
     return { ok: true };
   } catch (err) {
+    // Takipçi kaydı silinemediyse tutarlılık için friends kaydını geri yükle
+    if (backupData) {
+      try { await _withTimeout(listRef.set(backupData), 4500); } catch (_) {}
+    }
     if (typeof console !== "undefined" && console.warn) console.warn("[RemoveFriend]", err);
-    return { ok: false };
+    return { ok: false, error: "Takipten çıkma tamamlanamadı." };
   }
+}
+
+async function removeDeletedFollowerLocal(fid) {
+  _addHiddenDeletedFollower(fid);
+  if (ONLINE_STATE.initialized && ONLINE_STATE.user && ONLINE_STATE.db && fid) {
+    try {
+      await _withTimeout(ONLINE_STATE.db.collection("followers").doc(ONLINE_STATE.user.uid).collection("list").doc(fid).delete(), 4500);
+    } catch (_) {}
+  }
+  return { ok: true };
 }
 
 async function fetchFriendProfile(fid) {
@@ -24746,15 +25062,28 @@ async function cascadeDeleteFriendData(uid) {
     try {
       const fSnap = await _withTimeout(db.collection("friends").doc(uid).collection("list").get(), 4500);
       const delPromises = [];
-      fSnap.forEach(doc => delPromises.push(doc.ref.delete().catch(() => {})));
+      fSnap.forEach(doc => {
+        delPromises.push(db.collection("followers").doc(doc.id).collection("list").doc(uid).delete().catch(() => {}));
+        delPromises.push(doc.ref.delete().catch(() => {}));
+      });
       await Promise.all(delPromises);
+    } catch (_) {}
+    try {
+      const flwSnap = await _withTimeout(db.collection("followers").doc(uid).collection("list").get(), 4500);
+      const flwPromises = [];
+      flwSnap.forEach(doc => flwPromises.push(doc.ref.delete().catch(() => {})));
+      await Promise.all(flwPromises);
     } catch (_) {}
     try { await _withTimeout(db.collection("profiles").doc(uid).delete(), 4500); } catch (_) {}
     ONLINE_STATE.friendCode = null;
     ONLINE_STATE.lastShowcaseHash = "";
     ONLINE_STATE.lastShowcaseMs = 0;
+    ONLINE_STATE.followerCount = 0;
+    ONLINE_STATE.migratedFollowersDone = false;
     _writeLS(LAST_SHOWCASE_HASH_KEY, "");
     _writeLS(LAST_SHOWCASE_MS_KEY, "0");
+    _writeLS(FOLLOWERS_SEEN_COUNT_KEY, "0");
+    _writeLS(HIDDEN_DELETED_FOLLOWERS_KEY, "[]");
   } catch (err) {
     if (typeof console !== "undefined" && console.warn) console.warn("[CascadeDelete]", err);
   }
@@ -24864,7 +25193,7 @@ function switchVisitFloor(fIdx) {
 }
 
 // ===== BUNDLED: online/friends-ui.js =====
-// [online/friends-ui.js] Arkadaslar Penceresi & Ziyaret Bandi Arayuzu (O2)
+// [online/friends-ui.js] Takip Sistemi (Takip Ettiklerim / Takipcilerim) & Ziyaret Bandi Arayuzu (O2.1)
 const friendsModal = document.getElementById("friends-modal");
 const btnFriendsMenu = document.getElementById("btn-friends-menu");
 const hudFriendsBtn = document.getElementById("hud-friends-btn");
@@ -24878,9 +25207,21 @@ const btnAddFriend = document.getElementById("btn-add-friend");
 const frStatusMsg = document.getElementById("fr-status-msg");
 const frListEl = document.getElementById("fr-list");
 
+const frTabFollowing = document.getElementById("fr-tab-following");
+const frTabFollowers = document.getElementById("fr-tab-followers");
+const frFollowingCountEl = document.getElementById("fr-following-count");
+const frFollowersCountEl = document.getElementById("fr-followers-count");
+const frFollowersTabBadge = document.getElementById("fr-followers-tab-badge");
+const frMenuBadge = document.getElementById("fr-menu-badge");
+const frHudBadge = document.getElementById("fr-hud-badge");
+
 const visitBannerTitle = document.getElementById("visit-banner-title");
 const visitFloorTabs = document.getElementById("visit-floor-tabs");
 const btnExitVisit = document.getElementById("btn-exit-visit");
+
+let activeFriendsTab = "following"; // "following" | "followers"
+let _cachedFollowing = [];
+let _cachedFollowers = [];
 
 function setFriendsStatusMsg(msg, isErr = false) {
   if (!frStatusMsg) return;
@@ -24908,12 +25249,133 @@ function _fmtRelativeUpdated(ms) {
   return Math.floor(hr / 24) + " gün önce güncellendi";
 }
 
+function renderFriendsBadges() {
+  const cnt = (typeof getNewFollowerCount === "function") ? getNewFollowerCount() : 0;
+  const txt = cnt > 9 ? "9+" : String(cnt);
+  [frMenuBadge, frHudBadge, frFollowersTabBadge].forEach(el => {
+    if (!el) return;
+    el.textContent = txt;
+    el.style.display = cnt > 0 ? "inline-flex" : "none";
+  });
+}
+
 function renderFriendsHeader() {
   const code = (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.friendCode) ? ONLINE_STATE.friendCode : "--------";
   if (frMyCodeEl) frMyCodeEl.textContent = code;
   if (btnShareMyCode) {
     btnShareMyCode.style.display = (typeof navigator !== "undefined" && typeof navigator.share === "function") ? "inline-flex" : "none";
   }
+  renderFriendsBadges();
+}
+
+function _syncTabButtonsUi() {
+  if (frTabFollowing) frTabFollowing.classList.toggle("active", activeFriendsTab === "following");
+  if (frTabFollowers) frTabFollowers.classList.toggle("active", activeFriendsTab === "followers");
+  if (frFollowingCountEl) frFollowingCountEl.textContent = "(" + _cachedFollowing.length + ")";
+  if (frFollowersCountEl) frFollowersCountEl.textContent = "(" + _cachedFollowers.length + ")";
+}
+
+function renderActiveFriendsList() {
+  if (!frListEl) return;
+  _syncTabButtonsUi();
+  const isFollowingTab = (activeFriendsTab === "following");
+  const items = isFollowingTab ? _cachedFollowing : _cachedFollowers;
+
+  if (!items.length) {
+    frListEl.innerHTML = isFollowingTab
+      ? '<div class="onl-empty">Henüz kimseyi takip etmiyorsun. Kodunu paylaş veya yukarıdan kodla takip et!</div>'
+      : '<div class="onl-empty">Henüz takipçin yok. Arkadaş kodunu paylaşarak takipçi kazanabilirsin!</div>';
+    return;
+  }
+
+  frListEl.innerHTML = items.map(f => {
+    if (f.deleted) {
+      return `
+        <div class="fr-item fr-deleted-item">
+          <div class="fr-info">
+            <div class="fr-player">Silinmiş oyuncu</div>
+            <div class="fr-meta">Bu hesap artık mevcut değil</div>
+          </div>
+          <div class="fr-actions">
+            <button type="button" class="onl-btn del fr-remove-deleted-btn" data-fid="${_escHtml(f.fid)}">Kaldır</button>
+          </div>
+        </div>`;
+    }
+    const mutualBadge = f.isMutual ? '<span class="fr-mutual-badge">Karşılıklı ✓</span>' : "";
+    const rightBtn = isFollowingTab
+      ? `<button type="button" class="onl-btn del fr-del-btn" data-fid="${_escHtml(f.fid)}">Takibi Bırak</button>`
+      : (!f.isMutual ? `<button type="button" class="onl-btn up fr-followback-btn" data-fid="${_escHtml(f.fid)}">➕ Takip Et</button>` : "");
+
+    return `
+      <div class="fr-item">
+        <div class="fr-info">
+          <div class="fr-player-row">
+            <span class="fr-player">${_escHtml(f.displayName)} — <b>${_escHtml(f.hotelName)}</b></span>
+            ${mutualBadge}
+          </div>
+          <div class="fr-meta">⭐ ${f.stars} • Gün ${f.day} • ${_fmtRelativeUpdated(f.updatedAt)}</div>
+        </div>
+        <div class="fr-actions">
+          <button type="button" class="onl-btn google fr-visit-btn" data-fid="${_escHtml(f.fid)}" ${f.available === false ? "disabled" : ""}>👁️ Otele Git</button>
+          ${rightBtn}
+        </div>
+      </div>`;
+  }).join("");
+
+  frListEl.querySelectorAll(".fr-visit-btn").forEach(btn => {
+    btn.onclick = async () => {
+      if (typeof play === "function") play("tap");
+      const fid = btn.getAttribute("data-fid");
+      setFriendsStatusMsg("⏳ Yükleniyor…");
+      const vRes = await enterVisitMode(fid);
+      if (vRes.ok) {
+        setFriendsStatusMsg("");
+        if (friendsModal) friendsModal.style.display = "none";
+      } else {
+        setFriendsStatusMsg(vRes.error || "Bu otel şu an görüntülenemiyor", true);
+      }
+    };
+  });
+
+  frListEl.querySelectorAll(".fr-del-btn").forEach(btn => {
+    btn.onclick = async () => {
+      if (typeof play === "function") play("tap");
+      const fid = btn.getAttribute("data-fid");
+      btn.disabled = true;
+      const r = await removeFriendById(fid);
+      if (!r.ok && r.error) setFriendsStatusMsg(r.error, true);
+      await loadAndRenderFriendsList();
+    };
+  });
+
+  frListEl.querySelectorAll(".fr-followback-btn").forEach(btn => {
+    btn.onclick = async () => {
+      if (typeof play === "function") play("tap");
+      const fid = btn.getAttribute("data-fid");
+      btn.disabled = true;
+      const r = await followBackByUid(fid);
+      if (r.ok) {
+        setFriendsStatusMsg("✅ Takip ediliyor: " + r.displayName);
+      } else {
+        setFriendsStatusMsg(r.error || "Takip tamamlanamadı.", true);
+      }
+      await loadAndRenderFriendsList();
+    };
+  });
+
+  frListEl.querySelectorAll(".fr-remove-deleted-btn").forEach(btn => {
+    btn.onclick = async () => {
+      if (typeof play === "function") play("tap");
+      const fid = btn.getAttribute("data-fid");
+      btn.disabled = true;
+      if (activeFriendsTab === "following") {
+        await removeFriendById(fid);
+      } else {
+        await removeDeletedFollowerLocal(fid);
+      }
+      await loadAndRenderFriendsList();
+    };
+  });
 }
 
 async function openFriendsModal() {
@@ -24936,64 +25398,30 @@ async function openFriendsModal() {
 }
 
 async function loadAndRenderFriendsList() {
-  if (!frListEl || typeof fetchFriendsList !== "function") return;
+  if (!frListEl || typeof fetchFollowingAndFollowers !== "function") return;
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     setFriendsStatusMsg("Çevrimdışı", true);
     frListEl.innerHTML = '<div class="onl-empty">Çevrimdışı</div>';
     return;
   }
   frListEl.innerHTML = '<div class="onl-empty">⏳ Yükleniyor…</div>';
-  const res = await fetchFriendsList();
+  const res = await fetchFollowingAndFollowers();
   if (!res.ok) {
     if (res.offline) {
       setFriendsStatusMsg("Çevrimdışı", true);
       frListEl.innerHTML = '<div class="onl-empty">Çevrimdışı</div>';
     } else {
-      frListEl.innerHTML = '<div class="onl-empty">Arkadaş listesi yüklenemedi.</div>';
+      frListEl.innerHTML = '<div class="onl-empty">Liste yüklenemedi.</div>';
     }
     return;
   }
-  if (!res.items.length) {
-    frListEl.innerHTML = '<div class="onl-empty">Henüz arkadaş eklemedin. Kodunu paylaş veya arkadaşının kodunu yukarıya gir!</div>';
-    return;
+  _cachedFollowing = res.following || [];
+  _cachedFollowers = res.followers || [];
+  if (activeFriendsTab === "followers" && typeof markFollowersSeen === "function") {
+    markFollowersSeen(_cachedFollowers.length);
   }
-
-  frListEl.innerHTML = res.items.map((f, idx) => `
-    <div class="fr-item">
-      <div class="fr-info">
-        <div class="fr-player">${_escHtml(f.displayName)} — <b>${_escHtml(f.hotelName)}</b></div>
-        <div class="fr-meta">⭐ ${f.stars} • Gün ${f.day} • ${_fmtRelativeUpdated(f.updatedAt)}</div>
-      </div>
-      <div class="fr-actions">
-        <button type="button" class="onl-btn google fr-visit-btn" data-fid="${_escHtml(f.fid)}" ${f.available === false ? "disabled" : ""}>👁️ Otele Git</button>
-        <button type="button" class="onl-btn del fr-del-btn" data-fid="${_escHtml(f.fid)}" title="Listeden Sil">Sil</button>
-      </div>
-    </div>
-  `).join("");
-
-  frListEl.querySelectorAll(".fr-visit-btn").forEach(btn => {
-    btn.onclick = async () => {
-      if (typeof play === "function") play("tap");
-      const fid = btn.getAttribute("data-fid");
-      setFriendsStatusMsg("⏳ Yükleniyor…");
-      const vRes = await enterVisitMode(fid);
-      if (vRes.ok) {
-        setFriendsStatusMsg("");
-        if (friendsModal) friendsModal.style.display = "none";
-      } else {
-        setFriendsStatusMsg(vRes.error || "Bu otel şu an görüntülenemiyor", true);
-      }
-    };
-  });
-
-  frListEl.querySelectorAll(".fr-del-btn").forEach(btn => {
-    btn.onclick = async () => {
-      if (typeof play === "function") play("tap");
-      const fid = btn.getAttribute("data-fid");
-      await removeFriendById(fid);
-      await loadAndRenderFriendsList();
-    };
-  });
+  renderActiveFriendsList();
+  renderFriendsBadges();
 }
 
 function updateVisitBanner(prof) {
@@ -25054,6 +25482,23 @@ if (friendsModal) {
   };
 }
 
+if (frTabFollowing) {
+  frTabFollowing.onclick = () => {
+    if (typeof play === "function") play("tap");
+    activeFriendsTab = "following";
+    renderActiveFriendsList();
+  };
+}
+if (frTabFollowers) {
+  frTabFollowers.onclick = () => {
+    if (typeof play === "function") play("tap");
+    activeFriendsTab = "followers";
+    if (typeof markFollowersSeen === "function") markFollowersSeen(_cachedFollowers.length);
+    renderActiveFriendsList();
+    renderFriendsBadges();
+  };
+}
+
 if (btnCopyMyCode) {
   btnCopyMyCode.onclick = async () => {
     if (typeof play === "function") play("tap");
@@ -25069,7 +25514,7 @@ if (btnShareMyCode) {
     if (typeof play === "function") play("tap");
     const code = (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.friendCode) ? ONLINE_STATE.friendCode : "";
     if (!code) return;
-    const shareText = "HoteLore'da beni ekle! Arkadaş kodum: " + code;
+    const shareText = "HoteLore'da beni takip et! Kodum: " + code;
     if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
       try {
         await navigator.share({ text: shareText });
@@ -25089,7 +25534,7 @@ if (btnAddFriend) {
     const res = await addFriendByCode(val);
     if (res.ok) {
       if (frAddInput) frAddInput.value = "";
-      setFriendsStatusMsg("✅ Eklendi: " + res.displayName + " (" + res.hotelName + ")");
+      setFriendsStatusMsg("✅ Takip ediliyor: " + res.displayName + " (" + res.hotelName + ")");
       await loadAndRenderFriendsList();
     } else {
       setFriendsStatusMsg(res.error || "Bu kodla bir otel bulunamadı", true);
