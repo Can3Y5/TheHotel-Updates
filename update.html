@@ -677,46 +677,55 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
   }
   .gb-act-btn.warn { background: #ffe680; }
 
+  body.in-start-menu #top-bar,
+  body.in-start-menu #left-hud-top,
+  body.in-start-menu #left-hud-bottom,
+  body.in-start-menu #right-hud,
+  body.in-start-menu #bottom-dock,
+  body.in-start-menu #log-text,
+  body.in-start-menu #in-game-theme-panel {
+    display: none !important;
+  }
+
   #start-screen {
     position: absolute; inset: 0; z-index: 30;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 12px 16px; gap: 10px; overflow-y: auto;
-    background: radial-gradient(circle at 50% 30%, rgba(126, 200, 80, 0.85) 0%, rgba(36, 74, 28, 0.94) 100%);
-    backdrop-filter: blur(4px);
+    display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
+    padding: 24px 44px; overflow-y: auto;
+    background: linear-gradient(90deg, rgba(252,245,230,0.97) 0%, rgba(252,245,230,0.90) 27%, rgba(252,245,230,0.44) 47%, rgba(252,245,230,0.0) 68%);
   }
   .menu-card-shell {
-    width: 100%; max-width: 420px; background: rgba(255, 252, 242, 0.97);
-    border: 3.5px solid #3a281f; border-radius: 22px; padding: 14px;
-    display: flex; flex-direction: column; align-items: center; gap: 9px;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.45), 0 4px 0 #3a281f;
+    width: 100%; max-width: 345px; background: transparent;
+    border: none; border-radius: 0; padding: 0; margin: auto 0;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 13px;
+    box-shadow: none;
   }
-  .menu-hero { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-  #menu-logo-img {
-    width: 100%; max-width: 340px; height: 155px;
-    border: 3px solid #3a281f; border-radius: 16px; object-fit: cover;
-    background: #6eb8f5; box-shadow: 0 5px 14px rgba(0,0,0,0.25);
+  .menu-hero { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  #menu-logo-img, #menu-logo-canvas, .menu-footer { display: none; }
+  .menu-title-row { display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-wrap: wrap; }
+  .menu-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(32px, 4.2vw, 46px); font-weight: 900; color: #3a2414;
+    letter-spacing: -0.4px; text-align: left;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.88);
   }
-  #menu-logo-canvas { display: none; }
-  .menu-title-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-  .menu-title { font-size: clamp(19px, 5vw, 25px); font-weight: 900; color: #3a281f; letter-spacing: 0.4px; text-align: center; }
-  .menu-sub { font-size: clamp(11px, 2.6vw, 13px); font-weight: 800; color: #5c4938; text-align: center; }
+  .menu-sub { font-size: clamp(11px, 1.4vw, 12.5px); font-weight: 700; color: #6e523a; text-align: left; line-height: 1.35; }
   .menu-badge {
-    display: inline-block; background: #243547; color: #ffd93b; font-weight: 900;
-    font-size: clamp(10px, 2.4vw, 12px); padding: 2px 9px; border-radius: 12px; border: 2px solid #3a281f;
+    display: inline-block; background: #4e3422; color: #fde68a; font-weight: 900;
+    font-size: clamp(10px, 1.2vw, 11px); padding: 2px 9px; border-radius: 12px; border: 1.5px solid #3a281f;
   }
   #menu-update-card {
-    width: 100%; background: #fff6e0; border: 2px solid #3a281f;
-    border-radius: 10px; padding: 7px 10px; display: flex; flex-direction: column; gap: 6px;
+    order: 4; width: 100%; background: rgba(255,255,255,0.68); border: 1.5px solid rgba(90,62,38,0.22);
+    border-radius: 10px; padding: 6px 10px; display: flex; flex-direction: column; gap: 6px;
   }
   .muc-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-  #muc-status { font-size: clamp(10px, 2.5vw, 12.5px); font-weight: 800; color: #3a281f; flex: 1; min-width: 0; }
+  #muc-status { font-size: clamp(10px, 1.3vw, 11.5px); font-weight: 800; color: #3a281f; flex: 1; min-width: 0; }
   .muc-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
   #muc-check-btn, #muc-history-btn {
-    background: #ffffff; border: 2px solid #3a281f; border-radius: 6px;
-    padding: 4px 7px; font-size: clamp(9.5px, 2.3vw, 11.5px); font-weight: 800; color: #3a281f; cursor: pointer;
-    white-space: nowrap; box-shadow: 0 2px 0 #3a281f;
+    background: rgba(255,255,255,0.92); border: 1.5px solid rgba(90,62,38,0.28); border-radius: 6px;
+    padding: 4px 7px; font-size: clamp(9.5px, 1.2vw, 11px); font-weight: 800; color: #3a281f; cursor: pointer;
+    white-space: nowrap; box-shadow: none;
   }
-  #muc-history-btn { background: #ffe89e; }
+  #muc-history-btn { background: rgba(255, 243, 205, 0.92); }
   #changelog-modal {
     position: absolute; inset: 0; background: rgba(10, 12, 20, 0.78);
     display: none; align-items: center; justify-content: center; z-index: 36; padding: 4%;
@@ -755,20 +764,26 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
     border: 2px solid #3a281f; border-radius: 7px; font-size: clamp(11.5px, 3vw, 14px);
     font-weight: 900; color: #3a281f; cursor: pointer;
   }
-  .menu-btns { width: 100%; display: flex; flex-direction: column; gap: 7px; }
+  .menu-btns {
+    width: 100%; display: flex; flex-direction: column; gap: 6px;
+    border-left: 2.5px solid rgba(90, 62, 38, 0.38); padding-left: 15px;
+  }
   .m-btn {
-    width: 100%; padding: 9px 10px; border: 2.5px solid #3a281f; border-radius: 10px;
-    font-size: clamp(13px, 3.4vw, 15.5px); font-weight: 900; color: #3a281f;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-    box-shadow: 0 3px 0 #3a281f;
+    width: 100%; padding: 6px 8px; border: none; border-radius: 8px;
+    background: transparent; font-size: clamp(13.5px, 2.2vw, 15.5px); font-weight: 800; color: #4a3322;
+    cursor: pointer; display: flex; align-items: center; justify-content: flex-start; gap: 6px;
+    box-shadow: none; transition: transform 0.12s, background 0.15s;
   }
+  .m-btn:hover { background: rgba(255,255,255,0.55); transform: translateX(2px); }
   #btn-start-game {
-    background: linear-gradient(180deg, #9cf576 0%, #52c42b 100%);
-    font-size: clamp(15px, 4vw, 18.5px); padding: 11px 10px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.92), rgba(255,255,255,0.22));
+    color: #1f5c20; font-size: clamp(15px, 2.5vw, 17.5px); font-weight: 900; padding: 9px 12px;
+    box-shadow: 0 2px 10px rgba(70,45,20,0.08);
   }
-  #btn-new-game { background: linear-gradient(180deg, #ffe082 0%, #ffb300 100%); }
+  #btn-start-game:hover { background: linear-gradient(90deg, #ffffff, rgba(255,255,255,0.48)); }
+  #btn-new-game { color: #9c5206; padding: 6px 12px; }
   #newgame-confirm-box {
-    display: none; width: 100%; background: #fff5f5; border: 2.5px solid #c92a2a;
+    display: none; width: 100%; background: rgba(255, 245, 245, 0.96); border: 2px solid #c92a2a;
     border-radius: 10px; padding: 9px 10px; flex-direction: column; gap: 7px;
   }
   .ngc-text { font-size: clamp(10.5px, 2.7vw, 12.5px); font-weight: 800; color: #7a1212; text-align: center; }
@@ -781,28 +796,67 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
     flex: 1; background: #e9ecef; color: #3a281f; padding: 8px 6px;
     border: 2px solid #3a281f; border-radius: 7px; font-weight: 800; cursor: pointer;
   }
-  .menu-row-2 { display: flex; gap: 8px; width: 100%; }
-  .menu-row-2 .m-btn { flex: 1; font-size: clamp(11px, 2.6vw, 13px); padding: 8px 6px; }
-  #btn-toggle-sfx { background: #ffe699; }
-  #btn-toggle-bgm { background: #c7d9fa; }
-  #btn-how-to { background: #f2e6ff; }
-  #btn-reset-save { background: #ffd6d6; }
+  .menu-row-2 { display: flex; gap: 7px; width: 100%; }
+  .menu-row-2 .m-btn {
+    flex: 1; justify-content: center; background: rgba(255,255,255,0.70);
+    border: 1.5px solid rgba(90,62,38,0.22); font-size: clamp(11px, 1.5vw, 12px); padding: 6px;
+  }
+  .menu-row-2 .m-btn:hover { background: rgba(255,255,255,0.92); transform: none; }
+  .menu-row-2 .m-btn.is-muted { background: rgba(218, 222, 230, 0.78); color: #5c6472; }
+  .theme-select-row .theme-btn {
+    justify-content: center; background: rgba(255,255,255,0.74);
+    border: 1.5px solid rgba(90,62,38,0.26); padding: 5px 4px; font-size: 11px;
+  }
+  .theme-select-row .theme-btn.is-active {
+    background: #fff9e6; border-color: #d97706; box-shadow: 0 0 0 1.5px #d97706;
+  }
   .hotel-name-row {
     width: 100%; display: flex; align-items: center; gap: 6px;
-    background: #fff9e6; border: 2px solid #3a281f; border-radius: 10px; padding: 5px 9px;
+    background: rgba(255,255,255,0.78); border: 1.5px solid rgba(90,62,38,0.28); border-radius: 8px; padding: 5px 9px;
   }
-  .hotel-name-row label { font-size: clamp(11px, 2.8vw, 13px); font-weight: 800; color: #3a281f; white-space: nowrap; }
+  .hotel-name-row label { font-size: clamp(11px, 1.4vw, 12px); font-weight: 800; color: #5a3e26; white-space: nowrap; }
   #hotel-name-input {
-    flex: 1; min-width: 0; border: 2px solid #3a281f; border-radius: 6px; padding: 5px 8px;
-    font-size: clamp(12px, 3vw, 14.5px); font-weight: 900; color: #1f3373; background: #ffffff;
-    user-select: text; -webkit-user-select: text;
+    flex: 1; min-width: 0; border: none; border-radius: 4px; padding: 2px 4px;
+    font-size: clamp(12px, 1.6vw, 13.5px); font-weight: 900; color: #2b190d; background: transparent;
+    outline: none; user-select: text; -webkit-user-select: text;
   }
   #how-to-box {
-    display: none; width: 100%; background: #fffdf5; border: 2px solid #3a281f;
-    border-radius: 8px; padding: 9px; font-size: clamp(10px, 2.5vw, 12px); color: #3a281f;
-    line-height: 1.35; white-space: pre-line; max-height: 120px; overflow-y: auto;
+    display: none; width: 100%; background: rgba(255, 253, 245, 0.94); border: 1.5px solid rgba(90,62,38,0.32);
+    border-radius: 8px; padding: 9px; font-size: clamp(10px, 2.2vw, 11.5px); color: #3a281f;
+    line-height: 1.38; white-space: pre-line; max-height: 120px; overflow-y: auto;
   }
-  .menu-footer { font-size: clamp(9.5px, 2.2vw, 11px); color: #fff8eb; text-align: center; font-weight: 800; text-shadow: 0 1px 2px #000; }
+  @media (orientation: portrait), (max-width: 540px) {
+    #start-screen {
+      flex-direction: column; justify-content: flex-end; align-items: stretch;
+      padding: calc(12px + var(--sat)) 16px calc(16px + var(--sab)) 16px;
+      background: linear-gradient(0deg, rgba(252,245,230,0.98) 0%, rgba(252,245,230,0.94) 42%, rgba(252,245,230,0.40) 56%, rgba(252,245,230,0.0) 68%);
+    }
+    .menu-card-shell { max-width: 100%; gap: 8px; margin: 0; }
+    .menu-title-row { width: 100%; justify-content: space-between; }
+    .menu-title { font-size: clamp(28px, 8vw, 35px); }
+    .menu-btns { padding-left: 12px; gap: 5px; }
+    #btn-start-game { font-size: clamp(14.5px, 4vw, 16.5px); padding: 9px 12px; }
+  }
+  @media (max-height: 520px) and (orientation: landscape) {
+    #start-screen {
+      flex-direction: row; justify-content: flex-start; align-items: flex-start;
+      padding: 10px 20px;
+      background: linear-gradient(90deg, rgba(252,245,230,0.97) 0%, rgba(252,245,230,0.92) 38%, rgba(252,245,230,0.45) 56%, rgba(252,245,230,0.0) 74%);
+    }
+    .menu-card-shell { max-width: 285px; gap: 6px; margin: auto 0; }
+    .menu-hero { gap: 2px; }
+    .menu-title { font-size: 26px; }
+    .menu-sub { font-size: 10px; line-height: 1.25; }
+    .hotel-name-row { padding: 3px 8px; }
+    .theme-select-row { margin: 2px 0 4px 0 !important; }
+    .theme-select-row .theme-btn { padding: 3px 4px !important; font-size: 10px !important; }
+    .menu-btns { padding-left: 10px; gap: 3px; }
+    .m-btn { padding: 4px 6px; font-size: 12px; }
+    #btn-start-game { padding: 6px 10px; font-size: 13.5px; }
+    .menu-row-2 .m-btn { padding: 4px; font-size: 10.5px; }
+    #menu-update-card { padding: 4px 8px; }
+    #muc-status { font-size: 9.5px; }
+  }
 
   #ach-popup {
     position: fixed; left: 50%; top: calc(144px + var(--sat)); transform: translateX(-50%);
@@ -1669,7 +1723,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.65-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.66-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -5434,15 +5488,17 @@ function startNewGameClean() {
   log("💡 Adımlar: 1) 1. Koridoru kur, 2) 2. Koridoru kur, 3) 1. Odanı kur, 4) Kapısını tak ve Oteli Aç!");
   if (typeof prepareWeeklyNewspaper === "function") prepareWeeklyNewspaper(true);
   if (typeof spawnPaperboy === "function") spawnPaperboy();
+  const box = document.getElementById("newgame-confirm-box");
+  if (box) box.style.display = "none";
+  gameStartedOnce = true;
+  if (typeof setStartMenuActive === "function") setStartMenuActive(false);
+  else {
+    inMenu = false;
+    startScreen.style.display = "none";
+  }
   saveGame();
   refresh();
   fitView();
-
-  const box = document.getElementById("newgame-confirm-box");
-  if (box) box.style.display = "none";
-  inMenu = false;
-  gameStartedOnce = true;
-  startScreen.style.display = "none";
   play("open");
 }
 
@@ -11953,8 +12009,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 73;
-const APP_VERSION_NAME = "1.9.65-beta";
+const APP_VERSION_CODE = 74;
+const APP_VERSION_NAME = "1.9.66-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -11962,9 +12018,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.66-beta",
+    title: "HoteLore — Canlı Başlangıç Ekranı & Sabah Sisi Tasarımı",
+    latest: true,
+    notes: "• 🎨 Yeni Başlangıç Ekranı (Sabah Sisi & Parşömen): Bulanık yeşil perde kaldırılarak canlı izometrik otel dünyası ve responsive (masaüstü sol sis / mobil dikey alt sis) menü eklendi.\n• 🚶 Canlı Çevre Akışı: Başlangıç ekranında kaldırımda, yaya geçidinde, parkta ve otel girişinde yürüyen çevre insanları, araç trafiği ve mevsim parçacıkları eklendi."
+  },
+  {
     ver: "v1.9.59-beta",
     title: "Tenis Kulübü (Faz 3b) — Tenis Oynama & Ücret Sistemi",
-    latest: true,
+    latest: false,
     notes: "Tenis kulübü açıldı: misafirler tenis oynar, seans ücreti, 3 yeni başarım"
   },
   {
@@ -12326,9 +12388,23 @@ if (btnCloseThemePanel) {
 }
 updateThemeButtons();
 
+function setStartMenuActive(active) {
+  inMenu = !!active;
+  if (typeof document !== "undefined" && document.body) {
+    document.body.classList.toggle("in-start-menu", inMenu);
+  }
+  if (startScreen) startScreen.style.display = inMenu ? "flex" : "none";
+}
+window.setStartMenuActive = setStartMenuActive;
+setStartMenuActive(true);
+window.addEventListener("resize", () => {
+  if (typeof inMenu !== "undefined" && inMenu && typeof fitMenuCamera === "function") {
+    fitMenuCamera();
+  }
+});
+
 function openStartMenu() {
   toggleInGameThemePanel(false);
-  inMenu = true;
   saveGame();
   hadSavedGame = true;
   if (hotelNameInput) hotelNameInput.value = hotelName || "HoteLore";
@@ -12337,7 +12413,8 @@ function openStartMenu() {
   if (btnResetSave) btnResetSave.style.display = "flex";
   if (newGameConfirmBox) newGameConfirmBox.style.display = "none";
   btnStartGame.textContent = (gameStartedOnce || hadSavedGame) ? "▶ KAYITLI OYUNA DEVAM ET" : "▶ OYUNA BAŞLA";
-  startScreen.style.display = "flex";
+  setStartMenuActive(true);
+  if (typeof fitMenuCamera === "function") fitMenuCamera();
   checkForUpdate(false);
 }
 
@@ -12347,8 +12424,8 @@ btnStartGame.onclick = () => {
     hotelName = hotelNameInput.value.trim().slice(0, 18);
   }
   saveGame();
-  inMenu = false;
-  startScreen.style.display = "none";
+  setStartMenuActive(false);
+  if (typeof fitView === "function") fitView();
   if (!gameStartedOnce) {
     gameStartedOnce = true;
     play("open");
@@ -12436,14 +12513,14 @@ if (new URLSearchParams(window.location.search).has("autostart")) {
 btnToggleSfx.onclick = () => {
   sfxEnabled = !sfxEnabled;
   btnToggleSfx.textContent = sfxEnabled ? "🔊 Ses: AÇIK" : "🔇 Ses: KAPALI";
-  btnToggleSfx.style.background = sfxEnabled ? "#ffe699" : "#d9d9e0";
+  btnToggleSfx.classList.toggle("is-muted", !sfxEnabled);
   if (sfxEnabled) play("tap");
 };
 
 btnToggleBgm.onclick = () => {
   bgmEnabled = !bgmEnabled;
   btnToggleBgm.textContent = bgmEnabled ? "🎵 Müzik: AÇIK" : "🎵 Müzik: KAPALI";
-  btnToggleBgm.style.background = bgmEnabled ? "#c7d9fa" : "#d9d9e0";
+  btnToggleBgm.classList.toggle("is-muted", !bgmEnabled);
   play("tap");
 };
 
@@ -13037,7 +13114,28 @@ function applyCam() {
   camCenter.x = clamp(camCenter.x, -1380, 1020);
   camCenter.y = clamp(camCenter.y, -1420, 20);
 }
+function fitMenuCamera() {
+  const vw = viewport.clientWidth || 800, vh = viewport.clientHeight || 600;
+  const isPortrait = vw <= 540 || vh > vw * 1.05;
+  if (isPortrait) {
+    // Dikey telefonda otel ve ön kaldırım + yaya geçidini üst yarıya ortala; alt yarı menü sisi için açık kalır
+    zoom = clamp(Math.min(vw / 1080, vh / 1380) * 1.15, 0.38, 0.72);
+    const p = iso(1060, 500, 20);
+    camCenter = { x: p.x + 10, y: -p.y - 310 };
+  } else {
+    // Yatay / masaüstünde otel ve caddeyi sağ %60 alana çerçevele; sol taraf menü sisidir
+    zoom = clamp(Math.min(vw / 1650, vh / 1020) * 1.02, 0.45, 1.28);
+    const shiftFrac = vw < 800 ? 0.21 : 0.16;
+    const p = iso(920, 460, 30);
+    camCenter = { x: p.x - Math.round(vw * shiftFrac / zoom), y: -p.y + 10 };
+  }
+  applyCam();
+}
 function fitView() {
+  if (typeof inMenu !== "undefined" && inMenu) {
+    fitMenuCamera();
+    return;
+  }
   const vw = viewport.clientWidth || 800, vh = viewport.clientHeight || 600;
   const worldW = 1650, worldH = 1020;
   zoom = clamp(Math.min(vw / worldW, vh / worldH) * 1.12, 0.48, 1.45);
@@ -13200,6 +13298,7 @@ function isoBoxSilhouette(u0, v0, u1, v1, z0, z1) {
 }
 
 function isoLabel(txt, u, v, z, fontSize = 14, fg = "#3a281f", bg = "#fffdf5", padX = 7, padY = 3.5) {
+  if (typeof inMenu !== "undefined" && inMenu && bg !== null) return [];
   const p = iso(u, v, z);
   ctx.save();
   ctx.font = "900 " + fontSize + "px 'Segoe UI', Roboto, Arial, sans-serif";
@@ -17171,6 +17270,10 @@ function drawWorld() {
     const pt = iso(uvz.u, uvz.v, uvz.z);
     return { p, uvz, pt };
   }).filter(mp => !mp.uvz.hidden);
+  if (typeof inMenu !== "undefined" && inMenu && typeof getMenuAmbientMappedPawns === "function") {
+    const amb = getMenuAmbientMappedPawns();
+    for (let i = 0; i < amb.length; i++) mappedPawns.push(amb[i]);
+  }
   mappedPawns.sort((a, b) => a.pt.y - b.pt.y);
   for (const mp of mappedPawns) {
     drawIsoPawn(mp.p, mp.pt, mp.uvz);
@@ -22241,6 +22344,153 @@ function updateCarsAndBirds(dt) {
   }
 }
 
+// ===== BAŞLANGIÇ MENÜSÜ CANLI ÇEVRE İNSANLARI (KAYDA DOKUNMAZ) =====
+const _MENU_AMBIENT_DEFS = [
+  {
+    // Otel önü kaldırımında kuzeyden güneye gezen misafir
+    u: 1296, v: -180, speed: 34, skin: "#fcd9b8", hair: "#3a2414", shirt: "#e05a47", isGuest: true, mood: "happy",
+    waypoints: [{ u: 1296, v: -240, pause: 1.2 }, { u: 1296, v: 460, pause: 1.5 }, { u: 1296, v: 920, pause: 2.0 }, { u: 1296, v: 360, pause: 0.8 }]
+  },
+  {
+    // Kaldırımda güneyden gelip lobi önünde bekleyen / gezen VIP konuk
+    u: 1316, v: 1120, speed: 30, skin: "#f4c7a1", hair: "#1f1815", shirt: "#f59e0b", isVip: true, mood: "happy",
+    waypoints: [{ u: 1316, v: 1180, pause: 1.0 }, { u: 1316, v: 540, pause: 1.8 }, { u: 1220, v: 505, pause: 2.4 }, { u: 1316, v: 540, pause: 0.6 }, { u: 1316, v: 980, pause: 1.4 }]
+  },
+  {
+    // Yaya geçidinden karşı parka geçen ziyaretçi (araba yakınsa bekler)
+    u: 1312, v: 486, speed: 38, skin: "#ffdfc4", hair: "#7c3f1d", shirt: "#0ea5e9", isGuest: true, mood: "happy",
+    waypoints: [{ u: 1312, v: 486, pause: 1.8 }, { u: 1582, v: 486, pause: 1.6 }, { u: 1582, v: 780, pause: 2.2 }, { u: 1582, v: 486, pause: 1.0 }]
+  },
+  {
+    // Park karşı kaldırımında otobüs durağı & gölet arası yürüyüş yapan kişi
+    u: 1592, v: 60, speed: 33, skin: "#e8b48a", hair: "#111827", shirt: "#10b981", mood: "happy",
+    waypoints: [{ u: 1592, v: -120, pause: 1.4 }, { u: 1592, v: 560, pause: 1.2 }, { u: 1592, v: 980, pause: 2.5 }, { u: 1592, v: 300, pause: 0.8 }]
+  },
+  {
+    // Gazeteci / kurye otel önü kaldırım boyunca hızlı adımlarla geçer
+    u: 1284, v: 760, speed: 44, skin: "#fcd9b8", hair: "#4a2c11", shirt: "#4b5563", isPaperboy: true, mood: "happy",
+    waypoints: [{ u: 1284, v: -340, pause: 0.9 }, { u: 1284, v: 465, pause: 1.6 }, { u: 1205, v: 472, pause: 1.8 }, { u: 1284, v: 465, pause: 0.5 }, { u: 1284, v: 1320, pause: 1.0 }]
+  },
+  {
+    // Kahve & dondurma büfesi civarında dolaşan ziyaretçi
+    u: 1572, v: 860, speed: 29, skin: "#fbd5b5", hair: "#92400e", shirt: "#ec4899", mood: "happy",
+    waypoints: [{ u: 1572, v: 740, pause: 2.6 }, { u: 1572, v: 1080, pause: 1.6 }, { u: 1572, v: 910, pause: 2.0 }]
+  },
+  {
+    // Sağ bahçe / tenis kulübü kenarında yürüyen temizlik personeli
+    u: 1188, v: 820, speed: 31, skin: "#fcd9b8", hair: "#2b1d12", shirt: "#38bdf8", isCleaner: true, mood: "happy",
+    waypoints: [{ u: 1188, v: 580, pause: 1.5 }, { u: 1188, v: 1180, pause: 1.8 }, { u: 840, v: 1212, pause: 2.2 }, { u: 1188, v: 1180, pause: 0.9 }]
+  },
+  {
+    // Otopark / sol bahçe önünde gezen konuk
+    u: 1202, v: 180, speed: 30, skin: "#f0c29e", hair: "#33221a", shirt: "#8b5cf6", isGuest: true, mood: "happy",
+    waypoints: [{ u: 1202, v: -120, pause: 1.8 }, { u: 1202, v: 390, pause: 2.0 }, { u: 1304, v: 390, pause: 1.2 }, { u: 1304, v: -60, pause: 1.5 }]
+  }
+];
+
+let menuAmbientActors = [];
+let menuAmbientInitDone = false;
+
+function seedInitialMenuTraffic() {
+  if (typeof cars !== "undefined" && cars.length < 2 && typeof spawnCar === "function") {
+    spawnCar(-380);
+    spawnCar(760);
+  }
+  if (typeof birds !== "undefined" && birds.length === 0 && typeof spawnBirdFlock === "function") {
+    spawnBirdFlock(320);
+  }
+}
+
+function initMenuAmbient() {
+  seedInitialMenuTraffic();
+  if (menuAmbientInitDone && menuAmbientActors.length > 0) return;
+  menuAmbientInitDone = true;
+  menuAmbientActors = _MENU_AMBIENT_DEFS.map((def, idx) => ({
+    u: def.u,
+    v: def.v,
+    z: 0,
+    speed: def.speed,
+    waypoints: def.waypoints,
+    wpIdx: 1 % def.waypoints.length,
+    pauseLeft: (idx % 3) * 0.45,
+    pawn: {
+      skin: def.skin,
+      hair: def.hair,
+      shirt: def.shirt,
+      isGuest: !!def.isGuest,
+      isVip: !!def.isVip,
+      isPaperboy: !!def.isPaperboy,
+      isCleaner: !!def.isCleaner,
+      mood: def.mood || "happy",
+      facing: 1,
+      moving: true,
+      animT: idx * 1.1,
+      scale: 0.94
+    }
+  }));
+}
+
+function _isCarNearCrosswalk() {
+  if (typeof cars === "undefined" || !Array.isArray(cars) || cars.length === 0) return false;
+  const tw = typeof TotalW === "number" ? TotalW : 2400;
+  for (let i = 0; i < cars.length; i++) {
+    const c = cars[i];
+    const t = (c.x + 2100) / Math.max(1, tw + 4200);
+    const v = -1150 + t * 3400;
+    if (v > 320 && v < 660) return true;
+  }
+  return false;
+}
+
+function updateMenuAmbient(dt) {
+  if (!menuAmbientInitDone || menuAmbientActors.length === 0) initMenuAmbient();
+  for (let i = 0; i < menuAmbientActors.length; i++) {
+    const a = menuAmbientActors[i];
+    if (a.pauseLeft > 0) {
+      a.pauseLeft -= dt;
+      a.pawn.moving = false;
+      continue;
+    }
+    const wp = a.waypoints[a.wpIdx];
+    const du = wp.u - a.u;
+    const dv = wp.v - a.v;
+    const dist = Math.hypot(du, dv);
+    if (dist < 4) {
+      a.u = wp.u;
+      a.v = wp.v;
+      a.pauseLeft = wp.pause || 1.0;
+      a.wpIdx = (a.wpIdx + 1) % a.waypoints.length;
+      a.pawn.moving = false;
+      continue;
+    }
+    // Yaya geçidi kenarında araç geçiyorsa nazikçe bekle
+    const approachingRoad = (a.u <= 1350 && wp.u > 1350) || (a.u >= 1530 && wp.u < 1530);
+    if (approachingRoad && Math.abs(a.v - 486) < 40 && _isCarNearCrosswalk()) {
+      a.pawn.moving = false;
+      continue;
+    }
+    const step = Math.min(dist, a.speed * dt);
+    const ux = du / dist, vx = dv / dist;
+    a.u += ux * step;
+    a.v += vx * step;
+    const screenDx = (vx - ux);
+    if (Math.abs(screenDx) > 0.08) a.pawn.facing = screenDx >= 0 ? 1 : -1;
+    a.pawn.moving = true;
+    a.pawn.animT += dt * 7.8;
+  }
+}
+
+function getMenuAmbientMappedPawns() {
+  if (!menuAmbientInitDone || menuAmbientActors.length === 0) return [];
+  const out = [];
+  for (let i = 0; i < menuAmbientActors.length; i++) {
+    const a = menuAmbientActors[i];
+    const uvz = { u: a.u, v: a.v, z: a.z, inPool: false };
+    out.push({ p: a.pawn, uvz, pt: iso(a.u, a.v, a.z) });
+  }
+  return out;
+}
+
 // ===== BUNDLED: render/loop.js =====
 // [render/loop.js] Ana oyun döngüsü ve başlatma (bootstrap)
 // ===== ANA OYUN DÖNGÜSÜ =====
@@ -22255,7 +22505,11 @@ function loop(now) {
   updateCarsAndBirds(dt);
 
   if (inMenu) {
-    drawMenuLogo();
+    if (typeof updateMenuAmbient === "function") updateMenuAmbient(dt);
+    updateParticles(dt);
+    if (typeof menuLogoCanvas !== "undefined" && menuLogoCanvas && menuLogoCanvas.offsetParent !== null) {
+      drawMenuLogo();
+    }
     drawWorld();
     requestAnimationFrame(loop);
     return;
@@ -22665,6 +22919,7 @@ if (hadSavedGame) {
 }
 refresh();
 if (typeof updateThemeButtons === "function") updateThemeButtons();
+if (typeof initMenuAmbient === "function") initMenuAmbient();
 fitView();
 requestAnimationFrame(loop);
 
