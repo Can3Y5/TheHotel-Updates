@@ -1,8 +1,8 @@
 {
-  "versionCode": 75,
-  "versionName": "1.9.67-beta",
+  "versionCode": 76,
+  "versionName": "1.9.68-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Firebase ile bulut kayit, baska otelleri ziyaret modu ve misafir defteri eklendi"
+  "notes": "Firebase bulut kayit (Anonim ve E-posta/Sifre -> /saves/{uid}) sadeleştirildi"
 }

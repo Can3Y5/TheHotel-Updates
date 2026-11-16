@@ -1509,63 +1509,27 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
   .decor-btn { font-size: 10.5px; padding: 6px 8px; }
 }
 
-/* ===== ONLINE BULUT & OTEL ZIYARET MODU ===== */
+/* ===== BULUT KAYIT & HESAP MODALI ===== */
 #btn-online-menu {
   background: linear-gradient(90deg, rgba(224,242,254,0.92), rgba(224,242,254,0.28));
   color: #0c4a6e; font-size: clamp(13px, 2.2vw, 15px); font-weight: 900; padding: 8px 12px;
 }
-body.is-visiting-mode #top-bar,
-body.is-visiting-mode #left-hud-top,
-body.is-visiting-mode #left-hud-bottom,
-body.is-visiting-mode #right-hud,
-body.is-visiting-mode #bottom-dock,
-body.is-visiting-mode #log-text,
-body.is-visiting-mode #in-game-theme-panel,
-body.is-visiting-mode #bottom-area {
-  display: none !important;
-}
-#visit-banner {
-  position: fixed; top: calc(10px + var(--sat)); left: 50%; transform: translateX(-50%);
-  width: min(94%, 760px); z-index: 29; display: none;
-  background: rgba(255, 252, 242, 0.96); border: 2.5px solid #3a281f; border-radius: 14px;
-  padding: 8px 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.32);
-  align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
-}
-body.is-visiting-mode #visit-banner { display: flex; }
-.vb-left { display: flex; flex-direction: column; min-width: 140px; }
-#visit-banner-title { font-size: 14px; font-weight: 900; color: #3a281f; }
-#visit-banner-meta { font-size: 11px; font-weight: 700; color: #6e523a; }
-#visit-floor-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-.vf-btn {
-  padding: 4px 8px; border: 1.5px solid #3a281f; border-radius: 6px;
-  background: #ffffff; color: #3a281f; font-size: 11px; font-weight: 800; cursor: pointer;
-}
-.vf-btn.active { background: #ffd93b; }
-.vb-actions { display: flex; gap: 6px; }
-.vb-btn {
-  padding: 6px 10px; border: 2px solid #3a281f; border-radius: 8px;
-  font-size: 11.5px; font-weight: 900; color: #3a281f; cursor: pointer;
-  box-shadow: 0 2px 0 #3a281f;
-}
-.vb-btn.gb { background: #dbeafe; }
-.vb-btn.exit { background: #ffd6a5; }
-
-#online-modal, #visit-guestbook-modal {
+#online-modal {
   position: absolute; inset: 0; background: rgba(10, 14, 22, 0.74);
   display: none; align-items: center; justify-content: center; z-index: 38; padding: 14px;
 }
-.onl-box, .vgb-box {
-  width: 100%; max-width: 480px; max-height: 88vh;
+.onl-box {
+  width: 100%; max-width: 440px; max-height: 88vh;
   background: #fffcf2; border: 3px solid #3a281f; border-radius: 16px;
   padding: 14px; display: flex; flex-direction: column; gap: 10px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.52); overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.52); overflow-y: auto;
 }
 .onl-header {
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 2px solid #3a281f; padding-bottom: 8px; gap: 8px;
 }
 .onl-title { font-size: 15px; font-weight: 900; color: #3a281f; }
-#btn-close-online, #btn-close-visit-gb {
+#btn-close-online {
   background: #fa9999; border: 2px solid #3a281f; border-radius: 6px;
   padding: 4px 10px; font-size: 12px; font-weight: 800; color: #3a281f; cursor: pointer;
 }
@@ -1591,68 +1555,38 @@ body.is-visiting-mode #visit-banner { display: flex; }
 }
 #onl-account-card {
   display: flex; flex-direction: column; gap: 8px;
-  background: #ffffff; border: 2px solid #3a281f; border-radius: 10px; padding: 9px;
+  background: #ffffff; border: 2px solid #3a281f; border-radius: 10px; padding: 10px;
 }
 .onl-acc-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
 #onl-user-status { font-size: 12px; font-weight: 900; color: #3a281f; }
 .onl-acc-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+.onl-email-form {
+  display: flex; flex-direction: column; gap: 6px;
+  border-top: 1.5px dashed rgba(58,40,31,0.18); padding-top: 8px;
+}
+.onl-email-form input {
+  width: 100%; border: 1.5px solid #3a281f; border-radius: 7px; padding: 6px 9px;
+  font-size: 12px; font-weight: 700; color: #1e293b; background: #fffdf8;
+  user-select: text; -webkit-user-select: text;
+}
+.onl-email-btns { display: flex; gap: 6px; }
+.onl-email-btns .onl-btn { flex: 1; text-align: center; }
 #onl-sync-row {
   display: none; align-items: center; justify-content: space-between; gap: 8px;
-  border-top: 1.5px dashed rgba(58,40,31,0.22); padding-top: 7px; flex-wrap: wrap;
+  border-top: 1.5px dashed rgba(58,40,31,0.22); padding-top: 8px; flex-wrap: wrap;
 }
 #onl-cloud-meta { font-size: 11px; font-weight: 700; color: #5a3e26; }
-.onl-sync-btns { display: flex; gap: 6px; }
-.onl-btn, .onl-mini-btn {
-  padding: 5px 9px; border: 1.5px solid #3a281f; border-radius: 7px;
-  font-size: 11px; font-weight: 800; color: #3a281f; cursor: pointer; background: #f1f5f9;
+.onl-sync-btns { display: flex; gap: 6px; width: 100%; }
+.onl-sync-btns .onl-btn { flex: 1; }
+.onl-btn {
+  padding: 6px 10px; border: 1.5px solid #3a281f; border-radius: 7px;
+  font-size: 11.5px; font-weight: 800; color: #3a281f; cursor: pointer; background: #f1f5f9;
 }
 .onl-btn.google { background: #dbeafe; }
 .onl-btn.guest { background: #fef3c7; }
 .onl-btn.up { background: #bbf7d0; }
 .onl-btn.down { background: #e0e7ff; }
 .onl-btn.out { background: #fee2e2; }
-.onl-dir-head {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 12.5px; font-weight: 900; color: #3a281f;
-}
-#onl-hotels-list, #visit-gb-list {
-  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;
-  max-height: 36vh; padding-right: 2px;
-}
-.onl-hotel-item {
-  display: flex; align-items: center; gap: 8px; background: #ffffff;
-  border: 2px solid #3a281f; border-radius: 10px; padding: 7px 9px;
-}
-.onl-hotel-item.is-me { background: #fffbeb; border-color: #d97706; }
-.ohi-rank { font-size: 13px; font-weight: 900; color: #78350f; min-width: 24px; }
-.ohi-info { flex: 1; min-width: 0; }
-.ohi-name { font-size: 12.5px; font-weight: 900; color: #3a281f; }
-.ohi-me-tag { background: #fef08a; border: 1px solid #3a281f; border-radius: 4px; font-size: 9.5px; padding: 0 4px; }
-.ohi-sub { font-size: 10.5px; font-weight: 700; color: #64748b; }
-.ohi-right { display: flex; align-items: center; gap: 6px; }
-.ohi-rep { font-size: 11px; font-weight: 900; color: #3a281f; }
-.ohi-visit-btn {
-  background: #bae6fd; border: 1.5px solid #3a281f; border-radius: 7px;
-  padding: 5px 8px; font-size: 11px; font-weight: 900; color: #0c4a6e; cursor: pointer;
-}
-.onl-empty { font-size: 11.5px; font-weight: 700; color: #64748b; text-align: center; padding: 14px 8px; }
-.onl-empty.is-err { color: #b91c1c; }
-.vgb-form { display: flex; flex-direction: column; gap: 6px; background: #fff6e0; border: 1.5px solid #3a281f; border-radius: 10px; padding: 8px; }
-.vgb-form-row { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: #3a281f; }
-#visit-gb-rating { border: 1.5px solid #3a281f; border-radius: 6px; padding: 3px 6px; font-weight: 800; }
-#visit-gb-note {
-  border: 1.5px solid #3a281f; border-radius: 6px; padding: 6px 8px; font-size: 12px;
-  user-select: text; -webkit-user-select: text;
-}
-#btn-send-visit-gb {
-  background: #8ce099; border: 2px solid #3a281f; border-radius: 8px;
-  padding: 7px; font-weight: 900; font-size: 12px; color: #3a281f; cursor: pointer;
-}
-.vgb-item { background: #ffffff; border: 1.5px solid #3a281f; border-radius: 8px; padding: 7px 9px; }
-.vgb-top { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; color: #3a281f; }
-.vgb-stars { color: #d97706; }
-.vgb-note { font-size: 12px; color: #1e293b; margin: 3px 0; }
-.vgb-time { font-size: 10px; color: #64748b; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1702,7 +1636,7 @@ body.is-visiting-mode #visit-banner { display: flex; }
         <button class="sub-icon-btn" id="hud-rotate-btn" title="Yatay / Dikey Görünüm">🔄</button>
         <button class="sub-icon-btn" id="hud-theme-btn" title="Otel Teması">🎨</button>
         <button class="sub-icon-btn" id="hud-garden-btn" title="Bahçe Süsleri (💎)">🌳</button>
-        <button class="sub-icon-btn" id="hud-online-btn" title="Online Bulut & Otel Ziyareti">🌐</button>
+        <button class="sub-icon-btn" id="hud-online-btn" title="Bulut Kayıt &amp; Hesap">☁️</button>
         <button class="sub-icon-btn" id="hud-gear-btn" title="Menü & Ayarlar">⚙️</button>
       </div>
     </div>
@@ -1872,7 +1806,7 @@ body.is-visiting-mode #visit-banner { display: flex; }
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.67-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.68-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -1913,7 +1847,7 @@ body.is-visiting-mode #visit-banner { display: flex; }
         </div>
         <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
         <button id="btn-new-game" class="m-btn" style="display:none">🆕 YENİ OYUN BAŞLAT</button>
-        <button id="btn-online-menu" class="m-btn">🌐 BULUT &amp; OTEL ZİYARETİ</button>
+        <button id="btn-online-menu" class="m-btn">☁️ BULUT KAYIT &amp; HESAP</button>
         <div id="newgame-confirm-box">
           <div class="ngc-text">⚠️ Mevcut kayıtlı otel silinecek ve 1. günden sıfırdan yeni bir oyun başlayacak. Emin misin?</div>
           <div class="ngc-row">
@@ -1958,29 +1892,17 @@ body.is-visiting-mode #visit-banner { display: flex; }
       </div>
     </div>
   </div>
-  <!-- ZİYARET MODU ÜST ŞERİDİ -->
-  <div id="visit-banner">
-    <div class="vb-left">
-      <div id="visit-banner-title">✈️ ZİYARET: HoteLore</div>
-      <div id="visit-banner-meta">Sahip: Otelci • Gün 1</div>
-    </div>
-    <div id="visit-floor-tabs"></div>
-    <div class="vb-actions">
-      <button type="button" id="btn-visit-guestbook" class="vb-btn gb">📝 Misafir Defteri</button>
-      <button type="button" id="btn-exit-visit" class="vb-btn exit">🏠 Otelime Dön</button>
-    </div>
-  </div>
-  <!-- ONLİNE & BULUT MODALI -->
+  <!-- BULUT KAYIT & HESAP MODALI -->
   <div id="online-modal">
     <div class="onl-box">
       <div class="onl-header">
-        <div class="onl-title">🌐 HoteLore Online — Bulut &amp; Otel Ziyareti</div>
+        <div class="onl-title">☁️ HoteLore — Bulut Kayıt &amp; Hesap</div>
         <button type="button" id="btn-close-online">✕ Kapat</button>
       </div>
       <div id="onl-status-msg"></div>
       <div id="onl-config-box">
         <div class="onl-cfg-title">🔧 Firebase Bağlantı Ayarı</div>
-        <div class="onl-cfg-desc">Firebase Console → Proje Ayarları → Web Uygulaması altındaki <code>firebaseConfig</code> nesnesini yapıştır:</div>
+        <div class="onl-cfg-desc">Firebase Console → Proje Ayarları → Web Uygulaması altındaki <code>firebaseConfig</code> bloğunu yapıştır:</div>
         <textarea id="onl-config-input" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..." }'></textarea>
         <button type="button" id="btn-save-fb-config">🔗 Firebase Projeyi Bağla</button>
       </div>
@@ -1988,49 +1910,27 @@ body.is-visiting-mode #visit-banner { display: flex; }
         <div class="onl-acc-top">
           <div id="onl-user-status">🔌 Çevrimdışı</div>
           <div class="onl-acc-btns">
-            <button type="button" id="btn-login-google" class="onl-btn google">🔵 Google ile Giriş Yap</button>
             <button type="button" id="btn-login-guest" class="onl-btn guest">👤 Misafir Girişi</button>
             <button type="button" id="btn-logout-online" class="onl-btn out">Çıkış</button>
             <button type="button" id="btn-reset-fb-config" class="onl-btn reset" title="Firebase Ayarını Sıfırla">⚙️</button>
           </div>
         </div>
+        <div id="onl-email-row" class="onl-email-form">
+          <input id="onl-email-input" type="email" placeholder="E-posta adresi..." />
+          <input id="onl-pass-input" type="password" placeholder="Şifre (en az 6 karakter)..." />
+          <div class="onl-email-btns">
+            <button type="button" id="btn-login-email" class="onl-btn google">🔑 Giriş Yap</button>
+            <button type="button" id="btn-register-email" class="onl-btn up">📝 Kayıt Ol</button>
+          </div>
+        </div>
         <div id="onl-sync-row">
           <div id="onl-cloud-meta">☁️ Bulut kaydı hazır</div>
           <div class="onl-sync-btns">
-            <button type="button" id="btn-cloud-upload" class="onl-btn up">☁️ Buluta Yedekle</button>
-            <button type="button" id="btn-cloud-download" class="onl-btn down">⬇ Buluttan İndir</button>
+            <button type="button" id="btn-cloud-upload" class="onl-btn up">☁️ Buluta Kaydet</button>
+            <button type="button" id="btn-cloud-download" class="onl-btn down">⬇ Buluttan Yükle</button>
           </div>
         </div>
       </div>
-      <div class="onl-dir-head">
-        <span>🏨 Ziyaret Edilebilir Oteller</span>
-        <button type="button" id="btn-refresh-hotels" class="onl-mini-btn">🔄 Yenile</button>
-      </div>
-      <div id="onl-hotels-list"></div>
-    </div>
-  </div>
-  <!-- ZİYARET MİSAFİR DEFTERİ MODALI -->
-  <div id="visit-guestbook-modal">
-    <div class="vgb-box">
-      <div class="onl-header">
-        <div class="onl-title" id="visit-gb-title">📝 Misafir Defteri</div>
-        <button type="button" id="btn-close-visit-gb">✕ Kapat</button>
-      </div>
-      <div class="vgb-form">
-        <div class="vgb-form-row">
-          <label for="visit-gb-rating">Puan:</label>
-          <select id="visit-gb-rating">
-            <option value="5">★★★★★ (5)</option>
-            <option value="4">★★★★☆ (4)</option>
-            <option value="3">★★★☆☆ (3)</option>
-            <option value="2">★★☆☆☆ (2)</option>
-            <option value="1">★☆☆☆☆ (1)</option>
-          </select>
-        </div>
-        <input id="visit-gb-note" type="text" maxlength="160" placeholder="Bu otele kısa bir misafir notu bırak..." />
-        <button type="button" id="btn-send-visit-gb">📩 Notu Gönder</button>
-      </div>
-      <div id="visit-gb-list"></div>
     </div>
   </div>
   <!-- AÇILIR KONTROL ÇEKMECESİ VE PAZARLIK KARTI -->
@@ -4996,7 +4896,6 @@ function serializeSaveRaw() {
 
 function saveGame() {
   try {
-    if (typeof window !== "undefined" && window.isVisitingMode) return;
     const raw = serializeSaveRaw();
     if (!raw) return;
     try { localStorage.setItem(SAVE_KEY, raw); } catch (_) {}
@@ -5530,117 +5429,6 @@ function loadGame() {
       raw = window.name.slice("THEHOTEL_SAVE_V200:".length);
     }
     return applySaveRaw(raw);
-  } catch (_) {
-    return false;
-  }
-}
-
-function buildPublicHotelSnapshot() {
-  const activeTheme = (typeof cosmetics === "object" && cosmetics && cosmetics.roomTheme) ? cosmetics.roomTheme : "classic";
-  const builtFloors = floors.map(fl => ({
-    state: fl.state,
-    slots: fl.slots.map(s => {
-      const compact = { t: s.type, p: s.parcelBuilt ? 1 : 0 };
-      if (s.hasTree) compact.tr = 1;
-      if (s.type === "Empty" && !s.parcelBuilt) return compact;
-      if (s.hasEnsuite) compact.e = 1;
-      if (s.roomNo) compact.rn = s.roomNo;
-      if (s.hasDoor) compact.d = 1;
-      if (s.doorWall) compact.dw = s.doorWall;
-      if (s.hasBalcony) compact.b = 1;
-      if (s.wall) compact.w = s.wall;
-      if (s.picColor) compact.pc = s.picColor;
-      if (s.level && s.level > 1) compact.lv = s.level;
-      if (s.gymLevel > 1) compact.gl = s.gymLevel;
-      if (s.spaLevel > 1) compact.sl = s.spaLevel;
-      if (s.cafeLevel > 1) compact.cl = s.cafeLevel;
-      if (s.tennisState && s.tennisState !== "Ruin") compact.ts = s.tennisState;
-      if (Array.isArray(s.items) && s.items.some(Boolean)) {
-        compact.it = s.items.map(v => v ? 1 : 0);
-      }
-      if (s.furnLayout && Object.keys(s.furnLayout).length > 0) compact.fl = s.furnLayout;
-      return compact;
-    })
-  }));
-  return JSON.stringify({
-    v: 1,
-    hotelName: (hotelName || "HoteLore").slice(0, 18),
-    roomTheme: activeTheme,
-    day: Math.max(1, Math.floor(Number(day) || 1)),
-    parkState,
-    storageState,
-    storageLevel,
-    dormState,
-    dormLevel,
-    kitchenState,
-    cookLevel,
-    decor: (typeof cloneDecorState === "function") ? cloneDecorState() : {},
-    floors: builtFloors
-  });
-}
-
-function applyPublicHotelSnapshot(snapJson) {
-  try {
-    const snap = (typeof snapJson === "string") ? JSON.parse(snapJson) : snapJson;
-    if (!snap || !Array.isArray(snap.floors)) return false;
-    guests.length = 0; queue.length = 0; pawns.length = 0; cleaners.length = 0;
-    shipments.length = 0; trucks.length = 0; dirts.length = 0;
-    storageWorkers.length = 0; dormWorkers.length = 0; kitchenWorkers.length = 0; parkWorkers.length = 0;
-    receptionistPawn = null; securityPawn = null; cookPawn = null; paperboyPawn = null;
-    hotelName = String(snap.hotelName || "HoteLore").slice(0, 18);
-    if (typeof setCosmetic === "function") setCosmetic("roomTheme", snap.roomTheme || "classic", true);
-    day = Math.max(1, Math.floor(Number(snap.day) || 1));
-    isNight = false;
-    dayTimer = DayLength * 0.34;
-    isOpen = true;
-    gasLeak = false;
-    parkState = snap.parkState || "Locked";
-    storageState = snap.storageState || "Locked";
-    storageLevel = snap.storageLevel || 1;
-    dormState = snap.dormState || "Locked";
-    dormLevel = snap.dormLevel || 1;
-    kitchenState = snap.kitchenState || "Locked";
-    cookLevel = snap.cookLevel || 0;
-    if (typeof resetDecorState === "function") resetDecorState(snap.decor || {});
-    for (let f = 0; f < FloorCount && f < snap.floors.length; f++) {
-      const flData = snap.floors[f];
-      const fl = floors[f];
-      fl.state = flData.state || (f === 0 ? "Built" : "Locked");
-      fl.workers.length = 0;
-      if (Array.isArray(flData.slots)) {
-        for (let i = 0; i < flData.slots.length && i < fl.slots.length; i++) {
-          const sd = flData.slots[i];
-          const s = fl.slots[i];
-          s.type = sd.t || "Empty";
-          s.parcelBuilt = !!sd.p;
-          s.hasTree = !!sd.tr;
-          s.hasEnsuite = !!sd.e;
-          s.roomNo = sd.rn || 0;
-          s.hasDoor = !!sd.d;
-          s.doorWall = sd.dw || null;
-          s.hasBalcony = !!(sd.b && f >= 1);
-          s.wall = sd.w || s.wall;
-          s.picColor = sd.pc || s.picColor;
-          s.level = sd.lv || 1;
-          s.gymLevel = sd.gl || 1;
-          s.spaLevel = sd.sl || 1;
-          s.cafeLevel = sd.cl || 1;
-          s.tennisState = sd.ts || (s.type === "TennisClub" ? "Ruin" : null);
-          s.hasCorpse = false;
-          s.onFire = false;
-          s.guest = null;
-          s.maintenance = 100;
-          for (let k = 0; k < ItemCount; k++) s.items[k] = !!(Array.isArray(sd.it) && sd.it[k]);
-          s.furnLayout = (sd.fl && typeof sd.fl === "object") ? JSON.parse(JSON.stringify(sd.fl)) : {};
-        }
-      }
-    }
-    viewFloor = 0;
-    applySeason();
-    updateDayNight();
-    if (typeof resetParcelLayerCache === "function") resetParcelLayerCache();
-    if (typeof invalidateLayerCache === "function") invalidateLayerCache();
-    return true;
   } catch (_) {
     return false;
   }
@@ -12366,8 +12154,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 75;
-const APP_VERSION_NAME = "1.9.67-beta";
+const APP_VERSION_CODE = 76;
+const APP_VERSION_NAME = "1.9.68-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12375,10 +12163,16 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
-    ver: "v1.9.67-beta",
-    title: "Firebase Online: Bulut Kayıt, Otel Ziyareti & Misafir Defteri",
+    ver: "v1.9.68-beta",
+    title: "Bulut Kayıt Sadeleştirme (Anonim & E-posta/Şifre -> /saves/{uid})",
     latest: true,
-    notes: "• ☁️ Bulut Kayıt & Hesap Sistemi: Google veya Misafir girişi ile otel kaydını Firestore'a yedekle ve başka cihazdan yükle.\n• 🏨 Otel Ziyaret Modu & Misafir Defteri: Diğer oyuncuların kurduğu otelleri salt-okunur modda gez, katları incele ve yıldızlı misafir defteri notu bırak."
+    notes: "• ☁️ Bulut Kayıt Sistemi: Anonim (Misafir) ve E-posta/Şifre girişi ile doğrudan Firestore /saves/{uid} üzerinden cihazlar arası kayıt yedekleme ve yükleme."
+  },
+  {
+    ver: "v1.9.67-beta",
+    title: "Firebase Bulut Kayıt Altyapısı",
+    latest: false,
+    notes: "• ☁️ Firebase Web SDK ve bulut senkronizasyonu eklendi."
   },
   {
     ver: "v1.9.66-beta",
@@ -13581,7 +13375,6 @@ function pointInPoly(px, py, poly) {
 }
 
 function handleWorldTap(appX, appY) {
-  if (typeof window !== "undefined" && window.isVisitingMode) return;
   const cw = viewport.clientWidth, ch = viewport.clientHeight;
   const ix = camCenter.x + (appX - cw * 0.5) / zoom;
   const iy = -camCenter.y + (appY - ch * 0.5) / zoom;
@@ -13662,7 +13455,7 @@ function isoBoxSilhouette(u0, v0, u1, v1, z0, z1) {
 }
 
 function isoLabel(txt, u, v, z, fontSize = 14, fg = "#3a281f", bg = "#fffdf5", padX = 7, padY = 3.5) {
-  if (((typeof inMenu !== "undefined" && inMenu) || (typeof window !== "undefined" && window.isVisitingMode)) && bg !== null) return [];
+  if (typeof inMenu !== "undefined" && inMenu && bg !== null) return [];
   const p = iso(u, v, z);
   ctx.save();
   ctx.font = "900 " + fontSize + "px 'Segoe UI', Roboto, Arial, sans-serif";
@@ -22907,7 +22700,7 @@ function clearCustomFirebaseConfig() {
 }
 
 // ===== BUNDLED: online/firebase-service.js =====
-// [online/firebase-service.js] Firebase Auth, Bulut Kayit, Otel Rehberi & Misafir Defteri
+// [online/firebase-service.js] Firebase Auth (Anonymous + Email/Password) & /saves/{uid} Bulut Kayit
 const ONLINE_STATE = {
   initialized: false,
   sdkAvailable: false,
@@ -22956,7 +22749,6 @@ function initFirebaseOnline(forceReinit = false) {
     if (firebase.apps && firebase.apps.length > 0) {
       app = firebase.apps[0];
       if (forceReinit && app.options && app.options.projectId !== cfg.projectId) {
-        // Farklı proje girildiyse adlandırılmış uygulama kullan
         const existing = firebase.apps.find(a => a.name === "hotelore_" + cfg.projectId);
         app = existing || firebase.initializeApp(cfg, "hotelore_" + cfg.projectId);
       }
@@ -22988,17 +22780,23 @@ function initFirebaseOnline(forceReinit = false) {
 
 function _translateFirebaseError(err) {
   const code = (err && err.code) ? String(err.code) : "";
-  if (code === "auth/unauthorized-domain") {
-    return "Bu alan adı Firebase Console -> Authentication -> Authorized domains listesinde izinli değil.";
-  }
   if (code === "auth/operation-not-allowed") {
-    return "Bu giriş yöntemi Firebase Console -> Authentication -> Sign-in method bölümünde etkin değil.";
+    return "Bu giriş yöntemi Firebase Console -> Authentication -> Sign-in method altında etkin değil.";
   }
-  if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
-    return "Giriş penceresi kapatıldı veya engellendi. Misafir girişi de kullanabilirsin.";
+  if (code === "auth/invalid-email") {
+    return "Geçerli bir e-posta adresi gir.";
+  }
+  if (code === "auth/weak-password") {
+    return "Şifre en az 6 karakter olmalı.";
+  }
+  if (code === "auth/email-already-in-use") {
+    return "Bu e-posta adresiyle zaten bir hesap var. Giriş Yap butonunu kullan.";
+  }
+  if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
+    return "E-posta veya şifre hatalı.";
   }
   if (code === "permission-denied" || code === "firestore/permission-denied") {
-    return "Firestore güvenlik kuralları izin vermedi. firestore.rules dosyasını Firebase Console'da yayınlayın.";
+    return "Firestore kuralları izin vermedi. Rules sekmesinden kuralları kontrol et.";
   }
   return (err && err.message) ? err.message : "Bağlantı hatası oluştu.";
 }
@@ -23016,24 +22814,38 @@ async function signInOnlineGuest() {
   }
 }
 
-async function signInOnlineGoogle() {
+async function signInOnlineEmail(email, password) {
   const init = initFirebaseOnline();
   if (!init.ok) return init;
   try {
-    const provider = new firebase.auth.GoogleAuthProvider();
+    const res = await ONLINE_STATE.auth.signInWithEmailAndPassword(String(email || "").trim(), String(password || ""));
+    ONLINE_STATE.user = res.user;
+    notifyOnlineStateChange();
+    return { ok: true, user: res.user };
+  } catch (err) {
+    return { ok: false, error: _translateFirebaseError(err) };
+  }
+}
+
+async function registerOnlineEmail(email, password) {
+  const init = initFirebaseOnline();
+  if (!init.ok) return init;
+  const cleanEmail = String(email || "").trim();
+  const cleanPass = String(password || "");
+  try {
     let res;
-    if (ONLINE_STATE.user && ONLINE_STATE.user.isAnonymous && typeof ONLINE_STATE.user.linkWithPopup === "function") {
+    if (ONLINE_STATE.user && ONLINE_STATE.user.isAnonymous && firebase.auth.EmailAuthProvider) {
       try {
-        res = await ONLINE_STATE.user.linkWithPopup(provider);
+        const cred = firebase.auth.EmailAuthProvider.credential(cleanEmail, cleanPass);
+        res = await ONLINE_STATE.user.linkWithCredential(cred);
       } catch (linkErr) {
         if (linkErr && linkErr.code === "auth/credential-already-in-use") {
-          res = await ONLINE_STATE.auth.signInWithPopup(provider);
-        } else {
-          throw linkErr;
+          return { ok: false, error: "Bu e-posta zaten kayıtlı. Giriş Yap butonunu kullan." };
         }
+        throw linkErr;
       }
     } else {
-      res = await ONLINE_STATE.auth.signInWithPopup(provider);
+      res = await ONLINE_STATE.auth.createUserWithEmailAndPassword(cleanEmail, cleanPass);
     }
     ONLINE_STATE.user = res.user;
     notifyOnlineStateChange();
@@ -23056,37 +22868,20 @@ async function signOutOnline() {
   }
 }
 
-function _getPlayerDisplayName(user) {
-  if (user && user.displayName) return String(user.displayName).trim().slice(0, 32) || "Otelci";
-  if (user && user.email) return String(user.email).split("@")[0].slice(0, 32) || "Otelci";
-  if (user && user.uid) return "Misafir-" + String(user.uid).slice(0, 5).toUpperCase();
-  return "Otelci";
-}
-
-function _computePublicStats() {
+function _computeSaveMeta() {
   const cleanName = String((typeof hotelName === "string" && hotelName.trim()) ? hotelName.trim() : "HoteLore").slice(0, 24) || "HoteLore";
-  const theme = (typeof cosmetics === "object" && cosmetics && cosmetics.roomTheme) ? cosmetics.roomTheme : "classic";
-  const validTheme = (theme === "modern" || theme === "seaside") ? theme : "classic";
-  const builtFloorsCount = (typeof floors !== "undefined" && Array.isArray(floors))
-    ? Math.max(1, Math.min(4, floors.filter(f => f.state === "Built").length))
-    : 1;
-  const avgR = (typeof ratingCount === "number" && ratingCount > 0 && typeof ratingSum === "number")
-    ? Math.max(0, Math.min(5, Math.round((ratingSum / ratingCount) * 10) / 10))
-    : 0;
   return {
     hotelName: cleanName,
-    roomTheme: validTheme,
     day: Math.max(1, Math.floor(Number(typeof day !== "undefined" ? day : 1) || 1)),
     reputation: Math.max(0, Math.floor(Number(typeof reputation !== "undefined" ? reputation : 0) || 0)),
     builtRooms: Math.max(0, Math.floor(Number(typeof builtRooms !== "undefined" ? builtRooms : 0) || 0)),
-    floorCount: builtFloorsCount,
-    avgRating: avgR
+    versionCode: (typeof APP_VERSION_CODE === "number" && APP_VERSION_CODE >= 1) ? APP_VERSION_CODE : 1
   };
 }
 
 async function refreshCloudSaveMeta() {
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) return null;
-  const snap = await ONLINE_STATE.db.collection("users").doc(ONLINE_STATE.user.uid).collection("save").doc("main").get();
+  const snap = await ONLINE_STATE.db.collection("saves").doc(ONLINE_STATE.user.uid).get();
   if (snap.exists) {
     const d = snap.data();
     ONLINE_STATE.lastCloudMeta = {
@@ -23104,11 +22899,8 @@ async function refreshCloudSaveMeta() {
 }
 
 async function uploadCloudSave() {
-  if (typeof window !== "undefined" && window.isVisitingMode) {
-    return { ok: false, error: "Ziyaret modundayken buluta kayıt yapılamaz." };
-  }
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
-    return { ok: false, error: "Önce Firebase hesabıyla giriş yapmalısın." };
+    return { ok: false, error: "Önce Misafir veya E-posta ile giriş yapmalısın." };
   }
   if (ONLINE_STATE.syncBusy) return { ok: false, error: "Senkronizasyon zaten sürüyor." };
   ONLINE_STATE.syncBusy = true;
@@ -23117,41 +22909,25 @@ async function uploadCloudSave() {
     const uid = ONLINE_STATE.user.uid;
     const rawJson = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
     if (!rawJson || rawJson.length < 2) throw new Error("Yerel kayıt verisi oluşturulamadı.");
-    const stats = _computePublicStats();
+    const meta = _computeSaveMeta();
     const nowMs = Date.now();
-    const verCode = (typeof APP_VERSION_CODE === "number" && APP_VERSION_CODE >= 1) ? APP_VERSION_CODE : 1;
 
-    await ONLINE_STATE.db.collection("users").doc(uid).collection("save").doc("main").set({
+    await ONLINE_STATE.db.collection("saves").doc(uid).set({
       rawJson,
-      hotelName: stats.hotelName,
-      day: stats.day,
-      reputation: stats.reputation,
-      builtRooms: stats.builtRooms,
-      versionCode: verCode,
-      updatedAt: nowMs
-    });
-
-    const pubSnap = (typeof buildPublicHotelSnapshot === "function") ? buildPublicHotelSnapshot() : "{}";
-    await ONLINE_STATE.db.collection("hotels").doc(uid).set({
-      ownerUid: uid,
-      ownerName: _getPlayerDisplayName(ONLINE_STATE.user),
-      hotelName: stats.hotelName,
-      roomTheme: stats.roomTheme,
-      day: stats.day,
-      reputation: stats.reputation,
-      avgRating: stats.avgRating,
-      builtRooms: stats.builtRooms,
-      floorCount: stats.floorCount,
-      snapshot: pubSnap,
+      hotelName: meta.hotelName,
+      day: meta.day,
+      reputation: meta.reputation,
+      builtRooms: meta.builtRooms,
+      versionCode: meta.versionCode,
       updatedAt: nowMs
     });
 
     ONLINE_STATE.lastSyncMs = nowMs;
     ONLINE_STATE.lastCloudMeta = {
-      hotelName: stats.hotelName,
-      day: stats.day,
-      reputation: stats.reputation,
-      builtRooms: stats.builtRooms,
+      hotelName: meta.hotelName,
+      day: meta.day,
+      reputation: meta.reputation,
+      builtRooms: meta.builtRooms,
       updatedAt: nowMs
     };
     return { ok: true, updatedAt: nowMs };
@@ -23164,17 +22940,14 @@ async function uploadCloudSave() {
 }
 
 async function downloadCloudSave() {
-  if (typeof window !== "undefined" && window.isVisitingMode) {
-    return { ok: false, error: "Önce ziyaret modundan çıkmalısın." };
-  }
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
-    return { ok: false, error: "Önce Firebase hesabıyla giriş yapmalısın." };
+    return { ok: false, error: "Önce Misafir veya E-posta ile giriş yapmalısın." };
   }
   ONLINE_STATE.syncBusy = true;
   notifyOnlineStateChange();
   try {
     const uid = ONLINE_STATE.user.uid;
-    const docSnap = await ONLINE_STATE.db.collection("users").doc(uid).collection("save").doc("main").get();
+    const docSnap = await ONLINE_STATE.db.collection("saves").doc(uid).get();
     if (!docSnap.exists) {
       return { ok: false, error: "Bulutta bu hesaba ait kayıtlı otel bulunamadı." };
     }
@@ -23207,7 +22980,6 @@ async function downloadCloudSave() {
 }
 
 function scheduleOnlineAutoSync() {
-  if (typeof window !== "undefined" && window.isVisitingMode) return;
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user) return;
   if (typeof inMenu !== "undefined" && inMenu) return;
   const elapsed = Date.now() - (ONLINE_STATE.lastSyncMs || 0);
@@ -23215,155 +22987,14 @@ function scheduleOnlineAutoSync() {
   if (ONLINE_STATE.autoSyncTimer) return;
   ONLINE_STATE.autoSyncTimer = setTimeout(() => {
     ONLINE_STATE.autoSyncTimer = null;
-    if (ONLINE_STATE.initialized && ONLINE_STATE.user && !(typeof window !== "undefined" && window.isVisitingMode)) {
+    if (ONLINE_STATE.initialized && ONLINE_STATE.user) {
       uploadCloudSave().catch(() => {});
     }
   }, 1500);
 }
 
-async function fetchOnlineHotels(limitCount = 25) {
-  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
-    return { ok: false, error: "Otelleri görmek için önce giriş yapmalısın.", items: [] };
-  }
-  try {
-    const snap = await ONLINE_STATE.db.collection("hotels").orderBy("reputation", "desc").limit(limitCount).get();
-    const items = [];
-    snap.forEach(doc => {
-      const d = doc.data();
-      items.push(Object.assign({ id: doc.id }, d));
-    });
-    return { ok: true, items };
-  } catch (err) {
-    return { ok: false, error: _translateFirebaseError(err), items: [] };
-  }
-}
-
-async function fetchHotelGuestbook(hotelUid) {
-  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
-    return { ok: false, error: "Misafir defteri için giriş yapmalısın.", items: [] };
-  }
-  try {
-    const snap = await ONLINE_STATE.db.collection("hotels").doc(hotelUid).collection("guestbook").orderBy("createdAt", "desc").limit(40).get();
-    const items = [];
-    snap.forEach(doc => {
-      items.push(Object.assign({ id: doc.id }, doc.data()));
-    });
-    return { ok: true, items };
-  } catch (err) {
-    return { ok: false, error: _translateFirebaseError(err), items: [] };
-  }
-}
-
-async function submitGuestbookNote(hotelUid, rating, noteText, myHotelNameBackup) {
-  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
-    return { ok: false, error: "Not bırakmak için önce giriş yapmalısın." };
-  }
-  const cleanNote = String(noteText || "").trim().slice(0, 160);
-  if (!cleanNote) return { ok: false, error: "Lütfen kısa bir not yaz." };
-  const cleanRating = Math.max(1, Math.min(5, Math.round(Number(rating) || 5)));
-  const uid = ONLINE_STATE.user.uid;
-  const visitorHotel = String(myHotelNameBackup || "HoteLore").trim().slice(0, 24) || "HoteLore";
-  try {
-    await ONLINE_STATE.db.collection("hotels").doc(hotelUid).collection("guestbook").doc(uid).set({
-      visitorUid: uid,
-      visitorName: _getPlayerDisplayName(ONLINE_STATE.user),
-      visitorHotelName: visitorHotel,
-      rating: cleanRating,
-      note: cleanNote,
-      createdAt: Date.now()
-    });
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: _translateFirebaseError(err) };
-  }
-}
-
-// ===== BUNDLED: online/visit-mode.js =====
-// [online/visit-mode.js] Salt-Okunur Otel Ziyaret Modu Denetleyicisi
-window.isVisitingMode = false;
-let _visitBackupSaveRaw = "";
-let _visitBackupHotelName = "HoteLore";
-let _visitWasInMenu = false;
-let _currentVisitedHotel = null;
-
-function enterHotelVisitMode(hotelDoc) {
-  if (!hotelDoc || !hotelDoc.snapshot || typeof applyPublicHotelSnapshot !== "function") {
-    return { ok: false, error: "Otel görünüm verisi eksik." };
-  }
-  if (!window.isVisitingMode) {
-    if (typeof saveGame === "function") saveGame();
-    _visitBackupSaveRaw = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
-    _visitBackupHotelName = (typeof hotelName === "string" && hotelName) ? hotelName : "HoteLore";
-    _visitWasInMenu = (typeof inMenu !== "undefined") ? !!inMenu : false;
-  }
-
-  window.isVisitingMode = true;
-  _currentVisitedHotel = hotelDoc;
-  if (typeof document !== "undefined" && document.body) {
-    document.body.classList.add("is-visiting-mode");
-  }
-  if (typeof closeDrawer === "function") closeDrawer();
-  if (typeof setStartMenuActive === "function") {
-    setStartMenuActive(false);
-  } else if (typeof startScreen !== "undefined" && startScreen) {
-    inMenu = false;
-    startScreen.style.display = "none";
-    document.body.classList.remove("in-start-menu");
-  }
-
-  const ok = applyPublicHotelSnapshot(hotelDoc.snapshot);
-  if (!ok) {
-    exitHotelVisitMode();
-    return { ok: false, error: "Otel sahnesi yüklenemedi." };
-  }
-
-  if (typeof updateVisitBanner === "function") updateVisitBanner(hotelDoc);
-  if (typeof fitView === "function") fitView();
-  if (typeof refresh === "function") refresh();
-  return { ok: true };
-}
-
-function exitHotelVisitMode() {
-  if (!window.isVisitingMode) return;
-  window.isVisitingMode = false;
-  _currentVisitedHotel = null;
-  if (typeof document !== "undefined" && document.body) {
-    document.body.classList.remove("is-visiting-mode");
-  }
-  const gbModal = document.getElementById("visit-guestbook-modal");
-  if (gbModal) gbModal.style.display = "none";
-
-  if (_visitBackupSaveRaw && typeof applySaveRaw === "function") {
-    applySaveRaw(_visitBackupSaveRaw);
-  }
-  _visitBackupSaveRaw = "";
-
-  if (_visitWasInMenu) {
-    if (typeof setStartMenuActive === "function") setStartMenuActive(true);
-    if (typeof fitMenuCamera === "function") fitMenuCamera();
-  } else {
-    if (typeof fitView === "function") fitView();
-  }
-  if (typeof refresh === "function") refresh();
-}
-
-function getVisitedHotelInfo() {
-  return _currentVisitedHotel;
-}
-
-function getVisitBackupHotelName() {
-  return _visitBackupHotelName || "HoteLore";
-}
-
-function switchVisitFloor(fIdx) {
-  if (!window.isVisitingMode) return;
-  if (typeof floors === "undefined" || !floors[fIdx] || floors[fIdx].state !== "Built") return;
-  viewFloor = fIdx;
-  if (typeof updateVisitBanner === "function") updateVisitBanner(_currentVisitedHotel);
-}
-
 // ===== BUNDLED: online/online-ui.js =====
-// [online/online-ui.js] Online Hub, Bulut Kayit, Otel Rehberi & Misafir Defteri Arayuzu
+// [online/online-ui.js] Bulut Kayit & Hesap Arayuzu (Anonymous + Email/Password -> /saves/{uid})
 const onlineModal = document.getElementById("online-modal");
 const btnOnlineMenu = document.getElementById("btn-online-menu");
 const hudOnlineBtn = document.getElementById("hud-online-btn");
@@ -23376,7 +23007,11 @@ const btnResetFbConfig = document.getElementById("btn-reset-fb-config");
 
 const onlAccountCard = document.getElementById("onl-account-card");
 const onlUserStatus = document.getElementById("onl-user-status");
-const btnLoginGoogle = document.getElementById("btn-login-google");
+const onlEmailRow = document.getElementById("onl-email-row");
+const onlEmailInput = document.getElementById("onl-email-input");
+const onlPassInput = document.getElementById("onl-pass-input");
+const btnLoginEmail = document.getElementById("btn-login-email");
+const btnRegisterEmail = document.getElementById("btn-register-email");
 const btnLoginGuest = document.getElementById("btn-login-guest");
 const btnLogoutOnline = document.getElementById("btn-logout-online");
 
@@ -23385,23 +23020,6 @@ const btnCloudUpload = document.getElementById("btn-cloud-upload");
 const btnCloudDownload = document.getElementById("btn-cloud-download");
 const onlCloudMeta = document.getElementById("onl-cloud-meta");
 const onlStatusMsg = document.getElementById("onl-status-msg");
-
-const btnRefreshHotels = document.getElementById("btn-refresh-hotels");
-const onlHotelsList = document.getElementById("onl-hotels-list");
-
-const visitBannerTitle = document.getElementById("visit-banner-title");
-const visitBannerMeta = document.getElementById("visit-banner-meta");
-const visitFloorTabs = document.getElementById("visit-floor-tabs");
-const btnVisitGuestbook = document.getElementById("btn-visit-guestbook");
-const btnExitVisit = document.getElementById("btn-exit-visit");
-
-const visitGbModal = document.getElementById("visit-guestbook-modal");
-const btnCloseVisitGb = document.getElementById("btn-close-visit-gb");
-const visitGbTitle = document.getElementById("visit-gb-title");
-const visitGbRating = document.getElementById("visit-gb-rating");
-const visitGbNote = document.getElementById("visit-gb-note");
-const btnSendVisitGb = document.getElementById("btn-send-visit-gb");
-const visitGbList = document.getElementById("visit-gb-list");
 
 function setOnlineStatusMsg(msg, isErr = false) {
   if (!onlStatusMsg) return;
@@ -23421,14 +23039,6 @@ function _fmtTimeAgo(ms) {
   return Math.floor(hr / 24) + " gün önce";
 }
 
-function _escapeHtml(str) {
-  return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 function renderOnlineModalState() {
   const initRes = (typeof initFirebaseOnline === "function") ? initFirebaseOnline() : { ok: false };
   const hasCfg = !!(typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.hasConfig);
@@ -23441,10 +23051,7 @@ function renderOnlineModalState() {
   }
   if (onlAccountCard) onlAccountCard.style.display = hasCfg ? "flex" : "none";
 
-  if (!hasCfg) {
-    if (onlHotelsList) onlHotelsList.innerHTML = '<div class="onl-empty">Otelleri listelemek için yukarıdan Firebase proje yapılandırmanı bağla.</div>';
-    return;
-  }
+  if (!hasCfg) return;
   if (!initRes.ok && initRes.reason === "sdk_unavailable") {
     setOnlineStatusMsg("Firebase SDK yüklenemedi. İnternet bağlantını kontrol et.", true);
   }
@@ -23452,12 +23059,10 @@ function renderOnlineModalState() {
   if (user) {
     const label = user.isAnonymous
       ? ("👤 Misafir Hesabı (" + String(user.uid).slice(0, 6).toUpperCase() + ")")
-      : ("✅ " + (user.displayName || user.email || "Google Hesabı"));
+      : ("✅ " + (user.email || "Kayıtlı Hesap"));
     if (onlUserStatus) onlUserStatus.textContent = label;
-    if (btnLoginGoogle) {
-      btnLoginGoogle.style.display = user.isAnonymous ? "inline-flex" : "none";
-      btnLoginGoogle.textContent = user.isAnonymous ? "🔗 Google'a Bağla" : "Google ile Giriş";
-    }
+    if (onlEmailRow) onlEmailRow.style.display = user.isAnonymous ? "flex" : "none";
+    if (btnRegisterEmail) btnRegisterEmail.textContent = user.isAnonymous ? "🔗 E-postaya Bağla" : "📝 Kayıt Ol";
     if (btnLoginGuest) btnLoginGuest.style.display = "none";
     if (btnLogoutOnline) btnLogoutOnline.style.display = "inline-flex";
     if (onlSyncRow) onlSyncRow.style.display = "flex";
@@ -23468,125 +23073,20 @@ function renderOnlineModalState() {
         : "☁️ Bulutta henüz kayıtlı otelin yok.";
     }
   } else {
-    if (onlUserStatus) onlUserStatus.textContent = "🔌 Çevrimdışı (Bulut kayıt ve ziyaret için giriş yap)";
-    if (btnLoginGoogle) {
-      btnLoginGoogle.style.display = "inline-flex";
-      btnLoginGoogle.textContent = "🔵 Google ile Giriş Yap";
-    }
+    if (onlUserStatus) onlUserStatus.textContent = "🔌 Çevrimdışı — Cihazlar arası kayıt için giriş yap";
+    if (onlEmailRow) onlEmailRow.style.display = "flex";
+    if (btnRegisterEmail) btnRegisterEmail.textContent = "📝 Kayıt Ol";
     if (btnLoginGuest) btnLoginGuest.style.display = "inline-flex";
     if (btnLogoutOnline) btnLogoutOnline.style.display = "none";
     if (onlSyncRow) onlSyncRow.style.display = "none";
     if (onlCloudMeta) onlCloudMeta.textContent = "";
-    if (onlHotelsList) onlHotelsList.innerHTML = '<div class="onl-empty">Başka otelleri ziyaret etmek ve misafir defterini okumak için giriş yap.</div>';
   }
-}
-
-async function loadAndRenderHotelsList() {
-  if (!onlHotelsList) return;
-  if (!ONLINE_STATE.user) {
-    renderOnlineModalState();
-    return;
-  }
-  onlHotelsList.innerHTML = '<div class="onl-empty">⏳ Oteller yükleniyor...</div>';
-  const res = await fetchOnlineHotels(25);
-  if (!res.ok) {
-    onlHotelsList.innerHTML = '<div class="onl-empty">' + _escapeHtml(res.error || "Liste alınamadı.") + '</div>';
-    return;
-  }
-  if (!res.items.length) {
-    onlHotelsList.innerHTML = '<div class="onl-empty">Henüz paylaşılan otel yok. İlk oteli sen yedekle!</div>';
-    return;
-  }
-  const myUid = ONLINE_STATE.user ? ONLINE_STATE.user.uid : "";
-  const themeNames = { classic: "Klasik", modern: "Modern", seaside: "Deniz Kenarı" };
-  onlHotelsList.innerHTML = res.items.map((h, idx) => {
-    const isMe = h.ownerUid === myUid;
-    const tName = themeNames[h.roomTheme] || "Klasik";
-    return `
-      <div class="onl-hotel-item${isMe ? " is-me" : ""}">
-        <div class="ohi-rank">#${idx + 1}</div>
-        <div class="ohi-info">
-          <div class="ohi-name">${_escapeHtml(h.hotelName)}${isMe ? ' <span class="ohi-me-tag">Senin</span>' : ""}</div>
-          <div class="ohi-sub">👤 ${_escapeHtml(h.ownerName)} • 📅 Gün ${h.day || 1} • 🛏️ ${h.builtRooms || 0} Oda • 🎨 ${tName}</div>
-        </div>
-        <div class="ohi-right">
-          <div class="ohi-rep">🏅 ${h.reputation || 0}</div>
-          <button type="button" class="ohi-visit-btn" data-visit-idx="${idx}">👁️ Gez</button>
-        </div>
-      </div>`;
-  }).join("");
-
-  onlHotelsList.querySelectorAll(".ohi-visit-btn").forEach(btn => {
-    btn.onclick = () => {
-      if (typeof play === "function") play("tap");
-      const i = Number(btn.getAttribute("data-visit-idx"));
-      const hDoc = res.items[i];
-      if (!hDoc) return;
-      if (onlineModal) onlineModal.style.display = "none";
-      const vRes = enterHotelVisitMode(hDoc);
-      if (!vRes.ok && onlineModal) {
-        onlineModal.style.display = "flex";
-        setOnlineStatusMsg(vRes.error || "Ziyaret başlatılamadı.", true);
-      }
-    };
-  });
 }
 
 function openOnlineModal() {
   setOnlineStatusMsg("");
   renderOnlineModalState();
   if (onlineModal) onlineModal.style.display = "flex";
-  if (ONLINE_STATE.user) loadAndRenderHotelsList();
-}
-
-function updateVisitBanner(hotelDoc) {
-  if (!hotelDoc) return;
-  if (visitBannerTitle) visitBannerTitle.textContent = "✈️ ZİYARET: " + (hotelDoc.hotelName || "HoteLore");
-  if (visitBannerMeta) {
-    visitBannerMeta.textContent = "Sahip: " + (hotelDoc.ownerName || "Otelci") + " • Gün " + (hotelDoc.day || 1) + " • 🏅 " + (hotelDoc.reputation || 0);
-  }
-  if (visitFloorTabs && typeof floors !== "undefined") {
-    visitFloorTabs.innerHTML = "";
-    for (let f = 0; f < floors.length; f++) {
-      if (floors[f].state !== "Built") continue;
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "vf-btn" + (viewFloor === f ? " active" : "");
-      b.textContent = (f + 1) + ". Kat";
-      b.onclick = () => {
-        if (typeof play === "function") play("tap");
-        switchVisitFloor(f);
-      };
-      visitFloorTabs.appendChild(b);
-    }
-  }
-}
-
-async function openVisitGuestbookModal() {
-  const h = (typeof getVisitedHotelInfo === "function") ? getVisitedHotelInfo() : null;
-  if (!h || !visitGbModal) return;
-  if (visitGbTitle) visitGbTitle.textContent = "📝 " + (h.hotelName || "HoteLore") + " — Misafir Defteri";
-  visitGbModal.style.display = "flex";
-  if (visitGbList) visitGbList.innerHTML = '<div class="onl-empty">⏳ Notlar yükleniyor...</div>';
-  const res = await fetchHotelGuestbook(h.ownerUid || h.id);
-  if (!res.ok) {
-    if (visitGbList) visitGbList.innerHTML = '<div class="onl-empty">' + _escapeHtml(res.error) + '</div>';
-    return;
-  }
-  if (!res.items.length) {
-    if (visitGbList) visitGbList.innerHTML = '<div class="onl-empty">Henüz misafir notu yok. İlk notu sen bırak!</div>';
-    return;
-  }
-  visitGbList.innerHTML = res.items.map(n => `
-    <div class="vgb-item">
-      <div class="vgb-top">
-        <span class="vgb-author">🏨 ${_escapeHtml(n.visitorHotelName || "HoteLore")} (${_escapeHtml(n.visitorName)})</span>
-        <span class="vgb-stars">${"★".repeat(Math.max(1, Math.min(5, n.rating || 5)))}</span>
-      </div>
-      <div class="vgb-note">${_escapeHtml(n.note)}</div>
-      <div class="vgb-time">${_fmtTimeAgo(n.createdAt)}</div>
-    </div>
-  `).join("");
 }
 
 function _parseFlexibleConfigInput(rawText) {
@@ -23595,7 +23095,6 @@ function _parseFlexibleConfigInput(rawText) {
   try {
     return JSON.parse(txt);
   } catch (_) {
-    // JS obje literalini (ör. { apiKey: "...", projectId: "..." }) esnek JSON'a çevir
     const cleaned = txt
       .replace(/^[^{]*/, "")
       .replace(/;?\s*$/, "")
@@ -23629,13 +23128,13 @@ if (btnSaveFbConfig) {
     if (typeof play === "function") play("tap");
     const parsed = _parseFlexibleConfigInput(onlConfigInput ? onlConfigInput.value : "");
     if (!parsed || !parsed.apiKey || !parsed.projectId) {
-      setOnlineStatusMsg("Geçerli firebaseConfig JSON veya JS objesi yapıştır (apiKey ve projectId gerekli).", true);
+      setOnlineStatusMsg("Geçerli firebaseConfig bloğu yapıştır (apiKey ve projectId gerekli).", true);
       return;
     }
     saveCustomFirebaseConfig(parsed);
     const res = initFirebaseOnline(true);
     if (res.ok) {
-      setOnlineStatusMsg("✅ Firebase bağlandı! Şimdi Google veya Misafir ile giriş yapabilirsin.");
+      setOnlineStatusMsg("✅ Firebase bağlandı! Şimdi Misafir veya E-posta ile giriş yapabilirsin.");
       renderOnlineModalState();
     } else {
       setOnlineStatusMsg("Firebase başlatılamadı: " + (res.reason || "hata"), true);
@@ -23653,30 +23152,53 @@ if (btnResetFbConfig) {
   };
 }
 
-if (btnLoginGoogle) {
-  btnLoginGoogle.onclick = async () => {
-    if (typeof play === "function") play("tap");
-    setOnlineStatusMsg("⏳ Google ile bağlanılıyor...");
-    const res = await signInOnlineGoogle();
-    if (res.ok) {
-      setOnlineStatusMsg("✅ Google hesabıyla giriş yapıldı!");
-      await loadAndRenderHotelsList();
-    } else {
-      setOnlineStatusMsg(res.error || "Google girişi başarısız.", true);
-    }
-  };
-}
-
 if (btnLoginGuest) {
   btnLoginGuest.onclick = async () => {
     if (typeof play === "function") play("tap");
     setOnlineStatusMsg("⏳ Misafir oturumu açılıyor...");
     const res = await signInOnlineGuest();
     if (res.ok) {
-      setOnlineStatusMsg("✅ Misafir oturumu açıldı! İstersen sonradan Google'a bağlayabilirsin.");
-      await loadAndRenderHotelsList();
+      setOnlineStatusMsg("✅ Misafir oturumu açıldı! İstersen e-posta bağlayabilir veya hemen buluta yedekleyebilirsin.");
     } else {
       setOnlineStatusMsg(res.error || "Misafir girişi başarısız.", true);
+    }
+  };
+}
+
+if (btnLoginEmail) {
+  btnLoginEmail.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    const email = onlEmailInput ? onlEmailInput.value : "";
+    const pass = onlPassInput ? onlPassInput.value : "";
+    if (!email.trim() || !pass) {
+      setOnlineStatusMsg("E-posta ve şifre gir.", true);
+      return;
+    }
+    setOnlineStatusMsg("⏳ Giriş yapılıyor...");
+    const res = await signInOnlineEmail(email, pass);
+    if (res.ok) {
+      setOnlineStatusMsg("✅ E-posta hesabıyla giriş yapıldı!");
+    } else {
+      setOnlineStatusMsg(res.error || "Giriş başarısız.", true);
+    }
+  };
+}
+
+if (btnRegisterEmail) {
+  btnRegisterEmail.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    const email = onlEmailInput ? onlEmailInput.value : "";
+    const pass = onlPassInput ? onlPassInput.value : "";
+    if (!email.trim() || pass.length < 6) {
+      setOnlineStatusMsg("Geçerli e-posta ve en az 6 haneli şifre gir.", true);
+      return;
+    }
+    setOnlineStatusMsg("⏳ Hesap oluşturuluyor...");
+    const res = await registerOnlineEmail(email, pass);
+    if (res.ok) {
+      setOnlineStatusMsg("✅ Hesap kaydedildi ve bağlandı!");
+    } else {
+      setOnlineStatusMsg(res.error || "Kayıt başarısız.", true);
     }
   };
 }
@@ -23692,11 +23214,10 @@ if (btnLogoutOnline) {
 if (btnCloudUpload) {
   btnCloudUpload.onclick = async () => {
     if (typeof play === "function") play("tap");
-    setOnlineStatusMsg("☁️ Otelin buluta yedekleniyor...");
+    setOnlineStatusMsg("☁️ Otelin buluta kaydediliyor...");
     const res = await uploadCloudSave();
     if (res.ok) {
-      setOnlineStatusMsg("✅ Otelin buluta yedeklendi ve otel rehberinde paylaşıldı!");
-      await loadAndRenderHotelsList();
+      setOnlineStatusMsg("✅ Otelin Firebase bulutuna kaydedildi!");
     } else {
       setOnlineStatusMsg(res.error || "Yedekleme başarısız.", true);
     }
@@ -23706,47 +23227,12 @@ if (btnCloudUpload) {
 if (btnCloudDownload) {
   btnCloudDownload.onclick = async () => {
     if (typeof play === "function") play("tap");
-    setOnlineStatusMsg("⬇ Bulut kaydı yükleniyor...");
+    setOnlineStatusMsg("⬇ Buluttaki kayıt yükleniyor...");
     const res = await downloadCloudSave();
     if (res.ok) {
       setOnlineStatusMsg("✅ Buluttaki otel kaydın yüklendi!");
     } else {
       setOnlineStatusMsg(res.error || "Bulut kaydı yüklenemedi.", true);
-    }
-  };
-}
-
-if (btnRefreshHotels) {
-  btnRefreshHotels.onclick = () => {
-    if (typeof play === "function") play("tap");
-    loadAndRenderHotelsList();
-  };
-}
-
-if (btnVisitGuestbook) btnVisitGuestbook.onclick = () => { if (typeof play === "function") play("tap"); openVisitGuestbookModal(); };
-if (btnExitVisit) btnExitVisit.onclick = () => { if (typeof play === "function") play("tap"); exitHotelVisitMode(); };
-if (btnCloseVisitGb) btnCloseVisitGb.onclick = () => { if (typeof play === "function") play("tap"); if (visitGbModal) visitGbModal.style.display = "none"; };
-if (visitGbModal) {
-  visitGbModal.onclick = (e) => {
-    if (e.target === visitGbModal) {
-      if (typeof play === "function") play("tap");
-      visitGbModal.style.display = "none";
-    }
-  };
-}
-if (btnSendVisitGb) {
-  btnSendVisitGb.onclick = async () => {
-    if (typeof play === "function") play("tap");
-    const h = (typeof getVisitedHotelInfo === "function") ? getVisitedHotelInfo() : null;
-    if (!h) return;
-    const rating = visitGbRating ? Number(visitGbRating.value) : 5;
-    const note = visitGbNote ? visitGbNote.value : "";
-    const res = await submitGuestbookNote(h.ownerUid || h.id, rating, note, getVisitBackupHotelName());
-    if (res.ok) {
-      if (visitGbNote) visitGbNote.value = "";
-      await openVisitGuestbookModal();
-    } else if (visitGbList) {
-      visitGbList.insertAdjacentHTML("afterbegin", '<div class="onl-empty is-err">' + _escapeHtml(res.error) + '</div>');
     }
   };
 }
@@ -23766,10 +23252,10 @@ function loop(now) {
 
   updateCarsAndBirds(dt);
 
-  if (inMenu || (typeof window !== "undefined" && window.isVisitingMode)) {
+  if (inMenu) {
     if (typeof updateMenuAmbient === "function") updateMenuAmbient(dt);
     updateParticles(dt);
-    if (inMenu && typeof menuLogoCanvas !== "undefined" && menuLogoCanvas && menuLogoCanvas.offsetParent !== null) {
+    if (typeof menuLogoCanvas !== "undefined" && menuLogoCanvas && menuLogoCanvas.offsetParent !== null) {
       drawMenuLogo();
     }
     drawWorld();
