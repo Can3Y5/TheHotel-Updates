@@ -1619,6 +1619,265 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
 #onl-download-confirm-box { background: #eff6ff; border: 2px solid #2563eb; }
 .onl-warn-txt { font-size: 11.5px; font-weight: 800; color: #1e3a8a; }
 #onl-delete-confirm-box .onl-warn-txt { color: #991b1b; }
+
+/* ===== ARKADAŞLAR PENCERESİ & ZİYARET MODU (O2) ===== */
+#btn-friends-menu {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+  color: #1e3a8a !important;
+  border-color: #2563eb !important;
+}
+#friends-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 950;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.fr-box {
+  max-width: 440px;
+  width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+#btn-close-friends {
+  background: #fee2e2;
+  border: 2px solid #3a281f;
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-weight: 900;
+  font-size: 12px;
+  color: #7f1d1d;
+  cursor: pointer;
+}
+.fr-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+.fr-card {
+  background: #ffffff;
+  border: 2px solid #3a281f;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fr-card-lbl {
+  font-size: 11px;
+  font-weight: 900;
+  color: #5a3e26;
+}
+.fr-my-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+#fr-my-code {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: #fef9c3;
+  border: 1.5px solid #ca8a04;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #3a281f;
+  text-align: center;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.fr-add-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+#fr-add-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1.5px solid #3a281f;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #1e293b;
+  background: #fffdf8;
+  user-select: text;
+  -webkit-user-select: text;
+}
+#fr-status-msg {
+  display: none;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: #ecfdf5;
+  border: 1.5px solid #16a34a;
+  color: #14532d;
+  word-break: break-word;
+}
+#fr-status-msg.is-err {
+  background: #fef2f2;
+  border-color: #dc2626;
+  color: #7f1d1d;
+}
+#fr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 38vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.onl-empty {
+  padding: 12px 10px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #5a3e26;
+  background: #fffdf8;
+  border: 1.5px dashed #bfa47a;
+  border-radius: 9px;
+}
+.fr-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #ffffff;
+  border: 2px solid #3a281f;
+  border-radius: 10px;
+  padding: 8px 9px;
+  box-sizing: border-box;
+}
+.fr-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.fr-player {
+  font-size: 12px;
+  font-weight: 800;
+  color: #3a281f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fr-meta {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 2px;
+}
+.fr-actions {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.fr-actions .onl-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+@media (max-width: 390px) {
+  .fr-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fr-actions {
+    justify-content: flex-end;
+  }
+}
+
+/* ZİYARET MODU (Salt Okunur) */
+body.is-visiting-mode #top-bar,
+body.is-visiting-mode #left-hud-top,
+body.is-visiting-mode #left-hud-bottom,
+body.is-visiting-mode #right-hud,
+body.is-visiting-mode #bottom-dock,
+body.is-visiting-mode #bottom-area,
+body.is-visiting-mode #in-game-theme-panel,
+body.is-visiting-mode #log-text,
+body.is-visiting-mode #ach-popup {
+  display: none !important;
+}
+body.is-visiting-mode #visit-banner {
+  display: flex !important;
+}
+#visit-banner {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(95vw, 560px);
+  z-index: 900;
+  background: rgba(255, 250, 240, 0.96);
+  border: 2.5px solid #3a281f;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 #3a281f, 0 8px 18px rgba(0, 0, 0, 0.28);
+  padding: 7px 10px;
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: 6px;
+}
+.vb-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#visit-banner-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 900;
+  color: #3a281f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#btn-exit-visit {
+  flex-shrink: 0;
+  background: #fee2e2;
+  border: 2px solid #3a281f;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #7f1d1d;
+  cursor: pointer;
+}
+#visit-floor-tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.vf-btn {
+  border: 1.5px solid #3a281f;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #fffdf8;
+  color: #3a281f;
+  cursor: pointer;
+}
+.vf-btn.active {
+  background: #fde68a;
+  color: #78350f;
+}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1668,6 +1927,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <button class="sub-icon-btn" id="hud-rotate-btn" title="Yatay / Dikey Görünüm">🔄</button>
         <button class="sub-icon-btn" id="hud-theme-btn" title="Otel Teması">🎨</button>
         <button class="sub-icon-btn" id="hud-garden-btn" title="Bahçe Süsleri (💎)">🌳</button>
+        <button class="sub-icon-btn" id="hud-friends-btn" title="Arkadaşlar">👥</button>
         <button class="sub-icon-btn" id="hud-online-btn" title="Bulut Kayıt &amp; Hesap">☁️</button>
         <button class="sub-icon-btn" id="hud-gear-btn" title="Menü & Ayarlar">⚙️</button>
       </div>
@@ -1838,7 +2098,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.72-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.73-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -1880,6 +2140,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
         <button id="btn-new-game" class="m-btn" style="display:none">🆕 YENİ OYUN BAŞLAT</button>
         <button id="btn-online-menu" class="m-btn">☁️ BULUT KAYIT &amp; HESAP</button>
+        <button id="btn-friends-menu" class="m-btn">👥 ARKADAŞLAR</button>
         <div id="newgame-confirm-box">
           <div class="ngc-text">⚠️ Mevcut kayıtlı otel silinecek ve 1. günden sıfırdan yeni bir oyun başlayacak. Emin misin?</div>
           <div class="ngc-row">
@@ -1987,6 +2248,42 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
             <button type="button" id="btn-cloud-download" class="onl-btn down">⬇ Buluttan Yükle</button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <!-- ZİYARET MODU ÜST BANDI -->
+  <div id="visit-banner" style="display:none;">
+    <div class="vb-top">
+      <div id="visit-banner-title">🏨 Otel Ziyareti</div>
+      <button type="button" id="btn-exit-visit">✖ Ziyareti Bitir</button>
+    </div>
+    <div id="visit-floor-tabs"></div>
+  </div>
+  <!-- ARKADAŞLAR PENCERESİ (O2) -->
+  <div id="friends-modal">
+    <div class="onl-box fr-box">
+      <div class="gb-header">
+        <div class="gb-title">👥 Arkadaşlar</div>
+        <button type="button" id="btn-close-friends">✕ Kapat</button>
+      </div>
+      <div class="fr-body">
+        <div class="fr-card">
+          <div class="fr-card-lbl">Senin Arkadaş Kodun</div>
+          <div class="fr-my-row">
+            <code id="fr-my-code">--------</code>
+            <button type="button" id="btn-copy-my-code" class="onl-btn">📋 Kopyala</button>
+            <button type="button" id="btn-share-my-code" class="onl-btn google" style="display:none;">📤 Paylaş</button>
+          </div>
+        </div>
+        <div class="fr-card">
+          <label for="fr-add-input" class="fr-card-lbl">Arkadaş Ekle (8 Haneli Kod)</label>
+          <div class="fr-add-row">
+            <input type="text" id="fr-add-input" maxlength="10" placeholder="Örn: K7M2XP9Q" autocomplete="off" spellcheck="false" />
+            <button type="button" id="btn-add-friend" class="onl-btn up">➕ Ekle</button>
+          </div>
+        </div>
+        <div id="fr-status-msg" class="onl-status-msg"></div>
+        <div id="fr-list"></div>
       </div>
     </div>
   </div>
@@ -5050,7 +5347,7 @@ function serializeSaveRaw() {
 
 function saveGame() {
   try {
-    if (typeof window !== "undefined" && window.saveLocked) return;
+    if (typeof window !== "undefined" && (window.saveLocked || window.visitMode)) return;
     const raw = serializeSaveRaw();
     if (!raw) return;
     const h = computeSaveHash(raw);
@@ -5822,6 +6119,194 @@ function startNewGameClean() {
 }
 
 let hadSavedGame = false;
+
+// ===== VİTRİN (SHOWCASE) SERİLEŞTİRME & ZİYARET YÜKLEME =====
+const SHOWCASE_VERSION = 1;
+const SHOWCASE_MAX_BYTES = 200 * 1024;
+
+function serializeShowcasePayload() {
+  const theme = (typeof cosmetics === "object" && cosmetics && cosmetics.roomTheme) ? cosmetics.roomTheme : "classic";
+  const validTheme = (theme === "modern" || theme === "seaside") ? theme : "classic";
+  const stCount = (typeof stars === "function") ? Math.max(0, Math.min(3, Math.floor(Number(stars()) || 0))) : 0;
+  return {
+    v: SHOWCASE_VERSION,
+    hotelName: (hotelName || "HoteLore").slice(0, 18),
+    theme: validTheme,
+    stars: stCount,
+    day: Math.max(1, Math.floor(Number(day) || 1)),
+    rep: Math.max(0, Math.floor(Number(reputation) || 0)),
+    park: parkState,
+    pool: poolState,
+    stor: [storageState, storageLevel || 1],
+    dorm: [dormState, dormLevel || 1],
+    kit: [kitchenState, cookLevel || 0],
+    tw: Array.isArray(towerOrder) ? towerOrder.slice() : [],
+    tp: Array.isArray(treePlanted) ? treePlanted.map(v => v ? 1 : 0) : [],
+    decor: (typeof cloneDecorState === "function") ? cloneDecorState() : {},
+    floors: floors.map((fl, fIdx) => ({
+      st: fl.state,
+      s: fl.slots.map((s, sIdx) => {
+        const isDefTree = (fIdx === 0 && (sIdx === 36 || sIdx === 37));
+        if (s.type === "Empty" && !s.parcelBuilt && !!s.hasTree === isDefTree) return 0;
+        const c = { t: s.type, p: s.parcelBuilt ? 1 : 0 };
+        if (s.hasTree) c.tr = 1;
+        if (s.type === "TennisClub") c.ts = sanitizeTennisState(s.tennisState);
+        if (s.hasEnsuite) c.e = 1;
+        if (s.furnPresetIdx) c.fp = s.furnPresetIdx;
+        if (s.furnLayout && Object.keys(s.furnLayout).length > 0) c.fl = s.furnLayout;
+        if (s.roomNo) c.rn = s.roomNo;
+        if (s.hasDoor) c.d = 1;
+        if (s.doorWall) c.dw = s.doorWall;
+        if (s.hasBalcony) c.b = 1;
+        if (Array.isArray(s.items) && s.items.some(Boolean)) c.it = s.items.map(v => v ? 1 : 0);
+        if (s.wall) c.w = s.wall;
+        if (s.picColor) c.pc = s.picColor;
+        if (s.gymLevel > 1) c.gl = s.gymLevel;
+        if (s.type === "Spa" && s.spaLevel > 1) c.sl = Math.max(1, Math.min(3, Math.floor(Number(s.spaLevel) || 1)));
+        if (s.type === "Cafe" && s.cafeLevel > 1) c.cl = Math.max(1, Math.min(3, Math.floor(Number(s.cafeLevel) || 1)));
+        if (s.level > 1) c.lv = s.level;
+        return c;
+      })
+    }))
+  };
+}
+
+async function packShowcaseString() {
+  const payload = serializeShowcasePayload();
+  let jsonStr = JSON.stringify(payload);
+  if (jsonStr.length <= SHOWCASE_MAX_BYTES) return jsonStr;
+  // 200 KB aşarsa CompressionStream('gzip') varsa gzip+base64 ile sıkıştır
+  if (typeof CompressionStream === "function") {
+    try {
+      const stream = new Blob([jsonStr]).stream().pipeThrough(new CompressionStream("gzip"));
+      const buf = await new Response(stream).arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      const gzStr = "gz:" + btoa(bin);
+      if (gzStr.length <= SHOWCASE_MAX_BYTES) return gzStr;
+    } catch (_) {}
+  }
+  // Hala büyükse gereksiz oda detaylarını kırp (furnLayout / picColor / wall)
+  if (Array.isArray(payload.floors)) {
+    for (const fl of payload.floors) {
+      if (!Array.isArray(fl.s)) continue;
+      for (const sl of fl.s) {
+        if (sl && typeof sl === "object") { delete sl.fl; delete sl.w; delete sl.pc; }
+      }
+    }
+  }
+  return JSON.stringify(payload);
+}
+
+async function decodeShowcaseString(showcaseStr) {
+  if (typeof showcaseStr !== "string" || !showcaseStr) return null;
+  let txt = showcaseStr;
+  if (txt.startsWith("gz:")) {
+    if (typeof DecompressionStream !== "function") return null;
+    const bin = atob(txt.slice(3));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    txt = await new Response(stream).text();
+  }
+  const obj = JSON.parse(txt);
+  if (!obj || obj.v !== SHOWCASE_VERSION || !Array.isArray(obj.floors) || obj.floors.length < 1) return null;
+  return obj;
+}
+
+async function applyShowcaseString(showcaseStr) {
+  try {
+    const snap = await decodeShowcaseString(showcaseStr);
+    if (!snap) return false;
+    guests.length = 0; queue.length = 0; pawns.length = 0; cleaners.length = 0;
+    dirts.length = 0; floaties.length = 0; shipments.length = 0; trucks.length = 0;
+    storageWorkers.length = 0; dormWorkers.length = 0; kitchenWorkers.length = 0; parkWorkers.length = 0;
+    receptionistPawn = null; securityPawn = null; cookPawn = null; paperboyPawn = null; barmenPawn = null;
+    pending = null; lastFront = null;
+
+    hotelName = String(snap.hotelName || "HoteLore").slice(0, 18);
+    if (typeof setCosmetic === "function") setCosmetic("roomTheme", snap.theme || "classic", true);
+    parkState = snap.park || "Locked";
+    poolState = snap.pool || "Locked";
+    storageState = Array.isArray(snap.stor) ? (snap.stor[0] || "Locked") : "Locked";
+    storageLevel = Array.isArray(snap.stor) ? (snap.stor[1] || 1) : 1;
+    dormState = Array.isArray(snap.dorm) ? (snap.dorm[0] || "Locked") : "Locked";
+    dormLevel = Array.isArray(snap.dorm) ? (snap.dorm[1] || 1) : 1;
+    kitchenState = Array.isArray(snap.kit) ? (snap.kit[0] || "Locked") : "Locked";
+    cookLevel = Array.isArray(snap.kit) ? (snap.kit[1] || 0) : 0;
+    towerOrder = Array.isArray(snap.tw) ? snap.tw.filter(t => t === "Dorm" || t === "Kitchen") : [];
+    if (Array.isArray(snap.tp)) {
+      for (let i = 0; i < treePlanted.length && i < snap.tp.length; i++) treePlanted[i] = !!snap.tp[i];
+    }
+    if (typeof resetDecorState === "function") resetDecorState(snap.decor || {});
+    if (typeof reconcileDecorStateOnLoad === "function") reconcileDecorStateOnLoad();
+
+    for (let f = 0; f < FloorCount; f++) {
+      const fl = floors[f];
+      const flData = snap.floors[f];
+      fl.state = (flData && flData.st) ? flData.st : (f === 0 ? "Built" : "Locked");
+      fl.buildLeft = 0;
+      fl.workers.length = 0;
+      const arr = (flData && Array.isArray(flData.s)) ? flData.s : [];
+      for (let i = 0; i < fl.slots.length; i++) {
+        const sd = arr[i];
+        const s = fl.slots[i];
+        s.guest = null;
+        s.hasCorpse = false;
+        s.corpseName = "";
+        s.onFire = false;
+        s.fireLeft = 0;
+        s.maintenance = 100;
+        s.gymBusy = [false, false, false];
+        s.spaBusy = [false, false, false];
+        s.cafeBusy = [false, false, false];
+        s.toiletBusy = [false, false];
+        s.tennisCourtBusy = [false, false];
+        if (!sd || sd === 0) {
+          s.type = "Empty";
+          s.parcelBuilt = false;
+          s.hasTree = (f === 0 && (i === 36 || i === 37));
+          s.tennisState = null;
+          s.hasEnsuite = false;
+          s.furnPresetIdx = 0;
+          s.furnLayout = {};
+          s.roomNo = 0;
+          s.hasDoor = false;
+          s.doorWall = null;
+          s.hasBalcony = false;
+          s.items.fill(false);
+          s.gymLevel = 1; s.spaLevel = 1; s.cafeLevel = 1; s.level = 1;
+          continue;
+        }
+        s.type = sd.t || "Empty";
+        s.parcelBuilt = !!sd.p;
+        s.hasTree = !!sd.tr;
+        s.tennisState = s.type === "TennisClub" ? sanitizeTennisState(sd.ts) : null;
+        s.hasEnsuite = !!sd.e;
+        s.furnPresetIdx = (typeof sd.fp === "number") ? sd.fp : 0;
+        s.furnLayout = (sd.fl && typeof sd.fl === "object") ? JSON.parse(JSON.stringify(sd.fl)) : {};
+        s.roomNo = sd.rn || 0;
+        s.hasDoor = !!sd.d;
+        s.doorWall = sd.dw || null;
+        s.hasBalcony = !!(sd.b && f >= 1);
+        for (let k = 0; k < ItemCount; k++) s.items[k] = !!(Array.isArray(sd.it) && sd.it[k]);
+        if (sd.w) s.wall = sd.w;
+        if (sd.pc) s.picColor = sd.pc;
+        s.gymLevel = sd.gl || 1;
+        s.spaLevel = sd.sl || 1;
+        s.cafeLevel = sd.cl || 1;
+        s.level = sd.lv || 1;
+      }
+    }
+    viewFloor = 0;
+    if (typeof resetParcelLayerCache === "function") resetParcelLayerCache();
+    if (typeof invalidateLayerCache === "function") invalidateLayerCache();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
 // ===== BUNDLED: logic/core.js =====
 // [logic/core.js] Maliyetler, sorgular, log() ve ödeme yardımcıları  (selectSlot/Floor/Mode → ui/dock-wiring.js, floatText → render/camera.js)
@@ -12330,8 +12815,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 80;
-const APP_VERSION_NAME = "1.9.72-beta";
+const APP_VERSION_CODE = 81;
+const APP_VERSION_NAME = "1.9.73-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12339,9 +12824,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.73-beta",
+    title: "Arkadaş kodu ve otel ziyareti",
+    latest: true,
+    notes: "• 👥 Arkadaş Kodu & Arkadaş Listesi: Her hesaba 8 karakterlik arkadaş kodu atanır; kod ile arkadaş ekleyebilir, otelinin özetini görebilirsin.\n• 🏨 Otel Ziyareti (Salt Okunur): Arkadaşının otelini gerçek zamanlı gezebilir, katlar arası geçiş yapıp kamera ile inceleyebilir ve tek dokunuşla kendi oteline dönebilirsin."
+  },
+  {
     ver: "v1.9.72-beta",
     title: "Sessiz yedek ve oyuncu adı",
-    latest: true,
+    latest: false,
     notes: "• ☁️ Tek Yönlü Sessiz Yedekleme: Yerel kayıt tek kaynak olarak korunur; açılış soruları kaldırıldı, arka planda ilerleme korumalı tek yönlü yedekleme, elle Buluttan Yükle onayı/yerel yedeği ve Parola Sıfırlama eklendi.\n• 🏷️ Oyuncu Adı: Varsayılan MisafirXXXX ad üretimi, Türkçe harf + küfür filtreli ad değiştirme ve saves/{uid} içine displayName kaydı eklendi."
   },
   {
@@ -13576,6 +14067,7 @@ function pointInPoly(px, py, poly) {
 }
 
 function handleWorldTap(appX, appY) {
+  if (typeof window !== "undefined" && window.visitMode) return;
   const cw = viewport.clientWidth, ch = viewport.clientHeight;
   const ix = camCenter.x + (appX - cw * 0.5) / zoom;
   const iy = -camCenter.y + (appY - ch * 0.5) / zoom;
@@ -13656,7 +14148,7 @@ function isoBoxSilhouette(u0, v0, u1, v1, z0, z1) {
 }
 
 function isoLabel(txt, u, v, z, fontSize = 14, fg = "#3a281f", bg = "#fffdf5", padX = 7, padY = 3.5) {
-  if (typeof inMenu !== "undefined" && inMenu && bg !== null) return [];
+  if (((typeof inMenu !== "undefined" && inMenu) || (typeof window !== "undefined" && window.visitMode)) && bg !== null) return [];
   const p = iso(u, v, z);
   ctx.save();
   ctx.font = "900 " + fontSize + "px 'Segoe UI', Roboto, Arial, sans-serif";
@@ -17613,36 +18105,39 @@ function drawWorld() {
     ], () => cleanDirt(d));
   }
 
-  // 7) Kaldırımdaki Teslimat Kolileri
-  drawIsoCrates();
+  const isVisit = (typeof window !== "undefined" && !!window.visitMode);
+  if (!isVisit) {
+    // 7) Kaldırımdaki Teslimat Kolileri
+    drawIsoCrates();
 
-  // 7.5) Girişteki Haftalık Gazete Rulosu
-  if (unreadNewspaper) {
-    drawIsoNewspaper();
-  }
+    // 7.5) Girişteki Haftalık Gazete Rulosu
+    if (unreadNewspaper) {
+      drawIsoNewspaper();
+    }
 
-  // 8) Gerçek Kişiler (Pawns) - Derinliğe Göre Sıralı
-  const visPawns = pawns.filter(p => !p.dead && p.visible);
-  const mappedPawns = visPawns.map(p => {
-    const uvz = logicalToIsoUVZ(p.pos.x, p.pos.y, p);
-    const pt = iso(uvz.u, uvz.v, uvz.z);
-    return { p, uvz, pt };
-  }).filter(mp => !mp.uvz.hidden);
-  if (typeof inMenu !== "undefined" && inMenu && typeof getMenuAmbientMappedPawns === "function") {
-    const amb = getMenuAmbientMappedPawns();
-    for (let i = 0; i < amb.length; i++) mappedPawns.push(amb[i]);
-  }
-  mappedPawns.sort((a, b) => a.pt.y - b.pt.y);
-  for (const mp of mappedPawns) {
-    drawIsoPawn(mp.p, mp.pt, mp.uvz);
-  }
-  drawLiveTennisBall();
-  if (typeof drawLiveSpaSteam === "function") drawLiveSpaSteam();
-  if (typeof drawLiveCafeSteam === "function") drawLiveCafeSteam();
+    // 8) Gerçek Kişiler (Pawns) - Derinliğe Göre Sıralı
+    const visPawns = pawns.filter(p => !p.dead && p.visible);
+    const mappedPawns = visPawns.map(p => {
+      const uvz = logicalToIsoUVZ(p.pos.x, p.pos.y, p);
+      const pt = iso(uvz.u, uvz.v, uvz.z);
+      return { p, uvz, pt };
+    }).filter(mp => !mp.uvz.hidden);
+    if (typeof inMenu !== "undefined" && inMenu && typeof getMenuAmbientMappedPawns === "function") {
+      const amb = getMenuAmbientMappedPawns();
+      for (let i = 0; i < amb.length; i++) mappedPawns.push(amb[i]);
+    }
+    mappedPawns.sort((a, b) => a.pt.y - b.pt.y);
+    for (const mp of mappedPawns) {
+      drawIsoPawn(mp.p, mp.pt, mp.uvz);
+    }
+    drawLiveTennisBall();
+    if (typeof drawLiveSpaSteam === "function") drawLiveSpaSteam();
+    if (typeof drawLiveCafeSteam === "function") drawLiveCafeSteam();
 
-  // 9) Caddeden Geçen İzometrik Arabalar ve Kargo Kamyonları
-  for (const car of cars) drawIsoCar(car);
-  for (const t of trucks) drawIsoTruck(t);
+    // 9) Caddeden Geçen İzometrik Arabalar ve Kargo Kamyonları
+    for (const car of cars) drawIsoCar(car);
+    for (const t of trucks) drawIsoTruck(t);
+  }
 
   // 9.5) Caddenin Karşısındaki Şehir Parkı Yapıları (Arabaların Önünde - Painter's Algorithm Derinlik Sıralaması)
   // oppSwU1 (1620) yukarıda (3.2 bölümünde) tanımlanmıştır
@@ -22925,6 +23420,11 @@ const ONLINE_STATE = {
   lastUploadedHash: _readLS(LAST_CLOUD_HASH_KEY, ""),
   dirty: false,
   lastCloudMeta: null,
+  lastShowcaseHash: _readLS("hotelore_last_showcase_hash_v1", ""),
+  lastShowcaseMs: Number(_readLS("hotelore_last_showcase_ms_v1", "0")) || 0,
+  showcaseDirty: false,
+  showcaseBusy: false,
+  friendCode: null,
   autoSyncTimer: null,
   retryTimer: null,
   retryAttempt: 0,
@@ -22985,6 +23485,7 @@ function markCloudSaveDirty(newHash) {
     newHash = computeSaveHash(serializeSaveRaw());
   }
   ONLINE_STATE.dirty = !!(newHash && newHash !== ONLINE_STATE.lastUploadedHash);
+  if (typeof markShowcaseDirty === "function") markShowcaseDirty(newHash);
   notifyOnlineStateChange();
 }
 
@@ -23038,8 +23539,10 @@ async function _silentStartupCheck() {
       // İlk hesap açılışı: bulutta henüz kayıt yoksa sessizce ilk yedek gönderilir
       ONLINE_STATE.dirty = true;
       await uploadCloudSave({ auto: true, reason: "initial_upload", _metaChecked: true });
+      if (typeof uploadProfileShowcase === "function") uploadProfileShowcase({ immediate: true });
       return;
     }
+    if (typeof ensureFriendCodeAndProfile === "function") ensureFriendCodeAndProfile();
     const cloudHash = (typeof computeSaveHash === "function") ? computeSaveHash(meta.rawJson || "") : "";
     if (cloudHash === localHash) {
       ONLINE_STATE.lastUploadedHash = localHash;
@@ -23206,6 +23709,10 @@ async function signOutOnline() {
     await ONLINE_STATE.auth.signOut();
     ONLINE_STATE.user = null;
     ONLINE_STATE.lastCloudMeta = null;
+    ONLINE_STATE.friendCode = "";
+    ONLINE_STATE.lastShowcaseHash = "";
+    ONLINE_STATE.lastShowcaseMs = 0;
+    ONLINE_STATE.showcaseDirty = false;
     ONLINE_STATE.status = "idle";
     notifyOnlineStateChange();
     return { ok: true };
@@ -23228,9 +23735,16 @@ async function deleteOnlineAccount() {
     } catch (docErr) {
       if (docErr && docErr.code !== "not-found") throw docErr;
     }
+    if (typeof cascadeDeleteFriendData === "function") {
+      await cascadeDeleteFriendData(uid);
+    }
     await user.delete();
     ONLINE_STATE.user = null;
     ONLINE_STATE.lastCloudMeta = null;
+    ONLINE_STATE.friendCode = "";
+    ONLINE_STATE.lastShowcaseHash = "";
+    ONLINE_STATE.lastShowcaseMs = 0;
+    ONLINE_STATE.showcaseDirty = false;
     ONLINE_STATE.lastSyncMs = 0;
     ONLINE_STATE.lastUploadedHash = "";
     _writeLS(LAST_CLOUD_HASH_KEY, "");
@@ -23442,8 +23956,12 @@ async function downloadCloudSave() {
 }
 
 function scheduleOnlineAutoSync() {
-  if (typeof window !== "undefined" && window.saveLocked) return;
-  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.dirty) return;
+  if (typeof window !== "undefined" && (window.saveLocked || window.visitMode)) return;
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user) return;
+  if (ONLINE_STATE.showcaseDirty && typeof uploadProfileShowcase === "function") {
+    uploadProfileShowcase({ auto: true }).catch(() => {});
+  }
+  if (!ONLINE_STATE.dirty) return;
   const elapsed = Date.now() - (ONLINE_STATE.lastSyncMs || 0);
   if (elapsed >= AUTO_SYNC_INTERVAL_MS) {
     if (ONLINE_STATE.autoSyncTimer) { clearTimeout(ONLINE_STATE.autoSyncTimer); ONLINE_STATE.autoSyncTimer = null; }
@@ -23455,15 +23973,23 @@ function scheduleOnlineAutoSync() {
   ONLINE_STATE.autoSyncTimer = setTimeout(() => {
     ONLINE_STATE.autoSyncTimer = null;
     if (ONLINE_STATE.dirty) uploadCloudSave({ auto: true, reason: "interval" }).catch(() => {});
+    if (ONLINE_STATE.showcaseDirty && typeof uploadProfileShowcase === "function") {
+      uploadProfileShowcase({ auto: true }).catch(() => {});
+    }
   }, waitMs);
 }
 
 function triggerCloudSyncNow(reason = "manual") {
-  if (typeof window !== "undefined" && window.saveLocked) return Promise.resolve({ ok: false, skipped: "save_locked" });
+  if (typeof window !== "undefined" && (window.saveLocked || window.visitMode)) {
+    return Promise.resolve({ ok: false, skipped: "save_locked" });
+  }
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user) return Promise.resolve({ ok: false, skipped: "no_auth" });
   if (ONLINE_STATE.autoSyncTimer) {
     clearTimeout(ONLINE_STATE.autoSyncTimer);
     ONLINE_STATE.autoSyncTimer = null;
+  }
+  if (typeof uploadProfileShowcase === "function" && (ONLINE_STATE.showcaseDirty || reason === "display_name")) {
+    uploadProfileShowcase({ immediate: reason === "display_name" }).catch(() => {});
   }
   if (!ONLINE_STATE.dirty && ONLINE_STATE.lastCloudMeta) {
     return Promise.resolve({ ok: true, skipped: "unchanged" });
@@ -23863,6 +24389,721 @@ setInterval(() => {
   }
 }, 30000);
 
+// ===== BUNDLED: online/friends-service.js =====
+// [online/friends-service.js] Arkadas Kodu, Profil Vitrin Yayinlama & Arkadas Listesi (O2)
+const FRIEND_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 0, O, 1, I, L hariç 29 karakter
+const SHOWCASE_INTERVAL_MS = 300000; // En çok 5 dakikada bir otomatik vitrin güncellemesi
+const LAST_SHOWCASE_HASH_KEY = "hotelore_last_showcase_hash_v1";
+const LAST_SHOWCASE_MS_KEY = "hotelore_last_showcase_ms_v1";
+
+function _withTimeout(promise, ms = 6000) {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))
+  ]);
+}
+
+function generateFriendCodeCandidate() {
+  let out = "";
+  for (let i = 0; i < 8; i++) {
+    out += FRIEND_CODE_ALPHABET[Math.floor(Math.random() * FRIEND_CODE_ALPHABET.length)];
+  }
+  return out;
+}
+
+function normalizeFriendCode(raw) {
+  return String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function sanitizeFriendDisplayName(rawName) {
+  if (typeof validateAndNormalizePlayerName === "function") {
+    const v = validateAndNormalizePlayerName(rawName);
+    if (v.ok && !v.empty) return v.value;
+    return "Misafir";
+  }
+  return String(rawName || "Misafir").trim().slice(0, 16) || "Misafir";
+}
+
+function markShowcaseDirty(newHash) {
+  if (typeof ONLINE_STATE === "undefined") return;
+  if (typeof window !== "undefined" && (window.saveLocked || window.visitMode)) return;
+  ONLINE_STATE.showcaseDirty = true;
+}
+
+async function ensureFriendCodeAndProfile() {
+  if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+    return null;
+  }
+  if (ONLINE_STATE.friendCode && /^[A-Z2-9]{8}$/.test(ONLINE_STATE.friendCode)) {
+    return ONLINE_STATE.friendCode;
+  }
+  const uid = ONLINE_STATE.user.uid;
+  const db = ONLINE_STATE.db;
+  try {
+    const profSnap = await _withTimeout(db.collection("profiles").doc(uid).get(), 5000);
+    if (profSnap.exists) {
+      const pd = profSnap.data() || {};
+      if (pd.friendCode && /^[A-Z2-9]{8}$/.test(pd.friendCode)) {
+        ONLINE_STATE.friendCode = pd.friendCode;
+        if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+        return pd.friendCode;
+      }
+    }
+    // Çakışma kontrolü ile en fazla 5 deneme
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const candidate = generateFriendCodeCandidate();
+      try {
+        const codeSnap = await _withTimeout(db.collection("codes").doc(candidate).get(), 4500);
+        if (codeSnap.exists) {
+          const cd = codeSnap.data() || {};
+          if (cd.uid !== uid) continue;
+        } else {
+          await _withTimeout(db.collection("codes").doc(candidate).set({ uid }), 4500);
+        }
+        ONLINE_STATE.friendCode = candidate;
+        const showcaseStr = (typeof packShowcaseString === "function") ? await packShowcaseString() : "{}";
+        const meta = _computeShowcaseSummary();
+        await _withTimeout(db.collection("profiles").doc(uid).set({
+          displayName: meta.displayName,
+          friendCode: candidate,
+          hotelName: meta.hotelName,
+          stars: meta.stars,
+          day: meta.day,
+          reputation: meta.reputation,
+          showcase: showcaseStr,
+          showcaseVersion: (typeof SHOWCASE_VERSION === "number") ? SHOWCASE_VERSION : 1,
+          updatedAt: Date.now()
+        }), 5000);
+        if (typeof computeSaveHash === "function") {
+          const sh = computeSaveHash(showcaseStr);
+          _writeLS(LAST_SHOWCASE_HASH_KEY, sh);
+          _writeLS(LAST_SHOWCASE_MS_KEY, Date.now());
+          ONLINE_STATE.lastShowcaseHash = sh;
+          ONLINE_STATE.lastShowcaseMs = Date.now();
+          ONLINE_STATE.showcaseDirty = false;
+        }
+        if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+        return candidate;
+      } catch (_) {
+        // Çakışma veya geçici kural reddi -> sonraki aday kodu dene
+      }
+    }
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[FriendCode]", err);
+  }
+  return null;
+}
+
+function _computeShowcaseSummary() {
+  const cleanHotel = String((typeof hotelName === "string" && hotelName.trim()) ? hotelName.trim() : "HoteLore").slice(0, 24) || "HoteLore";
+  const cleanPlayer = (typeof ensurePlayerName === "function") ? ensurePlayerName() : "Misafir1000";
+  const st = (typeof stars === "function") ? Math.max(0, Math.min(3, Math.floor(Number(stars()) || 0))) : 0;
+  return {
+    displayName: cleanPlayer,
+    hotelName: cleanHotel,
+    stars: st,
+    day: Math.max(1, Math.floor(Number(typeof day !== "undefined" ? day : 1) || 1)),
+    reputation: Math.max(0, Math.floor(Number(typeof reputation !== "undefined" ? reputation : 0) || 0))
+  };
+}
+
+async function uploadProfileShowcase(opts = {}) {
+  if (typeof window !== "undefined" && (window.saveLocked || window.visitMode)) {
+    return { ok: false, skipped: "locked_or_visiting" };
+  }
+  if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+    return { ok: false, skipped: "no_auth" };
+  }
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, skipped: "offline" };
+  }
+  if (ONLINE_STATE.showcaseBusy) {
+    if (!opts.force && !opts.immediate) return { ok: false, skipped: "busy" };
+    for (let w = 0; w < 60 && ONLINE_STATE.showcaseBusy; w++) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    if (ONLINE_STATE.showcaseBusy) return { ok: false, skipped: "busy" };
+  }
+
+  const lastMs = ONLINE_STATE.lastShowcaseMs || Number(_readLS(LAST_SHOWCASE_MS_KEY, "0")) || 0;
+  if (!opts.force && !opts.immediate && (Date.now() - lastMs) < SHOWCASE_INTERVAL_MS) {
+    return { ok: false, skipped: "rate_limited" };
+  }
+
+  ONLINE_STATE.showcaseBusy = true;
+  try {
+    const code = await ensureFriendCodeAndProfile();
+    if (!code) return { ok: false, skipped: "no_code" };
+
+    const showcaseStr = (typeof packShowcaseString === "function") ? await packShowcaseString() : "{}";
+    const summary = _computeShowcaseSummary();
+    const sh = (typeof computeSaveHash === "function")
+      ? computeSaveHash(summary.displayName + "|" + showcaseStr)
+      : showcaseStr;
+    const prevSh = ONLINE_STATE.lastShowcaseHash || _readLS(LAST_SHOWCASE_HASH_KEY, "");
+
+    if (!opts.force && sh === prevSh) {
+      ONLINE_STATE.showcaseDirty = false;
+      return { ok: true, skipped: "unchanged" };
+    }
+
+    const uid = ONLINE_STATE.user.uid;
+    const nowMs = Date.now();
+    await _withTimeout(ONLINE_STATE.db.collection("profiles").doc(uid).set({
+      displayName: summary.displayName,
+      friendCode: code,
+      hotelName: summary.hotelName,
+      stars: summary.stars,
+      day: summary.day,
+      reputation: summary.reputation,
+      showcase: showcaseStr,
+      showcaseVersion: (typeof SHOWCASE_VERSION === "number") ? SHOWCASE_VERSION : 1,
+      updatedAt: nowMs
+    }), 5000);
+
+    ONLINE_STATE.lastShowcaseHash = sh;
+    ONLINE_STATE.lastShowcaseMs = nowMs;
+    ONLINE_STATE.showcaseDirty = false;
+    _writeLS(LAST_SHOWCASE_HASH_KEY, sh);
+    _writeLS(LAST_SHOWCASE_MS_KEY, nowMs);
+    return { ok: true, sizeBytes: showcaseStr.length };
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[ShowcaseSync]", err);
+    return { ok: false, skipped: "error" };
+  } finally {
+    ONLINE_STATE.showcaseBusy = false;
+  }
+}
+
+async function addFriendByCode(rawInput) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, error: "Çevrimdışı — İnternet bağlantısı gerekli." };
+  }
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+    return { ok: false, error: "Çevrimiçi oturum henüz bağlanmadı." };
+  }
+  const code = normalizeFriendCode(rawInput);
+  if (!code || code.length !== 8) {
+    return { ok: false, error: "Bu kodla bir otel bulunamadı" };
+  }
+
+  const db = ONLINE_STATE.db;
+  const myUid = ONLINE_STATE.user.uid;
+  try {
+    const codeSnap = await _withTimeout(db.collection("codes").doc(code).get(), 6000);
+    if (!codeSnap.exists) return { ok: false, error: "Bu kodla bir otel bulunamadı" };
+    const friendUid = (codeSnap.data() || {}).uid;
+    if (!friendUid) return { ok: false, error: "Bu kodla bir otel bulunamadı" };
+    if (friendUid === myUid) return { ok: false, error: "Kendi arkadaş kodunu ekleyemezsin." };
+
+    const listRef = db.collection("friends").doc(myUid).collection("list").doc(friendUid);
+    const existing = await _withTimeout(listRef.get(), 5000);
+    if (existing.exists) return { ok: false, error: "Bu arkadaş zaten listende." };
+
+    const profSnap = await _withTimeout(db.collection("profiles").doc(friendUid).get(), 6000);
+    if (!profSnap.exists) return { ok: false, error: "Bu kodla bir otel bulunamadı" };
+    const p = profSnap.data() || {};
+    const safeName = sanitizeFriendDisplayName(p.displayName);
+
+    await _withTimeout(listRef.set({
+      addedAt: Date.now(),
+      displayName: safeName,
+      hotelName: String(p.hotelName || "HoteLore").slice(0, 24),
+      stars: Number(p.stars || 0),
+      day: Number(p.day || 1)
+    }), 5000);
+
+    return { ok: true, friendUid, displayName: safeName, hotelName: p.hotelName || "HoteLore" };
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[AddFriend]", err);
+    return { ok: false, error: (typeof navigator !== "undefined" && navigator.onLine === false) ? "Çevrimdışı — İnternet bağlantısı gerekli." : "Bu kodla bir otel bulunamadı" };
+  }
+}
+
+async function fetchFriendsList() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, offline: true, items: [] };
+  }
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+    return { ok: false, error: "Çevrimdışı", items: [] };
+  }
+  const db = ONLINE_STATE.db;
+  const myUid = ONLINE_STATE.user.uid;
+  try {
+    const snap = await _withTimeout(db.collection("friends").doc(myUid).collection("list").get(), 6000);
+    const rawItems = [];
+    snap.forEach(doc => {
+      rawItems.push(Object.assign({ fid: doc.id }, doc.data() || {}));
+    });
+    rawItems.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+
+    // Profillerden güncel vitrin özeti yenile
+    const refreshed = await Promise.all(rawItems.map(async (item) => {
+      try {
+        const ps = await _withTimeout(db.collection("profiles").doc(item.fid).get(), 4500);
+        if (ps.exists) {
+          const pd = ps.data() || {};
+          return {
+            fid: item.fid,
+            displayName: sanitizeFriendDisplayName(pd.displayName || item.displayName),
+            hotelName: String(pd.hotelName || item.hotelName || "HoteLore").slice(0, 24),
+            stars: Number(pd.stars !== undefined ? pd.stars : (item.stars || 0)),
+            day: Number(pd.day !== undefined ? pd.day : (item.day || 1)),
+            updatedAt: Number(pd.updatedAt || item.addedAt || 0),
+            available: !!pd.showcase
+          };
+        }
+        return {
+          fid: item.fid,
+          displayName: sanitizeFriendDisplayName(item.displayName),
+          hotelName: String(item.hotelName || "HoteLore").slice(0, 24),
+          stars: Number(item.stars || 0),
+          day: Number(item.day || 1),
+          updatedAt: Number(item.addedAt || 0),
+          available: false
+        };
+      } catch (_) {
+        return {
+          fid: item.fid,
+          displayName: sanitizeFriendDisplayName(item.displayName),
+          hotelName: String(item.hotelName || "HoteLore").slice(0, 24),
+          stars: Number(item.stars || 0),
+          day: Number(item.day || 1),
+          updatedAt: Number(item.addedAt || 0),
+          available: true
+        };
+      }
+    }));
+    return { ok: true, items: refreshed };
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[FetchFriends]", err);
+    return { ok: false, offline: _isNetworkLikeError(err), items: [] };
+  }
+}
+
+async function removeFriendById(fid) {
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db || !fid) {
+    return { ok: false };
+  }
+  try {
+    await _withTimeout(
+      ONLINE_STATE.db.collection("friends").doc(ONLINE_STATE.user.uid).collection("list").doc(fid).delete(),
+      5000
+    );
+    return { ok: true };
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[RemoveFriend]", err);
+    return { ok: false };
+  }
+}
+
+async function fetchFriendProfile(fid) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { ok: false, error: "Çevrimdışı — İnternet bağlantısı gerekli." };
+  }
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db || !fid) {
+    return { ok: false, error: "Bu otel şu an görüntülenemiyor" };
+  }
+  try {
+    const snap = await _withTimeout(ONLINE_STATE.db.collection("profiles").doc(fid).get(), 6500);
+    if (!snap.exists) return { ok: false, error: "Bu otel şu an görüntülenemiyor" };
+    const pd = snap.data() || {};
+    if (!pd.showcase || typeof pd.showcase !== "string") {
+      return { ok: false, error: "Bu otel şu an görüntülenemiyor" };
+    }
+    return {
+      ok: true,
+      profile: {
+        uid: fid,
+        displayName: sanitizeFriendDisplayName(pd.displayName),
+        hotelName: String(pd.hotelName || "HoteLore").slice(0, 24),
+        stars: Number(pd.stars || 0),
+        day: Number(pd.day || 1),
+        showcase: pd.showcase,
+        showcaseVersion: Number(pd.showcaseVersion || 1)
+      }
+    };
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[FetchProfile]", err);
+    return { ok: false, error: "Bu otel şu an görüntülenemiyor" };
+  }
+}
+
+async function cascadeDeleteFriendData(uid) {
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.db || !uid) return;
+  const db = ONLINE_STATE.db;
+  try {
+    let codeToDelete = ONLINE_STATE.friendCode || "";
+    try {
+      const ps = await _withTimeout(db.collection("profiles").doc(uid).get(), 4500);
+      if (ps.exists && ps.data() && ps.data().friendCode) {
+        codeToDelete = ps.data().friendCode;
+      }
+    } catch (_) {}
+    if (codeToDelete) {
+      try { await _withTimeout(db.collection("codes").doc(codeToDelete).delete(), 4500); } catch (_) {}
+    }
+    try {
+      const fSnap = await _withTimeout(db.collection("friends").doc(uid).collection("list").get(), 4500);
+      const delPromises = [];
+      fSnap.forEach(doc => delPromises.push(doc.ref.delete().catch(() => {})));
+      await Promise.all(delPromises);
+    } catch (_) {}
+    try { await _withTimeout(db.collection("profiles").doc(uid).delete(), 4500); } catch (_) {}
+    ONLINE_STATE.friendCode = null;
+    ONLINE_STATE.lastShowcaseHash = "";
+    ONLINE_STATE.lastShowcaseMs = 0;
+    _writeLS(LAST_SHOWCASE_HASH_KEY, "");
+    _writeLS(LAST_SHOWCASE_MS_KEY, "0");
+  } catch (err) {
+    if (typeof console !== "undefined" && console.warn) console.warn("[CascadeDelete]", err);
+  }
+}
+
+// ===== BUNDLED: online/visit-mode.js =====
+// [online/visit-mode.js] Salt-Okunur Arkadas Oteli Ziyaret Modu (Yalnizca Izleme)
+window.visitMode = false;
+window.visitMeta = null;
+let _visitBackupRaw = "";
+let _visitBackupCam = null;
+
+async function enterVisitMode(friendUid) {
+  if (window.visitMode) return { ok: false, error: "Zaten ziyaret modundasın." };
+  if (typeof fetchFriendProfile !== "function" || typeof applyShowcaseString !== "function") {
+    return { ok: false, error: "Bu otel şu an görüntülenemiyor" };
+  }
+
+  // Ziyaret öncesi oyuncunun kendi oyununu eksiksiz yedekle
+  if (!window.saveLocked && typeof saveGame === "function") saveGame();
+  const backupRaw = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
+  if (!backupRaw) return { ok: false, error: "Mevcut oyun yedeği alınamadı." };
+
+  const backupCam = {
+    x: camCenter.x,
+    y: camCenter.y,
+    zoom,
+    viewFloor,
+    inMenu: typeof inMenu !== "undefined" ? !!inMenu : false,
+    sel,
+    selSlotIdx: selSlot ? selSlot.idx : 32,
+    selSlotFloor: (selSlot && selSlot.floor) ? selSlot.floor.idx : 0
+  };
+
+  const res = await fetchFriendProfile(friendUid);
+  if (!res.ok || !res.profile) {
+    return { ok: false, error: res.error || "Bu otel şu an görüntülenemiyor" };
+  }
+  const prof = res.profile;
+  if (prof.showcaseVersion > ((typeof SHOWCASE_VERSION === "number") ? SHOWCASE_VERSION : 1)) {
+    return { ok: false, error: "Bu otel şu an görüntülenemiyor" };
+  }
+
+  _visitBackupRaw = backupRaw;
+  _visitBackupCam = backupCam;
+  window.visitMode = true;
+  window.saveLocked = true;
+  window.visitMeta = prof;
+
+  const applied = await applyShowcaseString(prof.showcase);
+  if (!applied) {
+    exitVisitMode();
+    return { ok: false, error: "Bu otel şu an görüntülenemiyor" };
+  }
+
+  if (typeof closeDrawer === "function") closeDrawer();
+  if (typeof setStartMenuActive === "function") {
+    setStartMenuActive(false);
+  } else if (typeof startScreen !== "undefined" && startScreen) {
+    inMenu = false;
+    startScreen.style.display = "none";
+    if (document.body) document.body.classList.remove("in-start-menu");
+  }
+  if (document.body) document.body.classList.add("is-visiting-mode");
+
+  if (typeof updateVisitBanner === "function") updateVisitBanner(prof);
+  if (typeof fitView === "function") fitView();
+  return { ok: true };
+}
+
+function exitVisitMode() {
+  if (!window.visitMode) return;
+  window.visitMode = false;
+  window.saveLocked = false;
+  window.visitMeta = null;
+  if (document.body) document.body.classList.remove("is-visiting-mode");
+
+  if (_visitBackupRaw && typeof applySaveRaw === "function") {
+    applySaveRaw(_visitBackupRaw);
+  }
+  const cam = _visitBackupCam;
+  _visitBackupRaw = "";
+  _visitBackupCam = null;
+
+  if (cam) {
+    viewFloor = typeof cam.viewFloor === "number" ? cam.viewFloor : 0;
+    camCenter.x = cam.x;
+    camCenter.y = cam.y;
+    zoom = cam.zoom;
+    sel = cam.sel || "Slot";
+    if (typeof floors !== "undefined" && floors[cam.selSlotFloor] && floors[cam.selSlotFloor].slots[cam.selSlotIdx]) {
+      selSlot = floors[cam.selSlotFloor].slots[cam.selSlotIdx];
+    }
+    if (cam.inMenu && typeof setStartMenuActive === "function") {
+      setStartMenuActive(true);
+    }
+    if (typeof applyCam === "function") applyCam();
+  }
+  if (typeof refresh === "function") refresh();
+}
+
+function switchVisitFloor(fIdx) {
+  if (!window.visitMode) return;
+  if (typeof floors === "undefined" || !floors[fIdx] || floors[fIdx].state !== "Built") return;
+  viewFloor = fIdx;
+  if (typeof updateVisitBanner === "function") updateVisitBanner(window.visitMeta);
+}
+
+// ===== BUNDLED: online/friends-ui.js =====
+// [online/friends-ui.js] Arkadaslar Penceresi & Ziyaret Bandi Arayuzu (O2)
+const friendsModal = document.getElementById("friends-modal");
+const btnFriendsMenu = document.getElementById("btn-friends-menu");
+const hudFriendsBtn = document.getElementById("hud-friends-btn");
+const btnCloseFriends = document.getElementById("btn-close-friends");
+
+const frMyCodeEl = document.getElementById("fr-my-code");
+const btnCopyMyCode = document.getElementById("btn-copy-my-code");
+const btnShareMyCode = document.getElementById("btn-share-my-code");
+const frAddInput = document.getElementById("fr-add-input");
+const btnAddFriend = document.getElementById("btn-add-friend");
+const frStatusMsg = document.getElementById("fr-status-msg");
+const frListEl = document.getElementById("fr-list");
+
+const visitBannerTitle = document.getElementById("visit-banner-title");
+const visitFloorTabs = document.getElementById("visit-floor-tabs");
+const btnExitVisit = document.getElementById("btn-exit-visit");
+
+function setFriendsStatusMsg(msg, isErr = false) {
+  if (!frStatusMsg) return;
+  frStatusMsg.textContent = msg || "";
+  frStatusMsg.style.display = msg ? "block" : "none";
+  frStatusMsg.classList.toggle("is-err", !!isErr);
+}
+
+function _escHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function _fmtRelativeUpdated(ms) {
+  if (!ms) return "Az önce güncellendi";
+  const sec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  if (sec < 60) return "Az önce güncellendi";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + " dk önce güncellendi";
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return hr + " sa önce güncellendi";
+  return Math.floor(hr / 24) + " gün önce güncellendi";
+}
+
+function renderFriendsHeader() {
+  const code = (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.friendCode) ? ONLINE_STATE.friendCode : "--------";
+  if (frMyCodeEl) frMyCodeEl.textContent = code;
+  if (btnShareMyCode) {
+    btnShareMyCode.style.display = (typeof navigator !== "undefined" && typeof navigator.share === "function") ? "inline-flex" : "none";
+  }
+}
+
+async function openFriendsModal() {
+  setFriendsStatusMsg("");
+  renderFriendsHeader();
+  if (friendsModal) friendsModal.style.display = "flex";
+
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    setFriendsStatusMsg("Çevrimdışı", true);
+    if (frListEl) frListEl.innerHTML = '<div class="onl-empty">Çevrimdışı</div>';
+    return;
+  }
+
+  if (frListEl) frListEl.innerHTML = '<div class="onl-empty">⏳ Yükleniyor…</div>';
+  if (typeof ensureFriendCodeAndProfile === "function") {
+    await ensureFriendCodeAndProfile();
+  }
+  renderFriendsHeader();
+  await loadAndRenderFriendsList();
+}
+
+async function loadAndRenderFriendsList() {
+  if (!frListEl || typeof fetchFriendsList !== "function") return;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    setFriendsStatusMsg("Çevrimdışı", true);
+    frListEl.innerHTML = '<div class="onl-empty">Çevrimdışı</div>';
+    return;
+  }
+  frListEl.innerHTML = '<div class="onl-empty">⏳ Yükleniyor…</div>';
+  const res = await fetchFriendsList();
+  if (!res.ok) {
+    if (res.offline) {
+      setFriendsStatusMsg("Çevrimdışı", true);
+      frListEl.innerHTML = '<div class="onl-empty">Çevrimdışı</div>';
+    } else {
+      frListEl.innerHTML = '<div class="onl-empty">Arkadaş listesi yüklenemedi.</div>';
+    }
+    return;
+  }
+  if (!res.items.length) {
+    frListEl.innerHTML = '<div class="onl-empty">Henüz arkadaş eklemedin. Kodunu paylaş veya arkadaşının kodunu yukarıya gir!</div>';
+    return;
+  }
+
+  frListEl.innerHTML = res.items.map((f, idx) => `
+    <div class="fr-item">
+      <div class="fr-info">
+        <div class="fr-player">${_escHtml(f.displayName)} — <b>${_escHtml(f.hotelName)}</b></div>
+        <div class="fr-meta">⭐ ${f.stars} • Gün ${f.day} • ${_fmtRelativeUpdated(f.updatedAt)}</div>
+      </div>
+      <div class="fr-actions">
+        <button type="button" class="onl-btn google fr-visit-btn" data-fid="${_escHtml(f.fid)}" ${f.available === false ? "disabled" : ""}>👁️ Otele Git</button>
+        <button type="button" class="onl-btn del fr-del-btn" data-fid="${_escHtml(f.fid)}" title="Listeden Sil">Sil</button>
+      </div>
+    </div>
+  `).join("");
+
+  frListEl.querySelectorAll(".fr-visit-btn").forEach(btn => {
+    btn.onclick = async () => {
+      if (typeof play === "function") play("tap");
+      const fid = btn.getAttribute("data-fid");
+      setFriendsStatusMsg("⏳ Yükleniyor…");
+      const vRes = await enterVisitMode(fid);
+      if (vRes.ok) {
+        setFriendsStatusMsg("");
+        if (friendsModal) friendsModal.style.display = "none";
+      } else {
+        setFriendsStatusMsg(vRes.error || "Bu otel şu an görüntülenemiyor", true);
+      }
+    };
+  });
+
+  frListEl.querySelectorAll(".fr-del-btn").forEach(btn => {
+    btn.onclick = async () => {
+      if (typeof play === "function") play("tap");
+      const fid = btn.getAttribute("data-fid");
+      await removeFriendById(fid);
+      await loadAndRenderFriendsList();
+    };
+  });
+}
+
+function updateVisitBanner(prof) {
+  if (!prof) return;
+  if (visitBannerTitle) {
+    visitBannerTitle.textContent = "🏨 " + (prof.hotelName || "HoteLore") + " — " + (prof.displayName || "Misafir") + " ⭐" + (prof.stars || 0) + " • Gün " + (prof.day || 1);
+  }
+  if (visitFloorTabs && typeof floors !== "undefined") {
+    visitFloorTabs.innerHTML = "";
+    for (let f = 0; f < floors.length; f++) {
+      if (floors[f].state !== "Built") continue;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "vf-btn" + (viewFloor === f ? " active" : "");
+      b.textContent = (f + 1) + ". Kat";
+      b.onclick = () => {
+        if (typeof play === "function") play("tap");
+        switchVisitFloor(f);
+      };
+      visitFloorTabs.appendChild(b);
+    }
+  }
+}
+
+async function _copyTextClean(text) {
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (_) {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+if (typeof onOnlineStateChange === "function") onOnlineStateChange(() => renderFriendsHeader());
+
+if (btnFriendsMenu) btnFriendsMenu.onclick = () => { if (typeof play === "function") play("tap"); openFriendsModal(); };
+if (hudFriendsBtn) hudFriendsBtn.onclick = () => { if (typeof play === "function") play("tap"); openFriendsModal(); };
+if (btnCloseFriends) btnCloseFriends.onclick = () => { if (typeof play === "function") play("tap"); if (friendsModal) friendsModal.style.display = "none"; };
+if (friendsModal) {
+  friendsModal.onclick = (e) => {
+    if (e.target === friendsModal) {
+      if (typeof play === "function") play("tap");
+      friendsModal.style.display = "none";
+    }
+  };
+}
+
+if (btnCopyMyCode) {
+  btnCopyMyCode.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    const code = (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.friendCode) ? ONLINE_STATE.friendCode : "";
+    if (!code) return;
+    const ok = await _copyTextClean(code);
+    setFriendsStatusMsg(ok ? "✅ Arkadaş kodun kopyalandı: " + code : "Kopyalanamadı: " + code, !ok);
+  };
+}
+
+if (btnShareMyCode) {
+  btnShareMyCode.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    const code = (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.friendCode) ? ONLINE_STATE.friendCode : "";
+    if (!code) return;
+    const shareText = "HoteLore'da beni ekle! Arkadaş kodum: " + code;
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ text: shareText });
+        return;
+      } catch (_) {}
+    }
+    const ok = await _copyTextClean(shareText);
+    setFriendsStatusMsg(ok ? "✅ Paylaşım metni kopyalandı." : shareText);
+  };
+}
+
+if (btnAddFriend) {
+  btnAddFriend.onclick = async () => {
+    if (typeof play === "function") play("tap");
+    const val = frAddInput ? frAddInput.value : "";
+    setFriendsStatusMsg("⏳ Ekleniyor…");
+    const res = await addFriendByCode(val);
+    if (res.ok) {
+      if (frAddInput) frAddInput.value = "";
+      setFriendsStatusMsg("✅ Eklendi: " + res.displayName + " (" + res.hotelName + ")");
+      await loadAndRenderFriendsList();
+    } else {
+      setFriendsStatusMsg(res.error || "Bu kodla bir otel bulunamadı", true);
+    }
+  };
+}
+
+if (btnExitVisit) {
+  btnExitVisit.onclick = () => {
+    if (typeof play === "function") play("tap");
+    exitVisitMode();
+  };
+}
+
 // ===== BUNDLED: render/loop.js =====
 // [render/loop.js] Ana oyun döngüsü ve başlatma (bootstrap)
 // ===== ANA OYUN DÖNGÜSÜ =====
@@ -23876,10 +25117,10 @@ function loop(now) {
 
   updateCarsAndBirds(dt);
 
-  if (inMenu) {
-    if (typeof updateMenuAmbient === "function") updateMenuAmbient(dt);
+  if (inMenu || (typeof window !== "undefined" && window.visitMode)) {
+    if (inMenu && typeof updateMenuAmbient === "function") updateMenuAmbient(dt);
     updateParticles(dt);
-    if (typeof menuLogoCanvas !== "undefined" && menuLogoCanvas && menuLogoCanvas.offsetParent !== null) {
+    if (inMenu && typeof menuLogoCanvas !== "undefined" && menuLogoCanvas && menuLogoCanvas.offsetParent !== null) {
       drawMenuLogo();
     }
     drawWorld();
