@@ -1954,6 +1954,19 @@ const SpaSessionSec = 12;
 const SpaPoints = 3;
 const SpaDailyCost = 15;
 const SpaMaxCount = 2;
+const CostCafe = 500;
+const CafeFeeDefault = 25;
+const CafeFeeMin = 10;
+const CafeFeeMax = 60;
+const CafeFeeStep = 5;
+const CafeSessionSec = 1.5;
+const CafePoints = 1;
+const CafeDailyCost = 10;
+const CafeMaxCount = 1;
+const CafeNightMult = 1.5;
+const CafeNightProbMult = 0.8;
+const BarmenHireCost = 150;
+const BarmenWage = 60;
 const BodyguardDailyPrice = 80;
 const LastNames = [
   "Acar", "Akbaba", "Aksoy", "Aktaş", "Arslan", "Aslan", "Ateş", "Avcı", "Aydın",
@@ -1998,7 +2011,7 @@ const StorageX = -680, StorageW = 380, StorageH = 230;
 const DormX = TotalW + 40, DormW = 380, DormH = 240;
 const ParkX = TotalW + 460, ParkW = 600;
 const WalkSpeed = 150, ClimbSpeed = 230;
-const FloorCount = 4, ActCount = 13;
+const FloorCount = 4, ActCount = 14;
 const TreeX = [-780, -1000, -1220, -1440, TotalW + 1140, TotalW + 1360, TotalW + 1580];
 
 const Pencil = "#1f1f26", Orange = "#ff8c00", Green = "#33cc4d", GhostLine = "rgba(77,89,115,0.9)";
@@ -2207,7 +2220,7 @@ for (let f = 0; f < FloorCount; f++) {
       tennisState: isTennisClub ? "Ruin" : null,
       items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
       hasCorpse: false, corpseName: "", corpseSkin: "#fcd9b8", corpseHair: "#1a1412", corpseShirt: "#d94d4d",
-      gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], level: 1,
+      gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], cafeLevel: 1, cafeBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], level: 1,
       onFire: false, fireLeft: 0,
       wall: pick(WallColors), picColor: pick(PictureColors),
       get X0() { return ElevW + this.idx * SlotW; },
@@ -2244,7 +2257,7 @@ let kitchenState = "Locked", kitchenLeft = 0, cookLevel = 0, cookPawn = null;
 const kitchenWorkers = [];
 let towerOrder = [];
 // Haftalık Gazete & Muhasebe Raporu + Seri Katil + Etkinlikler + Piyasa Olayları (v1.9.17)
-let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0 };
+let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0 };
 let summaryOpen = false;
 let killerActiveThisWeek = false;
 let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
@@ -2267,6 +2280,12 @@ let spaRevenueToday = 0;
 let spaSessionsTotal = 0;
 let spaIncomeTotal = 0;
 let spaDailyCostToday = 0;
+let barmenHired = false, barmenPawn = null;
+let cafeFee = CafeFeeDefault;
+let cafeSessionsToday = 0;
+let cafeRevenueToday = 0;
+let cafeSessionsTotal = 0;
+let cafeIncomeTotal = 0;
 // Faz 2 Personeller: Resepsiyonist & Güvenlik
 let receptionistLevel = 0, recNoKids = false, recMinPrice = 0, recAllowFree = true, recAutoPlace = true, recAutoTimer = 0;
 let receptionistPawn = null;
@@ -2414,11 +2433,19 @@ function sanitizeTennisFee(val) {
   return Math.min(TennisFeeMax, Math.max(TennisFeeMin, stepped));
 }
 
-function sanitizeSpaFee(val) {
+function _sanitizeSteppedFee(val, defVal, step, minVal, maxVal) {
   const n = Number(val);
-  if (!Number.isFinite(n)) return SpaFeeDefault;
-  const stepped = Math.round(n / SpaFeeStep) * SpaFeeStep;
-  return Math.min(SpaFeeMax, Math.max(SpaFeeMin, stepped));
+  if (!Number.isFinite(n)) return defVal;
+  const stepped = Math.round(n / step) * step;
+  return Math.min(maxVal, Math.max(minVal, stepped));
+}
+
+function sanitizeSpaFee(val) {
+  return _sanitizeSteppedFee(val, SpaFeeDefault, SpaFeeStep, SpaFeeMin, SpaFeeMax);
+}
+
+function sanitizeCafeFee(val) {
+  return _sanitizeSteppedFee(val, CafeFeeDefault, CafeFeeStep, CafeFeeMin, CafeFeeMax);
 }
 
 // ===== BUNDLED: state/achievements.js =====
@@ -2642,6 +2669,30 @@ const ACHIEVEMENTS = [
     gems: 20, tl: 0, done: false,
     check: () => (typeof spaSessionsTotal === "number" ? spaSessionsTotal : 0) >= 50,
     progress: () => ({ cur: Math.min(50, Math.max(0, Math.floor(typeof spaSessionsTotal === "number" ? spaSessionsTotal : 0))), max: 50 })
+  },
+  {
+    id: "cafe_build", group: "Tesisler", title: "Kahve Molası", desc: "Otelinde bir Kafe & Bar kur",
+    gems: 10, tl: 0, done: false,
+    check: () => hasBuiltParcel("Cafe"),
+    progress: null
+  },
+  {
+    id: "cafe_lvl3", group: "Tesisler", title: "Gece Kulübü Havası", desc: "Kafe & Bar'ı Sv.3'e yükselt",
+    gems: 10, tl: 0, done: false,
+    check: () => allSlots.some(s => s.type === "Cafe" && s.floor && s.floor.state === "Built" && (s.cafeLevel || 1) >= 3),
+    progress: () => {
+      let maxLv = 0;
+      for (const s of allSlots) {
+        if (s.type === "Cafe" && s.floor && s.floor.state === "Built") maxLv = Math.max(maxLv, s.cafeLevel || 1);
+      }
+      return { cur: Math.min(3, maxLv), max: 3 };
+    }
+  },
+  {
+    id: "cafe_100", group: "Tesisler", title: "Müdavim", desc: "Toplam 100 Kafe & Bar seansı tamamla",
+    gems: 20, tl: 0, done: false,
+    check: () => (typeof cafeSessionsTotal === "number" ? cafeSessionsTotal : 0) >= 100,
+    progress: () => ({ cur: Math.min(100, Math.max(0, Math.floor(typeof cafeSessionsTotal === "number" ? cafeSessionsTotal : 0))), max: 100 })
   },
 
   // 3) Personel (4)
@@ -3693,6 +3744,16 @@ function brightness() {
   const t = dayTimer / DayLength;
   return clamp(Math.sin(t * 2 * Math.PI) * 1.6 + 0.4, 0, 1);
 }
+function getGameHour() {
+  const t = (typeof dayTimer === "number" && typeof DayLength === "number" && DayLength > 0) ? (dayTimer / DayLength) : 0;
+  return (6 + t * 24) % 24;
+}
+function getCafeTimePeriod() {
+  const h = getGameHour();
+  if (h >= 8 && h < 18) return "cafe";
+  if (h >= 18 && h < 24) return "bar";
+  return "closed";
+}
 function shadowIntensity() {
   if (typeof isNight !== "undefined" && isNight) return 0;
   const b = brightness();
@@ -4305,10 +4366,14 @@ function slotAtGrid(fl, gu, gv) {
   return null;
 }
 
+function isDoorFacilityType(type) {
+  return type === "Room" || type === "Toilet" || type === "Gym" || type === "Spa" || type === "Cafe";
+}
+
 function isRoofedStructure(type) {
   return type === "Room" || type === "Reception" || type === "Kitchen" ||
          type === "Storage" || type === "Dorm" || type === "Gym" ||
-         type === "Spa" || type === "Toilet" || type === "Gas" ||
+         type === "Spa" || type === "Cafe" || type === "Toilet" || type === "Gas" ||
          type === "Corridor" || type === "Elevator" || type === "TennisClub";
 }
 
@@ -4367,7 +4432,7 @@ function getRoomAvailableDoorWalls(s) {
     const leftSlot = slotAtGrid(s.floor, gu, gv - 1);
     return (leftSlot && leftSlot.type === "Corridor") ? ["left"] : [];
   }
-  if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym" && s.type !== "Spa") return [];
+  if (!isDoorFacilityType(s.type)) return [];
   const { gu, gv } = parcelCoords(s.idx);
   const fl = s.floor;
   if (!fl) return [];
@@ -4402,7 +4467,7 @@ function getRoomDoorWall(s) {
     const avail = getRoomAvailableDoorWalls(s);
     return avail[0] || null;
   }
-  if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gym" && s.type !== "Spa") return null;
+  if (!isDoorFacilityType(s.type)) return null;
   const avail = getRoomAvailableDoorWalls(s);
   if (s.doorWall && avail.includes(s.doorWall)) return s.doorWall;
   return avail[0] || "back";
@@ -4423,7 +4488,7 @@ function cycleRoomDoorWall(s) {
   const curIdx = avail.indexOf(curWall);
   const nextIdx = (curIdx + 1) % avail.length;
   s.doorWall = avail[nextIdx];
-  const name = s.roomNo ? s.roomNo + ". oda" : (s.type === "Toilet" ? "Genel WC" : (s.type === "Spa" ? "Spa & Hamam" : "Spor salonu"));
+  const name = s.roomNo ? s.roomNo + ". oda" : (s.type === "Toilet" ? "Genel WC" : (s.type === "Spa" ? "Spa & Hamam" : (s.type === "Cafe" ? "Kafe & Bar" : "Spor salonu")));
   if (typeof log === "function") log("🚪 " + name + " giriş kapısı " + getWallTrName(s.doorWall) + " koridora yönlendirildi!");
   if (typeof play === "function") play("tap");
   if (typeof refresh === "function") refresh();
@@ -4501,6 +4566,12 @@ function saveGame() {
       spaRevenueToday: Math.max(0, Math.floor(Number(spaRevenueToday) || 0)),
       spaSessionsTotal: Math.max(0, Math.floor(Number(spaSessionsTotal) || 0)),
       spaIncomeTotal: Math.max(0, Math.floor(Number(spaIncomeTotal) || 0)),
+      barmenHired: !!(barmenHired && (typeof hasBuiltCafe === "function" ? hasBuiltCafe() : true)),
+      cafeFee: sanitizeCafeFee(cafeFee),
+      cafeSessionsToday: Math.max(0, Math.floor(Number(cafeSessionsToday) || 0)),
+      cafeRevenueToday: Math.max(0, Math.floor(Number(cafeRevenueToday) || 0)),
+      cafeSessionsTotal: Math.max(0, Math.floor(Number(cafeSessionsTotal) || 0)),
+      cafeIncomeTotal: Math.max(0, Math.floor(Number(cafeIncomeTotal) || 0)),
       killerActiveThisWeek, killerLetter, killerCaughtWeek, weekMurders, marketEvent, unreadNewspaper, v181KillerRandomized: true, dayStats,
       activeEvent, eventDaysLeft, nextEventDay, nextEventType, vipSpawnedThisEvent,
       tennisGuestsThisEvent: Math.max(0, Math.min(TennisMaxGuestsPerEvent, Math.floor(Number(tennisGuestsThisEvent) || 0))),
@@ -4571,7 +4642,9 @@ function saveGame() {
         tennisToday: Math.max(0, Math.floor(Number(g.tennisToday) || 0)),
         tennisPlayed: !!g.tennisPlayed,
         spaDay: !!g.spaDay,
-        spaRelaxed: !!g.spaRelaxed
+        spaRelaxed: !!g.spaRelaxed,
+        cafeDay: !!g.cafeDay,
+        cafeNight: !!g.cafeNight
       })),
       floors: floors.map(fl => ({
         state: fl.state,
@@ -4597,6 +4670,7 @@ function saveGame() {
           picColor: s.picColor,
           gymLevel: s.gymLevel,
           spaLevel: s.type === "Spa" ? Math.max(1, Math.min(3, Math.floor(Number(s.spaLevel) || 1))) : 1,
+          cafeLevel: s.type === "Cafe" ? Math.max(1, Math.min(3, Math.floor(Number(s.cafeLevel) || 1))) : 1,
           level: s.level || 1,
           onFire: s.onFire,
           fireLeft: s.fireLeft,
@@ -4628,7 +4702,9 @@ function saveGame() {
             tennisToday: Math.max(0, Math.floor(Number(s.guest.tennisToday) || 0)),
             tennisPlayed: !!s.guest.tennisPlayed,
             spaDay: !!s.guest.spaDay,
-            spaRelaxed: !!s.guest.spaRelaxed
+            spaRelaxed: !!s.guest.spaRelaxed,
+            cafeDay: !!s.guest.cafeDay,
+            cafeNight: !!s.guest.cafeNight
           } : null
         }))
       }))
@@ -4722,7 +4798,7 @@ function loadGame() {
     marketEvent = (data.marketEvent && typeof data.marketEvent === "object") ? data.marketEvent : { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 0 };
     unreadNewspaper = !!data.unreadNewspaper;
     if (data.dayStats && typeof data.dayStats === "object") {
-      dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation, spaSessions: 0, spaIncome: 0, spaCost: 0 }, data.dayStats);
+      dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0 }, data.dayStats);
     }
     activeEvent = (data.activeEvent && EventTypes.includes(data.activeEvent)) ? data.activeEvent : "";
     eventDaysLeft = Math.max(0, Math.floor(Number(data.eventDaysLeft) || 0));
@@ -4743,6 +4819,12 @@ function loadGame() {
     spaSessionsTotal = Math.max(0, Math.floor(Number(data.spaSessionsTotal) || 0));
     spaIncomeTotal = Math.max(0, Math.floor(Number(data.spaIncomeTotal) || 0));
     spaDailyCostToday = 0;
+    barmenHired = !!data.barmenHired;
+    cafeFee = sanitizeCafeFee(data.cafeFee);
+    cafeSessionsToday = Math.max(0, Math.floor(Number(data.cafeSessionsToday) || 0));
+    cafeRevenueToday = Math.max(0, Math.floor(Number(data.cafeRevenueToday) || 0));
+    cafeSessionsTotal = Math.max(0, Math.floor(Number(data.cafeSessionsTotal) || 0));
+    cafeIncomeTotal = Math.max(0, Math.floor(Number(data.cafeIncomeTotal) || 0));
     nextEventType = (data.nextEventType && EventTypes.includes(data.nextEventType)) ? data.nextEventType : pickEventType();
     vipSpawnedThisEvent = !!data.vipSpawnedThisEvent;
     receptionistLevel = data.receptionistLevel || 0;
@@ -4851,6 +4933,8 @@ function loadGame() {
             s.gymBusy = [false, false, false];
             s.spaLevel = Math.max(1, Math.min(3, Math.floor(Number(sd.spaLevel) || 1)));
             s.spaBusy = [false, false, false];
+            s.cafeLevel = Math.max(1, Math.min(3, Math.floor(Number(sd.cafeLevel) || 1)));
+            s.cafeBusy = [false, false, false];
             s.toiletBusy = [false, false];
             s.tennisCourtBusy = [false, false];
             s.level = sd.level || 1;
@@ -4887,6 +4971,7 @@ function loadGame() {
                 room: s, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
                 gymTimer: rnd(10, 25), toiletTimer: rnd(12, 28), parkTimer: rnd(12, 28),
                 spaTimer: rnd(12, 30), spaDay: !!gd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!gd.spaRelaxed, spaInFlow: false, spaElapsed: 0,
+                cafeTimer: rnd(4, 10), cafeDay: !!gd.cafeDay, cafeNight: !!gd.cafeNight, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
                 tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(gd.tennisToday) || 0)),
                 tennis: null, tennisIdx: 0, tennisPlayed: !!gd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
                 crimeTimer: rnd(10, 18), crimeDone: !!gd.crimeDone,
@@ -4993,6 +5078,7 @@ function loadGame() {
         cleaners.push({ pawn: p, target: null, state: 0, cleanLeft: 0, idleTimer: 1 });
       }
     }
+    if (typeof clearCafeStaffIfNoCafe === "function") clearCafeStaffIfNoCafe();
     if (typeof syncStaffPawns === "function") syncStaffPawns();
 
     if (Array.isArray(data.dirts)) {
@@ -5044,6 +5130,7 @@ function loadGame() {
           room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
           gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
           spaTimer: rnd(12, 30), spaDay: !!qd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!qd.spaRelaxed, spaInFlow: false, spaElapsed: 0,
+          cafeTimer: rnd(8, 18), cafeDay: !!qd.cafeDay, cafeNight: !!qd.cafeNight, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
           tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(qd.tennisToday) || 0)),
           tennis: null, tennisIdx: 0, tennisPlayed: !!qd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
           crimeTimer: rnd(10, 18), crimeDone: !!qd.crimeDone,
@@ -5244,7 +5331,14 @@ function startNewGameClean() {
   spaSessionsTotal = 0;
   spaIncomeTotal = 0;
   spaDailyCostToday = 0;
-  dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0 };
+  barmenHired = false;
+  if (typeof barmenPawn !== "undefined" && barmenPawn) { destroyPawn(barmenPawn); barmenPawn = null; }
+  cafeFee = CafeFeeDefault;
+  cafeSessionsToday = 0;
+  cafeRevenueToday = 0;
+  cafeSessionsTotal = 0;
+  cafeIncomeTotal = 0;
+  dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0 };
   summaryOpen = false;
   document.getElementById("day-modal").style.display = "none";
 
@@ -5306,6 +5400,8 @@ function startNewGameClean() {
       s.gymBusy = [false, false, false];
       s.spaLevel = 1;
       s.spaBusy = [false, false, false];
+      s.cafeLevel = 1;
+      s.cafeBusy = [false, false, false];
       s.toiletBusy = [false, false];
       s.tennisCourtBusy = [false, false];
       s.level = 1;
@@ -5369,13 +5465,28 @@ function spaCost() { return CostSpa + CostRoomStep * builtRooms; }
 
 function spaUpgradeCost(lv) { return lv <= 1 ? 300 : 500; }
 
-function countBuiltSpas() {
-  return allSlots.filter(s => s.type === "Spa" && s.floor && s.floor.state === "Built").length;
+function _countBuiltType(type) {
+  return allSlots.filter(s => s.type === type && s.floor && s.floor.state === "Built").length;
 }
+
+function countBuiltSpas() { return _countBuiltType("Spa"); }
 
 function spaDailyCost(s) {
   if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built") return 0;
   return SpaDailyCost * Math.max(1, s.spaLevel || 1);
+}
+
+function cafeCost() { return CostCafe + CostRoomStep * builtRooms; }
+
+function cafeUpgradeCost(lv) { return lv <= 1 ? 350 : 600; }
+
+function countBuiltCafes() { return _countBuiltType("Cafe"); }
+
+function hasBuiltCafe() { return countBuiltCafes() >= 1; }
+
+function cafeDailyCost(s) {
+  if (!s || s.type !== "Cafe" || !s.floor || s.floor.state !== "Built") return 0;
+  return CafeDailyCost * Math.max(1, s.cafeLevel || 1);
 }
 
 function maintCost(s) { return CostMaint + Math.round((100 - s.maintenance) * 0.5); }
@@ -5574,6 +5685,7 @@ function spawnGuest() {
     room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
     gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
     spaTimer: rnd(12, 30), spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
+    cafeTimer: rnd(4, 10), cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
     tennisTimer: rnd(10, 25), tennisToday: 0, tennis: null, tennisIdx: 0, tennisPlayed: false, tennisInFlow: false, tennisElapsed: 0,
     crimeTimer: rnd(10, 18), crimeDone: false,
     parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
@@ -5952,15 +6064,17 @@ function startLeaving(g, fromRoom = null) {
   if (g.gym) { g.gym.gymBusy[g.gymIdx] = false; g.gym = null; }
   if (g.toilet) { g.toilet.toiletBusy[g.toiletIdx] = false; g.toilet = null; }
   if (typeof freeSpaSlot === "function") freeSpaSlot(g);
+  if (typeof freeCafeSlot === "function") freeCafeSlot(g);
   const wasTennis = !!(g.tennis || g.tennisInFlow || g.state === "ToTennis" || g.state === "PlayingTennis" || (p && p.iso && p.iso.v >= 1150));
   const wasSpa = !!(g.spa || g.spaInFlow || g.state === "ToSpa" || g.state === "InSpa");
+  const wasCafe = !!(g.cafe || g.cafeInFlow || g.state === "ToCafe" || g.state === "InCafe");
   if (typeof freeTennisSlot === "function") freeTennisSlot(g);
   for (const kid of g.kidPawns) {
     kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = p;
   }
   g.kidsAtPark = false;
-  p.wander = false; p.exercise = false; p.tennis = false; p.spa = false; p.spaIdx = 0; p.speed = 110; p.path = []; p.isoPath = []; p.onIsoArrive = null;
-  if ((wasTennis || wasSpa) && leaveRoom) p.iso = null;
+  p.wander = false; p.exercise = false; p.tennis = false; p.spa = false; p.spaIdx = 0; p.cafe = false; p.cafeIdx = 0; p.speed = 110; p.path = []; p.isoPath = []; p.onIsoArrive = null;
+  if ((wasTennis || wasSpa || wasCafe) && leaveRoom) p.iso = null;
 
   const exitPath = [];
 
@@ -6339,21 +6453,29 @@ function returnToRoom(g) {
   p.speed = WalkSpeed;
   if (p.iso) {
     const fromSpaSlot = g._returnSpaSlot || (g.spaInFlow ? g.spa : null);
+    const fromCafeSlot = g._returnCafeSlot || (g.cafeInFlow ? g.cafe : null);
     g._returnSpaSlot = null;
+    g._returnCafeSlot = null;
     if (g.spa) freeSpaSlot(g);
-    const fromTennis = !fromSpaSlot && p.iso.v >= 1150;
+    if (g.cafe) freeCafeSlot(g);
+    const fromTennis = !fromSpaSlot && !fromCafeSlot && p.iso.v >= 1150;
     const rRoute = (fromTennis && typeof buildIsoRouteFromTennisCourtToRoom === "function")
       ? buildIsoRouteFromTennisCourtToRoom(p.iso, g.tennisIdx || 0, g.room)
       : (fromSpaSlot && typeof buildIsoRouteFromSpaToRoom === "function")
         ? buildIsoRouteFromSpaToRoom(fromSpaSlot, g.room)
-        : null;
+        : (fromCafeSlot && typeof buildIsoRouteFromCafeToRoom === "function")
+          ? buildIsoRouteFromCafeToRoom(fromCafeSlot, g.room)
+          : null;
     const connOk = fromTennis
       ? (typeof isTennisClubConnected === "function" && isTennisClubConnected())
-      : (fromSpaSlot && typeof isSpaConnected === "function" && isSpaConnected(fromSpaSlot));
+      : fromSpaSlot
+        ? (typeof isSpaConnected === "function" && isSpaConnected(fromSpaSlot))
+        : (fromCafeSlot && typeof isCafeConnected === "function" && isCafeConnected(fromCafeSlot));
     if (rRoute && rRoute.length > 0 && connOk) {
       g.state = "ToRoom";
       if (fromTennis) g.tennisInFlow = true;
       if (fromSpaSlot) g.spaInFlow = true;
+      if (fromCafeSlot) g.cafeInFlow = true;
       p.path = [];
       p.onArrive = null;
       p.visible = true;
@@ -6365,6 +6487,8 @@ function returnToRoom(g) {
         g.tennisElapsed = 0;
         g.spaInFlow = false;
         g.spaElapsed = 0;
+        g.cafeInFlow = false;
+        g.cafeElapsed = 0;
         onGuestInRoom(g);
       };
       return;
@@ -6377,6 +6501,8 @@ function returnToRoom(g) {
     g.tennisElapsed = 0;
     g.spaInFlow = false;
     g.spaElapsed = 0;
+    g.cafeInFlow = false;
+    g.cafeElapsed = 0;
   }
   g.state = "ToRoom"; p.path = [];
   addPath(p, floorOf(p.pos.y), g.room.floor.idx, g.room.X0 + SlotW * 0.5);
@@ -6741,6 +6867,180 @@ function rescueSpaGuest(g) {
   _refreshPanelIfSpaOpen();
 }
 
+function getCafeJoinProb(fee = (typeof cafeFee === "number" ? cafeFee : CafeFeeDefault), period = null) {
+  const curPeriod = period || ((typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe");
+  if (curPeriod === "closed") return 0;
+  const base = clamp(0.85 - (fee - 25) * 0.01, 0.15, 0.85);
+  return curPeriod === "bar" ? base * CafeNightProbMult : base;
+}
+
+function isGuestCafeEligible(g, period = null) {
+  if (!g || g.type !== "Normal" || (g.role || "None") !== "None") return false;
+  if (!g.room || g.expired || g.sneaky) return false;
+  const curPeriod = period || ((typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe");
+  if (curPeriod === "closed") return false;
+  if (curPeriod === "bar" && (g.kids || 0) > 0) return false;
+  if (curPeriod === "cafe" && g.cafeDay) return false;
+  if (curPeriod === "bar" && g.cafeNight) return false;
+  return true;
+}
+
+function freeCafeSlot(g) {
+  if (!g) return;
+  if (g.cafe && Array.isArray(g.cafe.cafeBusy)) {
+    g.cafe.cafeBusy[g.cafeIdx] = false;
+  }
+  g.cafe = null;
+  g.cafeIdx = 0;
+  g.cafePeriod = "";
+  g.cafeInFlow = false;
+  g.cafeElapsed = 0;
+  if (g.pawn) {
+    g.pawn.cafe = false;
+    g.pawn.cafeIdx = 0;
+    g.pawn.visible = true;
+  }
+}
+
+function reconcileCafeBusy() {
+  for (const s of allSlots) {
+    if (s.type !== "Cafe" || !Array.isArray(s.cafeBusy)) continue;
+    for (let k = 0; k < 3; k++) {
+      if (s.cafeBusy[k] && !guests.some(g => g && g.cafe === s && g.cafeIdx === k && (g.state === "ToCafe" || g.state === "InCafe"))) {
+        s.cafeBusy[k] = false;
+      }
+    }
+  }
+}
+
+function _refreshPanelIfCafeOpen() {
+  if (typeof sel !== "undefined" && sel === "Slot" && typeof selSlot !== "undefined" && selSlot && selSlot.type === "Cafe" && typeof refreshPanel === "function") {
+    refreshPanel();
+  }
+}
+
+function tryCafe(g) {
+  if (!isOpen || !barmenHired) return false;
+  const period = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+  if (period === "closed") return false;
+  const allowFromState = g.state === "InRoom" || (period === "bar" && g.state === "Sleeping");
+  if (!isGuestCafeEligible(g, period) || !allowFromState) return false;
+  if (Math.random() > getCafeJoinProb(cafeFee, period)) return false;
+
+  reconcileCafeBusy();
+  for (const s of allSlots) {
+    if (s.type !== "Cafe" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+    if (typeof isCafeConnected === "function" && !isCafeConnected(s)) continue;
+    const cap = Math.max(1, Math.min(3, s.cafeLevel || 1));
+    let freeK = -1;
+    for (let k = 0; k < cap; k++) {
+      if (!s.cafeBusy[k]) { freeK = k; break; }
+    }
+    if (freeK < 0) continue;
+
+    const route = (typeof buildIsoRouteToCafe === "function") ? buildIsoRouteToCafe(g.room, s, freeK) : null;
+    if (!route || route.length === 0) continue;
+
+    s.cafeBusy[freeK] = true;
+    g.cafe = s;
+    g.cafeIdx = freeK;
+    g.cafePeriod = period;
+    g.state = "ToCafe";
+    g.cafeInFlow = true;
+    g.cafeElapsed = 0;
+
+    const p = g.pawn;
+    const startUvz = (typeof logicalToIsoUVZ === "function") ? logicalToIsoUVZ(p.pos.x, p.pos.y, p) : getSlotCenterIso(g.room.floor.idx, g.room.idx);
+    p.guest = g;
+    p.wander = false;
+    p.exercise = false;
+    p.tennis = false;
+    p.spa = false;
+    p.cafe = false;
+    p.sleeping = false;
+    p.visible = true;
+    p.speed = WalkSpeed;
+    p.path = [];
+    p.onArrive = null;
+    p.iso = { u: startUvz.u, v: startUvz.v, z: startUvz.z };
+    p.isoPath = route;
+    p.onIsoArrive = () => {
+      if (g.state !== "ToCafe") return;
+      if (!barmenHired || s.type !== "Cafe" || s.onFire || (typeof isCafeConnected === "function" && !isCafeConnected(s))) {
+        rescueCafeGuest(g);
+        return;
+      }
+      g.state = "InCafe";
+      g.exLeft = CafeSessionSec;
+      p.cafe = true;
+      p.cafeIdx = freeK;
+      p.visible = false;
+      _refreshPanelIfCafeOpen();
+    };
+    _refreshPanelIfCafeOpen();
+    return true;
+  }
+  return false;
+}
+
+function endCafe(g) {
+  if (!g || g.state !== "InCafe") return;
+  const s = g.cafe;
+  const isBar = g.cafePeriod === "bar";
+  const baseFee = (typeof sanitizeCafeFee === "function") ? sanitizeCafeFee(cafeFee) : (cafeFee || CafeFeeDefault);
+  const earned = isBar ? Math.round(baseFee * CafeNightMult) : baseFee;
+  money += earned;
+  if (typeof dayStats === "object" && dayStats) {
+    dayStats.income = (dayStats.income || 0) + earned;
+    dayStats.cafeSessions = (dayStats.cafeSessions || 0) + 1;
+    dayStats.cafeIncome = (dayStats.cafeIncome || 0) + earned;
+  }
+  reputation += CafePoints;
+  cafeSessionsToday = (cafeSessionsToday || 0) + 1;
+  cafeRevenueToday = (cafeRevenueToday || 0) + earned;
+  cafeSessionsTotal = (cafeSessionsTotal || 0) + 1;
+  cafeIncomeTotal = (cafeIncomeTotal || 0) + earned;
+  if (isBar) g.cafeNight = true;
+  else g.cafeDay = true;
+  if (s && s.floor) {
+    floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.58, "+" + earned + " TL (" + (isBar ? "bar" : "kafe") + ")", isBar ? "#b45309" : "#78350f");
+  }
+  play("coin");
+  freeCafeSlot(g);
+  g._returnCafeSlot = s;
+  g.cafeInFlow = true;
+  if (typeof checkAchievements === "function") checkAchievements();
+  if (typeof refreshHud === "function") refreshHud();
+  _refreshPanelIfCafeOpen();
+  returnToRoom(g);
+}
+
+function rescueCafeGuest(g) {
+  if (!g) return;
+  freeCafeSlot(g);
+  g._returnCafeSlot = null;
+  const p = g.pawn;
+  if (p) {
+    p.cafe = false;
+    p.spa = false;
+    p.exercise = false;
+    p.sleeping = false;
+    p.visible = true;
+    p.iso = null;
+    p.isoPath = [];
+    p.onIsoArrive = null;
+    p.path = [];
+    p.onArrive = null;
+  }
+  if (!g.room) { startLeaving(g); return; }
+  if (p) p.pos = { x: g.room.X0 + SlotW * 0.5, y: g.room.floor.WalkY };
+  g.state = "InRoom";
+  g.cafeElapsed = 0;
+  g.cafeInFlow = false;
+  if (typeof startWander === "function") startWander(g);
+  _refreshPanelIfCafeOpen();
+}
+
 // ===== BUNDLED: logic/crime.js =====
 // [logic/crime.js] Tehdit, hırsız, seri katil, vampir
 function threatDamage(g) {
@@ -7073,15 +7373,17 @@ function startFire(s) {
   log(s.roomNo + ". odada YANGIN çıktı! Odayı seçip söndür.");
   floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.6, "YANGIN!", "#d91a1a");
   const g = s.guest;
-  if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis" || g.state === "ToSpa" || g.state === "InSpa")) {
+  if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis" || g.state === "ToSpa" || g.state === "InSpa" || g.state === "ToCafe" || g.state === "InCafe")) {
     if (typeof freeTennisSlot === "function") freeTennisSlot(g);
     if (typeof freeSpaSlot === "function") freeSpaSlot(g);
+    if (typeof freeCafeSlot === "function") freeCafeSlot(g);
     const p = g.pawn;
     g.state = "Fleeing";
     p.visible = true;
     p.sleeping = false;
     p.tennis = false;
     p.spa = false;
+    p.cafe = false;
     p.iso = null;
     p.isoPath = [];
     p.onIsoArrive = null;
@@ -7254,8 +7556,9 @@ function spawnBodyguardInRoom(vipGuest, bgRoom) {
     wants: new Array(ItemCount).fill(false), patience: 25, maxPatience: 25,
     atSpot: false, arrivedOnce: true, state: "ToRoom",
     room: bgRoom, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
-    gymTimer: 999, toiletTimer: 999, parkTimer: 999, spaTimer: 999,
+    gymTimer: 999, toiletTimer: 999, parkTimer: 999, spaTimer: 999, cafeTimer: 999,
     spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
+    cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
     crimeTimer: 999, crimeDone: true,
     parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
     hasBubble: false, bubbleLines: ["", ""]
@@ -7484,10 +7787,10 @@ function staffCap() { return 1 + (hasDorm() ? 2 * dormLevel : 0); }
 
 function staffWageMult() { return hasDorm() ? 1 - 0.1 * dormLevel : 1; }
 
-function totalStaffCount() { return cleaners.length + (receptionistLevel > 0 ? 1 : 0) + (securityLevel > 0 ? 1 : 0) + (cookLevel > 0 ? 1 : 0); }
+function totalStaffCount() { return cleaners.length + (receptionistLevel > 0 ? 1 : 0) + (securityLevel > 0 ? 1 : 0) + (cookLevel > 0 ? 1 : 0) + (barmenHired ? 1 : 0); }
 
 function totalDailyWage() {
-  const raw = cleaners.length * CleanerWage + RecWage[receptionistLevel] + SecWage[securityLevel] + CookWage[cookLevel];
+  const raw = cleaners.length * CleanerWage + RecWage[receptionistLevel] + SecWage[securityLevel] + CookWage[cookLevel] + (barmenHired ? BarmenWage : 0);
   return Math.round(raw * staffWageMult());
 }
 
@@ -7572,6 +7875,61 @@ function syncStaffPawns() {
   } else if (cookPawn) {
     destroyPawn(cookPawn);
     cookPawn = null;
+  }
+
+  const cafeSlot = allSlots.find(s => s.type === "Cafe" && s.floor && s.floor.state === "Built");
+  const cafeConn = !!(cafeSlot && (typeof isCafeConnected !== "function" || isCafeConnected(cafeSlot)));
+  if (barmenHired && cafeSlot && cafeConn) {
+    if (!barmenPawn || barmenPawn.dead) {
+      barmenPawn = makePawn({ x: cafeSlot.X0 + SlotW * 0.4, y: cafeSlot.floor.WalkY }, pick(Skins), "#2b1b12", "#1e293b");
+      barmenPawn.isBarmen = true;
+      barmenPawn.facing = 1;
+    } else {
+      barmenPawn.pos.x = cafeSlot.X0 + SlotW * 0.4;
+      barmenPawn.pos.y = cafeSlot.floor.WalkY;
+    }
+  } else if (barmenPawn) {
+    destroyPawn(barmenPawn);
+    barmenPawn = null;
+  }
+}
+
+function hireBarmen() {
+  if (!hasBuiltCafe()) { play("reject"); log("Önce Kafe & Bar kurmalısın!"); return false; }
+  if (barmenHired) return false;
+  if (totalStaffCount() >= staffCap()) {
+    play("reject");
+    log("Personel kapasitesi dolu (" + totalStaffCount() + "/" + staffCap() + ")! Lojmanı yükselt.");
+    return false;
+  }
+  if (!pay(BarmenHireCost)) return false;
+  barmenHired = true;
+  syncStaffPawns();
+  play("done");
+  log("☕ Barmen işe alındı! Kafe (08–18) ve Bar (18–24) hizmete açık.");
+  refresh(); saveGame();
+  return true;
+}
+
+function fireBarmen() {
+  if (!barmenHired) return false;
+  barmenHired = false;
+  for (const g of guests) {
+    if (g && (g.state === "ToCafe" || g.state === "InCafe")) {
+      if (typeof rescueCafeGuest === "function") rescueCafeGuest(g);
+    }
+  }
+  syncStaffPawns();
+  play("tap");
+  log("☕ Barmen işten çıkarıldı. Kafe & Bar geçici olarak kapatıldı.");
+  refresh(); saveGame();
+  return true;
+}
+
+function clearCafeStaffIfNoCafe() {
+  if (!hasBuiltCafe() && barmenHired) {
+    barmenHired = false;
+    syncStaffPawns();
   }
 }
 
@@ -8465,8 +8823,8 @@ function _checkCorridorConnection(fIdx, fromCorrIdx, toCorrIdx) {
   return isSlotCorridorPathValid(fIdx, slotPath);
 }
 
-function isSpaConnected(s) {
-  if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built") return false;
+function isDoorFacilityConnected(s, expectedType) {
+  if (!s || s.type !== expectedType || !s.floor || s.floor.state !== "Built") return false;
   const corrSlot = getRoomCorridorSlot(s);
   if (!corrSlot || corrSlot.type !== "Corridor") return false;
   const fIdx = s.floor.idx;
@@ -8479,11 +8837,26 @@ function isSpaConnected(s) {
   return _checkCorridorConnection(0, 26, ec0.idx) && _checkCorridorConnection(fIdx, ecF.idx, corrSlot.idx);
 }
 
+function isSpaConnected(s) {
+  return isDoorFacilityConnected(s, "Spa");
+}
+
+function isCafeConnected(s) {
+  return isDoorFacilityConnected(s, "Cafe");
+}
+
 function getSpaStationIso(spaSlot, stationIdx = 0) {
   const b = slotIsoBox(spaSlot.floor.idx, spaSlot.idx);
   if (stationIdx === 1) return { u: b.u0 + 160, v: b.v0 + 153, z: b.z0 + 8 };
   if (stationIdx === 2) return { u: b.u0 + 44, v: b.v0 + 73, z: b.z0 + 8 };
   return { u: b.u0 + 160, v: b.v0 + 33, z: b.z0 + 8 };
+}
+
+function getCafeStationIso(cafeSlot, stationIdx = 0) {
+  const b = slotIsoBox(cafeSlot.floor.idx, cafeSlot.idx);
+  if (stationIdx === 1) return { u: b.u0 + 104, v: b.v0 + 96, z: b.z0 + 8 };
+  if (stationIdx === 2) return { u: b.u0 + 104, v: b.v0 + 126, z: b.z0 + 8 };
+  return { u: b.u0 + 104, v: b.v0 + 66, z: b.z0 + 8 };
 }
 
 function _appendDoorSlotCorridorRoute(path, fromF, fromCorrIdx, toF, toCorrIdx) {
@@ -8540,6 +8913,17 @@ function buildIsoRouteFromSpaToRoom(spaSlot, room) {
   return buildIsoRouteBetweenDoorSlots(spaSlot, room, toDoor ? toDoor.roomTarget : null);
 }
 
+function buildIsoRouteToCafe(room, cafeSlot, stationIdx = 0) {
+  if (!isCafeConnected(cafeSlot)) return null;
+  return buildIsoRouteBetweenDoorSlots(room, cafeSlot, getCafeStationIso(cafeSlot, stationIdx));
+}
+
+function buildIsoRouteFromCafeToRoom(cafeSlot, room) {
+  if (!cafeSlot || !room || !room.floor) return null;
+  const toDoor = getRoomDoorPoints(room);
+  return buildIsoRouteBetweenDoorSlots(cafeSlot, room, toDoor ? toDoor.roomTarget : null);
+}
+
 // ===== BUNDLED: logic/day.js =====
 // [logic/day.js] Gün döngüsü: yeni gün, gazete, gün sonu özeti, otel aç/kapa, başarımlar
 function unlock(i) {
@@ -8572,9 +8956,31 @@ function newDay() {
   spaSessionsToday = 0;
   spaRevenueToday = 0;
   spaDailyCostToday = 0;
+  let cafeOpCostTotal = 0;
+  for (const s of allSlots) {
+    if (s.type === "Cafe" && s.floor.state === "Built") {
+      cafeOpCostTotal += CafeDailyCost * Math.max(1, s.cafeLevel || 1);
+    }
+  }
+  const cafePaidCost = cafeOpCostTotal > 0 ? Math.min(cafeOpCostTotal, money) : 0;
+  if (cafePaidCost > 0) {
+    money = Math.max(0, money - cafePaidCost);
+    dayStats.cafeCost = (dayStats.cafeCost || 0) + cafePaidCost;
+  }
+  const barmenWagePart = (typeof barmenHired !== "undefined" && barmenHired)
+    ? Math.round(BarmenWage * (typeof staffWageMult === "function" ? staffWageMult() : 1))
+    : 0;
+  const cafeTotalExpenseLog = cafePaidCost + barmenWagePart;
+  if ((typeof cafeSessionsToday === "number" && cafeSessionsToday > 0) || cafeTotalExpenseLog > 0) {
+    log("☕ Kafe: " + (cafeSessionsToday || 0) + " seans, +" + (cafeRevenueToday || 0) + " TL, gider −" + cafeTotalExpenseLog + " TL");
+  }
+  cafeSessionsToday = 0;
+  cafeRevenueToday = 0;
   for (const g of guests) {
     g.tennisToday = 0;
     g.spaDay = false;
+    g.cafeDay = false;
+    g.cafeNight = false;
   }
   let paid = false;
   let mealsLeft = (hasKitchen() && cookLevel > 0) ? CookMeals[cookLevel] : 0;
@@ -9083,6 +9489,7 @@ function onAction(i) {
             log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
           }
           if (typeof checkTennisClubAutoOpen === "function") checkTennisClubAutoOpen(false);
+          if (typeof syncStaffPawns === "function") syncStaffPawns();
           refresh(); saveGame(); return;
         }
         return;
@@ -9237,6 +9644,7 @@ function onAction(i) {
       if (i === 8 && pay(CostCorridor)) {
         s.type = "Corridor"; s.parcelBuilt = true; builtRooms++;
         play("build"); log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
+        if (typeof syncStaffPawns === "function") syncStaffPawns();
         refresh(); saveGame(); return;
       }
       if (i === 11) {
@@ -9257,6 +9665,29 @@ function onAction(i) {
             ? "♨️ Spa & Hamam seçilen parsele kuruldu! Konuklar hamam ve saunadan faydalanabilir."
             : "♨️ Spa & Hamam kuruldu! Açılması için bir koridorla bağlamayı unutma.");
           if (typeof checkAchievements === "function") checkAchievements();
+          refresh(); saveGame();
+        }
+        return;
+      }
+      if (i === 12) {
+        if (countBuiltCafes() >= CafeMaxCount) {
+          play("reject");
+          log("⚠️ Otelde en fazla " + CafeMaxCount + " Kafe & Bar kurulabilir!");
+          return;
+        }
+        if (pay(cafeCost())) {
+          s.type = "Cafe";
+          s.parcelBuilt = true;
+          s.cafeLevel = 1;
+          s.cafeBusy = [false, false, false];
+          builtRooms++;
+          play("build");
+          const conn = (typeof isCafeConnected === "function") ? isCafeConnected(s) : true;
+          log(conn
+            ? "☕ Kafe & Bar seçilen parsele kuruldu! Açılması için bir Barmen işe al."
+            : "☕ Kafe & Bar kuruldu! Açılması için bir koridorla bağla ve Barmen işe al.");
+          if (typeof checkAchievements === "function") checkAchievements();
+          if (typeof syncStaffPawns === "function") syncStaffPawns();
           refresh(); saveGame();
         }
         return;
@@ -9317,6 +9748,34 @@ function onAction(i) {
           refresh(); saveGame();
         }
       } else if (i === 3 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1) {
+        cycleRoomDoorWall(s);
+      }
+      return;
+    }
+    if (s.type === "Cafe" && i !== ActCount - 1) {
+      if (i === 0 || i === 1) {
+        const delta = (i === 0) ? -CafeFeeStep : CafeFeeStep;
+        const base = (typeof sanitizeCafeFee === "function") ? sanitizeCafeFee(cafeFee) : CafeFeeDefault;
+        const nextFee = clamp(base + delta, CafeFeeMin, CafeFeeMax);
+        if (nextFee !== cafeFee) {
+          cafeFee = nextFee;
+          play("tap");
+          refresh();
+          saveGame();
+        }
+      } else if (i === 2) {
+        if (!barmenHired) hireBarmen();
+        else fireBarmen();
+      } else if (i === 3) {
+        const curLv = s.cafeLevel || 1;
+        if (curLv < 3 && pay(cafeUpgradeCost(curLv))) {
+          s.cafeLevel = curLv + 1;
+          play("build");
+          log("☕ Kafe & Bar Seviye " + s.cafeLevel + "'e yükseltildi! Kapasite: " + s.cafeLevel + " tabure.");
+          if (typeof checkAchievements === "function") checkAchievements();
+          refresh(); saveGame();
+        }
+      } else if (i === 4 && typeof getRoomAvailableDoorWalls === "function" && getRoomAvailableDoorWalls(s).length > 1) {
         cycleRoomDoorWall(s);
       }
       return;
@@ -10877,7 +11336,7 @@ function refreshPanel() {
     selPanelEl.classList.toggle("ach-mode", sel === "Ach");
     selPanelEl.classList.toggle("decor-mode", sel === "Decor");
   }
-  const isTennisSel = (sel === "Slot" && selSlot && (selSlot.type === "TennisClub" || selSlot.type === "Spa"));
+  const isTennisSel = (sel === "Slot" && selSlot && (selSlot.type === "TennisClub" || selSlot.type === "Spa" || selSlot.type === "Cafe"));
   if (infoText) infoText.classList.toggle("tennis-mode", !!isTennisSel);
   for (let i = 0; i < ActCount; i++) {
     setAct(i, "", false, true, false, false);
@@ -11113,6 +11572,9 @@ function refreshPanel() {
       const spaCnt = (typeof countBuiltSpas === "function") ? countBuiltSpas() : 0;
       const spaFull = spaCnt >= SpaMaxCount;
       setAct(11, spaFull ? "✅ Spa Dolu (2/2)" : ("♨️ Spa & Hamam\n" + spaCost() + " TL"), true, canBuildHere && readyOnce && !spaFull, spaFull);
+      const cafeCnt = (typeof countBuiltCafes === "function") ? countBuiltCafes() : 0;
+      const cafeFull = cafeCnt >= CafeMaxCount;
+      setAct(12, cafeFull ? "✅ Kafe Var (1/1)" : ("☕ Kafe & Bar\n" + cafeCost() + " TL"), true, canBuildHere && readyOnce && !cafeFull, cafeFull);
     } else if (cur.type === "Elevator") {
       infoText.textContent = "🛗 Lüks Otel Asansörü " + coordStr +
         "\nKatlar arasında hızlı ve konforlu ulaşım sağlar. Üst kat odalarının açılması ve müşteri memnuniyeti için gereklidir.";
@@ -11273,6 +11735,49 @@ function refreshPanel() {
         const curW = getRoomDoorWall(cur);
         const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
         setAct(3, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
+      }
+    } else if (cur.type === "Cafe") {
+      const lv = cur.cafeLevel || 1;
+      const conn = (typeof isCafeConnected === "function") ? isCafeConnected(cur) : true;
+      const hired = (typeof barmenHired !== "undefined") && !!barmenHired;
+      const period = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+      const curFee = (typeof sanitizeCafeFee === "function") ? sanitizeCafeFee(cafeFee) : (cafeFee || CafeFeeDefault);
+      const busyArr = Array.isArray(cur.cafeBusy) ? cur.cafeBusy : [false, false, false];
+      const busyCnt = busyArr.slice(0, lv).filter(Boolean).length;
+      const opCost = (typeof cafeDailyCost === "function") ? cafeDailyCost(cur) : (CafeDailyCost * lv);
+      const barmenPart = hired ? Math.round(BarmenWage * (typeof staffWageMult === "function" ? staffWageMult() : 1)) : 0;
+      const totDailyCost = opCost + barmenPart;
+      const lvDesc = lv === 1 ? "Bar Tezgâhı" : (lv === 2 ? "Bar + Kanepe" : "Bar + Kanepe + Sahne");
+      const statusTxt = !conn
+        ? "⚠️ Koridorla bağla"
+        : (!hired
+          ? "⚠️ Barmen işe al"
+          : (period === "bar" ? "🌙 Bar (18–24 · 1.5×)" : (period === "cafe" ? "☀️ Kafe (08–18)" : "🔒 Gece Kapalı (00–08)")));
+      infoText.textContent = "☕ Kafe & Bar (Seviye " + lv + "/3 • " + lvDesc + ") " + coordStr + "\n" +
+        statusTxt + " • Dolu: " + busyCnt + "/" + lv +
+        " • Ücret: " + curFee + " TL • Gider: " + totDailyCost + " TL/gün\n" +
+        "Bugün: " + (cafeSessionsToday || 0) + " seans (+" + (cafeRevenueToday || 0) + " TL)" +
+        " • Toplam: " + (cafeSessionsTotal || 0) + " seans (+" + (cafeIncomeTotal || 0) + " TL)";
+      setAct(0, "➖ Ücret\n-" + CafeFeeStep + " TL", true, curFee > CafeFeeMin);
+      setAct(1, "➕ Ücret\n+" + CafeFeeStep + " TL", true, curFee < CafeFeeMax);
+      if (actBtns[0]) actBtns[0].classList.add("tennis-fee-btn");
+      if (actBtns[1]) actBtns[1].classList.add("tennis-fee-btn");
+      if (!hired) {
+        setAct(2, "👨‍🍳 Barmen Al\n" + BarmenHireCost + " TL", true, money >= BarmenHireCost);
+      } else {
+        setAct(2, "🚪 Barmeni Kov\n(+" + barmenPart + " TL/gün)", true, true);
+      }
+      if (lv < 3) {
+        const upCost = cafeUpgradeCost(lv);
+        setAct(3, "⬆️ Yükselt\n" + upCost + " TL", true, money >= upCost);
+      } else {
+        setAct(3, "✅ Son Seviye", true, false, true);
+      }
+      const availWalls = getRoomAvailableDoorWalls(cur);
+      if (availWalls.length > 1) {
+        const curW = getRoomDoorWall(cur);
+        const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
+        setAct(4, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
       }
     } else if (cur.type === "Toilet") {
       infoText.textContent = "🚽 Genel Banyo & WC (2 Kabin) " + coordStr + "  •  Bakım: %" + Math.round(cur.maintenance);
@@ -11446,8 +11951,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 70;
-const APP_VERSION_NAME = "1.9.62-beta";
+const APP_VERSION_CODE = 71;
+const APP_VERSION_NAME = "1.9.63-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12424,8 +12929,8 @@ function _logicalToIsoUVZRaw(wx, wy, pawn = null) {
     }
   }
 
-  // 1) Aşçı / Resepsiyonist kendi özel çizim fonksiyonlarında çizilir
-  if (pawn && (pawn.isCook || pawn.isReceptionist)) {
+  // 1) Aşçı / Resepsiyonist / Barmen kendi özel çizim fonksiyonlarında çizilir
+  if (pawn && (pawn.isCook || pawn.isReceptionist || pawn.isBarmen)) {
     return { u: 0, v: 0, z: 0, hidden: true };
   }
 
@@ -12884,7 +13389,10 @@ var COSMETIC_CATALOG = {
       decorStoneTop: "#ede7da", decorStoneL: "#cfc5b4", decorStoneR: "#b0a490",
       decorWoodTop: "#b87a42", decorWoodL: "#915c2d", decorWoodR: "#6e431e",
       decorRoofTop: "#b45309", decorRoofL: "#92400e", decorRoofR: "#78350f",
-      decorAccent: "#e11d48", decorGold: "#fbbf24"
+      decorAccent: "#e11d48", decorGold: "#fbbf24",
+      cafeFloorA: "#e8d5bc", cafeFloorB: "#cfa97e", cafeWoodTop: "#b87a42", cafeWoodL: "#915c2d", cafeWoodR: "#6e431e",
+      cafeCounterTop: "#78350f", cafeCounterL: "#5c280b", cafeCounterR: "#451a03",
+      cafeAwningA: "#b91c1c", cafeAwningB: "#fffbeb", cafeWallTile: "#78350f", cafeNeon: "#fbbf24"
     },
     modern: {
       id: "modern",
@@ -13037,7 +13545,10 @@ var COSMETIC_CATALOG = {
       decorStoneTop: "#e2e8f0", decorStoneL: "#94a3b8", decorStoneR: "#64748b",
       decorWoodTop: "#64748b", decorWoodL: "#475569", decorWoodR: "#334155",
       decorRoofTop: "#334155", decorRoofL: "#1e293b", decorRoofR: "#0f172a",
-      decorAccent: "#f97316", decorGold: "#38bdf8"
+      decorAccent: "#f97316", decorGold: "#38bdf8",
+      cafeFloorA: "#94a3b8", cafeFloorB: "#64748b", cafeWoodTop: "#475569", cafeWoodL: "#334155", cafeWoodR: "#1e293b",
+      cafeCounterTop: "#1e293b", cafeCounterL: "#0f172a", cafeCounterR: "#020617",
+      cafeAwningA: "#ea580c", cafeAwningB: "#f8fafc", cafeWallTile: "#334155", cafeNeon: "#38bdf8"
     },
     seaside: {
       id: "seaside",
@@ -13190,7 +13701,10 @@ var COSMETIC_CATALOG = {
       decorStoneTop: "#f5efe0", decorStoneL: "#d6ccb8", decorStoneR: "#b8ad96",
       decorWoodTop: "#d9b482", decorWoodL: "#b58d58", decorWoodR: "#8f6a3b",
       decorRoofTop: "#0e7490", decorRoofL: "#155e75", decorRoofR: "#0c4a6e",
-      decorAccent: "#fb7185", decorGold: "#facc15"
+      decorAccent: "#fb7185", decorGold: "#facc15",
+      cafeFloorA: "#f5ebd6", cafeFloorB: "#d6c096", cafeWoodTop: "#d9a973", cafeWoodL: "#b58550", cafeWoodR: "#8c6134",
+      cafeCounterTop: "#0e7490", cafeCounterL: "#155e75", cafeCounterR: "#0c4a6e",
+      cafeAwningA: "#0284c7", cafeAwningB: "#ffffff", cafeWallTile: "#155e75", cafeNeon: "#fde047"
     }
   }
 };
@@ -13389,6 +13903,18 @@ function collectSceneLights(cw, ch) {
         case "Kitchen": k = 0.9; break;
         case "Gym": k = 0.8; break;
         case "Spa": k = (typeof isSpaConnected === "function" && isSpaConnected(s)) ? 0.92 : 0.45; rad = 185; break;
+        case "Cafe": {
+          const cConn = (typeof isCafeConnected === "function") ? isCafeConnected(s) : true;
+          const cHired = (typeof barmenHired !== "undefined") && !!barmenHired;
+          const cPer = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+          if (cConn && cHired && cPer !== "closed") {
+            k = (cPer === "bar") ? 0.96 : 0.86;
+            rad = (cPer === "bar") ? 200 : 180;
+          } else {
+            k = 0;
+          }
+          break;
+        }
         case "Toilet": k = 0.7; break;
         case "Dorm": k = 0.7; break;
         case "Storage": k = 0.55; break;
@@ -16592,6 +17118,7 @@ function drawWorld() {
   }
   drawLiveTennisBall();
   if (typeof drawLiveSpaSteam === "function") drawLiveSpaSteam();
+  if (typeof drawLiveCafeSteam === "function") drawLiveCafeSteam();
 
   // 9) Caddeden Geçen İzometrik Arabalar ve Kargo Kamyonları
   for (const car of cars) drawIsoCar(car);
@@ -17207,7 +17734,7 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
   const backConnected = !!(backSlot && (backSlot.parcelBuilt || backSlot.type !== "Empty") && isSlotStructurallyConnected(backSlot));
   const frontSlot = slotAtGrid(fl, gu + 1, gv);
   const frontConnected = !!(frontSlot && (frontSlot.parcelBuilt || frontSlot.type !== "Empty") && isSlotStructurallyConnected(frontSlot));
-  const doorWall = (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa") ? getRoomDoorWall(s) : null;
+  const doorWall = (typeof isDoorFacilityType === "function" ? isDoorFacilityType(s.type) : (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa" || s.type === "Cafe")) ? getRoomDoorWall(s) : null;
 
   // Bina türüne göre çizim: her tür kendi dosyasındaki fonksiyona devredilir (render/parcel-*.js)
   if (s.type === "Empty") {
@@ -17234,6 +17761,8 @@ function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
     drawParcelTennisClub(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel);
   } else if (s.type === "Spa") {
     drawParcelSpa(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
+  } else if (s.type === "Cafe") {
+    drawParcelCafe(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
   } else {
     // Oda, Tuvalet, Spor odası ve diğer tüm türler
     const roomPoly = drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
@@ -18640,6 +19169,244 @@ function drawLiveSpaSteam() {
   }
 }
 
+// ===== BUNDLED: render/parcel-cafe.js =====
+// [render/parcel-cafe.js] Kafe & Bar parseli: bistro zemin, ahşap bar tezgâhı, raflar, espresso makinesi, Barmen, tabureler, Sv2 kanepe, Sv3 müzik sahnesi ve canlı fincan buharı
+
+function _findCafeStationGuest(cafeSlot, stationIdx) {
+  if (typeof guests === "undefined" || !Array.isArray(guests)) return null;
+  return guests.find(g => g && g.cafe === cafeSlot && g.cafeIdx === stationIdx && g.state === "InCafe") || null;
+}
+
+function drawCafeGuestSeatedPose(u, v, z, guestPawn, isBarMode) {
+  const gp = guestPawn || {};
+  const skin = gp.skin || "#fcd9b8";
+  const hair = gp.hair || "#3a281f";
+  const shirt = gp.shirt || "#2563eb";
+  const p = iso(u, v, z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+
+  // Taburede oturan gövde & kol
+  ctx.fillStyle = shirt;
+  ctx.strokeStyle = OUTLINE_COL;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.roundRect(-7, -20, 14, 15, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  // Baş & saç
+  ctx.fillStyle = hair;
+  ctx.beginPath();
+  ctx.arc(0, -29, 7.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = skin;
+  ctx.beginPath();
+  ctx.arc(-0.5, -27.5, 6.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Elindeki fincan (gündüz) veya içecek kadehi (akşam bar)
+  ctx.fillStyle = isBarMode ? "#fbbf24" : "#ffffff";
+  ctx.strokeStyle = OUTLINE_COL;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  if (isBarMode) {
+    ctx.moveTo(-12, -18);
+    ctx.lineTo(-6, -18);
+    ctx.lineTo(-9, -12);
+    ctx.closePath();
+  } else {
+    ctx.roundRect(-12, -17, 6.5, 6, 1.5);
+  }
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawCafeStoolStation(u, v, z, busy, guestPawn, isBarMode, P) {
+  const cTop = P.cafeCounterTop || "#92400e";
+  const cL = P.cafeCounterL || "#78350f";
+  const cR = P.cafeCounterR || "#451a03";
+  const seatTop = isBarMode ? (P.cafeNeon || "#f59e0b") : (P.cafeAwningA || "#b91c1c");
+  // Tabure ayağı & minderi
+  isoBox(u - 2.5, v - 2.5, u + 2.5, v + 2.5, z, z + 15, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.1);
+  isoBox(u - 7, v - 7, u + 7, v + 7, z + 15, z + 19, seatTop, cL, cR, OUTLINE_COL, 1.3);
+  if (busy) {
+    drawCafeGuestSeatedPose(u, v, z + 19, guestPawn, isBarMode);
+  }
+}
+
+function drawCafeBarBackAndCounter(u0, v0, z0, conn, hired, isBarMode, P) {
+  const wTop = P.cafeWoodTop || "#c0844d";
+  const wL = P.cafeWoodL || "#9a6332";
+  const wR = P.cafeWoodR || "#73461f";
+  const cTop = P.cafeCounterTop || "#78350f";
+  const cL = P.cafeCounterL || "#5c280b";
+  const cR = P.cafeCounterR || "#3b1705";
+  const neon = P.cafeNeon || "#fbbf24";
+
+  // Arka duvarda şişe & bardak rafı
+  isoBox(u0 + 13, v0 + 46, u0 + 27, v0 + 146, z0 + 26, z0 + 30, wTop, wL, wR, OUTLINE_COL, 1.3);
+  isoBox(u0 + 13, v0 + 46, u0 + 27, v0 + 146, z0 + 44, z0 + 48, wTop, wL, wR, OUTLINE_COL, 1.3);
+  const bottleCols = ["#16a34a", "#f59e0b", "#dc2626", "#38bdf8", "#a855f7", "#eab308"];
+  for (let bIdx = 0; bIdx < 6; bIdx++) {
+    const bv = v0 + 54 + bIdx * 15;
+    isoBox(u0 + 16, bv, u0 + 22, bv + 6, z0 + 30, z0 + 40, bottleCols[bIdx], bottleCols[bIdx], "#1e293b", OUTLINE_COL, 0.9);
+    isoBox(u0 + 17, bv + 1, u0 + 21, bv + 5, z0 + 48, z0 + 55, "#e0f2fe", "#bae6fd", "#7dd3fc", OUTLINE_COL, 0.8);
+  }
+
+  // Sarkıt sıcak lambalar (bar tezgâhı üstü)
+  const lampLit = conn && hired && (isBarMode || (typeof isNight !== "undefined" && isNight));
+  const lampCol = lampLit ? "#fef08a" : (conn && hired ? "#fde68a" : "#64748b");
+  for (const lvOff of [68, 122]) {
+    isoBox(u0 + 62, v0 + lvOff - 4, u0 + 70, v0 + lvOff + 4, z0 + 68, z0 + 75, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.0);
+    isoBox(u0 + 61, v0 + lvOff - 5, u0 + 71, v0 + lvOff + 5, z0 + 64, z0 + 68, lampCol, lampCol, "#d97706", OUTLINE_COL, 1.0);
+  }
+
+  // Barmen karakteri (yalnızca Kafe bağlı ve barmen işe alınmışsa tezgâh arkasında görünür!)
+  if (hired && conn && typeof drawMiniChibi === "function") {
+    const bp = (typeof barmenPawn !== "undefined" && barmenPawn) ? barmenPawn : {};
+    drawMiniChibi(u0 + 40, v0 + 96, z0 + 2, bp.skin || "#fcd9b8", bp.hair || "#2b1b12", "#1e293b", 0.82, 1, isBarMode ? neon : "#ffffff");
+  }
+
+  // Ahşap bar tezgâhı (tezgâh Barmenin önünde -> doğru derinlik sırası!)
+  isoBox(u0 + 54, v0 + 46, u0 + 82, v0 + 148, z0, z0 + 26, wTop, wL, wR, OUTLINE_COL, 1.8);
+  isoBox(u0 + 51, v0 + 43, u0 + 85, v0 + 151, z0 + 26, z0 + 31, cTop, cL, cR, OUTLINE_COL, 1.6);
+
+  // Espresso makinesi & servis fincanı (tezgâhın sol başında)
+  isoBox(u0 + 58, v0 + 50, u0 + 76, v0 + 70, z0 + 31, z0 + 47, "#e2e8f0", "#cbd5e1", "#64748b", OUTLINE_COL, 1.3);
+  isoQuad(u0 + 60, v0 + 52, u0 + 74, v0 + 68, z0 + 47.4, P.cafeAwningA || "#b91c1c", OUTLINE_COL, 0.9);
+  isoBox(u0 + 66, v0 + 108, u0 + 74, v0 + 116, z0 + 31, z0 + 36, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 0.9);
+}
+
+function drawCafeLoungeCorner(u0, v0, z0, P) {
+  // Sv2+: arka-sağ köşede küçük kanepe + sehpa
+  const seat = P.cafeAwningA || "#b91c1c";
+  const wTop = P.cafeWoodTop || "#c0844d";
+  const wL = P.cafeWoodL || "#9a6332";
+  const wR = P.cafeWoodR || "#73461f";
+  isoBox(u0 + 142, v0 + 132, u0 + 174, v0 + 174, z0, z0 + 13, seat, "#991b1b", "#7f1d1d", OUTLINE_COL, 1.4);
+  isoBox(u0 + 165, v0 + 132, u0 + 174, v0 + 174, z0 + 13, z0 + 25, seat, "#991b1b", "#7f1d1d", OUTLINE_COL, 1.3);
+  isoBox(u0 + 144, v0 + 96, u0 + 168, v0 + 120, z0, z0 + 12, wTop, wL, wR, OUTLINE_COL, 1.3);
+}
+
+function drawCafeMusicStage(u0, v0, z0, P) {
+  // Sv3: ön-sol köşede akustik müzik/sahne köşesi
+  const wTop = P.cafeWoodTop || "#c0844d";
+  const wL = P.cafeWoodL || "#9a6332";
+  const wR = P.cafeWoodR || "#73461f";
+  isoBox(u0 + 132, v0 + 18, u0 + 176, v0 + 64, z0, z0 + 6, wTop, wL, wR, OUTLINE_COL, 1.5);
+  // Mikrofon standı
+  isoBox(u0 + 150, v0 + 38, u0 + 158, v0 + 46, z0 + 6, z0 + 9, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.0);
+  isoBox(u0 + 153, v0 + 41, u0 + 155, v0 + 43, z0 + 9, z0 + 38, "#94a3b8", "#64748b", "#475569", OUTLINE_COL, 0.9);
+  isoBox(u0 + 151, v0 + 39, u0 + 157, v0 + 45, z0 + 38, z0 + 43, P.goldTop || "#fbbf24", "#d97706", "#b45309", OUTLINE_COL, 1.0);
+  // Akustik hoparlör / gitar kutusu
+  isoBox(u0 + 136, v0 + 22, u0 + 148, v0 + 34, z0 + 6, z0 + 26, "#334155", "#1e293b", "#0f172a", OUTLINE_COL, 1.2);
+}
+
+function drawParcelCafe(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall) {
+  const P = (typeof getRoomPalette === "function") ? getRoomPalette() : THEME.room;
+  const roomPoly = drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall);
+  const lv = Math.max(1, Math.min(3, s.cafeLevel || 1));
+  const busyArr = Array.isArray(s.cafeBusy) ? s.cafeBusy : [false, false, false];
+  const busyCnt = busyArr.slice(0, lv).filter(Boolean).length;
+  const conn = (typeof isCafeConnected === "function") ? isCafeConnected(s) : true;
+  const hired = (typeof barmenHired !== "undefined") && !!barmenHired;
+  const period = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+  const isBarMode = period === "bar" || (typeof isNight !== "undefined" && !!isNight);
+
+  // Kafe ahşap/tuğla duvar bandı
+  const wTile = P.cafeWallTile || "#78350f";
+  if (doorWall !== "back") {
+    isoBox(u0 + 10, v0 + 14, u0 + 12.5, v1 - 12, z0 + 12, z0 + 36, wTile, "#5c280b", "#451a03", null, 0);
+  }
+  if (doorWall !== "left") {
+    isoBox(u0 + 14, v0 + 10, u1 - 12, v0 + 12.5, z0 + 12, z0 + 36, wTile, "#5c280b", "#451a03", null, 0);
+  }
+
+  // Bar tezgâhı + raflar + Barmen
+  drawCafeBarBackAndCounter(u0, v0, z0, conn, hired, isBarMode, P);
+
+  // Kapasite kadar Bar Taburesi (Sv1: 1, Sv2: 2, Sv3: 3)
+  const stoolVs = [66, 96, 126];
+  for (let k = 0; k < lv; k++) {
+    const gk = busyArr[k] ? _findCafeStationGuest(s, k) : null;
+    drawCafeStoolStation(u0 + 104, v0 + stoolVs[k], z0, !!busyArr[k], gk ? gk.pawn : null, isBarMode, P);
+  }
+
+  if (lv >= 2) drawCafeLoungeCorner(u0, v0, z0, P);
+  if (lv >= 3) drawCafeMusicStage(u0, v0, z0, P);
+
+  // Durum / Neon / Tente Rozeti
+  if (!conn) {
+    isoLabel("⚠️ KAFE (Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 78, 10.5, "#991b1b", "#fef2f2", 5, 2.2);
+  } else if (!hired) {
+    isoLabel("⚠️ Barmen İşe Al", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 78, 10.5, "#92400e", "#fef3c7", 5, 2.2);
+  } else if (period === "closed") {
+    isoLabel("🌙 KAFE (00–08 Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10, "#cbd5e1", "#1e293b", 5, 2.2);
+  } else if (period === "bar") {
+    const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
+    isoLabel("🍸 BAR Sv." + lv + occStr, (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10.5, "#fef08a", "#4c0519", 5, 2.2);
+  } else {
+    const occStr = busyCnt > 0 ? (" · " + busyCnt + "/" + lv) : "";
+    isoLabel("☕ KAFE Sv." + lv + occStr, (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10.5, "#fffbeb", P.cafeCounterTop || "#78350f", 5, 2.2);
+  }
+
+  addHitPoly(roomPoly, () => {
+    if (pending && s.Ready && !s.guest && !s.onFire) {
+      selSlot = s;
+      placeGuestIntoRoom(pending, s, pendingPrice, false);
+      refresh();
+      return;
+    }
+    selectSlot(s);
+  });
+}
+
+// Canlı fincan/espresso buharı: önbellek dışında çizilir, parsel başına <= 12 parçacık
+function drawLiveCafeSteam() {
+  if (typeof allSlots === "undefined" || !Array.isArray(allSlots)) return;
+  const maxFloor = (typeof viewFloor === "number") ? viewFloor : 0;
+  const tNow = (typeof timeNow === "number") ? timeNow : 0;
+  const hired = (typeof barmenHired !== "undefined") && !!barmenHired;
+  for (let i = 0; i < allSlots.length; i++) {
+    const s = allSlots[i];
+    if (!s || s.type !== "Cafe" || !s.floor || s.floor.state !== "Built" || s.floor.idx > maxFloor) continue;
+    if (!hired) continue;
+    if (typeof isCafeConnected === "function" && !isCafeConnected(s)) continue;
+    if (typeof isParcelInViewport === "function" && !isParcelInViewport(s.floor.idx, s.idx)) continue;
+
+    const busyArr = Array.isArray(s.cafeBusy) ? s.cafeBusy : [false, false, false];
+    const lv = Math.max(1, Math.min(3, s.cafeLevel || 1));
+    const active = busyArr.slice(0, lv).some(Boolean);
+    const period = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+    if (!active && period === "closed") continue;
+
+    const b = slotIsoBox(s.floor.idx, s.idx);
+    const count = active ? 9 : 4;
+    ctx.save();
+    for (let k = 0; k < count; k++) {
+      const phase = (tNow * (active ? 0.65 : 0.35) + k * 0.21 + (s.idx % 5) * 0.13) % 1;
+      const su = b.u0 + 68 + Math.sin(phase * Math.PI * 2 + k) * 5;
+      const sv = b.v0 + (k % 2 === 0 ? 60 : 112) + Math.cos(phase * Math.PI * 2 + k) * 5;
+      const sz = b.z0 + 46 + phase * 24;
+      const pt = iso(su, sv, sz);
+      const r = 3.2 + phase * 5.2;
+      const a = (active ? 0.36 : 0.18) * Math.sin(phase * Math.PI);
+      if (a <= 0.01) continue;
+      ctx.fillStyle = "rgba(255, 250, 240, " + a.toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
 // ===== BUNDLED: render/parcel-corridor.js =====
 // [render/parcel-corridor.js] Koridor parseli
 // 7.5) Lüks Kat Koridoru & Holü (Corridor)
@@ -18686,14 +19453,14 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
   const leftCorr = !!(leftSlot && (leftSlot.type === "Corridor" || leftSlot.type === "Elevator" || leftSlot.type === "Pool" || leftSlot.type === "Park"));
   const rightCorr = !!(rightSlot && (rightSlot.type === "Corridor" || rightSlot.type === "Elevator" || rightSlot.type === "Pool" || rightSlot.type === "Park"));
   const rightRunnerCorr = rightCorr || !!(rightSlot && rightSlot.type === "TennisClub" && isSlotStructurallyConnected(rightSlot));
-  const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Pool" || backSlot.type === "Park"));
+  const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe" || backSlot.type === "Pool" || backSlot.type === "Park"));
   const frontCorr = !!(frontSlot && (frontSlot.type === "Corridor" || frontSlot.type === "Elevator" || (fIdx === 0 && frontSlot.type === "Reception") || frontSlot.type === "Pool" || frontSlot.type === "Park"));
 
   // Lüks Kırmızı & Altın Koridor Yolluğu (L-Dönüş, T-Kavşak, + ve Düz Koridor)
   drawCorridorRunnerCarpet(u0, v0, u1, v1, z0, leftCorr, rightRunnerCorr, backCorr, frontCorr);
 
   // Arka Duvar (u = u0)
-  const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa") && getRoomDoorWall(backSlot) === "front");
+  const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe") && getRoomDoorWall(backSlot) === "front");
   const backIsOutdoorAmenity = !!(backSlot && (backSlot.type === "Pool" || backSlot.type === "Park"));
   if (backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
     // Arkada Koridor veya Asansör varsa geçiş tamamen açık, kesintisiz hol
@@ -18757,6 +19524,11 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
       isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, P.spaWoodTop || gsTop, P.spaWoodL || gsL, P.spaWoodR || gsR, OUTLINE_COL, 1.3);
       isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, P.spaTileTop || "#14b8a6", P.spaSignBg || "#0f766e", P.spaTileR || "#115e59", OUTLINE_COL, 1);
       isoLabel("SPA ♨️", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#ffffff", null, 0, 0);
+    } else if (backSlot.type === "Cafe") {
+      const cBar = (typeof getCafeTimePeriod === "function" && getCafeTimePeriod() === "bar");
+      isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, P.cafeWoodTop || dTop, P.cafeWoodL || dL, P.cafeWoodR || dR, OUTLINE_COL, 1.3);
+      isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 16, u0 + 11.5, (vd0 + vd1) * 0.5 + 16, z0 + 68, z0 + 76, cBar ? "#4c0519" : (P.cafeAwningA || "#b91c1c"), P.cafeCounterTop || "#78350f", P.cafeCounterR || "#451a03", OUTLINE_COL, 1);
+      isoLabel(cBar ? "BAR 🍸" : "KAFE ☕", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.2, cBar ? (P.cafeNeon || "#fde047") : "#fffbeb", null, 0, 0);
     }
   } else {
     // Arka Duvar: Sıcak Krem Sıva, Süpürgelik & Ahşap Lambri
@@ -18772,7 +19544,7 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
 
   // Sol Bölme Duvarı (v = v0)
   const leftIsElev = leftSlot && leftSlot.type === "Elevator";
-  const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym" || leftSlot.type === "Spa") && getRoomDoorWall(leftSlot) === "right");
+  const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym" || leftSlot.type === "Spa" || leftSlot.type === "Cafe") && getRoomDoorWall(leftSlot) === "right");
   const leftIsOutdoorAmenity = !!(leftSlot && (leftSlot.type === "Pool" || leftSlot.type === "Park"));
   if (leftSlot && leftSlot.type === "Corridor") {
     // İki koridor yan yana bağlandığında ferah, geniş ve kesintisiz tek bir lüks hol oluşur (kiriş veya engel kolon çizilmez)
@@ -18818,7 +19590,7 @@ function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, le
   // Sağ Bölme Duvarı (v = v1)
   const rightIsElev = rightSlot && rightSlot.type === "Elevator";
   const rightHasDoorToCorr = !!(rightSlot && (
-    ((rightSlot.type === "Toilet" || rightSlot.type === "Room" || rightSlot.type === "Gym" || rightSlot.type === "Spa") && getRoomDoorWall(rightSlot) === "left") ||
+    ((rightSlot.type === "Toilet" || rightSlot.type === "Room" || rightSlot.type === "Gym" || rightSlot.type === "Spa" || rightSlot.type === "Cafe") && getRoomDoorWall(rightSlot) === "left") ||
     (rightSlot.type === "TennisClub" && isSlotStructurallyConnected(rightSlot))
   ));
   const rightIsOutdoorAmenity = !!(rightSlot && (rightSlot.type === "Pool" || rightSlot.type === "Park"));
@@ -19244,11 +20016,18 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
   const stTop = P.spaTileTop || "#14b8a6", stBg = P.spaSignBg || "#0f766e", stR = P.spaTileR || "#115e59";
   const stFg = P.spaSignFg || "#ecfeff";
   const fSpa = P.spaFloorA || fToilet, fSpaB = P.spaFloorB || "#dfece9", fSpaLine = P.spaFloorLine || "rgba(15, 118, 110, 0.22)";
+  const fCafeA = P.cafeFloorA || "#e8d5bc", fCafeB = P.cafeFloorB || "#cfa97e";
+  const cwTop = P.cafeWoodTop || dTop, cwL = P.cafeWoodL || dL, cwR = P.cafeWoodR || dR;
+  const cBarMode = (typeof getCafeTimePeriod === "function" && getCafeTimePeriod() === "bar") || (typeof isNight !== "undefined" && !!isNight);
+  const cSignTop = cBarMode ? "#4c0519" : (P.cafeAwningA || "#b91c1c");
+  const cSignFg = cBarMode ? (P.cafeNeon || "#fde047") : "#fffbeb";
+  const cSignTxt = cBarMode ? "BAR 🍸" : "KAFE ☕";
 
   const floorCol = s.type === "Toilet" ? fToilet :
                    s.type === "Gym" ? fGym :
                    s.type === "Gas" ? fGas :
-                   s.type === "Spa" ? fSpa : fWood;
+                   s.type === "Spa" ? fSpa :
+                   s.type === "Cafe" ? fCafeA : fWood;
 
   // A) Oda Tabanı: Sıcak Meşe Ahşap Parke Zemin
   const roomSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 6));
@@ -19278,12 +20057,15 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       drawIsoTexturedFloor(u0, v0, u1, v1, z0, "marble", fToilet);
     }
     if (typeof drawRoomFloorAO === "function") drawRoomFloorAO(u0, v0, u1, v1, z0);
-  } else if (s.type === "Spa") {
+  } else if (s.type === "Spa" || s.type === "Cafe") {
+    const cA = (s.type === "Cafe") ? fCafeA : fSpa;
+    const cB = (s.type === "Cafe") ? fCafeB : fSpaB;
+    const cLine = (s.type === "Cafe") ? "rgba(120, 53, 15, 0.22)" : fSpaLine;
     const du_s = (u1 - u0) / 6, dv_s = (v1 - v0) / 6;
     for (let iu = 0; iu < 6; iu++) {
       for (let iv = 0; iv < 6; iv++) {
-        const col = (iu + iv) % 2 === 0 ? fSpa : fSpaB;
-        isoQuad(u0 + iu * du_s + 0.6, v0 + iv * dv_s + 0.6, u0 + (iu + 1) * du_s - 0.6, v0 + (iv + 1) * dv_s - 0.6, z0 + 0.28, col, fSpaLine, 0.7);
+        const col = (iu + iv) % 2 === 0 ? cA : cB;
+        isoQuad(u0 + iu * du_s + 0.6, v0 + iv * dv_s + 0.6, u0 + (iu + 1) * du_s - 0.6, v0 + (iv + 1) * dv_s - 0.6, z0 + 0.28, col, cLine, 0.7);
       }
     }
     if (typeof drawRoomFloorAO === "function") drawRoomFloorAO(u0, v0, u1, v1, z0);
@@ -19341,6 +20123,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(u0 + 2, vd0 + 4, u0 + 5, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
       isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 14, u0 + 0.5, (vd0 + vd1) * 0.5 + 14, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
       isoLabel("SPA ♨️", u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 7, stFg, null, 0, 0);
+    } else if (s.type === "Cafe") {
+      isoBox(u0 + 1, vd0 + 2, u0 + wallThick + 6, vd0 + 6, z0, z0 + 63, cwTop, cwL, cwR, OUTLINE_COL, 1.3);
+      isoBox(u0 + 2, vd0 + 4, u0 + 5, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 16, u0 + 0.5, (vd0 + vd1) * 0.5 + 16, z0 + 48, z0 + 55, cSignTop, cwL, cwR, OUTLINE_COL, 1);
+      isoLabel(cSignTxt, u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 6.8, cSignFg, null, 0, 0);
     } else if (!s.hasDoor) {
       isoQuad(u0 + wallThick * 0.5, vd0 + 4, u0 + wallThick * 0.5, vd1 - 4, z0 + 28, "#fbbf24", "#d97706", 1.8);
       isoLabel("🚪 Kapı Al!", u0 + wallThick + 3, (vd0 + vd1) * 0.5, z0 + 32, 7.5, "#995200", "#fff3cd", 4, 1.5);
@@ -19391,6 +20178,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(ud0 + 4, v0 + 2, ud0 + 7, v0 + 5, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
       isoBox((ud0 + ud1) * 0.5 - 14, v0 - 1.5, (ud0 + ud1) * 0.5 + 14, v0 + 0.5, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
       isoLabel("SPA ♨️", (ud0 + ud1) * 0.5, v0 - 2, z0 + 51.5, 7, stFg, null, 0, 0);
+    } else if (s.type === "Cafe") {
+      isoBox(ud0 + 2, v0 + 1, ud0 + 6, v0 + wallThick + 6, z0, z0 + 63, cwTop, cwL, cwR, OUTLINE_COL, 1.3);
+      isoBox(ud0 + 4, v0 + 2, ud0 + 7, v0 + 5, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox((ud0 + ud1) * 0.5 - 16, v0 - 1.5, (ud0 + ud1) * 0.5 + 16, v0 + 0.5, z0 + 48, z0 + 55, cSignTop, cwL, cwR, OUTLINE_COL, 1);
+      isoLabel(cSignTxt, (ud0 + ud1) * 0.5, v0 - 2, z0 + 51.5, 6.8, cSignFg, null, 0, 0);
     } else if (s.type === "Room") {
       isoBox((ud0 + ud1) * 0.5 - 6, v0 - 1.5, (ud0 + ud1) * 0.5 + 6, v0 + wallThick + 2, z0 + 48, z0 + 55, gaTop, gaL, gaR, OUTLINE_COL, 1);
       isoLabel(String(s.roomNo || 102), (ud0 + ud1) * 0.5, v0 + wallThick + 3, z0 + 51.5, 7, "#3a281f", null, 0, 0);
@@ -19441,6 +20233,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(ud0 + 4, v1 - 5, ud0 + 7, v1 - 2, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
       isoBox((ud0 + ud1) * 0.5 - 14, v1 - 0.5, (ud0 + ud1) * 0.5 + 14, v1 + 1.5, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
       isoLabel("SPA ♨️", (ud0 + ud1) * 0.5, v1 + 2, z0 + 51.5, 7, stFg, null, 0, 0);
+    } else if (s.type === "Cafe") {
+      isoBox(ud0 + 2, v1 - wallThick - 6, ud0 + 6, v1 - 1, z0, z0 + 63, cwTop, cwL, cwR, OUTLINE_COL, 1.3);
+      isoBox(ud0 + 4, v1 - 5, ud0 + 7, v1 - 2, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox((ud0 + ud1) * 0.5 - 16, v1 - 0.5, (ud0 + ud1) * 0.5 + 16, v1 + 1.5, z0 + 48, z0 + 55, cSignTop, cwL, cwR, OUTLINE_COL, 1);
+      isoLabel(cSignTxt, (ud0 + ud1) * 0.5, v1 + 2, z0 + 51.5, 6.8, cSignFg, null, 0, 0);
     } else if (s.type === "Room") {
       // Pirinç Oda Plaketi (v1 yüzeyinde)
       isoBox((ud0 + ud1) * 0.5 - 6, v1 - wallThick - 2, (ud0 + ud1) * 0.5 + 6, v1 + 1, z0 + 48, z0 + 55, gaTop, gaL, gaR, OUTLINE_COL, 1);
@@ -19456,7 +20253,7 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
     }
   } else if (rightSlot && rightSlot.type === "Reception") {
     // Resepsiyon ile otel odaları arasında tek duvar: Resepsiyon'un sol duvarı ortak duvardır, oda tarafında ikinci bir duvar çizilmez!
-  } else if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa") {
+  } else if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa" || s.type === "Cafe") {
     // Sağlam kapalı sağ duvar -> Alçak kesit süpürgelik & pervaz
     isoBox(u0, v1 - wallThick, u1, v1, z0, z0 + 14, wTop, wL, wR, OUTLINE_COL, 1.2);
     isoBox(u0, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0 + 12, z0 + 15, tTop, tL, tR, null, 0);
@@ -19505,6 +20302,11 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
       isoBox(u1 - 6, vd0 + 4, u1 - 3, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
       isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 14, u1 + 3.5, (vd0 + vd1) * 0.5 + 14, z0 + 48, z0 + 55, stTop, stBg, stR, OUTLINE_COL, 1);
       isoLabel("SPA ♨️", u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 7, stFg, null, 0, 0);
+    } else if (s.type === "Cafe") {
+      isoBox(u1 - 8, vd0 + 2, u1 + 2, vd0 + 6, z0, z0 + 63, cwTop, cwL, cwR, OUTLINE_COL, 1.3);
+      isoBox(u1 - 6, vd0 + 4, u1 - 3, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+      isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 16, u1 + 3.5, (vd0 + vd1) * 0.5 + 16, z0 + 48, z0 + 55, cSignTop, cwL, cwR, OUTLINE_COL, 1);
+      isoLabel(cSignTxt, u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 6.8, cSignFg, null, 0, 0);
     }
   } else {
     // Kapı önde değil: Kesintisiz alçak süpürgelik & pervaz
@@ -19513,7 +20315,7 @@ function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, 
   }
 
   // F) 4 Köşe Taşıyıcı Kolonları ve 4 Yöne Bağlantı Çerçevesi (Kullanıcı Şeması)
-  if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa") {
+  if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa" || s.type === "Cafe") {
     const colSize = 7;
     // Arka köşe, sol köşe ve sağ köşe tam boy taşıyıcı kolonlar (duvar birleşim noktaları)
     const backCorners = [
@@ -19967,6 +20769,12 @@ function _isFacadeSlotBuiltRoofed(slot) {
 function _isFacadeWindowLitNight(s) {
   if (!s) return false;
   if (s.type === "Room") return !!(s.guest && !s.guest.sleeping);
+  if (s.type === "Cafe") {
+    const conn = (typeof isCafeConnected === "function") ? isCafeConnected(s) : true;
+    const hired = (typeof barmenHired !== "undefined") && !!barmenHired;
+    const per = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+    return conn && hired && per !== "closed";
+  }
   return s.type === "Reception" || s.type === "Kitchen" || s.type === "Corridor" || s.type === "Elevator" || s.type === "Gym" || s.type === "Spa" || (s.type === "TennisClub" && s.tennisState === "Open");
 }
 
@@ -20153,6 +20961,9 @@ function drawParcelLowerFloorFacade(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel
       _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 28, t0 + 76, z0 + 26, z0 + 62], [t1 - 76, t1 - 28, z0 + 26, z0 + 62]], pal, litNight, isNightMode, !isNightMode);
       _drawFacadeFaceQuad(axis, u1, v1, t0 + 26, t0 + 78, 0.55, z0 + 62, z0 + 66, pal.spaTileL || "#0f766e", OUTLINE_COL, 0.9);
       _drawFacadeFaceQuad(axis, u1, v1, t1 - 78, t1 - 26, 0.55, z0 + 62, z0 + 66, pal.spaTileL || "#0f766e", OUTLINE_COL, 0.9);
+    } else if (s.type === "Cafe") {
+      _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 22, t0 + 82, z0 + 18, z0 + 60], [t1 - 82, t1 - 22, z0 + 18, z0 + 60]], pal, litNight, isNightMode, false);
+      _drawFacadeFaceQuad(axis, u1, v1, t0 + 18, t1 - 18, 2.2, z0 + 61, z0 + 69, pal.cafeAwningA || "#b91c1c", OUTLINE_COL, 1.0);
     } else if (s.type === "Gas") {
       _drawFacadeWindowBatch(axis, u1, v1, [[tm - 28, tm + 28, z0 + 26, z0 + 62]], pal, false, isNightMode, true);
       _drawFacadeFaceQuad(axis, u1, v1, tm - 28, tm + 28, 0.6, z0 + 62, z0 + 66, axis === "front" ? pal.goldL : pal.goldR, OUTLINE_COL, 0.9);
@@ -21435,6 +22246,13 @@ function loop(now) {
           g.spaTimer = rnd(20, 40);
         }
       }
+      if (g.state === "InRoom") {
+        g.cafeTimer -= dt;
+        if (g.cafeTimer <= 0) {
+          if (typeof tryCafe === "function") tryCafe(g);
+          g.cafeTimer = rnd(1.5, 4);
+        }
+      }
       if (g.state === "InRoom" && g.kids > 0 && !g.kidsAtPark) {
         g.parkTimer -= dt;
         if (g.parkTimer <= 0) { g.parkTimer = rnd(15, 30); sendKidsToPark(g); }
@@ -21453,6 +22271,16 @@ function loop(now) {
         g.exLeft -= dt;
         if (g.exLeft <= 0 && typeof endSpa === "function") endSpa(g);
       }
+    } else if (g.state === "ToCafe" || g.state === "InCafe") {
+      g.cafeElapsed = (g.cafeElapsed || 0) + dt;
+      if (g.cafeElapsed > 90) {
+        if (typeof rescueCafeGuest === "function") rescueCafeGuest(g);
+      } else if (!barmenHired || !g.cafe || g.cafe.type !== "Cafe" || g.cafe.onFire || (typeof isCafeConnected === "function" && !isCafeConnected(g.cafe))) {
+        if (typeof rescueCafeGuest === "function") rescueCafeGuest(g);
+      } else if (g.state === "InCafe") {
+        g.exLeft -= dt;
+        if (g.exLeft <= 0 && typeof endCafe === "function") endCafe(g);
+      }
     } else if (g.state === "ToTennis" || g.state === "PlayingTennis") {
       g.tennisElapsed = (g.tennisElapsed || 0) + dt;
       if (g.tennisElapsed > 90) {
@@ -21470,6 +22298,9 @@ function loop(now) {
     } else if (g.state === "ToRoom" && g.spaInFlow) {
       g.spaElapsed = (g.spaElapsed || 0) + dt;
       if (g.spaElapsed > 90 && typeof rescueSpaGuest === "function") rescueSpaGuest(g);
+    } else if (g.state === "ToRoom" && g.cafeInFlow) {
+      g.cafeElapsed = (g.cafeElapsed || 0) + dt;
+      if (g.cafeElapsed > 90 && typeof rescueCafeGuest === "function") rescueCafeGuest(g);
     } else if (g.state === "Exercising") {
       g.exLeft -= dt;
       if (g.exLeft <= 0) endExercise(g);
@@ -21483,6 +22314,13 @@ function loop(now) {
         startLeaving(g);
       }
     } else if (g.state === "Sleeping") {
+      if (typeof barmenHired !== "undefined" && barmenHired && typeof getCafeTimePeriod === "function" && getCafeTimePeriod() === "bar") {
+        g.cafeTimer -= dt;
+        if (g.cafeTimer <= 0) {
+          if (typeof tryCafe === "function") tryCafe(g);
+          g.cafeTimer = rnd(1.5, 4);
+        }
+      }
       g.zTimer -= dt;
       if (g.zTimer <= 0) {
         g.zTimer = 2.5;

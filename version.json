@@ -1,8 +1,8 @@
 {
-  "versionCode": 70,
-  "versionName": "1.9.62-beta",
+  "versionCode": 71,
+  "versionName": "1.9.63-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Yeni bahçe süsleri"
+  "notes": "Kafe & Bar odası ve Barmen"
 }
