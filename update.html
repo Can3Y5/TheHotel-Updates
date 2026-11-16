@@ -1514,6 +1514,17 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
   background: linear-gradient(90deg, rgba(224,242,254,0.92), rgba(224,242,254,0.28));
   color: #0c4a6e; font-size: clamp(13px, 2.2vw, 15px); font-weight: 900; padding: 8px 12px;
 }
+.cloud-status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 800; color: #475569;
+  background: rgba(255,255,255,0.72); border: 1.5px solid rgba(90,62,38,0.22);
+  border-radius: 999px; padding: 3px 10px; cursor: pointer; align-self: flex-start;
+}
+.cloud-status-pill.is-synced { color: #166534; background: rgba(220,252,231,0.88); border-color: #86efac; }
+.cloud-status-pill.is-syncing { color: #075985; background: rgba(224,242,254,0.90); border-color: #7dd3fc; }
+.cloud-status-pill.is-warn { color: #92400e; background: #fef3c7; border-color: #f59e0b; }
+.cloud-status-pill.is-err { color: #991b1b; background: #fee2e2; border-color: #f87171; }
+#hud-online-btn.has-warn { box-shadow: 0 0 0 2px #f59e0b; }
 #online-modal {
   position: absolute; inset: 0; background: rgba(10, 14, 22, 0.74);
   display: none; align-items: center; justify-content: center; z-index: 38; padding: 14px;
@@ -1816,7 +1827,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.70-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.71-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -1858,6 +1869,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         <button id="btn-start-game" class="m-btn">▶ OYUNA BAŞLA</button>
         <button id="btn-new-game" class="m-btn" style="display:none">🆕 YENİ OYUN BAŞLAT</button>
         <button id="btn-online-menu" class="m-btn">☁️ BULUT KAYIT &amp; HESAP</button>
+        <button type="button" id="menu-cloud-status" class="cloud-status-pill" title="Bulut eşitleme durumu">☁️ Çevrimdışı</button>
         <div id="newgame-confirm-box">
           <div class="ngc-text">⚠️ Mevcut kayıtlı otel silinecek ve 1. günden sıfırdan yeni bir oyun başlayacak. Emin misin?</div>
           <div class="ngc-row">
@@ -1951,6 +1963,7 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
         </div>
         <div id="onl-sync-row">
           <div id="onl-cloud-meta">☁️ Bulut kaydı hazır</div>
+          <div id="onl-sync-status-line" class="cloud-status-pill">☁️ Çevrimdışı</div>
           <div class="onl-sync-btns">
             <button type="button" id="btn-cloud-upload" class="onl-btn up">☁️ Buluta Kaydet</button>
             <button type="button" id="btn-cloud-download" class="onl-btn down">⬇ Buluttan Yükle</button>
@@ -4728,7 +4741,40 @@ function isParcelBuildable(fIdx, idx) {
 // [state/save-load.js] Kalıcı kayıt: saveGame, loadGame, yeni oyun
 // ===== KALICI KAYIT SİSTEMİ (GÜNCELLEMELERDE DE KORUNUR) =====
 const SAVE_KEY = "thehotel_save_v200";
+const LOCAL_HASH_KEY = "hotelore_last_local_hash_v1";
+const LOCAL_UPDATED_KEY = "hotelore_local_save_updated_at_v1";
+const LOCAL_BACKUP_KEY = "hotelore_local_backup_v1";
+if (typeof window !== "undefined" && typeof window.saveLocked === "undefined") {
+  window.saveLocked = false;
+}
 const VALID_TENNIS_STATES = ["Ruin", "Repairing", "Repaired", "Open"];
+
+function computeSaveHash(str) {
+  const s = String(str || "");
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return s.length + ":" + (h >>> 0).toString(16);
+}
+
+function getLocalSaveUpdatedAt() {
+  try {
+    return Math.max(0, Number(localStorage.getItem(LOCAL_UPDATED_KEY) || 0) || 0);
+  } catch (_) {
+    return 0;
+  }
+}
+
+function backupLocalSaveBeforeCloud() {
+  try {
+    let cur = null;
+    try { cur = localStorage.getItem(SAVE_KEY); } catch (_) {}
+    if (!cur && typeof serializeSaveRaw === "function") cur = serializeSaveRaw();
+    if (cur) localStorage.setItem(LOCAL_BACKUP_KEY, cur);
+  } catch (_) {}
+}
 
 function sanitizeTennisState(val) {
   return (typeof val === "string" && VALID_TENNIS_STATES.includes(val)) ? val : "Ruin";
@@ -4922,8 +4968,19 @@ function serializeSaveRaw() {
 
 function saveGame() {
   try {
+    if (typeof window !== "undefined" && window.saveLocked) return;
     const raw = serializeSaveRaw();
     if (!raw) return;
+    const h = computeSaveHash(raw);
+    let prevH = "";
+    try { prevH = localStorage.getItem(LOCAL_HASH_KEY) || ""; } catch (_) {}
+    if (h !== prevH) {
+      try {
+        localStorage.setItem(LOCAL_HASH_KEY, h);
+        localStorage.setItem(LOCAL_UPDATED_KEY, String(Date.now()));
+      } catch (_) {}
+      if (typeof markCloudSaveDirty === "function") markCloudSaveDirty(h);
+    }
     try { localStorage.setItem(SAVE_KEY, raw); } catch (_) {}
     try { window.name = "THEHOTEL_SAVE_V200:" + raw; } catch (_) {}
     try {
@@ -9349,6 +9406,8 @@ function newDay() {
     spawnPaperboy();
   }
   refresh();
+  saveGame();
+  if (typeof triggerCloudSyncNow === "function") triggerCloudSyncNow("new_day");
 }
 
 function spawnPaperboy() {
@@ -12180,8 +12239,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 78;
-const APP_VERSION_NAME = "1.9.70-beta";
+const APP_VERSION_CODE = 79;
+const APP_VERSION_NAME = "1.9.71-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12189,9 +12248,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.71-beta",
+    title: "Otomatik hesap ve bulut eşitleme",
+    latest: true,
+    notes: "• 🔄 Açılışta otomatik misafir oturumu, arka plan/gün sonu/menü dönüşü ve 2 dk aralıklı hash kontrollü otomatik bulut eşitleme, açılış karşılaştırması ve durum göstergesi eklendi."
+  },
+  {
     ver: "v1.9.70-beta",
     title: "Bulut Kayıt Çakışma Kontrolü & Hesap Silme",
-    latest: true,
+    latest: false,
     notes: "• ⚖️ Çakışma Sorusu: Yerel ve bulut kaydı farklıysa hangisinin kullanılacağını soran seçim ekranı eklendi.\n• 🗑️ Hesap Silme: Oyun içinden Firebase hesabını ve saves/{uid} bulut kaydını kalıcı olarak silme desteği eklendi."
   },
   {
@@ -12601,6 +12666,7 @@ window.addEventListener("resize", () => {
 function openStartMenu() {
   toggleInGameThemePanel(false);
   saveGame();
+  if (typeof triggerCloudSyncNow === "function") triggerCloudSyncNow("menu");
   hadSavedGame = true;
   if (hotelNameInput) hotelNameInput.value = hotelName || "HoteLore";
   updateThemeButtons();
@@ -22736,7 +22802,20 @@ function clearCustomFirebaseConfig() {
 }
 
 // ===== BUNDLED: online/firebase-service.js =====
-// [online/firebase-service.js] Firebase Auth (Anonymous + Email/Password) & /saves/{uid} Bulut Kayit
+// [online/firebase-service.js] Otomatik Anonim Hesap, /saves/{uid} Bulut Esitleme & Cakisma Denetimi
+const AUTO_SYNC_INTERVAL_MS = 120000; // En fazla 2 dakikada bir otomatik yükleme
+const STARTUP_COMPARE_TIMEOUT_MS = 3000;
+const RETRY_MAX_MS = 300000; // En çok 5 dakika bekleme (geometrik artış)
+const LAST_CLOUD_HASH_KEY = "hotelore_last_cloud_hash_v1";
+const LAST_CLOUD_SYNC_MS_KEY = "hotelore_last_cloud_sync_ms_v1";
+
+function _readLS(k, fallback = "") {
+  try { return localStorage.getItem(k) || fallback; } catch (_) { return fallback; }
+}
+function _writeLS(k, v) {
+  try { localStorage.setItem(k, String(v)); } catch (_) {}
+}
+
 const ONLINE_STATE = {
   initialized: false,
   sdkAvailable: false,
@@ -22744,10 +22823,19 @@ const ONLINE_STATE = {
   user: null,
   auth: null,
   db: null,
-  lastSyncMs: 0,
+  status: (typeof navigator !== "undefined" && navigator.onLine === false) ? "offline" : "idle",
+  statusError: "",
+  lastSyncMs: Number(_readLS(LAST_CLOUD_SYNC_MS_KEY, "0")) || 0,
+  lastUploadedHash: _readLS(LAST_CLOUD_HASH_KEY, ""),
+  dirty: false,
   lastCloudMeta: null,
+  pendingAction: null, // null | { type: "conflict" | "cloud_available", local, cloud }
   autoSyncTimer: null,
+  retryTimer: null,
+  retryAttempt: 0,
   syncBusy: false,
+  manualSignOut: false,
+  comparedUid: null,
   listeners: []
 };
 
@@ -22761,24 +22849,197 @@ function notifyOnlineStateChange() {
   }
 }
 
+function _isNetworkLikeError(err) {
+  const code = (err && err.code) ? String(err.code).toLowerCase() : "";
+  const msg = (err && err.message) ? String(err.message).toLowerCase() : "";
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  return code.includes("network") || code.includes("unavailable") || msg.includes("network") || msg.includes("offline") || msg.includes("failed to get document");
+}
+
+function _translateFirebaseError(err) {
+  const code = (err && err.code) ? String(err.code) : "";
+  if (code === "auth/operation-not-allowed") return "Bu giriş yöntemi Firebase Console -> Sign-in method altında etkin değil.";
+  if (code === "auth/invalid-email") return "Geçerli bir e-posta adresi gir.";
+  if (code === "auth/weak-password") return "Şifre en az 6 karakter olmalı.";
+  if (code === "auth/email-already-in-use") return "Bu e-posta zaten kayıtlı. Giriş Yap butonunu kullan.";
+  if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") return "E-posta veya şifre hatalı.";
+  if (code === "permission-denied" || code === "firestore/permission-denied") return "Firestore kuralları izin vermedi.";
+  if (_isNetworkLikeError(err)) return "İnternet bağlantısı yok.";
+  return (err && err.message) ? err.message : "Bağlantı hatası oluştu.";
+}
+
+function _scheduleBackoffRetry(fn) {
+  if (ONLINE_STATE.retryTimer) return;
+  const delay = Math.min(RETRY_MAX_MS, 5000 * Math.pow(3, Math.min(4, ONLINE_STATE.retryAttempt)));
+  ONLINE_STATE.retryAttempt = Math.min(6, ONLINE_STATE.retryAttempt + 1);
+  ONLINE_STATE.retryTimer = setTimeout(() => {
+    ONLINE_STATE.retryTimer = null;
+    fn();
+  }, delay);
+}
+
+function _clearRetryTimer() {
+  if (ONLINE_STATE.retryTimer) {
+    clearTimeout(ONLINE_STATE.retryTimer);
+    ONLINE_STATE.retryTimer = null;
+  }
+  ONLINE_STATE.retryAttempt = 0;
+}
+
+function markCloudSaveDirty(newHash) {
+  if (!newHash && typeof serializeSaveRaw === "function" && typeof computeSaveHash === "function") {
+    newHash = computeSaveHash(serializeSaveRaw());
+  }
+  ONLINE_STATE.dirty = !!(newHash && newHash !== ONLINE_STATE.lastUploadedHash);
+  notifyOnlineStateChange();
+}
+
+function _hasMeaningfulLocalSave() {
+  if (typeof hadSavedGame !== "undefined" && hadSavedGame) return true;
+  try {
+    if (localStorage.getItem(SAVE_KEY)) return true;
+  } catch (_) {}
+  const st = _computeSaveMeta();
+  return st.day > 1 || st.builtRooms > 0 ||
+    (typeof money === "number" && money !== (typeof StartMoney === "number" ? StartMoney : 600)) ||
+    st.hotelName !== "HoteLore";
+}
+
+function _computeSaveMeta() {
+  const cleanName = String((typeof hotelName === "string" && hotelName.trim()) ? hotelName.trim() : "HoteLore").slice(0, 24) || "HoteLore";
+  return {
+    hotelName: cleanName,
+    day: Math.max(1, Math.floor(Number(typeof day !== "undefined" ? day : 1) || 1)),
+    reputation: Math.max(0, Math.floor(Number(typeof reputation !== "undefined" ? reputation : 0) || 0)),
+    builtRooms: Math.max(0, Math.floor(Number(typeof builtRooms !== "undefined" ? builtRooms : 0) || 0)),
+    versionCode: (typeof APP_VERSION_CODE === "number" && APP_VERSION_CODE >= 1) ? APP_VERSION_CODE : 1
+  };
+}
+
+async function _tryAutoAnonSignIn() {
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.auth || ONLINE_STATE.user || ONLINE_STATE.manualSignOut) return;
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    ONLINE_STATE.status = "offline";
+    notifyOnlineStateChange();
+    _scheduleBackoffRetry(_tryAutoAnonSignIn);
+    return;
+  }
+  try {
+    const res = await ONLINE_STATE.auth.signInAnonymously();
+    ONLINE_STATE.user = res.user;
+    _clearRetryTimer();
+    notifyOnlineStateChange();
+  } catch (err) {
+    ONLINE_STATE.status = _isNetworkLikeError(err) ? "offline" : "error";
+    ONLINE_STATE.statusError = _isNetworkLikeError(err) ? "" : _translateFirebaseError(err);
+    notifyOnlineStateChange();
+    _scheduleBackoffRetry(_tryAutoAnonSignIn);
+  }
+}
+
+async function runStartupCloudCompare(forceForUser = false) {
+  const user = ONLINE_STATE.user;
+  if (!ONLINE_STATE.initialized || !user || !ONLINE_STATE.db) return;
+  if (!forceForUser && ONLINE_STATE.comparedUid === user.uid) return;
+  ONLINE_STATE.comparedUid = user.uid;
+
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    ONLINE_STATE.status = "offline";
+    notifyOnlineStateChange();
+    return;
+  }
+
+  ONLINE_STATE.status = "syncing";
+  notifyOnlineStateChange();
+  try {
+    // Açılışta en fazla ~3 sn bekle; cevap gecikirse oyunu bekletme
+    const meta = await Promise.race([
+      refreshCloudSaveMeta(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("startup_timeout")), STARTUP_COMPARE_TIMEOUT_MS))
+    ]);
+
+    const localRaw = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
+    const localHash = (typeof computeSaveHash === "function") ? computeSaveHash(localRaw) : "";
+    const localUpdatedAt = (typeof getLocalSaveUpdatedAt === "function") ? getLocalSaveUpdatedAt() : 0;
+    const localNonEmpty = _hasMeaningfulLocalSave();
+
+    if (!meta) {
+      // 1) Bulut kaydı yok -> yerel kaydı buluta yükle (yeni hesap)
+      ONLINE_STATE.pendingAction = null;
+      ONLINE_STATE.dirty = true;
+      await uploadCloudSave({ auto: true, reason: "initial_upload" });
+      return;
+    }
+
+    const cloudHash = (typeof computeSaveHash === "function") ? computeSaveHash(meta.rawJson || "") : "";
+    if (cloudHash && cloudHash === localHash) {
+      // 2) İçerikler aynı -> sessizce eşitlendi
+      ONLINE_STATE.lastUploadedHash = localHash;
+      ONLINE_STATE.dirty = false;
+      ONLINE_STATE.pendingAction = null;
+      ONLINE_STATE.status = "synced";
+      _writeLS(LAST_CLOUD_HASH_KEY, localHash);
+      if (meta.updatedAt) {
+        ONLINE_STATE.lastSyncMs = meta.updatedAt;
+        _writeLS(LAST_CLOUD_SYNC_MS_KEY, meta.updatedAt);
+      }
+      notifyOnlineStateChange();
+      return;
+    }
+
+    if (!localNonEmpty) {
+      // 4) Temiz kurulum / boş yerel + bulutta kayıt var -> kullanıcıya sor, asla sessizce ezme
+      ONLINE_STATE.pendingAction = { type: "cloud_available", local: _computeSaveMeta(), cloud: meta };
+      ONLINE_STATE.status = "synced";
+      notifyOnlineStateChange();
+      return;
+    }
+
+    if (localUpdatedAt > 0 && meta.updatedAt > 0 && localUpdatedAt > meta.updatedAt) {
+      // 2b) Yerel kayıt daha yeni -> sessizce buluta yükle
+      ONLINE_STATE.pendingAction = null;
+      ONLINE_STATE.dirty = true;
+      await uploadCloudSave({ auto: true, reason: "local_newer" });
+      return;
+    }
+
+    // 3) Bulut daha yeni (veya zaman farkı belirsiz) ve içerik farklı -> yerel yedeği al + çakışma sorusu göster
+    if (typeof backupLocalSaveBeforeCloud === "function") backupLocalSaveBeforeCloud();
+    ONLINE_STATE.pendingAction = { type: "conflict", local: _computeSaveMeta(), cloud: meta };
+    ONLINE_STATE.status = "synced";
+    notifyOnlineStateChange();
+  } catch (err) {
+    if (err && err.message === "startup_timeout") {
+      // 3 sn aşıldı: oyunu hiç bekletme, arka planda tekrar dene
+      ONLINE_STATE.comparedUid = null;
+      ONLINE_STATE.status = "offline";
+      notifyOnlineStateChange();
+      _scheduleBackoffRetry(() => runStartupCloudCompare(false));
+      return;
+    }
+    ONLINE_STATE.status = _isNetworkLikeError(err) ? "offline" : "error";
+    ONLINE_STATE.statusError = _isNetworkLikeError(err) ? "" : _translateFirebaseError(err);
+    ONLINE_STATE.comparedUid = null;
+    notifyOnlineStateChange();
+    _scheduleBackoffRetry(() => runStartupCloudCompare(false));
+  }
+}
+
 function initFirebaseOnline(forceReinit = false) {
   const cfg = (typeof getActiveFirebaseConfig === "function") ? getActiveFirebaseConfig() : null;
   ONLINE_STATE.hasConfig = !!(cfg && cfg.apiKey && cfg.projectId);
   ONLINE_STATE.sdkAvailable = (typeof firebase !== "undefined" && typeof firebase.auth === "function" && typeof firebase.firestore === "function");
 
-  if (!ONLINE_STATE.hasConfig) {
+  if (!ONLINE_STATE.hasConfig || !ONLINE_STATE.sdkAvailable) {
     ONLINE_STATE.initialized = false;
+    ONLINE_STATE.status = "offline";
     notifyOnlineStateChange();
-    return { ok: false, reason: "missing_config" };
+    if (ONLINE_STATE.hasConfig && !ONLINE_STATE.sdkAvailable) {
+      _scheduleBackoffRetry(() => initFirebaseOnline(false));
+    }
+    return { ok: false, reason: !ONLINE_STATE.hasConfig ? "missing_config" : "sdk_unavailable" };
   }
-  if (!ONLINE_STATE.sdkAvailable) {
-    ONLINE_STATE.initialized = false;
-    notifyOnlineStateChange();
-    return { ok: false, reason: "sdk_unavailable" };
-  }
-  if (ONLINE_STATE.initialized && !forceReinit) {
-    return { ok: true };
-  }
+  if (ONLINE_STATE.initialized && !forceReinit) return { ok: true };
 
   try {
     let app = null;
@@ -22799,50 +23060,40 @@ function initFirebaseOnline(forceReinit = false) {
       ONLINE_STATE.user = user || null;
       notifyOnlineStateChange();
       if (user) {
-        try { await refreshCloudSaveMeta(); } catch (_) {}
+        _clearRetryTimer();
+        try { await user.getIdToken(false); } catch (_) {}
+        runStartupCloudCompare(false);
       } else {
         ONLINE_STATE.lastCloudMeta = null;
-        notifyOnlineStateChange();
+        ONLINE_STATE.pendingAction = null;
+        ONLINE_STATE.comparedUid = null;
+        if (!ONLINE_STATE.manualSignOut) {
+          _tryAutoAnonSignIn();
+        } else {
+          ONLINE_STATE.status = "idle";
+          notifyOnlineStateChange();
+        }
       }
     });
     notifyOnlineStateChange();
     return { ok: true };
   } catch (err) {
     ONLINE_STATE.initialized = false;
+    ONLINE_STATE.status = "error";
+    ONLINE_STATE.statusError = err && err.message ? err.message : "init_failed";
     notifyOnlineStateChange();
-    return { ok: false, reason: err && err.message ? err.message : "init_failed" };
+    return { ok: false, reason: ONLINE_STATE.statusError };
   }
-}
-
-function _translateFirebaseError(err) {
-  const code = (err && err.code) ? String(err.code) : "";
-  if (code === "auth/operation-not-allowed") {
-    return "Bu giriş yöntemi Firebase Console -> Authentication -> Sign-in method altında etkin değil.";
-  }
-  if (code === "auth/invalid-email") {
-    return "Geçerli bir e-posta adresi gir.";
-  }
-  if (code === "auth/weak-password") {
-    return "Şifre en az 6 karakter olmalı.";
-  }
-  if (code === "auth/email-already-in-use") {
-    return "Bu e-posta adresiyle zaten bir hesap var. Giriş Yap butonunu kullan.";
-  }
-  if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
-    return "E-posta veya şifre hatalı.";
-  }
-  if (code === "permission-denied" || code === "firestore/permission-denied") {
-    return "Firestore kuralları izin vermedi. Rules sekmesinden kuralları kontrol et.";
-  }
-  return (err && err.message) ? err.message : "Bağlantı hatası oluştu.";
 }
 
 async function signInOnlineGuest() {
+  ONLINE_STATE.manualSignOut = false;
   const init = initFirebaseOnline();
   if (!init.ok) return init;
   try {
     const res = await ONLINE_STATE.auth.signInAnonymously();
     ONLINE_STATE.user = res.user;
+    _clearRetryTimer();
     notifyOnlineStateChange();
     return { ok: true, user: res.user };
   } catch (err) {
@@ -22851,12 +23102,16 @@ async function signInOnlineGuest() {
 }
 
 async function signInOnlineEmail(email, password) {
+  ONLINE_STATE.manualSignOut = false;
   const init = initFirebaseOnline();
   if (!init.ok) return init;
   try {
     const res = await ONLINE_STATE.auth.signInWithEmailAndPassword(String(email || "").trim(), String(password || ""));
     ONLINE_STATE.user = res.user;
-    notifyOnlineStateChange();
+    ONLINE_STATE.comparedUid = null;
+    ONLINE_STATE.lastUploadedHash = "";
+    _writeLS(LAST_CLOUD_HASH_KEY, "");
+    await runStartupCloudCompare(true);
     return { ok: true, user: res.user };
   } catch (err) {
     return { ok: false, error: _translateFirebaseError(err) };
@@ -22864,6 +23119,7 @@ async function signInOnlineEmail(email, password) {
 }
 
 async function registerOnlineEmail(email, password) {
+  ONLINE_STATE.manualSignOut = false;
   const init = initFirebaseOnline();
   if (!init.ok) return init;
   const cleanEmail = String(email || "").trim();
@@ -22892,11 +23148,15 @@ async function registerOnlineEmail(email, password) {
 }
 
 async function signOutOnline() {
+  ONLINE_STATE.manualSignOut = true;
+  _clearRetryTimer();
   if (!ONLINE_STATE.auth) return { ok: true };
   try {
     await ONLINE_STATE.auth.signOut();
     ONLINE_STATE.user = null;
     ONLINE_STATE.lastCloudMeta = null;
+    ONLINE_STATE.pendingAction = null;
+    ONLINE_STATE.status = "idle";
     notifyOnlineStateChange();
     return { ok: true };
   } catch (err) {
@@ -22910,8 +23170,9 @@ async function deleteOnlineAccount() {
   }
   const user = ONLINE_STATE.user;
   const uid = user.uid;
+  ONLINE_STATE.manualSignOut = true;
+  _clearRetryTimer();
   try {
-    // Önce kullanıcının /saves/{uid} bulut kaydını sil (kimlik hala geçerliyken)
     try {
       await ONLINE_STATE.db.collection("saves").doc(uid).delete();
     } catch (docErr) {
@@ -22920,7 +23181,12 @@ async function deleteOnlineAccount() {
     await user.delete();
     ONLINE_STATE.user = null;
     ONLINE_STATE.lastCloudMeta = null;
+    ONLINE_STATE.pendingAction = null;
     ONLINE_STATE.lastSyncMs = 0;
+    ONLINE_STATE.lastUploadedHash = "";
+    _writeLS(LAST_CLOUD_HASH_KEY, "");
+    _writeLS(LAST_CLOUD_SYNC_MS_KEY, "0");
+    ONLINE_STATE.status = "idle";
     notifyOnlineStateChange();
     return { ok: true };
   } catch (err) {
@@ -22932,34 +23198,39 @@ async function deleteOnlineAccount() {
 }
 
 function checkCloudSaveConflict() {
+  if (ONLINE_STATE.pendingAction) {
+    return {
+      hasConflict: true,
+      mode: ONLINE_STATE.pendingAction.type,
+      local: ONLINE_STATE.pendingAction.local,
+      cloud: ONLINE_STATE.pendingAction.cloud
+    };
+  }
   const m = ONLINE_STATE.lastCloudMeta;
   if (!m || !ONLINE_STATE.user) return { hasConflict: false };
   const localRaw = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
-  const cloudRaw = m.rawJson || "";
-  if (!cloudRaw || localRaw === cloudRaw) return { hasConflict: false };
-  // Yerel tarafta ilerleme varsa veya iki kayıt arasında gün/oda/otel adı farkı varsa çakışma göster
-  const localStat = _computeSaveMeta();
-  const hasLocalProgress = (typeof hadSavedGame !== "undefined" && hadSavedGame) ||
-    localStat.day > 1 || localStat.builtRooms > 0 ||
-    (typeof money === "number" && money !== (typeof StartMoney === "number" ? StartMoney : 600)) ||
-    localStat.hotelName !== "HoteLore";
-  if (!hasLocalProgress) return { hasConflict: false };
-  return {
-    hasConflict: true,
-    local: localStat,
-    cloud: { hotelName: m.hotelName, day: m.day, reputation: m.reputation, builtRooms: m.builtRooms, updatedAt: m.updatedAt }
-  };
+  const localHash = (typeof computeSaveHash === "function") ? computeSaveHash(localRaw) : localRaw;
+  const cloudHash = (typeof computeSaveHash === "function") ? computeSaveHash(m.rawJson || "") : (m.rawJson || "");
+  if (!m.rawJson || localHash === cloudHash) return { hasConflict: false };
+  if (!_hasMeaningfulLocalSave()) {
+    return { hasConflict: true, mode: "cloud_available", local: _computeSaveMeta(), cloud: m };
+  }
+  return { hasConflict: true, mode: "conflict", local: _computeSaveMeta(), cloud: m };
 }
 
-function _computeSaveMeta() {
-  const cleanName = String((typeof hotelName === "string" && hotelName.trim()) ? hotelName.trim() : "HoteLore").slice(0, 24) || "HoteLore";
-  return {
-    hotelName: cleanName,
-    day: Math.max(1, Math.floor(Number(typeof day !== "undefined" ? day : 1) || 1)),
-    reputation: Math.max(0, Math.floor(Number(typeof reputation !== "undefined" ? reputation : 0) || 0)),
-    builtRooms: Math.max(0, Math.floor(Number(typeof builtRooms !== "undefined" ? builtRooms : 0) || 0)),
-    versionCode: (typeof APP_VERSION_CODE === "number" && APP_VERSION_CODE >= 1) ? APP_VERSION_CODE : 1
-  };
+async function resolvePendingCloudChoice(choice) {
+  if (choice === "cloud") {
+    if (typeof backupLocalSaveBeforeCloud === "function") backupLocalSaveBeforeCloud();
+    ONLINE_STATE.pendingAction = null;
+    return await downloadCloudSave();
+  }
+  if (choice === "local") {
+    ONLINE_STATE.pendingAction = null;
+    return await uploadCloudSave({ force: true, reason: "conflict_local" });
+  }
+  ONLINE_STATE.pendingAction = null;
+  notifyOnlineStateChange();
+  return { ok: true };
 }
 
 async function refreshCloudSaveMeta() {
@@ -22982,17 +23253,39 @@ async function refreshCloudSaveMeta() {
   return ONLINE_STATE.lastCloudMeta;
 }
 
-async function uploadCloudSave() {
+async function uploadCloudSave(opts = {}) {
+  if (typeof window !== "undefined" && window.saveLocked) {
+    return { ok: false, skipped: "save_locked" };
+  }
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
     return { ok: false, error: "Önce Misafir veya E-posta ile giriş yapmalısın." };
   }
-  if (ONLINE_STATE.syncBusy) return { ok: false, error: "Senkronizasyon zaten sürüyor." };
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    ONLINE_STATE.status = "offline";
+    notifyOnlineStateChange();
+    if (opts.auto) _scheduleBackoffRetry(() => triggerCloudSyncNow("retry_online"));
+    return { ok: false, error: "İnternet bağlantısı yok." };
+  }
+  if (ONLINE_STATE.syncBusy) return { ok: false, skipped: "busy" };
+
+  const rawJson = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
+  if (!rawJson || rawJson.length < 2) return { ok: false, error: "Yerel kayıt verisi oluşturulamadı." };
+  const rawHash = (typeof computeSaveHash === "function") ? computeSaveHash(rawJson) : rawJson;
+
+  // Değişiklik yoksa Firestore yazma bütçesini korumak için yazmayı atla
+  if (!opts.force && rawHash === ONLINE_STATE.lastUploadedHash) {
+    ONLINE_STATE.dirty = false;
+    ONLINE_STATE.status = "synced";
+    notifyOnlineStateChange();
+    return { ok: true, skipped: "unchanged" };
+  }
+
   ONLINE_STATE.syncBusy = true;
+  ONLINE_STATE.status = "syncing";
+  ONLINE_STATE.statusError = "";
   notifyOnlineStateChange();
   try {
     const uid = ONLINE_STATE.user.uid;
-    const rawJson = (typeof serializeSaveRaw === "function") ? serializeSaveRaw() : "";
-    if (!rawJson || rawJson.length < 2) throw new Error("Yerel kayıt verisi oluşturulamadı.");
     const meta = _computeSaveMeta();
     const nowMs = Date.now();
 
@@ -23007,6 +23300,14 @@ async function uploadCloudSave() {
     });
 
     ONLINE_STATE.lastSyncMs = nowMs;
+    ONLINE_STATE.lastUploadedHash = rawHash;
+    ONLINE_STATE.dirty = false;
+    ONLINE_STATE.pendingAction = null;
+    ONLINE_STATE.status = "synced";
+    _clearRetryTimer();
+    _writeLS(LAST_CLOUD_HASH_KEY, rawHash);
+    _writeLS(LAST_CLOUD_SYNC_MS_KEY, nowMs);
+    if (typeof LOCAL_UPDATED_KEY === "string") _writeLS(LOCAL_UPDATED_KEY, nowMs);
     ONLINE_STATE.lastCloudMeta = {
       hotelName: meta.hotelName,
       day: meta.day,
@@ -23017,6 +23318,10 @@ async function uploadCloudSave() {
     };
     return { ok: true, updatedAt: nowMs };
   } catch (err) {
+    const isNet = _isNetworkLikeError(err);
+    ONLINE_STATE.status = isNet ? "offline" : "error";
+    ONLINE_STATE.statusError = isNet ? "" : _translateFirebaseError(err);
+    if (opts.auto) _scheduleBackoffRetry(() => triggerCloudSyncNow("retry_upload"));
     return { ok: false, error: _translateFirebaseError(err) };
   } finally {
     ONLINE_STATE.syncBusy = false;
@@ -23025,39 +23330,57 @@ async function uploadCloudSave() {
 }
 
 async function downloadCloudSave() {
+  if (typeof window !== "undefined" && window.saveLocked) {
+    return { ok: false, error: "Kayıt işlemi şu an kilitli." };
+  }
   if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
     return { ok: false, error: "Önce Misafir veya E-posta ile giriş yapmalısın." };
   }
   ONLINE_STATE.syncBusy = true;
+  ONLINE_STATE.status = "syncing";
+  ONLINE_STATE.statusError = "";
   notifyOnlineStateChange();
   try {
     const uid = ONLINE_STATE.user.uid;
     const docSnap = await ONLINE_STATE.db.collection("saves").doc(uid).get();
     if (!docSnap.exists) {
+      ONLINE_STATE.status = "synced";
       return { ok: false, error: "Bulutta bu hesaba ait kayıtlı otel bulunamadı." };
     }
     const data = docSnap.data();
     if (!data || !data.rawJson || typeof applySaveRaw !== "function") {
       return { ok: false, error: "Bulut kaydı okunamadı." };
     }
+    if (typeof backupLocalSaveBeforeCloud === "function") backupLocalSaveBeforeCloud();
     const ok = applySaveRaw(data.rawJson);
     if (!ok) return { ok: false, error: "Bulut kaydı geçersiz formatta." };
     hadSavedGame = true;
+    const h = (typeof computeSaveHash === "function") ? computeSaveHash(data.rawJson) : "";
     try { localStorage.setItem(SAVE_KEY, data.rawJson); } catch (_) {}
+    if (typeof LOCAL_HASH_KEY === "string" && h) _writeLS(LOCAL_HASH_KEY, h);
+    if (typeof LOCAL_UPDATED_KEY === "string") _writeLS(LOCAL_UPDATED_KEY, data.updatedAt || Date.now());
     if (typeof syncStartMenuUi === "function") syncStartMenuUi();
     if (typeof refresh === "function") refresh();
     if (typeof fitView === "function") fitView();
     ONLINE_STATE.lastSyncMs = data.updatedAt || Date.now();
+    ONLINE_STATE.lastUploadedHash = h;
+    ONLINE_STATE.dirty = false;
+    ONLINE_STATE.pendingAction = null;
+    ONLINE_STATE.status = "synced";
+    _writeLS(LAST_CLOUD_HASH_KEY, h);
+    _writeLS(LAST_CLOUD_SYNC_MS_KEY, ONLINE_STATE.lastSyncMs);
     ONLINE_STATE.lastCloudMeta = {
       hotelName: data.hotelName || hotelName,
       day: data.day || day,
       reputation: data.reputation || reputation,
       builtRooms: data.builtRooms || builtRooms,
-      updatedAt: data.updatedAt || Date.now(),
+      updatedAt: ONLINE_STATE.lastSyncMs,
       rawJson: data.rawJson
     };
     return { ok: true };
   } catch (err) {
+    ONLINE_STATE.status = _isNetworkLikeError(err) ? "offline" : "error";
+    ONLINE_STATE.statusError = _isNetworkLikeError(err) ? "" : _translateFirebaseError(err);
     return { ok: false, error: _translateFirebaseError(err) };
   } finally {
     ONLINE_STATE.syncBusy = false;
@@ -23066,24 +23389,62 @@ async function downloadCloudSave() {
 }
 
 function scheduleOnlineAutoSync() {
-  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user) return;
-  if (typeof inMenu !== "undefined" && inMenu) return;
+  if (typeof window !== "undefined" && window.saveLocked) return;
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.dirty) return;
+  if (ONLINE_STATE.pendingAction) return;
   const elapsed = Date.now() - (ONLINE_STATE.lastSyncMs || 0);
-  if (elapsed < 22000) return;
+  if (elapsed >= AUTO_SYNC_INTERVAL_MS) {
+    if (ONLINE_STATE.autoSyncTimer) { clearTimeout(ONLINE_STATE.autoSyncTimer); ONLINE_STATE.autoSyncTimer = null; }
+    uploadCloudSave({ auto: true, reason: "interval" }).catch(() => {});
+    return;
+  }
   if (ONLINE_STATE.autoSyncTimer) return;
+  const waitMs = Math.max(1500, AUTO_SYNC_INTERVAL_MS - elapsed);
   ONLINE_STATE.autoSyncTimer = setTimeout(() => {
     ONLINE_STATE.autoSyncTimer = null;
-    if (ONLINE_STATE.initialized && ONLINE_STATE.user) {
-      uploadCloudSave().catch(() => {});
+    if (ONLINE_STATE.dirty && !ONLINE_STATE.pendingAction) {
+      uploadCloudSave({ auto: true, reason: "interval" }).catch(() => {});
     }
-  }, 1500);
+  }, waitMs);
+}
+
+function triggerCloudSyncNow(reason = "manual") {
+  if (typeof window !== "undefined" && window.saveLocked) return Promise.resolve({ ok: false, skipped: "save_locked" });
+  if (!ONLINE_STATE.initialized || !ONLINE_STATE.user) return Promise.resolve({ ok: false, skipped: "no_auth" });
+  if (ONLINE_STATE.pendingAction) return Promise.resolve({ ok: false, skipped: "pending_conflict" });
+  if (ONLINE_STATE.autoSyncTimer) {
+    clearTimeout(ONLINE_STATE.autoSyncTimer);
+    ONLINE_STATE.autoSyncTimer = null;
+  }
+  if (!ONLINE_STATE.dirty && ONLINE_STATE.lastCloudMeta) {
+    return Promise.resolve({ ok: true, skipped: "unchanged" });
+  }
+  return uploadCloudSave({ auto: true, reason });
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    _clearRetryTimer();
+    if (!ONLINE_STATE.initialized) initFirebaseOnline();
+    if (!ONLINE_STATE.user && !ONLINE_STATE.manualSignOut) {
+      _tryAutoAnonSignIn();
+    } else if (ONLINE_STATE.user) {
+      if (ONLINE_STATE.comparedUid !== ONLINE_STATE.user.uid) runStartupCloudCompare(false);
+      else if (ONLINE_STATE.dirty) triggerCloudSyncNow("online_recover");
+    }
+  });
+  window.addEventListener("offline", () => {
+    ONLINE_STATE.status = "offline";
+    notifyOnlineStateChange();
+  });
 }
 
 // ===== BUNDLED: online/online-ui.js =====
-// [online/online-ui.js] Bulut Kayit & Hesap Arayuzu (Anonymous + Email/Password -> /saves/{uid})
+// [online/online-ui.js] Bulut Kayit & Hesap Arayuzu + Otomatik Esitleme Durum Gostergesi
 const onlineModal = document.getElementById("online-modal");
 const btnOnlineMenu = document.getElementById("btn-online-menu");
 const hudOnlineBtn = document.getElementById("hud-online-btn");
+const menuCloudStatus = document.getElementById("menu-cloud-status");
 const btnCloseOnline = document.getElementById("btn-close-online");
 
 const onlConfigBox = document.getElementById("onl-config-box");
@@ -23105,6 +23466,7 @@ const onlDeleteConfirmBox = document.getElementById("onl-delete-confirm-box");
 const btnConfirmDeleteAcc = document.getElementById("btn-confirm-delete-acc");
 const btnCancelDeleteAcc = document.getElementById("btn-cancel-delete-acc");
 const onlConflictBox = document.getElementById("onl-conflict-box");
+const onlConflictTitle = onlConflictBox ? onlConflictBox.querySelector(".onl-warn-txt") : null;
 const onlConflictSummary = document.getElementById("onl-conflict-summary");
 const btnConflictUseCloud = document.getElementById("btn-conflict-use-cloud");
 const btnConflictUseLocal = document.getElementById("btn-conflict-use-local");
@@ -23113,6 +23475,7 @@ const onlSyncRow = document.getElementById("onl-sync-row");
 const btnCloudUpload = document.getElementById("btn-cloud-upload");
 const btnCloudDownload = document.getElementById("btn-cloud-download");
 const onlCloudMeta = document.getElementById("onl-cloud-meta");
+const onlSyncStatusLine = document.getElementById("onl-sync-status-line");
 const onlStatusMsg = document.getElementById("onl-status-msg");
 
 function setOnlineStatusMsg(msg, isErr = false) {
@@ -23133,6 +23496,40 @@ function _fmtTimeAgo(ms) {
   return Math.floor(hr / 24) + " gün önce";
 }
 
+function _buildStatusBadgeInfo() {
+  if (typeof ONLINE_STATE === "undefined") return { text: "☁️ Çevrimdışı", cls: "" };
+  if (ONLINE_STATE.pendingAction) {
+    const isAvail = ONLINE_STATE.pendingAction.type === "cloud_available";
+    return {
+      text: isAvail ? "☁️ Bulutta kaydın var — yükle?" : "⚠️ Kayıt çakışması — seç",
+      cls: "is-warn"
+    };
+  }
+  if (ONLINE_STATE.status === "syncing" || ONLINE_STATE.syncBusy) {
+    return { text: "☁️ Eşitleniyor…", cls: "is-syncing" };
+  }
+  if (ONLINE_STATE.status === "offline" || (typeof navigator !== "undefined" && navigator.onLine === false)) {
+    return { text: "☁️ Çevrimdışı", cls: "" };
+  }
+  if (ONLINE_STATE.status === "error" && ONLINE_STATE.statusError) {
+    return { text: "☁️ Hata: " + ONLINE_STATE.statusError.slice(0, 36), cls: "is-err" };
+  }
+  if (ONLINE_STATE.user && ONLINE_STATE.lastSyncMs > 0) {
+    return { text: "☁️ Eşitlendi • " + _fmtTimeAgo(ONLINE_STATE.lastSyncMs), cls: "is-synced" };
+  }
+  if (ONLINE_STATE.user) {
+    return { text: "☁️ Bağlı", cls: "is-synced" };
+  }
+  return { text: "☁️ Çevrimdışı", cls: "" };
+}
+
+function _applyPillStyle(el, info) {
+  if (!el) return;
+  el.textContent = info.text;
+  el.classList.remove("is-synced", "is-syncing", "is-warn", "is-err");
+  if (info.cls) el.classList.add(info.cls);
+}
+
 function renderConflictBox() {
   if (!onlConflictBox) return;
   const cf = (typeof checkCloudSaveConflict === "function") ? checkCloudSaveConflict() : { hasConflict: false };
@@ -23141,6 +23538,15 @@ function renderConflictBox() {
     return;
   }
   onlConflictBox.style.display = "flex";
+  const isAvail = cf.mode === "cloud_available";
+  if (onlConflictTitle) {
+    onlConflictTitle.textContent = isAvail
+      ? "☁️ Bulutta kaydın var, yüklemek ister misin?"
+      : "⚠️ Kayıt Çakışması: Bu cihazdaki kayıt ile buluttaki kayıt farklı!";
+  }
+  if (btnConflictUseLocal) {
+    btnConflictUseLocal.textContent = isAvail ? "🆕 Yeni Oyunla Devam Et" : "☁️ Yerel Kaydı Buluta Yaz";
+  }
   if (onlConflictSummary) {
     onlConflictSummary.innerHTML =
       "📱 <b>Bu Cihaz:</b> " + cf.local.hotelName + " • Gün " + cf.local.day + " • " + cf.local.builtRooms + " Oda<br>" +
@@ -23149,7 +23555,14 @@ function renderConflictBox() {
 }
 
 function renderOnlineModalState() {
-  const initRes = (typeof initFirebaseOnline === "function") ? initFirebaseOnline() : { ok: false };
+  const info = _buildStatusBadgeInfo();
+  _applyPillStyle(menuCloudStatus, info);
+  _applyPillStyle(onlSyncStatusLine, info);
+  if (hudOnlineBtn) {
+    hudOnlineBtn.title = info.text;
+    hudOnlineBtn.classList.toggle("has-warn", info.cls === "is-warn" || info.cls === "is-err");
+  }
+
   const hasCfg = !!(typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.hasConfig);
   const user = (typeof ONLINE_STATE !== "undefined") ? ONLINE_STATE.user : null;
 
@@ -23159,11 +23572,7 @@ function renderOnlineModalState() {
     btnResetFbConfig.style.display = (hasCfg && !hasDefault) ? "inline-block" : "none";
   }
   if (onlAccountCard) onlAccountCard.style.display = hasCfg ? "flex" : "none";
-
   if (!hasCfg) return;
-  if (!initRes.ok && initRes.reason === "sdk_unavailable") {
-    setOnlineStatusMsg("Firebase SDK yüklenemedi. İnternet bağlantını kontrol et.", true);
-  }
 
   if (user) {
     const label = user.isAnonymous
@@ -23227,6 +23636,7 @@ function _parseFlexibleConfigInput(rawText) {
 if (typeof onOnlineStateChange === "function") onOnlineStateChange(() => renderOnlineModalState());
 
 if (btnOnlineMenu) btnOnlineMenu.onclick = () => { if (typeof play === "function") play("tap"); openOnlineModal(); };
+if (menuCloudStatus) menuCloudStatus.onclick = () => { if (typeof play === "function") play("tap"); openOnlineModal(); };
 if (hudOnlineBtn) hudOnlineBtn.onclick = () => { if (typeof play === "function") play("tap"); openOnlineModal(); };
 if (btnCloseOnline) btnCloseOnline.onclick = () => { if (typeof play === "function") play("tap"); if (onlineModal) onlineModal.style.display = "none"; };
 if (onlineModal) {
@@ -23249,7 +23659,7 @@ if (btnSaveFbConfig) {
     saveCustomFirebaseConfig(parsed);
     const res = initFirebaseOnline(true);
     if (res.ok) {
-      setOnlineStatusMsg("✅ Firebase bağlandı! Şimdi Misafir veya E-posta ile giriş yapabilirsin.");
+      setOnlineStatusMsg("✅ Firebase bağlandı!");
       renderOnlineModalState();
     } else {
       setOnlineStatusMsg("Firebase başlatılamadı: " + (res.reason || "hata"), true);
@@ -23273,8 +23683,8 @@ if (btnLoginGuest) {
     setOnlineStatusMsg("⏳ Misafir oturumu açılıyor...");
     const res = await signInOnlineGuest();
     if (res.ok) {
-      await refreshCloudSaveMeta();
-      setOnlineStatusMsg("✅ Misafir oturumu açıldı! İstersen e-posta bağlayabilir veya hemen buluta yedekleyebilirsin.");
+      await runStartupCloudCompare(true);
+      setOnlineStatusMsg("✅ Misafir oturumu açıldı!");
     } else {
       setOnlineStatusMsg(res.error || "Misafir girişi başarısız.", true);
     }
@@ -23292,8 +23702,8 @@ if (btnLoginEmail) {
     }
     setOnlineStatusMsg("⏳ Giriş yapılıyor...");
     const res = await signInOnlineEmail(email, pass);
+    if (onlPassInput) onlPassInput.value = "";
     if (res.ok) {
-      await refreshCloudSaveMeta();
       setOnlineStatusMsg("✅ E-posta hesabıyla giriş yapıldı!");
     } else {
       setOnlineStatusMsg(res.error || "Giriş başarısız.", true);
@@ -23310,8 +23720,9 @@ if (btnRegisterEmail) {
       setOnlineStatusMsg("Geçerli e-posta ve en az 6 haneli şifre gir.", true);
       return;
     }
-    setOnlineStatusMsg("⏳ Hesap kaydediliyor...");
+    setOnlineStatusMsg("⏳ Hesap oluşturuluyor...");
     const res = await registerOnlineEmail(email, pass);
+    if (onlPassInput) onlPassInput.value = "";
     if (res.ok) {
       setOnlineStatusMsg("✅ Hesap kaydedildi ve bağlandı!");
     } else {
@@ -23323,6 +23734,7 @@ if (btnRegisterEmail) {
 if (btnLogoutOnline) {
   btnLogoutOnline.onclick = async () => {
     if (typeof play === "function") play("tap");
+    if (onlPassInput) onlPassInput.value = "";
     await signOutOnline();
     setOnlineStatusMsg("Çıkış yapıldı.");
   };
@@ -23346,6 +23758,7 @@ if (btnConfirmDeleteAcc) {
     setOnlineStatusMsg("⏳ Hesap ve bulut kaydı siliniyor...");
     const res = await deleteOnlineAccount();
     if (onlDeleteConfirmBox) onlDeleteConfirmBox.style.display = "none";
+    if (onlPassInput) onlPassInput.value = "";
     if (res.ok) {
       setOnlineStatusMsg("🗑️ Çevrimiçi hesap ve bulut kaydı silindi.");
     } else {
@@ -23358,7 +23771,7 @@ if (btnConflictUseCloud) {
   btnConflictUseCloud.onclick = async () => {
     if (typeof play === "function") play("tap");
     setOnlineStatusMsg("⬇ Buluttaki kayıt yükleniyor...");
-    const res = await downloadCloudSave();
+    const res = await resolvePendingCloudChoice("cloud");
     if (res.ok) setOnlineStatusMsg("✅ Buluttaki kayıt bu cihaza yüklendi!");
     else setOnlineStatusMsg(res.error || "Bulut kaydı yüklenemedi.", true);
   };
@@ -23368,7 +23781,7 @@ if (btnConflictUseLocal) {
   btnConflictUseLocal.onclick = async () => {
     if (typeof play === "function") play("tap");
     setOnlineStatusMsg("☁️ Bu cihazdaki kayıt buluta yazılıyor...");
-    const res = await uploadCloudSave();
+    const res = await resolvePendingCloudChoice("local");
     if (res.ok) setOnlineStatusMsg("✅ Bu cihazdaki kayıt buluta yazıldı!");
     else setOnlineStatusMsg(res.error || "Yedekleme başarısız.", true);
   };
@@ -23378,7 +23791,7 @@ if (btnCloudUpload) {
   btnCloudUpload.onclick = async () => {
     if (typeof play === "function") play("tap");
     setOnlineStatusMsg("☁️ Otelin buluta kaydediliyor...");
-    const res = await uploadCloudSave();
+    const res = await uploadCloudSave({ force: true, reason: "manual_btn" });
     if (res.ok) {
       setOnlineStatusMsg("✅ Otelin Firebase bulutuna kaydedildi!");
     } else {
@@ -23407,6 +23820,9 @@ if (btnCloudDownload) {
 }
 
 if (typeof initFirebaseOnline === "function") initFirebaseOnline();
+setInterval(() => {
+  if (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.lastSyncMs > 0) renderOnlineModalState();
+}, 30000);
 
 // ===== BUNDLED: render/loop.js =====
 // [render/loop.js] Ana oyun döngüsü ve başlatma (bootstrap)
@@ -23821,8 +24237,23 @@ if (!hadSavedGame && typeof recordThemeTried === "function" && typeof cosmetics 
 }
 if (typeof syncStartMenuUi === "function") syncStartMenuUi();
 
-window.addEventListener("beforeunload", () => saveGame());
-document.addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });
+window.addEventListener("beforeunload", () => {
+  saveGame();
+});
+window.addEventListener("pagehide", () => {
+  saveGame();
+  if (typeof triggerCloudSyncNow === "function") triggerCloudSyncNow("pagehide");
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    saveGame();
+    if (typeof triggerCloudSyncNow === "function") triggerCloudSyncNow("visibilitychange");
+  }
+});
+document.addEventListener("pause", () => {
+  saveGame();
+  if (typeof triggerCloudSyncNow === "function") triggerCloudSyncNow("android_pause");
+});
 
 applySeason();
 updateDayNight();
