@@ -1601,8 +1601,14 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
 .onl-btn.out { background: #fee2e2; }
 .onl-btn.del { background: #fecaca; color: #7f1d1d; }
 .onl-name-card {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; flex-direction: column; gap: 4px;
   background: #ffffff; border: 2px solid #3a281f; border-radius: 10px; padding: 7px 9px;
+}
+.onl-name-top {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+}
+.onl-name-hint {
+  font-size: 10px; font-weight: 700; color: #64748b; line-height: 1.2;
 }
 .onl-name-card label { font-size: 11.5px; font-weight: 900; color: #3a281f; white-space: nowrap; }
 #onl-player-name-input {
@@ -2171,7 +2177,7 @@ body.is-visiting-mode #visit-banner {
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.74-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.75-beta</div>
         </div>
         <div class="menu-sub">Modüler 5x5 Parsel İnşaatı & 4x4 Oda İçi Tasarım Simülasyonu</div>
       </div>
@@ -2267,9 +2273,12 @@ body.is-visiting-mode #visit-banner {
       </div>
       <div id="onl-status-msg"></div>
       <div id="onl-name-row" class="onl-name-card">
-        <label for="onl-player-name-input">🏷️ Oyuncu Adı:</label>
-        <input id="onl-player-name-input" type="text" maxlength="16" placeholder="Oyuncu adın (2-16)..." />
-        <button type="button" id="btn-save-player-name" class="onl-btn up">💾 Kaydet</button>
+        <div class="onl-name-top">
+          <label for="onl-player-name-input">🏷️ Oyuncu Adı:</label>
+          <input id="onl-player-name-input" type="text" maxlength="16" placeholder="Oyuncu adın (2-16)..." />
+          <button type="button" id="btn-save-player-name" class="onl-btn up">💾 Kaydet</button>
+        </div>
+        <div class="onl-name-hint">2–16 karakter, harf/rakam/boşluk/_/-/.</div>
       </div>
       <div id="onl-config-box">
         <div class="onl-cfg-title">🔧 Firebase Bağlantı Ayarı</div>
@@ -2862,13 +2871,24 @@ function validateAndNormalizePlayerName(rawInput) {
   const cleaned = String(rawInput || "").trim().replace(/\s+/g, " ");
   if (!cleaned) return { ok: true, empty: true, value: displayName || "" };
   if (cleaned.length < 2 || cleaned.length > 16) return { ok: false, error: "Bu ad kullanılamaz" };
-  if (!/^[a-zA-Z0-9çğıöşüÇĞİÖŞÜ _]+$/.test(cleaned)) return { ok: false, error: "Bu ad kullanılamaz" };
+  if (!/^[a-zA-Z0-9çğıöşüÇĞİÖŞÜ _.\-]+$/.test(cleaned)) return { ok: false, error: "Bu ad kullanılamaz" };
+  const alnumCount = (cleaned.match(/[a-zA-Z0-9çğıöşüÇĞİÖŞÜ]/g) || []).length;
+  if (alnumCount < 2) return { ok: false, error: "Bu ad kullanılamaz" };
+  if (/[_.\-]{3,}/.test(cleaned)) return { ok: false, error: "Bu ad kullanılamaz" };
+
   const folded = _foldTr(cleaned);
-  const compact = folded.replace(/[\s_]+/g, "");
-  const tokens = folded.split(/[\s_]+/);
+  const collapse2 = s => s.replace(/(.)\1{2,}/g, "$1$1");
+  const collapse1 = s => s.replace(/(.)\1+/g, "$1");
+  const rawCompact = folded.replace(/[\s_.\-]+/g, "");
+  const stripped2 = collapse2(rawCompact);
+  const stripped1 = collapse1(rawCompact);
+  const rawTokens = folded.split(/[\s_.\-]+/).filter(Boolean);
+  const tokens2 = rawTokens.map(collapse2);
+  const tokens1 = rawTokens.map(collapse1);
   for (let i = 0; i < _BAD_NAME_WORDS.length; i++) {
     const bw = _foldTr(_BAD_NAME_WORDS[i]);
-    if (tokens.includes(bw) || compact.includes(bw)) {
+    const bw1 = collapse1(bw);
+    if (tokens2.includes(bw) || stripped2.includes(bw) || tokens1.includes(bw1) || stripped1.includes(bw1)) {
       return { ok: false, error: "Bu ad kullanılamaz" };
     }
   }
@@ -12892,8 +12912,8 @@ function refreshGuest() {
 // ===== BUNDLED: ui/start-menu.js =====
 // [ui/start-menu.js] Giriş ekranı, sürüm sabitleri, menü logosu, sürüm notları
 // ===== GİRİŞ EKRANI & OTOMATİK GÜNCELLEME SİSTEMİ =====
-const APP_VERSION_CODE = 82;
-const APP_VERSION_NAME = "1.9.74-beta";
+const APP_VERSION_CODE = 83;
+const APP_VERSION_NAME = "1.9.75-beta";
 const UPDATE_MANIFEST_URLS = [
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
   "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
@@ -12901,9 +12921,15 @@ const UPDATE_MANIFEST_URLS = [
 
 const CHANGELOG_HISTORY = [
   {
+    ver: "v1.9.75-beta",
+    title: "Resepsiyonist hareketi ve oyuncu adı işaretleri",
+    latest: true,
+    notes: "• 🛎️ Canlı Resepsiyonist & Barmen Idle: Banko ve bar arkasındaki karakterlere sakin nefes, küçük yan adım, kuyruğa bakış/selam ve yazı yazma hareketi eklendi.\n• 🏷️ Oyuncu Adı İşaretleri: - ve . karakterleri serbest bırakıldı, işaret/harf tekrarı normalizasyonuyla filtre güçlendirildi."
+  },
+  {
     ver: "v1.9.74-beta",
     title: "Takip sistemi",
-    latest: true,
+    latest: false,
     notes: "• 👥 Takip Ettiklerim & Takipçilerim: Kodla takip etme/bırakma, yeni takipçi rozeti, geri takip ve Karşılıklı ✓ rozeti, silinmiş oyuncu temizliği eklendi."
   },
   {
@@ -15929,29 +15955,52 @@ function drawPottedPlant(u, v, z, scale = 1.0) {
   ctx.restore();
 }
 
-function drawMiniChibi(u, v, z, skin = "#fcd9b8", hair = "#59331a", shirt = "#4d8cd9", scale = 0.78, facing = 1, hatCol = null) {
+function drawMiniChibi(u, v, z, skin = "#fcd9b8", hair = "#59331a", shirt = "#4d8cd9", scale = 0.78, facing = 1, hatCol = null, idle = null) {
   const pt = iso(u, v, z);
   ctx.save();
   ctx.translate(pt.x, pt.y);
+  if (idle && (idle.leanX || idle.bobY)) {
+    ctx.translate(idle.leanX || 0, -(idle.bobY || 0));
+  }
   ctx.scale(facing * scale, scale);
   ctx.fillStyle = "rgba(0,0,0,0.2)";
   ctx.beginPath(); ctx.ellipse(0, 2, 13, 5.5, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = shirt; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.roundRect(-11, -25, 22, 21, 7); ctx.fill(); ctx.stroke();
+
+  if (idle) {
+    const wT = idle.writeT || 0;
+    const rx = idle.writing ? (9.5 + Math.sin(wT) * 2.8) : 11.5;
+    const ry = idle.writing ? (-11 + Math.cos(wT * 2) * 1.1) : (-11.5 - (idle.nodY || 0) * 0.35);
+    ctx.fillStyle = skin; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.arc(-11, -11, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(rx, ry, 3.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    if (idle.writing) {
+      ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(rx, ry + 1); ctx.lineTo(rx + 4, ry + 3); ctx.stroke();
+    }
+  }
+
+  ctx.save();
+  if (idle && (idle.headShiftX || idle.nodY)) {
+    ctx.translate(idle.headShiftX || 0, idle.nodY || 0);
+  }
   ctx.fillStyle = hair;
   ctx.beginPath(); ctx.arc(0, -40, 14.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = skin;
   ctx.beginPath(); ctx.arc(0, -36, 12.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = hair;
   ctx.beginPath(); ctx.arc(0, -43, 12.5, Math.PI * 1.08, Math.PI * 1.92); ctx.closePath(); ctx.fill(); ctx.stroke();
+  const lx = (idle && idle.lookX) ? idle.lookX : 0;
   ctx.fillStyle = OUTLINE_COL;
-  ctx.beginPath(); ctx.arc(-4, -35, 1.8, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(4, -35, 1.8, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(0, -32, 2.5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.arc(-4 + lx, -35, 1.8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(4 + lx, -35, 1.8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(lx * 0.5, -32, 2.5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
   if (hatCol) {
     ctx.fillStyle = hatCol;
     ctx.beginPath(); ctx.roundRect(-11, -54, 22, 7, 3); ctx.fill(); ctx.stroke();
   }
+  ctx.restore();
   ctx.restore();
 }
 
@@ -18199,6 +18248,7 @@ function drawWorld() {
     }
 
     // 8) Gerçek Kişiler (Pawns) - Derinliğe Göre Sıralı
+    if (typeof drawLiveCounterStaff === "function") drawLiveCounterStaff();
     const visPawns = pawns.filter(p => !p.dead && p.visible);
     const mappedPawns = visPawns.map(p => {
       const uvz = logicalToIsoUVZ(p.pos.x, p.pos.y, p);
@@ -18813,6 +18863,54 @@ function drawLiveTennisBall() {
   ctx.restore();
 }
 
+function _computeCounterIdleAnim(t, hasCustomer, seed = 0) {
+  const bobY = Math.sin(t * 2.4 + seed) * 0.85;
+  const leanX = Math.tanh(Math.sin(t * 0.65 + seed) * 2.4) * 7.0;
+  const nodWave = Math.sin(t * 1.9 + seed);
+  const nodY = (hasCustomer && nodWave > 0.72) ? ((nodWave - 0.72) / 0.28) * 3.0 : 0;
+  const headShiftX = hasCustomer ? 1.2 : (Math.sin(t * 0.7 + seed) * 1.5);
+  const lookX = hasCustomer ? 1.6 : (Math.sin(t * 0.55 + seed) > 0.7 ? 1.4 : (Math.sin(t * 0.55 + seed) < -0.7 ? -1.2 : 0.4));
+  return {
+    bobY,
+    leanX,
+    nodY,
+    headShiftX,
+    lookX,
+    writing: !hasCustomer,
+    writeT: t * 4.4 + seed
+  };
+}
+
+function drawLiveCounterStaff() {
+  if (typeof drawMiniChibi !== "function") return;
+  const t = timeNow || 0;
+  if (viewFloor === 0 && typeof receptionistLevel !== "undefined" && receptionistLevel >= 1) {
+    const recSlot = floors[0] && floors[0].slots.find(s => s.type === "Reception");
+    if (recSlot) {
+      const b = slotIsoBox(0, recSlot.idx);
+      const hasQ = (typeof queue !== "undefined" && Array.isArray(queue) && queue.length > 0);
+      const idle = _computeCounterIdleAnim(t, hasQ, 0.7);
+      drawMiniChibi(b.u0 + 48, b.v0 + 54, b.z0 + 4, "#fcd9b8", "#3a281f", "#b04868", 0.82, 1, null, idle);
+      if (typeof drawReceptionDeskFront === "function") drawReceptionDeskFront(b.u0, b.v0, b.z0, THEME.room);
+    }
+  }
+  if (typeof barmenHired !== "undefined" && barmenHired && floors[viewFloor] && floors[viewFloor].state === "Built") {
+    const cafeSlot = floors[viewFloor].slots.find(s => s.type === "Cafe");
+    const conn = !!(cafeSlot && (typeof isCafeConnected !== "function" || isCafeConnected(cafeSlot)));
+    if (cafeSlot && conn) {
+      const b = slotIsoBox(cafeSlot.floor.idx, cafeSlot.idx);
+      const busyCnt = Array.isArray(cafeSlot.cafeBusy) ? cafeSlot.cafeBusy.filter(Boolean).length : 0;
+      const idleB = _computeCounterIdleAnim(t, busyCnt > 0, 2.3);
+      const bp = (typeof barmenPawn !== "undefined" && barmenPawn) ? barmenPawn : {};
+      const P = (typeof getRoomPalette === "function") ? getRoomPalette() : THEME.room;
+      const period = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+      const isBar = period === "bar" || (typeof isNight !== "undefined" && !!isNight);
+      drawMiniChibi(b.u0 + 40, b.v0 + 96, b.z0 + 2, bp.skin || "#fcd9b8", bp.hair || "#2b1b12", "#1e293b", 0.82, 1, isBar ? (P.cafeNeon || "#fbbf24") : "#ffffff", idleB);
+      if (typeof drawCafeCounterFront === "function") drawCafeCounterFront(b.u0, b.v0, b.z0, P);
+    }
+  }
+}
+
 // ===== BUNDLED: render/parcel.js =====
 // [render/parcel.js] Modüler parsel çizici (oda, lobi, restoran, havuz, depo, lojman, çatı)
 // ===== 5x5 MODÜLER PARSEL ÇİZİCİ (ODA, LOBİ, RESTORAN, HAVUZ, DEPO, LOJMAN, ÇATI TERASI) =====
@@ -19104,12 +19202,8 @@ function drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlo
     isoBox(u0, v1 - 12, u1, v1 - 9, z0, z0 + 7, trimAltTop, trimAltL, trimAltR, OUTLINE_COL, 1.1);
   }
 
-  // F) Resepsiyon Bankosu & Görevli
-  if (receptionistLevel > 0) {
-    drawMiniChibi(u0 + 82, v0 + 36, z0 + 4, "#fcd9b8", "#3a281f", "#b04868", 0.76, 1);
-  }
-  isoBox(u0 + 58, v0 + 26, u0 + 142, v0 + 66, z0, z0 + 32, deskTop, deskL, deskR, OUTLINE_COL, 2);
-  isoBox(u0 + 78, v0 + 32, u0 + 112, v0 + 52, z0 + 32, z0 + 45, "#36414d", "#242c36", "#1a2029", OUTLINE_COL, 1.4);
+  // F) Resepsiyon Bankosu (Görevli önbellek dışında, canlı katmanda çizilir)
+  drawReceptionDeskFront(u0, v0, z0, pal);
 
   // F2) Mavi Yuvarlak Teklif Verme Noktası (Kullanıcının çizdiği pazarlık/teklif verme noktası)
   const offerPt = iso(u0 + 95, v0 + 82, z0 + 0.35); // u: 1070, v: 472
@@ -19147,6 +19241,12 @@ function drawParcelReception(s, fIdx, gu, u0, v0, u1, v1, z0, z1, isSel, leftSlo
       refreshGuest();
     }
   });
+}
+
+function drawReceptionDeskFront(u0, v0, z0, pal) {
+  const P = pal || THEME.room;
+  isoBox(u0 + 58, v0 + 26, u0 + 142, v0 + 66, z0, z0 + 32, P.deskTop, P.deskL, P.deskR, OUTLINE_COL, 2);
+  isoBox(u0 + 78, v0 + 32, u0 + 112, v0 + 52, z0 + 32, z0 + 45, "#36414d", "#242c36", "#1a2029", OUTLINE_COL, 1.4);
 }
 
 // ===== BUNDLED: render/parcel-facilities.js =====
@@ -20365,19 +20465,22 @@ function drawCafeBarBackAndCounter(u0, v0, z0, conn, hired, isBarMode, P) {
     isoBox(u0 + 61, v0 + lvOff - 5, u0 + 71, v0 + lvOff + 5, z0 + 64, z0 + 68, lampCol, lampCol, "#d97706", OUTLINE_COL, 1.0);
   }
 
-  // Barmen karakteri (yalnızca Kafe bağlı ve barmen işe alınmışsa tezgâh arkasında görünür!)
-  if (hired && conn && typeof drawMiniChibi === "function") {
-    const bp = (typeof barmenPawn !== "undefined" && barmenPawn) ? barmenPawn : {};
-    drawMiniChibi(u0 + 40, v0 + 96, z0 + 2, bp.skin || "#fcd9b8", bp.hair || "#2b1b12", "#1e293b", 0.82, 1, isBarMode ? neon : "#ffffff");
-  }
+  // Barmen canlı katmanda çizilir; burada yalnızca bar tezgâhı önbelleklenir
+  drawCafeCounterFront(u0, v0, z0, P);
+}
 
-  // Ahşap bar tezgâhı (tezgâh Barmenin önünde -> doğru derinlik sırası!)
+function drawCafeCounterFront(u0, v0, z0, P) {
+  const pal = P || (typeof getRoomPalette === "function" ? getRoomPalette() : THEME.room);
+  const wTop = pal.cafeWoodTop || "#c0844d";
+  const wL = pal.cafeWoodL || "#9a6332";
+  const wR = pal.cafeWoodR || "#73461f";
+  const cTop = pal.cafeCounterTop || "#78350f";
+  const cL = pal.cafeCounterL || "#5c280b";
+  const cR = pal.cafeCounterR || "#3b1705";
   isoBox(u0 + 54, v0 + 46, u0 + 82, v0 + 148, z0, z0 + 26, wTop, wL, wR, OUTLINE_COL, 1.8);
   isoBox(u0 + 51, v0 + 43, u0 + 85, v0 + 151, z0 + 26, z0 + 31, cTop, cL, cR, OUTLINE_COL, 1.6);
-
-  // Espresso makinesi & servis fincanı (tezgâhın sol başında)
   isoBox(u0 + 58, v0 + 50, u0 + 76, v0 + 70, z0 + 31, z0 + 47, "#e2e8f0", "#cbd5e1", "#64748b", OUTLINE_COL, 1.3);
-  isoQuad(u0 + 60, v0 + 52, u0 + 74, v0 + 68, z0 + 47.4, P.cafeAwningA || "#b91c1c", OUTLINE_COL, 0.9);
+  isoQuad(u0 + 60, v0 + 52, u0 + 74, v0 + 68, z0 + 47.4, pal.cafeAwningA || "#b91c1c", OUTLINE_COL, 0.9);
   isoBox(u0 + 66, v0 + 108, u0 + 74, v0 + 116, z0 + 31, z0 + 36, "#ffffff", "#e2e8f0", "#cbd5e1", OUTLINE_COL, 0.9);
 }
 
