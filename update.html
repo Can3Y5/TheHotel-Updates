@@ -2249,7 +2249,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.81-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.82-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -11671,6 +11671,7 @@ const cv = document.createElement("canvas");
 cv.width = 48;
 cv.height = 48;
 const tctx = cv.getContext("2d");
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(tctx, false);
 tctx.save();
 const tall = (item.id === "shade_tree" || item.id === "palm" || item.id === "cypress" || item.id === "street_lamp");
 const sc = item.size === "B" ? 0.36 : tall ? 0.34 : item.size === "O" ? 0.42 : 0.64;
@@ -12545,17 +12546,23 @@ else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif 
 offerBtn.textContent = "💬 Teklif Ver";
 }
 }
-const APP_VERSION_CODE = 89;
-const APP_VERSION_NAME = "1.9.81-beta";
+const APP_VERSION_CODE = 90;
+const APP_VERSION_NAME = "1.9.82-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.82-beta",
+title: "Görüntü netliği ve çözünürlük iyileştirmesi",
+latest: true,
+notes: "• ✨ Keskin Sahne Çizimi: Çözünürlük üst sınırı 2× DPR olarak güncellendi (yalnızca 30 FPS altında 1.5×), yüksek kalite kenar yumuşatma ve tam çözünürlüklü atmosfer katmanı ile bulanıklık ve kumlu benekler kaldırıldı."
+},
+{
 ver: "v1.9.81-beta",
 title: "Tuvalet ve spor odası rotaları",
-latest: true,
+latest: false,
 notes: "• 🚽🏋️ İzometrik Rotalar: Misafirler tuvalet ve spor odasına koridor, kapı ve asansör rotasını izleyerek gider ve aynı yoldan odasına döner; bağlı olmayan tesisler kapalı gösterilir ve tehdit misafiri tuvalete de yürüyebilir."
 },
 {
@@ -13372,22 +13379,60 @@ const OUTLINE_COL = "#3b281e";
 const PARCEL_SIZE = 195;
 const FLOOR_Z = 96;
 const FRONT_GAP = 90;
-const DPR_STEPS = [2, 1.5, 1.25, 1];
-const RENDER_DPR_KEY = "hotelore_render_dpr_cap_v1";
+const DPR_STEPS = [2, 1.5];
+const RENDER_DPR_KEY = "hotelore_render_dpr_cap_v2";
+const LEGACY_RENDER_DPR_KEY = "hotelore_render_dpr_cap_v1";
 let _renderDprCap = (() => {
 try {
+localStorage.removeItem(LEGACY_RENDER_DPR_KEY);
 const raw = parseFloat(localStorage.getItem(RENDER_DPR_KEY) || "2");
 if (DPR_STEPS.includes(raw)) return raw;
 } catch (_) {}
 return 2;
 })();
-let _dprWinMode = "";
 let _dprWinStart = 0;
 let _dprSamples = [];
-const _dprCheckedModes = { menu: false, game: false };
+let _dprChecked = false;
+let _lastSyncW = 0, _lastSyncH = 0, _lastSyncDpr = 0;
 function getRenderDpr() {
 const native = (typeof window !== "undefined" && window.devicePixelRatio) ? window.devicePixelRatio : 1;
-return Math.max(1, Math.min(native, _renderDprCap));
+return Math.max(1, Math.min(native, _renderDprCap, 2));
+}
+function applyCanvasSmoothing(c, pixelArt = false) {
+if (!c) return;
+c.imageSmoothingEnabled = !pixelArt;
+if (!pixelArt && "imageSmoothingQuality" in c) {
+c.imageSmoothingQuality = "high";
+}
+}
+function syncCanvasResolution(targetCanvas) {
+const cv = targetCanvas || (typeof canvas !== "undefined" ? canvas : null);
+const dpr = getRenderDpr();
+const vp = (typeof viewport !== "undefined" && viewport) ? viewport : null;
+const cw = (vp && vp.clientWidth) || (cv && cv.clientWidth) || (typeof window !== "undefined" && window.innerWidth) || 800;
+const ch = (vp && vp.clientHeight) || (cv && cv.clientHeight) || (typeof window !== "undefined" && window.innerHeight) || 600;
+if (cv) {
+const tw = Math.max(1, Math.round(cw * dpr));
+const th = Math.max(1, Math.round(ch * dpr));
+if (cv.width !== tw || cv.height !== th || _lastSyncW !== cw || _lastSyncH !== ch || _lastSyncDpr !== dpr) {
+cv.width = tw;
+cv.height = th;
+_lastSyncW = cw;
+_lastSyncH = ch;
+_lastSyncDpr = dpr;
+if (typeof invalidateLayerCache === "function") invalidateLayerCache();
+if (typeof pcInvalidateAll === "function") pcInvalidateAll();
+}
+}
+return { cw, ch, dpr };
+}
+if (typeof window !== "undefined") {
+const _onViewportResize = () => { syncCanvasResolution(); };
+window.addEventListener("resize", _onViewportResize);
+window.addEventListener("orientationchange", () => { setTimeout(_onViewportResize, 80); });
+if (window.visualViewport && typeof window.visualViewport.addEventListener === "function") {
+window.visualViewport.addEventListener("resize", _onViewportResize);
+}
 }
 function stepDownRenderDpr() {
 const curEffective = getRenderDpr();
@@ -13395,34 +13440,25 @@ const next = DPR_STEPS.find(v => v < Math.min(_renderDprCap, curEffective) - 1e-
 if (typeof next !== "number" || next >= _renderDprCap) return false;
 _renderDprCap = next;
 try { localStorage.setItem(RENDER_DPR_KEY, String(next)); } catch (_) {}
-if (typeof invalidateLayerCache === "function") invalidateLayerCache();
-if (typeof pcInvalidateAll === "function") pcInvalidateAll();
+syncCanvasResolution();
 return true;
 }
 function recordFrameDprCheck(frameMs, isMenuNow) {
-if (_renderDprCap <= 1 || getRenderDpr() <= 1) return;
-const mode = isMenuNow ? "menu" : "game";
-if (_dprCheckedModes[mode]) return;
+if (isMenuNow || _dprChecked || _renderDprCap <= 1.5 || getRenderDpr() <= 1.5) return;
 if (!(frameMs > 0 && frameMs < 400)) return;
 const now = (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now();
-if (_dprWinMode !== mode) {
-_dprWinMode = mode;
-_dprWinStart = now;
-_dprSamples.length = 0;
-}
+if (_dprWinStart === 0) _dprWinStart = now;
 _dprSamples.push(frameMs);
 if ((now - _dprWinStart) < 3000) return;
-if (_dprSamples.length >= 10) {
+if (_dprSamples.length >= 15) {
 const sorted = _dprSamples.slice().sort((a, b) => a - b);
 const mid = sorted.length >> 1;
 const median = (sorted.length % 2 === 1) ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) * 0.5;
-if (median > 24 && stepDownRenderDpr()) {
-_dprWinStart = now;
-_dprSamples.length = 0;
-return;
+if (median > 33.4) {
+stepDownRenderDpr();
 }
 }
-_dprCheckedModes[mode] = true;
+_dprChecked = true;
 _dprSamples.length = 0;
 }
 function iso(u, v, z = 0) {
@@ -14409,7 +14445,8 @@ window.applyCosmetics = applyCosmetics;
 let LAYER_CACHE_ON = true;
 const layerStore = {};
 const CTX_STATE_PROPS = ["lineWidth", "lineCap", "lineJoin", "miterLimit", "lineDashOffset", "fillStyle", "strokeStyle",
-"globalAlpha", "globalCompositeOperation", "font", "textAlign", "textBaseline", "shadowBlur", "shadowColor", "shadowOffsetX", "shadowOffsetY"];
+"globalAlpha", "globalCompositeOperation", "font", "textAlign", "textBaseline", "shadowBlur", "shadowColor", "shadowOffsetX", "shadowOffsetY",
+"imageSmoothingEnabled", "imageSmoothingQuality"];
 function captureCtxState(c) {
 const st = { dash: c.getLineDash() };
 for (const k of CTX_STATE_PROPS) st[k] = c[k];
@@ -14443,6 +14480,7 @@ octx.setTransform(1, 0, 0, 1, 0, 0);
 octx.clearRect(0, 0, L.cv.width, L.cv.height);
 octx.setTransform(m);
 applyCtxState(octx, captureCtxState(ctx));
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(octx, false);
 const mainCtx = ctx, n0 = hitRegions.length;
 ctx = octx;
 try { drawFn(); } finally { ctx = mainCtx; }
@@ -14454,11 +14492,12 @@ for (let i = 0; i < L.hits.length; i++) hitRegions.push(L.hits[i]);
 }
 ctx.save();
 ctx.setTransform(1, 0, 0, 1, 0, 0);
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(ctx, false);
 ctx.drawImage(L.cv, 0, 0);
 ctx.restore();
 if (L.exit) applyCtxState(ctx, L.exit);
 }
-const LIGHT_SCALE = 0.5;
+const LIGHT_SCALE = 1.0;
 let lightCv = null, lightCx = null;
 const _lightSprites = {};
 const STREET_LAMP_VS_NEAR = [-480, -220, 90, 510, 900, 1280, 1620];
@@ -14474,6 +14513,7 @@ if (c) return c;
 c = document.createElement("canvas");
 c.width = c.height = 128;
 const x = c.getContext("2d");
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(x, false);
 const grad = x.createRadialGradient(64, 64, 0, 64, 64, 64);
 grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
 grad.addColorStop(0.3, `rgba(${r},${g},${b},0.7)`);
@@ -14560,11 +14600,14 @@ if (n > 0.02) {
 const warm = rising ? _PINK_RGB : _ORANGE_RGB;
 const col = n < 0.5 ? _mix3(warm, _DUSK_RGB, n / 0.5) : _mix3(_DUSK_RGB, _NIGHT_RGB, (n - 0.5) / 0.5);
 const alpha = Math.min(0.58, n * 0.6);
-const lw = Math.max(8, Math.round(cw * LIGHT_SCALE)), lh = Math.max(8, Math.round(ch * LIGHT_SCALE));
+const curDpr = (typeof getRenderDpr === "function") ? getRenderDpr() : 1;
+const lScale = Math.max(LIGHT_SCALE, Math.min(curDpr, 1.5));
+const lw = Math.max(8, Math.round(cw * lScale)), lh = Math.max(8, Math.round(ch * lScale));
 if (!lightCv) { lightCv = document.createElement("canvas"); lightCx = lightCv.getContext("2d"); }
 if (lightCv.width !== lw || lightCv.height !== lh) { lightCv.width = lw; lightCv.height = lh; }
 const lc = lightCx;
 lc.setTransform(1, 0, 0, 1, 0, 0);
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(lc, false);
 lc.globalCompositeOperation = "source-over";
 lc.globalAlpha = 1;
 lc.clearRect(0, 0, lw, lh);
@@ -14576,7 +14619,7 @@ if (lightsOn > 0.01) {
 lights = collectSceneLights(cw, ch);
 const hole = getLightSprite(255, 255, 255);
 lc.globalCompositeOperation = "destination-out";
-lc.setTransform(LIGHT_SCALE, 0, 0, LIGHT_SCALE, 0, 0);
+lc.setTransform(lScale, 0, 0, lScale, 0, 0);
 for (const L of lights) {
 const h = L.r * 2 * 0.78;
 lc.globalAlpha = Math.min(1, L.k * lightsOn * 0.95);
@@ -14586,6 +14629,7 @@ lc.globalAlpha = 1;
 lc.globalCompositeOperation = "source-over";
 lc.setTransform(1, 0, 0, 1, 0, 0);
 }
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(ctx, false);
 ctx.drawImage(lightCv, 0, 0, lw, lh, 0, 0, cw, ch);
 if (lights) {
 ctx.save();
@@ -14604,7 +14648,8 @@ ctx.drawImage(spr, L.x - rr, L.y - h * 0.5, rr * 2, h);
 ctx.restore();
 }
 }
-const vgA = 0.12 + 0.36 * n;
+const vgA = n > 0.04 ? (0.36 * n) : 0;
+if (vgA > 0.01) {
 if (cw !== _lastVgCw || ch !== _lastVgCh || Math.abs(vgA - _lastVgA) > 0.035) {
 _lastVgCw = cw; _lastVgCh = ch; _lastVgA = vgA;
 const R = Math.hypot(cw, ch) * 0.5;
@@ -14614,6 +14659,7 @@ _vgGrad.addColorStop(1, `rgba(8,6,20,${vgA.toFixed(3)})`);
 }
 ctx.fillStyle = _vgGrad;
 ctx.fillRect(0, 0, cw, ch);
+}
 }
 const SHADOW_KAT_UZUNLUK = 44;
 const SHADOW_YAN_KAYMA = 0.35;
@@ -14716,7 +14762,7 @@ SAVE: 20, RESTORE: 21, TRANSLATE: 22, SCALE: 23, ROTATE: 24, TRANSFORM: 25, SETT
 const OP_ARITY = [0, 0, 0, 2, 2, 6, 8, 4, 5, 4, 6, 0, 0, 4, 4, 4, 4, 3, 5, 9, 0, 0, 2, 2, 1, 6, 6, 1, 0, 2];
 const PC_PROPS = ["lineWidth", "lineCap", "lineJoin", "miterLimit", "lineDashOffset", "fillStyle", "strokeStyle",
 "globalAlpha", "globalCompositeOperation", "font", "textAlign", "textBaseline",
-"shadowBlur", "shadowColor", "shadowOffsetX", "shadowOffsetY", "imageSmoothingEnabled"];
+"shadowBlur", "shadowColor", "shadowOffsetX", "shadowOffsetY", "imageSmoothingEnabled", "imageSmoothingQuality"];
 const _pcF64 = new Float64Array(1), _pcI32 = new Int32Array(_pcF64.buffer);
 const _pcDesc = new WeakMap();
 const _pcImgId = new WeakMap(); let _pcImgSeq = 0;
@@ -14890,6 +14936,7 @@ sc.save();
 sc.beginPath(); sc.rect(x0, y0, w, h); sc.clip();
 sc.setTransform(m);
 applyCtxState(sc, rec.initState);
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(sc, false);
 pcReplay(rec.ops, rec.n, sc);
 sc.restore();
 const px = sc.getImageData(x0, y0, w, h).data;
@@ -14905,7 +14952,9 @@ if (touches) { sc.clearRect(x0, y0, w, h); if (attempt === 0) continue; return "
 const bw = r - l + 1, bh = b - t + 1;
 if (PC.bytes + bw * bh * 4 > PC.MAX_BYTES) { sc.clearRect(x0, y0, w, h); return "no"; }
 const cv = document.createElement("canvas"); cv.width = bw; cv.height = bh;
-cv.getContext("2d").drawImage(PC.scratch, x0 + l, y0 + t, bw, bh, 0, 0, bw, bh);
+const cvx = cv.getContext("2d");
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(cvx, false);
+cvx.drawImage(PC.scratch, x0 + l, y0 + t, bw, bh, 0, 0, bw, bh);
 sc.clearRect(x0, y0, w, h);
 e.cv = cv; e.x = x0 + l; e.y = y0 + t; PC.bytes += bw * bh * 4;
 return "ready";
@@ -14932,7 +14981,13 @@ const same = e && e.h1 === rec.h1 && e.h2 === rec.h2 && e.n === rec.n && e.camKe
 if (same) e.last = PC.frame;
 if (same && e.state === "ready") {
 PC.stats.hit++;
-if (e.cv) { real.save(); real.setTransform(1, 0, 0, 1, 0, 0); real.drawImage(e.cv, e.x, e.y); real.restore(); }
+if (e.cv) {
+real.save();
+real.setTransform(1, 0, 0, 1, 0, 0);
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(real, false);
+real.drawImage(e.cv, e.x, e.y);
+real.restore();
+}
 for (const p of PC_PROPS) real[p] = rec.sh[p];
 real.setLineDash(rec.dash);
 return;
@@ -16894,18 +16949,20 @@ const _ROAD_CRACKS = [
 { u: 1430, v: 1560, pts: [[0,0], [16, 6], [28, 18], [40, 22]] }
 ];
 function drawWorld() {
-const dpr = (typeof getRenderDpr === "function") ? getRenderDpr() : Math.min(window.devicePixelRatio || 1, 2.0);
-const cw = viewport.clientWidth || 800, ch = viewport.clientHeight || 600;
-if (canvas.width !== Math.floor(cw * dpr) || canvas.height !== Math.floor(ch * dpr)) {
-canvas.width = Math.floor(cw * dpr);
-canvas.height = Math.floor(ch * dpr);
-}
+const { cw, ch, dpr } = (typeof syncCanvasResolution === "function")
+? syncCanvasResolution()
+: {
+cw: viewport.clientWidth || 800,
+ch: viewport.clientHeight || 600,
+dpr: Math.min(window.devicePixelRatio || 1, 2.0)
+};
 pcBeginFrame();
 hitRegions.length = 0;
 const si = seasonIdx();
 const b = brightness();
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(ctx, false);
 ctx.save();
-ctx.scale(dpr, dpr);
+ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 const applyCamTransform = () => {
 ctx.translate(cw * 0.5 - camCenter.x * zoom, ch * 0.5 + camCenter.y * zoom);
 ctx.scale(zoom, zoom);
@@ -16945,12 +17002,6 @@ const tuftCol = si === 3 ? "#93b4ce" : si === 2 ? "#826521" : si === 1 ? "#32821
 for (let i = 0; i < _GRASS_TUFTS.length; i++) {
 const g = _GRASS_TUFTS[i];
 drawGrassTuft(g[0], g[1], tuftCol, 0.9 + (i % 3) * 0.15);
-}
-ctx.fillStyle = si === 3 ? "rgba(255,255,255,0.4)" : "rgba(30,80,15,0.12)";
-for (let i = 0; i < _GRASS_TUFTS.length; i++) {
-const g = _GRASS_TUFTS[i];
-const p = iso(g[0] + 25, g[1] - 15, 0);
-ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
 }
 if (si === 3) {
 ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
@@ -17043,11 +17094,6 @@ isoQuad(u0, v0, u0 + PARCEL_SIZE, v0 + PARCEL_SIZE, 0, null, "rgba(42, 85, 24, 0
 }
 }
 isoQuad(roadU0, roadV0, roadU1, roadV1, -4, "#575c69", OUTLINE_COL, 2.5);
-for (let v = roadV0 + 40; v <= roadV1 - 40; v += 65) {
-const p = iso(roadU0 + 45 + ((Math.abs(v) * 7) % 80), v, -3.8);
-ctx.fillStyle = (v % 2 === 0) ? "rgba(255,255,255,0.08)" : "rgba(20,22,28,0.22)";
-ctx.fillRect(p.x, p.y, 2, 1.5);
-}
 ctx.strokeStyle = "#383c48";
 ctx.lineWidth = 1.3;
 ctx.lineCap = "round";
