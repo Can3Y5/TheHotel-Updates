@@ -394,8 +394,22 @@ box-shadow: 0 2px 0 #3a281f;
 }
 .ft-btn:active { transform: translateY(1px); box-shadow: 0 1px 0 #3a281f; }
 .ft-btn.rot { background: linear-gradient(180deg, #cce8ff 0%, #7ec2f5 100%); }
+.ft-btn.rot.is-highlighted {
+background: linear-gradient(180deg, #74c0fc 0%, #228be6 100%);
+color: #ffffff;
+border-color: #1c3d5a;
+box-shadow: 0 2px 0 #1c3d5a, 0 0 0 2px #ffe066;
+}
+.ft-btn.edit { background: linear-gradient(180deg, #fffdf7 0%, #f0d7a8 100%); }
+.ft-btn.edit.active {
+background: linear-gradient(180deg, #b8f2c2 0%, #48b865 100%);
+color: #0e3819;
+}
 .ft-btn.auto { background: linear-gradient(180deg, #fff099 0%, #f5c42f 100%); }
 .ft-btn.del { background: linear-gradient(180deg, #ffd6d6 0%, #f58c8c 100%); }
+#furn-toolbar:not(.editing) .ft-btn.rot,
+#furn-toolbar:not(.editing) .ft-btn.del,
+#furn-toolbar:not(.editing) .ft-btn.auto { display: none; }
 #act-grid {
 display: grid; grid-template-columns: repeat(4, 1fr);
 grid-auto-rows: minmax(38px, auto); gap: 5px;
@@ -2235,7 +2249,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.79-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.80-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -2476,11 +2490,12 @@ text-align: center;
         <button id="btn-close-sel" title="Paneli Kapat">✕</button>
       </div>
       <div id="furn-toolbar">
-        <span id="furn-status-lbl">🛋️ Oda İçi Yerleşim: Eşyaya dokunup taşı veya döndür</span>
+        <span id="furn-status-lbl">🛋️ Oda İçi Yerleşim</span>
         <div class="ft-btns">
+          <button class="ft-btn edit" id="btn-furn-edit" title="Odadaki eşyaları taşıma ve döndürme modunu aç/kapat">🛠️ Eşyaları Düzenle</button>
           <button class="ft-btn rot" id="btn-furn-rot" title="Seçili eşyayı 90° döndür veya duvarını değiştir">🔄 Döndür</button>
           <button class="ft-btn del" id="btn-furn-del" title="Seçili eşyayı odadan kaldırıp depoya koy">🗑️ Kaldır</button>
-          <button class="ft-btn auto" id="btn-furn-auto" title="3 farklı oda yerleşim düzeni arasında geçiş yap">⚡ Diz 1/3</button>
+          <button class="ft-btn auto" id="btn-furn-auto" title="Odadaki eşyaları çakışmasız otomatik diz">✨ Otomatik Diz</button>
         </div>
       </div>
       <div id="act-grid"></div>
@@ -4454,6 +4469,36 @@ let drawerOpen = false;
 let activeDock = "";
 let furnSelectedKey = null;
 let furnRot = 0;
+let furnEditMode = false;
+let _furnPreEditCam = null;
+function setFurnEditMode(on, roomSlot = null) {
+const next = !!on;
+if (!next) {
+furnEditMode = false;
+furnSelectedKey = null;
+if (_furnPreEditCam) {
+if (typeof camCenter !== "undefined") {
+camCenter.x = _furnPreEditCam.x;
+camCenter.y = _furnPreEditCam.y;
+}
+if (typeof zoom === "number") zoom = _furnPreEditCam.zoom;
+if (typeof applyCam === "function") applyCam();
+_furnPreEditCam = null;
+}
+return;
+}
+const target = roomSlot || (typeof selSlot !== "undefined" ? selSlot : null);
+if (!target || target.type !== "Room") return;
+if (!furnEditMode && typeof zoom === "number" && typeof camCenter !== "undefined") {
+if (zoom < 1.25) {
+_furnPreEditCam = { zoom, x: camCenter.x, y: camCenter.y };
+zoom = 1.38;
+if (typeof focusIsoSlot === "function") focusIsoSlot(target);
+if (typeof applyCam === "function") applyCam();
+}
+}
+furnEditMode = true;
+}
 const IBanyo = 9;
 const CostEnsuite = 90;
 const CostElevator = 150;
@@ -4486,29 +4531,140 @@ if (key === 9) return !!s.hasEnsuite;
 if (key === 4) return true;
 return !!(s.items && s.items[key]);
 }
+function _getActiveFloorKeys(s, extraKeys = []) {
+const keys = [4];
+if (s.hasEnsuite || extraKeys.includes(9)) keys.push(9);
+for (let k = 0; k < ItemCount; k++) {
+if (k === 4 || isFurnWallItem(k)) continue;
+if ((s.items && s.items[k]) || extraKeys.includes(k)) keys.push(k);
+}
+keys.sort((a, b) => {
+const sa = itemSpan(a, 0), sb = itemSpan(b, 0);
+return (sb.du * sb.dv) - (sa.du * sa.dv) || (a - b);
+});
+return keys;
+}
+function solveRoomFloorLayout(s, extraKeys = [], variantSeed = 0) {
+if (!s || s.type !== "Room") return null;
+const floorKeys = _getActiveFloorKeys(s, extraKeys);
+const working = {};
+if (s.furnLayout && typeof s.furnLayout === "object") {
+for (const rawKey of Object.keys(s.furnLayout)) {
+const nk = Number(rawKey);
+if (isFurnWallItem(nk) && s.furnLayout[rawKey]) {
+working[nk] = { ...s.furnLayout[rawKey] };
+}
+}
+}
+const candsByKey = floorKeys.map((k) => {
+const sp0 = itemSpan(k, 0), sp1 = itemSpan(k, 1);
+const rots = (sp0.du === sp1.du && sp0.dv === sp1.dv) ? [0] : [0, 1];
+const list = [];
+for (const rot of rots) {
+const sp = rot === 1 ? sp1 : sp0;
+for (let ru = 0; ru <= 3 - sp.du; ru++) {
+for (let rv = 0; rv <= 4 - sp.dv; rv++) {
+list.push({ ru, rv, rot });
+}
+}
+}
+return list;
+});
+const placed = {};
+const isPlaced = (key) => !!placed[key];
+let steps = 0;
+const MAX_STEPS = 12000;
+function dfs(idx) {
+if (++steps > MAX_STEPS) return false;
+if (idx >= floorKeys.length) return true;
+const k = floorKeys[idx];
+const cands = candsByKey[idx];
+const shift = variantSeed > 0 && cands.length > 0 ? ((variantSeed * 3 + idx) % cands.length) : 0;
+for (let i = 0; i < cands.length; i++) {
+const c = cands[(i + shift) % cands.length];
+if (canPlaceInLayout(working, isPlaced, k, c.ru, c.rv, c.rot)) {
+working[k] = { ru: c.ru, rv: c.rv, rot: c.rot };
+placed[k] = true;
+if (dfs(idx + 1)) return true;
+delete working[k];
+placed[k] = false;
+}
+}
+return false;
+}
+return dfs(0) ? working : null;
+}
+function autoArrangeRoomSmart(s) {
+if (!s || s.type !== "Room") return false;
+ensureRoomFurnLayout(s);
+const seed = ((s._autoSolveIdx || 0) + 1) % 12;
+const solved = solveRoomFloorLayout(s, [], seed);
+if (!solved) return false;
+s._autoSolveIdx = seed;
+s.furnLayout = solved;
+return true;
+}
+function resolveRoomFurnPlacement(s, key, preferRot = 0) {
+const spot = findFirstFreeFurnSpot(s, key, preferRot);
+if (spot) return { spot, solvedLayout: null };
+if (isFurnWallItem(key)) return null;
+const solvedLayout = solveRoomFloorLayout(s, [key], 0);
+if (solvedLayout) return { spot: solvedLayout[key], solvedLayout };
+return null;
+}
 function ensureRoomFurnLayout(s) {
 if (!s || s.type !== "Room") return;
 if (!s.furnLayout || typeof s.furnLayout !== "object") s.furnLayout = {};
 if (typeof s.furnPresetIdx !== "number" || s.furnPresetIdx < 0 || s.furnPresetIdx > 2) s.furnPresetIdx = 0;
-if (!s.furnLayout[4]) {
-s.furnLayout[4] = { ru: 0, rv: 2, rot: 0 };
-}
-if (s.hasEnsuite && !s.furnLayout[9]) {
-s.furnLayout[9] = { ru: 0, rv: 0, rot: 0 };
-}
 for (let k = 0; k < ItemCount; k++) {
-if (s.items[k]) {
-const cur = s.furnLayout[k];
-if (!cur) {
-const spot = findSpotInLayout(s.furnLayout, (key) => isFurnItemActive(s, key), k, 0);
+if (s.items && s.items[k] && isFurnWallItem(k) && !s.furnLayout[k]) {
 const fp = ITEM_FOOTPRINTS[k];
-s.furnLayout[k] = spot || { ru: fp.defU, rv: fp.defV, rot: 0 };
-} else if (!isFurnWallItem(k)) {
-const sp = itemSpan(k, cur.rot || 0);
-if (cur.ru < 0 || cur.rv < 0 || cur.ru + sp.du > 3 || cur.rv + sp.dv > 4) {
-const spot = findSpotInLayout(s.furnLayout, (key) => key !== k && isFurnItemActive(s, key), k, cur.rot || 0);
-if (spot) s.furnLayout[k] = spot;
+s.furnLayout[k] = { ru: fp.defU, rv: fp.defV, rot: 0 };
 }
+}
+const activeFloorKeys = _getActiveFloorKeys(s, []);
+const validPlaced = {};
+const needsFix = [];
+for (const k of activeFloorKeys) {
+const cur = s.furnLayout[k];
+if (cur && typeof cur.ru === "number" && typeof cur.rv === "number") {
+const rot = cur.rot || 0;
+if (canPlaceInLayout(s.furnLayout, (other) => !!validPlaced[other], k, cur.ru, cur.rv, rot)) {
+cur.rot = rot;
+validPlaced[k] = true;
+continue;
+}
+}
+needsFix.push(k);
+}
+if (needsFix.length === 0) return;
+let hardFix = false;
+for (const k of needsFix) {
+const cur = s.furnLayout[k];
+const prefRot = (cur && cur.rot) || 0;
+let spot = null;
+if (k === 4 && !cur && canPlaceInLayout(s.furnLayout, (o) => !!validPlaced[o], 4, 0, 2, 0)) {
+spot = { ru: 0, rv: 2, rot: 0 };
+} else if (k === 9 && !cur && canPlaceInLayout(s.furnLayout, (o) => !!validPlaced[o], 9, 0, 0, 0)) {
+spot = { ru: 0, rv: 0, rot: 0 };
+} else {
+spot = findSpotInLayout(s.furnLayout, (other) => !!validPlaced[other], k, prefRot);
+}
+if (spot) {
+s.furnLayout[k] = spot;
+validPlaced[k] = true;
+} else {
+hardFix = true;
+break;
+}
+}
+if (hardFix) {
+const solved = solveRoomFloorLayout(s, [], 0);
+if (solved) {
+s.furnLayout = solved;
+} else {
+for (const k of needsFix) {
+if (!validPlaced[k]) delete s.furnLayout[k];
 }
 }
 }
@@ -5776,6 +5932,12 @@ isOpen = false;
 const fSlot = floors[0].slots[21];
 const needed = (fSlot.type === "Room" ? 0 : CostRoom) + (fSlot.hasDoor ? 0 : CostDoor);
 if (money < needed) money = needed;
+}
+if (typeof setFurnEditMode === "function") setFurnEditMode(false);
+if (typeof ensureRoomFurnLayout === "function" && typeof allSlots !== "undefined") {
+for (const s of allSlots) {
+if (s && s.type === "Room") ensureRoomFurnLayout(s);
+}
 }
 if (typeof checkAchievements === "function") {
 checkAchievements({ retroactive: true });
@@ -9855,7 +10017,7 @@ if (i === 0) {
 if (pay(roomCost())) {
 s.type = "Room"; s.parcelBuilt = true; s.roomNo = ++roomCounter; builtRooms++;
 autoArrangeRoom(s);
-furnSelectedKey = 4;
+furnSelectedKey = null;
 play("build");
 if (getRoomDoorWall(s)) {
 log("🛏️ " + s.roomNo + ". Oda kuruldu! Şimdi Kapı al (50 TL) ve 4x4 ızgaraya eşya diz.");
@@ -10143,26 +10305,29 @@ if (furnSelectedKey === IBanyo) {
 furnSelectedKey = null;
 play("tap");
 } else {
+if (typeof setFurnEditMode === "function") setFurnEditMode(true, s);
 furnSelectedKey = IBanyo;
 furnRot = (s.furnLayout[IBanyo] && s.furnLayout[IBanyo].rot) || 0;
 play("tap");
 log("🚿 Özel Banyo seçildi. Odadaki yeşil karelere dokunarak taşıyabilir veya 🔄 Döndür'e basabilirsin!");
 }
 } else if (hasReadyRoom()) {
-const spot = findFirstFreeFurnSpot(s, IBanyo, furnRot);
-if (!spot) {
+const placedPlan = resolveRoomFurnPlacement(s, IBanyo, furnRot);
+if (!placedPlan) {
 play("reject");
-log("⚠️ Odada yer yok! Önce bir eşyayı çıkar veya yerini değiştir.");
+log("⚠️ Odada yer kalmadı! Önce bir eşyayı kaldır.");
 refresh();
 return;
 }
 if (pay(CostEnsuite)) {
 s.hasEnsuite = true;
-s.furnLayout[IBanyo] = spot;
-furnRot = spot.rot || 0;
+if (placedPlan.solvedLayout) s.furnLayout = placedPlan.solvedLayout;
+else s.furnLayout[IBanyo] = placedPlan.spot;
+if (typeof setFurnEditMode === "function") setFurnEditMode(true, s);
+furnRot = (s.furnLayout[IBanyo] && s.furnLayout[IBanyo].rot) || 0;
 furnSelectedKey = IBanyo;
 play("build");
-log("🚿 " + s.roomNo + ". odaya Özel Banyo (2x2) eklendi! Odadaki karelere dokunarak yerini değiştirebilirsin.");
+log("🚿 " + s.roomNo + ". odaya Özel Banyo eklendi! Odadaki karelere dokunarak yerini değiştirebilirsin.");
 saveGame();
 }
 }
@@ -10182,6 +10347,7 @@ if (furnSelectedKey === k) {
 furnSelectedKey = null;
 play("tap");
 } else {
+if (typeof setFurnEditMode === "function") setFurnEditMode(true, s);
 furnSelectedKey = k;
 furnRot = (s.furnLayout[k] && s.furnLayout[k].rot) || 0;
 play("tap");
@@ -10190,18 +10356,20 @@ log(ITEM_FOOTPRINTS[k].icon + " " + ItemNames[k] + " seçildi! Odadaki yeşil ka
 refresh();
 return;
 } else {
-const spot = findFirstFreeFurnSpot(s, k, furnRot);
-if (!spot) {
+const placedPlan = resolveRoomFurnPlacement(s, k, furnRot);
+if (!placedPlan) {
 play("reject");
-log("⚠️ Odada yer yok! Önce bir eşyayı çıkar veya yerini değiştir.");
+log("⚠️ Odada yer kalmadı! Önce bir eşyayı kaldır.");
 refresh();
 return;
 }
 if (installItem(s, k) && s.items[k]) {
-s.furnLayout[k] = spot;
-furnRot = spot.rot || 0;
+if (placedPlan.solvedLayout) s.furnLayout = placedPlan.solvedLayout;
+else s.furnLayout[k] = placedPlan.spot;
+if (typeof setFurnEditMode === "function") setFurnEditMode(true, s);
+furnRot = (s.furnLayout[k] && s.furnLayout[k].rot) || 0;
 furnSelectedKey = k;
-log(ITEM_FOOTPRINTS[k].icon + " " + ItemNames[k] + " odaya yerleştirildi! Yerini değiştirmek için odadaki 4x4 karelerden birine dokun.");
+log(ITEM_FOOTPRINTS[k].icon + " " + ItemNames[k] + " odaya yerleştirildi! Yeşil kareye dokunarak yerini değiştirebilirsin.");
 saveGame();
 }
 refresh();
@@ -10873,7 +11041,8 @@ updateDockHighlights();
 function closeDrawer() {
 drawerOpen = false;
 activeDock = "";
-furnSelectedKey = null;
+if (typeof setFurnEditMode === "function") setFurnEditMode(false);
+else furnSelectedKey = null;
 if (sel === "Decor") {
 sel = "Slot";
 selSlot = floors[viewFloor] ? floors[viewFloor].slots[32] : null;
@@ -10894,6 +11063,15 @@ for (const [k, id] of Object.entries(map)) {
 const el = document.getElementById(id);
 if (el) el.classList.toggle("active-dock", drawerOpen && activeDock === k);
 }
+}
+const btnFurnEditEl = document.getElementById("btn-furn-edit");
+if (btnFurnEditEl) {
+btnFurnEditEl.onclick = () => {
+if (sel !== "Slot" || !selSlot || selSlot.type !== "Room") return;
+play("tap");
+if (typeof setFurnEditMode === "function") setFurnEditMode(!furnEditMode, selSlot);
+refresh();
+};
 }
 document.getElementById("btn-furn-rot").onclick = () => {
 if (sel === "Slot" && selSlot && selSlot.type === "Room" && furnSelectedKey !== null) {
@@ -10952,14 +11130,21 @@ log("Bu eşya henüz odada kurulu değil.");
 };
 document.getElementById("btn-furn-auto").onclick = () => {
 if (sel !== "Slot" || !selSlot || selSlot.type !== "Room") return;
+const fx = selSlot.X0 + SlotW * 0.5;
+const fy = selSlot.floor.BaseY + FloorH * 0.65;
+const ok = (typeof autoArrangeRoomSmart === "function") ? autoArrangeRoomSmart(selSlot) : false;
+if (!ok) {
+play("reject");
+log("⚠️ Bu odaya hepsi sığmıyor");
+if (typeof floatText === "function") floatText(fx, fy, "Bu odaya hepsi sığmıyor", "#d93025");
+return;
+}
 play("build");
-const res = cycleRoomAutoPreset(selSlot);
 if (furnSelectedKey !== null && selSlot.furnLayout && selSlot.furnLayout[furnSelectedKey]) {
 furnRot = selSlot.furnLayout[furnSelectedKey].rot || 0;
 }
-const idx = res ? res.idx : 0;
-const pr = res ? res.preset : ROOM_FURN_PRESETS[0];
-log("⚡ " + selSlot.roomNo + ". oda düzeni (" + (idx + 1) + "/3): " + pr.icon + " " + pr.name);
+log("✨ Eşyalar yeniden dizildi");
+if (typeof floatText === "function") floatText(fx, fy, "✨ Eşyalar yeniden dizildi", "#1e7e34");
 refresh(); saveGame();
 };
 document.getElementById("btn-close-sel").onclick = () => { play("tap"); closeDrawer(); };
@@ -11108,6 +11293,11 @@ refreshHud();
 };
 }
 function selectSlot(s) {
+const prevSlot = selSlot;
+if (!s || s !== prevSlot || s.type !== "Room") {
+if (typeof setFurnEditMode === "function") setFurnEditMode(false);
+else furnSelectedKey = null;
+}
 play("tap");
 sel = "Slot";
 selSlot = s;
@@ -11116,7 +11306,6 @@ decorSelectedSlotId = null;
 decorPreviewItemId = null;
 decorReplaceMode = false;
 if (s && s.floor) viewFloor = s.floor.idx;
-if (!s || s.type !== "Room") furnSelectedKey = null;
 openDrawer(activeDock || (s && s.type === "Room" ? "shop" : "build"));
 if (s) focusIsoSlot(s);
 refresh();
@@ -11126,7 +11315,8 @@ play("tap");
 sel = "Floor";
 selFloor = f;
 selSlot = null;
-furnSelectedKey = null;
+if (typeof setFurnEditMode === "function") setFurnEditMode(false);
+else furnSelectedKey = null;
 decorSelectedSlotId = null;
 decorPreviewItemId = null;
 decorReplaceMode = false;
@@ -11139,7 +11329,8 @@ play("tap");
 sel = m;
 selSlot = null;
 selFloor = null;
-furnSelectedKey = null;
+if (typeof setFurnEditMode === "function") setFurnEditMode(false);
+else furnSelectedKey = null;
 if (m !== "Decor") {
 decorSelectedSlotId = null;
 decorPreviewItemId = null;
@@ -11154,7 +11345,8 @@ play("tap");
 sel = "Decor";
 selSlot = null;
 selFloor = null;
-furnSelectedKey = null;
+if (typeof setFurnEditMode === "function") setFurnEditMode(false);
+else furnSelectedKey = null;
 decorSelectedSlotId = slotId;
 decorPreviewItemId = null;
 decorReplaceMode = false;
@@ -11551,13 +11743,22 @@ actBtns[ActCount - 1].style.background = "linear-gradient(180deg, #a4f578 0%, #5
 const readyOnce = hasReadyRoom();
 const isRoomSel = (sel === "Slot" && selSlot && selSlot.type === "Room");
 if (furnToolbarEl) {
+const isEditing = !!(isRoomSel && typeof furnEditMode !== "undefined" && furnEditMode);
 furnToolbarEl.classList.toggle("show", !!isRoomSel);
-if (isRoomSel && furnStatusLbl) {
-const pIdx = (typeof selSlot.furnPresetIdx === "number") ? ((selSlot.furnPresetIdx % 3) + 3) % 3 : 0;
-const pDef = (typeof ROOM_FURN_PRESETS !== "undefined" && ROOM_FURN_PRESETS[pIdx]) ? ROOM_FURN_PRESETS[pIdx] : { icon: "🏨", name: "Klasik" };
+furnToolbarEl.classList.toggle("editing", isEditing);
+const editBtn = document.getElementById("btn-furn-edit");
+if (editBtn) {
+editBtn.textContent = isEditing ? "✅ Bitti" : "🛠️ Eşyaları Düzenle";
+editBtn.classList.toggle("active", isEditing);
+}
+const rotBtn = document.getElementById("btn-furn-rot");
+if (rotBtn) rotBtn.classList.toggle("is-highlighted", !!(isEditing && furnSelectedKey !== null));
 const autoBtn = document.getElementById("btn-furn-auto");
-if (autoBtn) autoBtn.textContent = "⚡ Diz " + (pIdx + 1) + "/3";
-if (furnSelectedKey !== null && ITEM_FOOTPRINTS[furnSelectedKey]) {
+if (autoBtn) autoBtn.textContent = "✨ Otomatik Diz";
+if (isRoomSel && furnStatusLbl) {
+if (!isEditing) {
+furnStatusLbl.textContent = "🛋️ Eşya taşımak için Düzenle'ye bas";
+} else if (furnSelectedKey !== null && ITEM_FOOTPRINTS[furnSelectedKey]) {
 const fp = ITEM_FOOTPRINTS[furnSelectedKey];
 const sp = itemSpan(furnSelectedKey, furnRot);
 const cleanName = fp.name.replace(/\s*\(\dx\d\)/, "");
@@ -11569,7 +11770,7 @@ furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + ": İstediğin
 furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + " (" + sp.du + "x" + sp.dv + "): Yeşil Taşı • Mavi Değiştir";
 }
 } else {
-furnStatusLbl.textContent = "🛋️ Odadaki eşyaya tıkla/taşı • " + pDef.icon + " " + pDef.name;
+furnStatusLbl.textContent = "Eşyayı seç → yeşil kareye dokun";
 }
 }
 }
@@ -12134,17 +12335,23 @@ else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif 
 offerBtn.textContent = "💬 Teklif Ver";
 }
 }
-const APP_VERSION_CODE = 87;
-const APP_VERSION_NAME = "1.9.79-beta";
+const APP_VERSION_CODE = 88;
+const APP_VERSION_NAME = "1.9.80-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.80-beta",
+title: "Eşya yerleştirme iyileştirmesi",
+latest: true,
+notes: "• 🛠️ Düzenleme Modu: Odalara dokunurken yanlışlıkla eşya seçilmesini önleyen '🛠️ Eşyaları Düzenle / ✅ Bitti' modu eklendi.\n• ✨ Akıllı Otomatik Diz & Yer Kontrolü: Eşyalar 3×4 odada çakışmasız otomatik yerleşir, yer kalmadığında satın alma engellenir."
+},
+{
 ver: "v1.9.79-beta",
 title: "Zarar veren misafir artık hedef odaya yürüyor",
-latest: true,
+latest: false,
 notes: "• 🛠️ Tehdit Misafiri Düzeltmesi: Zarar vermek isteyen tehdit misafiri artık izometrik koridor ve asansör rotasını izleyerek hedef odaya yürür, hasar sonrası oda kapısından koridorla çıkar."
 },
 {
@@ -19432,7 +19639,8 @@ selSlot = s;
 placeGuestIntoRoom(pending, s, pendingPrice, false);
 refresh();
 });
-} else if (isSel) {
+} else if (isSel && furnEditMode) {
+isoLabel("Eşyayı seç → yeşil kareye dokun", (u0 + u1) * 0.45, (v0 + v1) * 0.45, z1 + 14, 9.2, "#3a281f", "#fff8dc", 6, 2);
 addHitPoly(roomPoly, () => {
 if (furnSelectedKey !== null) {
 furnSelectedKey = null;
@@ -19484,7 +19692,7 @@ return;
 selectSlot(s);
 });
 }
-drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV, !!(isSel && !pending));
+drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV, !!(isSel && furnEditMode && !pending));
 if (s.hasBalcony) {
 const p = getRoomPalette();
 isoBox(u0 + 20, v1, u1 - 20, v1 + 32, z0 - 4, z0 + 2, p.balconyTop, p.balconyL, p.balconyR, OUTLINE_COL, 1.6);
