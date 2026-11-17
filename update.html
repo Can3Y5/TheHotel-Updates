@@ -2235,7 +2235,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.78-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.79-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -7621,8 +7621,15 @@ const idx = queue.indexOf(g);
 if (idx >= 0) queue.splice(idx, 1);
 if (pending === g) pending = null;
 reflowQueue();
-const cand = allSlots.filter(s => s.floor.state === "Built" && (s.type === "Room" || s.type === "Toilet"));
-if (cand.length === 0) {
+const p = g.pawn;
+const startIso = (p && p.iso) ? p.iso : { u: 940, v: 505, z: 8 };
+const cand = allSlots.filter(s => {
+if (!s || !s.floor || s.floor.state !== "Built" || s.type !== "Room") return false;
+if (typeof isDoorFacilityConnected === "function" && !isDoorFacilityConnected(s, "Room")) return false;
+const r = (typeof buildIsoRouteToRoom === "function") ? buildIsoRouteToRoom(startIso, s) : [];
+return Array.isArray(r) && r.length > 0;
+});
+if (cand.length === 0 || !p) {
 play("alarm");
 startLeaving(g);
 refresh();
@@ -7630,17 +7637,20 @@ return;
 }
 const targetSlot = pick(cand);
 g.state = "Attacking";
+g.attackSlot = targetSlot;
+g.attackTimer = 0;
 g.hasBubble = true;
 g.bubbleLines = [g.name, "Kırıp dökeceğim!"];
 play("alarm");
-const targetName = targetSlot.type === "Room" ? (targetSlot.roomNo + ". odaya") : "tuvalete";
+const targetName = targetSlot.roomNo + ". odaya";
 log("⚠️ " + g.name + " öfkelendi! Zarar vermek için " + targetName + " gidiyor!");
-const p = g.pawn;
 p.wander = false;
 p.speed = WalkSpeed * 1.2;
 p.path = [];
-addPath(p, floorOf(p.pos.y), targetSlot.floor.idx, targetSlot.X0 + SlotW * 0.5);
-p.onArrive = () => {
+p.onArrive = null;
+if (!p.iso) p.iso = { u: 940, v: 505, z: 8 };
+p.isoPath = buildIsoRouteToRoom(p.iso, targetSlot);
+p.onIsoArrive = () => {
 if (g.state !== "Attacking") return;
 g.state = "AttackingWait";
 g.exLeft = 1.6;
@@ -12124,17 +12134,23 @@ else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif 
 offerBtn.textContent = "💬 Teklif Ver";
 }
 }
-const APP_VERSION_CODE = 86;
-const APP_VERSION_NAME = "1.9.78-beta";
+const APP_VERSION_CODE = 87;
+const APP_VERSION_NAME = "1.9.79-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.79-beta",
+title: "Zarar veren misafir artık hedef odaya yürüyor",
+latest: true,
+notes: "• 🛠️ Tehdit Misafiri Düzeltmesi: Zarar vermek isteyen tehdit misafiri artık izometrik koridor ve asansör rotasını izleyerek hedef odaya yürür, hasar sonrası oda kapısından koridorla çıkar."
+},
+{
 ver: "v1.9.78-beta",
 title: "Performans iyileştirmeleri",
-latest: true,
+latest: false,
 notes: "• ⚡ İlk Kare Hızlandırma: Firebase betikleri ilk kare çizildikten sonra arka planda asenkron yüklenir.\n• 🖼️ Uyarlanabilir Çözünürlük & Küçültme: Kare süresi yükselen cihazlarda çizim ölçeği kademeli dengelenir (2→1.5→1.25→1), paket boyutu küçültüldü ve menü metinleri güncellendi."
 },
 {
@@ -23408,11 +23424,16 @@ if (g.exLeft <= 0) endExercise(g);
 } else if (g.state === "UsingToilet") {
 g.exLeft -= dt;
 if (g.exLeft <= 0) endToilet(g);
+} else if (g.state === "Attacking") {
+g.attackTimer = (g.attackTimer || 0) + dt;
+if (g.attackTimer > 90 || !g.pawn || g.pawn.dead) {
+startLeaving(g, g.attackSlot || null);
+}
 } else if (g.state === "AttackingWait") {
 g.exLeft -= dt;
 if (g.exLeft <= 0) {
-g.pawn.exercise = false;
-startLeaving(g);
+if (g.pawn) g.pawn.exercise = false;
+startLeaving(g, g.attackSlot || null);
 }
 } else if (g.state === "Sleeping") {
 if (typeof barmenHired !== "undefined" && barmenHired && typeof getCafeTimePeriod === "function" && getCafeTimePeriod() === "bar") {
