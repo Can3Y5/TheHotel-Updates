@@ -1,8 +1,8 @@
 {
-  "versionCode": 88,
-  "versionName": "1.9.80-beta",
+  "versionCode": 89,
+  "versionName": "1.9.81-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Eşya yerleştirme iyileştirmesi"
+  "notes": "Tuvalet ve spor odası rotaları"
 }

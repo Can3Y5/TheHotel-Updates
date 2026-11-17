@@ -2249,7 +2249,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.80-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.81-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -5693,7 +5693,7 @@ attempts: 0,
 wants: Array.isArray(gd.wants) ? gd.wants.slice() : new Array(ItemCount).fill(false),
 patience: 25, maxPatience: 25,
 atSpot: false, arrivedOnce: true, state: "InRoom",
-room: s, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
+room: s, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0, gymInFlow: false, gymElapsed: 0, toiletInFlow: false, toiletElapsed: 0,
 gymTimer: rnd(10, 25), toiletTimer: rnd(12, 28), parkTimer: rnd(12, 28),
 spaTimer: rnd(12, 30), spaDay: !!gd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!gd.spaRelaxed, spaInFlow: false, spaElapsed: 0,
 cafeTimer: rnd(1, 3), cafeDay: !!gd.cafeDay, cafeNight: !!gd.cafeNight, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
@@ -6535,7 +6535,7 @@ chinese: false, wantsToilet: false, wantsBalcony: false, expired: false, kids: 0
 budget: 0, offer: 0, days: rndInt(1, 5), daysLeft: 0, price: 0, attempts: 0,
 wants: new Array(ItemCount).fill(false), patience: 0, maxPatience: 0,
 atSpot: false, arrivedOnce: false, state: "Queued",
-room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
+room: null, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0, gymInFlow: false, gymElapsed: 0, toiletInFlow: false, toiletElapsed: 0,
 gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
 spaTimer: rnd(12, 30), spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
 cafeTimer: rnd(1, 3), cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
@@ -6877,8 +6877,14 @@ const leaveRoom = fromRoom || g.room || g.prevRoom || null;
 const p = g.pawn;
 p.visible = true;
 p.sleeping = false;
-if (g.gym) { g.gym.gymBusy[g.gymIdx] = false; g.gym = null; }
-if (g.toilet) { g.toilet.toiletBusy[g.toiletIdx] = false; g.toilet = null; }
+const wasGym = !!(g.gym || g.gymInFlow || g.state === "ToGym" || g.state === "Exercising");
+const wasToilet = !!(g.toilet || g.toiletInFlow || g.state === "ToToilet" || g.state === "UsingToilet");
+if (typeof freeGymSlot === "function") freeGymSlot(g);
+else if (g.gym) { g.gym.gymBusy[g.gymIdx] = false; g.gym = null; }
+if (typeof freeToiletSlot === "function") freeToiletSlot(g);
+else if (g.toilet) { g.toilet.toiletBusy[g.toiletIdx] = false; g.toilet = null; }
+g._returnGymSlot = null;
+g._returnToiletSlot = null;
 if (typeof freeSpaSlot === "function") freeSpaSlot(g);
 if (typeof freeCafeSlot === "function") freeCafeSlot(g);
 const wasTennis = !!(g.tennis || g.tennisInFlow || g.state === "ToTennis" || g.state === "PlayingTennis" || (p && p.iso && p.iso.v >= 1150));
@@ -6890,7 +6896,7 @@ kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = p;
 }
 g.kidsAtPark = false;
 p.wander = false; p.exercise = false; p.tennis = false; p.spa = false; p.spaIdx = 0; p.cafe = false; p.cafeIdx = 0; p.speed = 110; p.path = []; p.isoPath = []; p.onIsoArrive = null;
-if ((wasTennis || wasSpa || wasCafe) && leaveRoom) p.iso = null;
+if ((wasTennis || wasSpa || wasCafe || wasGym || wasToilet) && leaveRoom) p.iso = null;
 const exitPath = [];
 if (leaveRoom) {
 const doorPts = getRoomDoorPoints(leaveRoom);
@@ -7198,30 +7204,146 @@ const rLeave = s; s.guest = null; g.room = null; g.prevRoom = rLeave;
 startLeaving(g, rLeave);
 saveGame();
 }
-function tryGoGym(g) {
-if (Math.random() > 0.7) return;
+function _refreshPanelIfFacilityOpen(facilityType) {
+if (typeof sel !== "undefined" && sel === "Slot" && typeof selSlot !== "undefined" && selSlot && selSlot.type === facilityType && typeof refreshPanel === "function") {
+refreshPanel();
+}
+}
+function _prepareIsoFacilityWalk(g, route) {
+const p = g.pawn;
+const startUvz = (typeof logicalToIsoUVZ === "function")
+? logicalToIsoUVZ(p.pos.x, p.pos.y, p)
+: getSlotCenterIso(g.room.floor.idx, g.room.idx);
+p.guest = g;
+p.wander = false;
+p.exercise = false;
+p.tennis = false;
+p.spa = false;
+p.cafe = false;
+p.sleeping = false;
+p.visible = true;
+p.speed = WalkSpeed;
+p.path = [];
+p.onArrive = null;
+p.iso = { u: startUvz.u, v: startUvz.v, z: startUvz.z };
+p.isoPath = route;
+return p;
+}
+function _resetGuestIsoFlowReturn(g) {
+g.tennisInFlow = false;
+g.tennisElapsed = 0;
+g.spaInFlow = false;
+g.spaElapsed = 0;
+g.cafeInFlow = false;
+g.cafeElapsed = 0;
+g.toiletInFlow = false;
+g.toiletElapsed = 0;
+g.gymInFlow = false;
+g.gymElapsed = 0;
+}
+function _reconcileFacilityBusy(type, busyKey, guestKey, idxKey, sTo, sIn, capMax) {
 for (const s of allSlots) {
-if (s.type !== "Gym" || s.floor.state !== "Built") continue;
-for (let k = 0; k < s.gymLevel; k++) {
-if (s.gymBusy[k]) continue;
-s.gymBusy[k] = true; g.gym = s; g.gymIdx = k; g.state = "ToGym";
-const p = g.pawn; p.wander = false; p.speed = WalkSpeed; p.path = [];
-addPath(p, floorOf(p.pos.y), s.floor.idx, s.X0 + 75 + 110 * k);
-p.onArrive = () => {
+const arr = s && s[busyKey];
+if (s.type !== type || !Array.isArray(arr)) continue;
+for (let k = 0; k < capMax; k++) {
+if (arr[k] && !guests.some(g => g && g[guestKey] === s && g[idxKey] === k && (g.state === sTo || g.state === sIn))) {
+arr[k] = false;
+}
+}
+}
+}
+function _rescueFacilityPawn(g, freeFn, slotProp, flowProp, elapsedProp, panelType) {
+if (!g) return;
+freeFn(g);
+g[slotProp] = null;
+const p = g.pawn;
+if (p) {
+p.spa = false;
+p.cafe = false;
+p.exercise = false;
+p.sleeping = false;
+p.visible = true;
+p.iso = null;
+p.isoPath = [];
+p.onIsoArrive = null;
+p.path = [];
+p.onArrive = null;
+}
+if (!g.room) { startLeaving(g); return; }
+if (p) p.pos = { x: g.room.X0 + SlotW * 0.5, y: g.room.floor.WalkY };
+g.state = "InRoom";
+g[elapsedProp] = 0;
+g[flowProp] = false;
+if (typeof startWander === "function") startWander(g);
+_refreshPanelIfFacilityOpen(panelType);
+}
+function freeGymSlot(g) {
+if (!g) return;
+if (g.gym && Array.isArray(g.gym.gymBusy)) {
+g.gym.gymBusy[g.gymIdx] = false;
+}
+g.gym = null;
+g.gymIdx = 0;
+g.gymInFlow = false;
+g.gymElapsed = 0;
+if (g.pawn) g.pawn.exercise = false;
+}
+function reconcileGymBusy() {
+_reconcileFacilityBusy("Gym", "gymBusy", "gym", "gymIdx", "ToGym", "Exercising", 3);
+}
+function rescueGymGuest(g) {
+_rescueFacilityPawn(g, freeGymSlot, "_returnGymSlot", "gymInFlow", "gymElapsed", "Gym");
+}
+function tryGoGym(g) {
+if (!g || !g.room || !g.pawn) return false;
+if (Math.random() > 0.7) return false;
+reconcileGymBusy();
+for (const s of allSlots) {
+if (s.type !== "Gym" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (typeof isGymConnected === "function" && !isGymConnected(s)) continue;
+const cap = Math.max(1, Math.min(3, s.gymLevel || 1));
+let freeK = -1;
+for (let k = 0; k < cap; k++) {
+if (!s.gymBusy[k]) { freeK = k; break; }
+}
+if (freeK < 0) continue;
+const route = (typeof buildIsoRouteToGym === "function") ? buildIsoRouteToGym(g.room, s, freeK) : null;
+if (!route || route.length === 0) continue;
+s.gymBusy[freeK] = true;
+g.gym = s;
+g.gymIdx = freeK;
+g.state = "ToGym";
+g.gymInFlow = true;
+g.gymElapsed = 0;
+const p = _prepareIsoFacilityWalk(g, route);
+p.onIsoArrive = () => {
 if (g.state !== "ToGym") return;
-g.state = "Exercising"; g.exLeft = ExerciseSec;
-g.pawn.exercise = true; g.pawn.facing = 1;
-reputation += GymPoints;
-floatText(g.pawn.pos.x, g.pawn.pos.y + 130, "+" + GymPoints + " puan (spor)", "#1a8c26");
-play("coin"); refreshHud();
-};
+if (s.type !== "Gym" || !s.floor || s.floor.state !== "Built" || s.onFire || (typeof isGymConnected === "function" && !isGymConnected(s))) {
+rescueGymGuest(g);
 return;
 }
+g.state = "Exercising";
+g.exLeft = ExerciseSec;
+p.exercise = true;
+p.facing = 1;
+reputation += GymPoints;
+floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.6, "+" + GymPoints + " puan (spor)", "#1a8c26");
+play("coin");
+refreshHud();
+_refreshPanelIfFacilityOpen("Gym");
+};
+_refreshPanelIfFacilityOpen("Gym");
+return true;
 }
+return false;
 }
 function endExercise(g) {
-g.pawn.exercise = false;
-if (g.gym) { g.gym.gymBusy[g.gymIdx] = false; g.gym = null; }
+if (!g || g.state !== "Exercising") return;
+const s = g.gym;
+freeGymSlot(g);
+g._returnGymSlot = s;
+g.gymInFlow = true;
+_refreshPanelIfFacilityOpen("Gym");
 returnToRoom(g);
 }
 function returnToRoom(g) {
@@ -7233,28 +7355,42 @@ p.speed = WalkSpeed;
 if (p.iso) {
 const fromSpaSlot = g._returnSpaSlot || (g.spaInFlow ? g.spa : null);
 const fromCafeSlot = g._returnCafeSlot || (g.cafeInFlow ? g.cafe : null);
+const fromToiletSlot = g._returnToiletSlot || (g.toiletInFlow ? g.toilet : null);
+const fromGymSlot = g._returnGymSlot || (g.gymInFlow ? g.gym : null);
 g._returnSpaSlot = null;
 g._returnCafeSlot = null;
+g._returnToiletSlot = null;
+g._returnGymSlot = null;
 if (g.spa) freeSpaSlot(g);
 if (g.cafe) freeCafeSlot(g);
-const fromTennis = !fromSpaSlot && !fromCafeSlot && p.iso.v >= 1150;
-const rRoute = (fromTennis && typeof buildIsoRouteFromTennisCourtToRoom === "function")
-? buildIsoRouteFromTennisCourtToRoom(p.iso, g.tennisIdx || 0, g.room)
-: (fromSpaSlot && typeof buildIsoRouteFromSpaToRoom === "function")
-? buildIsoRouteFromSpaToRoom(fromSpaSlot, g.room)
-: (fromCafeSlot && typeof buildIsoRouteFromCafeToRoom === "function")
-? buildIsoRouteFromCafeToRoom(fromCafeSlot, g.room)
-: null;
-const connOk = fromTennis
-? (typeof isTennisClubConnected === "function" && isTennisClubConnected())
-: fromSpaSlot
-? (typeof isSpaConnected === "function" && isSpaConnected(fromSpaSlot))
-: (fromCafeSlot && typeof isCafeConnected === "function" && isCafeConnected(fromCafeSlot));
+if (g.toilet) freeToiletSlot(g);
+if (g.gym) freeGymSlot(g);
+const fromTennis = !fromSpaSlot && !fromCafeSlot && !fromToiletSlot && !fromGymSlot && p.iso.v >= 1150;
+let rRoute = null;
+let connOk = false;
+if (fromTennis) {
+rRoute = typeof buildIsoRouteFromTennisCourtToRoom === "function" ? buildIsoRouteFromTennisCourtToRoom(p.iso, g.tennisIdx || 0, g.room) : null;
+connOk = typeof isTennisClubConnected === "function" && isTennisClubConnected();
+} else if (fromSpaSlot) {
+rRoute = typeof buildIsoRouteFromSpaToRoom === "function" ? buildIsoRouteFromSpaToRoom(fromSpaSlot, g.room) : null;
+connOk = typeof isSpaConnected === "function" && isSpaConnected(fromSpaSlot);
+} else if (fromCafeSlot) {
+rRoute = typeof buildIsoRouteFromCafeToRoom === "function" ? buildIsoRouteFromCafeToRoom(fromCafeSlot, g.room) : null;
+connOk = typeof isCafeConnected === "function" && isCafeConnected(fromCafeSlot);
+} else if (fromToiletSlot) {
+rRoute = typeof buildIsoRouteFromToiletToRoom === "function" ? buildIsoRouteFromToiletToRoom(fromToiletSlot, g.room) : null;
+connOk = typeof isToiletConnected === "function" && isToiletConnected(fromToiletSlot);
+} else if (fromGymSlot) {
+rRoute = typeof buildIsoRouteFromGymToRoom === "function" ? buildIsoRouteFromGymToRoom(fromGymSlot, g.room) : null;
+connOk = typeof isGymConnected === "function" && isGymConnected(fromGymSlot);
+}
 if (rRoute && rRoute.length > 0 && connOk) {
 g.state = "ToRoom";
 if (fromTennis) g.tennisInFlow = true;
 if (fromSpaSlot) g.spaInFlow = true;
 if (fromCafeSlot) g.cafeInFlow = true;
+if (fromToiletSlot) g.toiletInFlow = true;
+if (fromGymSlot) g.gymInFlow = true;
 p.path = [];
 p.onArrive = null;
 p.visible = true;
@@ -7262,12 +7398,7 @@ p.isoPath = rRoute;
 p.onIsoArrive = () => {
 p.iso = null;
 p.visible = true;
-g.tennisInFlow = false;
-g.tennisElapsed = 0;
-g.spaInFlow = false;
-g.spaElapsed = 0;
-g.cafeInFlow = false;
-g.cafeElapsed = 0;
+_resetGuestIsoFlowReturn(g);
 onGuestInRoom(g);
 };
 return;
@@ -7276,12 +7407,7 @@ p.iso = null;
 p.isoPath = [];
 p.onIsoArrive = null;
 p.visible = true;
-g.tennisInFlow = false;
-g.tennisElapsed = 0;
-g.spaInFlow = false;
-g.spaElapsed = 0;
-g.cafeInFlow = false;
-g.cafeElapsed = 0;
+_resetGuestIsoFlowReturn(g);
 }
 g.state = "ToRoom"; p.path = [];
 addPath(p, floorOf(p.pos.y), g.room.floor.idx, g.room.X0 + SlotW * 0.5);
@@ -7430,30 +7556,70 @@ g.tennisInFlow = false;
 if (typeof startWander === "function") startWander(g);
 _refreshPanelIfTennisOpen();
 }
+function freeToiletSlot(g) {
+if (!g) return;
+if (g.toilet && Array.isArray(g.toilet.toiletBusy)) {
+g.toilet.toiletBusy[g.toiletIdx] = false;
+}
+g.toilet = null;
+g.toiletIdx = 0;
+g.toiletInFlow = false;
+g.toiletElapsed = 0;
+if (g.pawn) g.pawn.visible = true;
+}
+function reconcileToiletBusy() {
+_reconcileFacilityBusy("Toilet", "toiletBusy", "toilet", "toiletIdx", "ToToilet", "UsingToilet", 2);
+}
+function rescueToiletGuest(g) {
+_rescueFacilityPawn(g, freeToiletSlot, "_returnToiletSlot", "toiletInFlow", "toiletElapsed", "Toilet");
+}
 function tryGoToilet(g) {
-if (Math.random() > 0.6) return;
+if (!g || !g.room || !g.pawn) return false;
+if (Math.random() > 0.6) return false;
+reconcileToiletBusy();
 for (const s of allSlots) {
-if (s.type !== "Toilet" || s.floor.state !== "Built") continue;
+if (s.type !== "Toilet" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (typeof isToiletConnected === "function" && !isToiletConnected(s)) continue;
+let freeK = -1;
 for (let k = 0; k < 2; k++) {
-if (s.toiletBusy[k]) continue;
-s.toiletBusy[k] = true; g.toilet = s; g.toiletIdx = k; g.state = "ToToilet";
-const p = g.pawn; p.wander = false; p.speed = WalkSpeed; p.path = [];
-addPath(p, floorOf(p.pos.y), s.floor.idx, s.X0 + 90 + 140 * k);
-p.onArrive = () => {
+if (!s.toiletBusy[k]) { freeK = k; break; }
+}
+if (freeK < 0) continue;
+const route = (typeof buildIsoRouteToToilet === "function") ? buildIsoRouteToToilet(g.room, s, freeK) : null;
+if (!route || route.length === 0) continue;
+s.toiletBusy[freeK] = true;
+g.toilet = s;
+g.toiletIdx = freeK;
+g.state = "ToToilet";
+g.toiletInFlow = true;
+g.toiletElapsed = 0;
+const p = _prepareIsoFacilityWalk(g, route);
+p.onIsoArrive = () => {
 if (g.state !== "ToToilet") return;
-g.state = "UsingToilet"; g.exLeft = 5; g.pawn.visible = false;
-};
+if (s.type !== "Toilet" || !s.floor || s.floor.state !== "Built" || s.onFire || (typeof isToiletConnected === "function" && !isToiletConnected(s))) {
+rescueToiletGuest(g);
 return;
 }
+g.state = "UsingToilet";
+g.exLeft = 5;
+p.visible = false;
+_refreshPanelIfFacilityOpen("Toilet");
+};
+_refreshPanelIfFacilityOpen("Toilet");
+return true;
 }
+return false;
 }
 function endToilet(g) {
-g.pawn.visible = true;
-if (g.toilet) {
-g.toilet.toiletBusy[g.toiletIdx] = false;
-g.toilet.maintenance = Math.max(0, g.toilet.maintenance - 6);
-g.toilet = null;
+if (!g || g.state !== "UsingToilet") return;
+const s = g.toilet;
+if (s) {
+s.maintenance = Math.max(0, s.maintenance - 6);
 }
+freeToiletSlot(g);
+g._returnToiletSlot = s;
+g.toiletInFlow = true;
+_refreshPanelIfFacilityOpen("Toilet");
 returnToRoom(g);
 }
 function sendKidsToPark(g) {
@@ -7786,8 +7952,9 @@ reflowQueue();
 const p = g.pawn;
 const startIso = (p && p.iso) ? p.iso : { u: 940, v: 505, z: 8 };
 const cand = allSlots.filter(s => {
-if (!s || !s.floor || s.floor.state !== "Built" || s.type !== "Room") return false;
-if (typeof isDoorFacilityConnected === "function" && !isDoorFacilityConnected(s, "Room")) return false;
+if (!s || !s.floor || s.floor.state !== "Built") return false;
+if (s.type !== "Room" && s.type !== "Toilet") return false;
+if (typeof isDoorFacilityConnected === "function" && !isDoorFacilityConnected(s, s.type)) return false;
 const r = (typeof buildIsoRouteToRoom === "function") ? buildIsoRouteToRoom(startIso, s) : [];
 return Array.isArray(r) && r.length > 0;
 });
@@ -7804,7 +7971,7 @@ g.attackTimer = 0;
 g.hasBubble = true;
 g.bubbleLines = [g.name, "Kırıp dökeceğim!"];
 play("alarm");
-const targetName = targetSlot.roomNo + ". odaya";
+const targetName = targetSlot.type === "Room" ? (targetSlot.roomNo + ". odaya") : "Genel WC'ye";
 log("⚠️ " + g.name + " öfkelendi! Zarar vermek için " + targetName + " gidiyor!");
 p.wander = false;
 p.speed = WalkSpeed * 1.2;
@@ -8090,13 +8257,16 @@ play("alarm");
 log(s.roomNo + ". odada YANGIN çıktı! Odayı seçip söndür.");
 floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.6, "YANGIN!", "#d91a1a");
 const g = s.guest;
-if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis" || g.state === "ToSpa" || g.state === "InSpa" || g.state === "ToCafe" || g.state === "InCafe")) {
+if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis" || g.state === "ToSpa" || g.state === "InSpa" || g.state === "ToCafe" || g.state === "InCafe" || g.state === "ToGym" || g.state === "Exercising" || g.state === "ToToilet" || g.state === "UsingToilet")) {
 if (typeof freeTennisSlot === "function") freeTennisSlot(g);
 if (typeof freeSpaSlot === "function") freeSpaSlot(g);
 if (typeof freeCafeSlot === "function") freeCafeSlot(g);
+if (typeof freeGymSlot === "function") freeGymSlot(g);
+if (typeof freeToiletSlot === "function") freeToiletSlot(g);
 const p = g.pawn;
 g.state = "Fleeing";
 p.visible = true;
+p.exercise = false;
 p.sleeping = false;
 p.tennis = false;
 p.spa = false;
@@ -8257,7 +8427,7 @@ daysLeft: vipGuest.daysLeft || vipGuest.days || 1,
 price: BodyguardDailyPrice, attempts: 0,
 wants: new Array(ItemCount).fill(false), patience: 25, maxPatience: 25,
 atSpot: false, arrivedOnce: true, state: "ToRoom",
-room: bgRoom, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0,
+room: bgRoom, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0, gymInFlow: false, gymElapsed: 0, toiletInFlow: false, toiletElapsed: 0,
 gymTimer: 999, toiletTimer: 999, parkTimer: 999, spaTimer: 999, cafeTimer: 999,
 spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
 cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
@@ -9411,6 +9581,12 @@ return isDoorFacilityConnected(s, "Spa");
 function isCafeConnected(s) {
 return isDoorFacilityConnected(s, "Cafe");
 }
+function isToiletConnected(s) {
+return isDoorFacilityConnected(s, "Toilet");
+}
+function isGymConnected(s) {
+return isDoorFacilityConnected(s, "Gym");
+}
 function getSpaStationIso(spaSlot, stationIdx = 0) {
 const b = slotIsoBox(spaSlot.floor.idx, spaSlot.idx);
 if (stationIdx === 1) return { u: b.u0 + 160, v: b.v0 + 153, z: b.z0 + 8 };
@@ -9422,6 +9598,16 @@ const b = slotIsoBox(cafeSlot.floor.idx, cafeSlot.idx);
 if (stationIdx === 1) return { u: b.u0 + 104, v: b.v0 + 96, z: b.z0 + 8 };
 if (stationIdx === 2) return { u: b.u0 + 104, v: b.v0 + 126, z: b.z0 + 8 };
 return { u: b.u0 + 104, v: b.v0 + 66, z: b.z0 + 8 };
+}
+function getToiletStationIso(toiletSlot, stationIdx = 0) {
+const b = slotIsoBox(toiletSlot.floor.idx, toiletSlot.idx);
+if (stationIdx === 1) return { u: b.u0 + 149, v: b.v0 + 114, z: b.z0 + 8 };
+return { u: b.u0 + 61, v: b.v0 + 114, z: b.z0 + 8 };
+}
+function getGymStationIso(gymSlot, stationIdx = 0) {
+const b = slotIsoBox(gymSlot.floor.idx, gymSlot.idx);
+const k = Math.max(0, Math.min(2, stationIdx || 0));
+return { u: b.u0 + 50 + k * 56, v: b.v0 + 130, z: b.z0 + 8 };
 }
 function _appendDoorSlotCorridorRoute(path, fromF, fromCorrIdx, toF, toCorrIdx) {
 if (fromF === toF) {
@@ -9464,23 +9650,38 @@ path.push(toDoor.inside);
 path.push(finalTarget || toDoor.roomTarget);
 return path;
 }
+function _buildIsoRouteBackToRoom(facilitySlot, room) {
+if (!facilitySlot || !room || !room.floor) return null;
+const toDoor = getRoomDoorPoints(room);
+return buildIsoRouteBetweenDoorSlots(facilitySlot, room, toDoor ? toDoor.roomTarget : null);
+}
 function buildIsoRouteToSpa(room, spaSlot, stationIdx = 0) {
 if (!isSpaConnected(spaSlot)) return null;
 return buildIsoRouteBetweenDoorSlots(room, spaSlot, getSpaStationIso(spaSlot, stationIdx));
 }
 function buildIsoRouteFromSpaToRoom(spaSlot, room) {
-if (!spaSlot || !room || !room.floor) return null;
-const toDoor = getRoomDoorPoints(room);
-return buildIsoRouteBetweenDoorSlots(spaSlot, room, toDoor ? toDoor.roomTarget : null);
+return _buildIsoRouteBackToRoom(spaSlot, room);
 }
 function buildIsoRouteToCafe(room, cafeSlot, stationIdx = 0) {
 if (!isCafeConnected(cafeSlot)) return null;
 return buildIsoRouteBetweenDoorSlots(room, cafeSlot, getCafeStationIso(cafeSlot, stationIdx));
 }
 function buildIsoRouteFromCafeToRoom(cafeSlot, room) {
-if (!cafeSlot || !room || !room.floor) return null;
-const toDoor = getRoomDoorPoints(room);
-return buildIsoRouteBetweenDoorSlots(cafeSlot, room, toDoor ? toDoor.roomTarget : null);
+return _buildIsoRouteBackToRoom(cafeSlot, room);
+}
+function buildIsoRouteToToilet(room, toiletSlot, stationIdx = 0) {
+if (!isToiletConnected(toiletSlot)) return null;
+return buildIsoRouteBetweenDoorSlots(room, toiletSlot, getToiletStationIso(toiletSlot, stationIdx));
+}
+function buildIsoRouteFromToiletToRoom(toiletSlot, room) {
+return _buildIsoRouteBackToRoom(toiletSlot, room);
+}
+function buildIsoRouteToGym(room, gymSlot, stationIdx = 0) {
+if (!isGymConnected(gymSlot)) return null;
+return buildIsoRouteBetweenDoorSlots(room, gymSlot, getGymStationIso(gymSlot, stationIdx));
+}
+function buildIsoRouteFromGymToRoom(gymSlot, room) {
+return _buildIsoRouteBackToRoom(gymSlot, room);
 }
 function unlock(i) {
 if (typeof checkAchievements === "function") checkAchievements();
@@ -12093,7 +12294,12 @@ infoText.textContent = "🔥 Doğalgaz Dairesi " + coordStr + "  •  Vana: " + 
 setAct(0, gasOn ? "🔒 Vanayı Kapat" : "🔓 Vanayı Aç", true, true);
 setAct(1, maintLabel, true, cur.maintenance < 99.5);
 } else if (cur.type === "Gym") {
-infoText.textContent = "🏋️ Spor Odası (Seviye " + cur.gymLevel + "/3) " + coordStr + "  •  Aynı anda " + cur.gymLevel + " kişi spor yapabilir (+" + GymPoints + " İtibar).";
+const lv = Math.max(1, Math.min(3, cur.gymLevel || 1));
+const conn = (typeof isGymConnected === "function") ? isGymConnected(cur) : true;
+const busyArr = Array.isArray(cur.gymBusy) ? cur.gymBusy : [false, false, false];
+const busyCnt = busyArr.slice(0, lv).filter(Boolean).length;
+infoText.textContent = "🏋️ Spor Odası (Seviye " + lv + "/3) " + coordStr + "  •  Aynı anda " + lv + " kişi spor yapabilir (+" + GymPoints + " İtibar).\n" +
+(conn ? "🟢 Açık" : "⚠️ Spor kapalı: koridorla bağla") + " • Dolu: " + busyCnt + "/" + lv;
 if (cur.gymLevel < 3) setAct(0, "⬆️ Yükselt\n" + gymUpgradeCost(cur.gymLevel) + " TL", true, true);
 else setAct(0, "✅ Son Seviye", true, false, true);
 const availWalls = getRoomAvailableDoorWalls(cur);
@@ -12176,7 +12382,11 @@ const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
 setAct(4, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
 }
 } else if (cur.type === "Toilet") {
-infoText.textContent = "🚽 Genel Banyo & WC (2 Kabin) " + coordStr + "  •  Bakım: %" + Math.round(cur.maintenance);
+const conn = (typeof isToiletConnected === "function") ? isToiletConnected(cur) : true;
+const busyArr = Array.isArray(cur.toiletBusy) ? cur.toiletBusy : [false, false];
+const busyCnt = busyArr.slice(0, 2).filter(Boolean).length;
+infoText.textContent = "🚽 Genel Banyo & WC (2 Kabin) " + coordStr + "  •  Bakım: %" + Math.round(cur.maintenance) + "\n" +
+(conn ? "🟢 Açık" : "⚠️ WC kapalı: koridorla bağla") + " • Dolu: " + busyCnt + "/2";
 setAct(0, maintLabel, true, cur.maintenance < 99.5);
 const availWalls = getRoomAvailableDoorWalls(cur);
 if (availWalls.length > 1) {
@@ -12335,17 +12545,23 @@ else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif 
 offerBtn.textContent = "💬 Teklif Ver";
 }
 }
-const APP_VERSION_CODE = 88;
-const APP_VERSION_NAME = "1.9.80-beta";
+const APP_VERSION_CODE = 89;
+const APP_VERSION_NAME = "1.9.81-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.81-beta",
+title: "Tuvalet ve spor odası rotaları",
+latest: true,
+notes: "• 🚽🏋️ İzometrik Rotalar: Misafirler tuvalet ve spor odasına koridor, kapı ve asansör rotasını izleyerek gider ve aynı yoldan odasına döner; bağlı olmayan tesisler kapalı gösterilir ve tehdit misafiri tuvalete de yürüyebilir."
+},
+{
 ver: "v1.9.80-beta",
 title: "Eşya yerleştirme iyileştirmesi",
-latest: true,
+latest: false,
 notes: "• 🛠️ Düzenleme Modu: Odalara dokunurken yanlışlıkla eşya seçilmesini önleyen '🛠️ Eşyaları Düzenle / ✅ Bitti' modu eklendi.\n• ✨ Akıllı Otomatik Diz & Yer Kontrolü: Eşyalar 3×4 odada çakışmasız otomatik yerleşir, yer kalmadığında satın alma engellenir."
 },
 {
@@ -19721,7 +19937,12 @@ if (!isSel) addHitPoly(lblPoly, () => selectSlot(s));
 for (let k = 0; k < s.gymLevel; k++) {
 drawGymEquipment(u0 + 28 + k * 56, v0 + 45, u0 + 72 + k * 56, v0 + 115, z0, k % 3);
 }
+const gymConn = (typeof isGymConnected === "function") ? isGymConnected(s) : true;
+if (!gymConn) {
+isoLabel("⚠️ SPOR (Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 72, 10.5, "#991b1b", "#fef2f2", 5, 2.2);
+} else {
 isoLabel("🏋️ SPOR Sv." + s.gymLevel, (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 72, 11, "#fff8eb", "#1f4e78");
+}
 addHitPoly(roomPoly, () => {
 if (pending && s.Ready && !s.guest && !s.onFire) {
 selSlot = s;
@@ -19738,7 +19959,12 @@ drawToiletCabin(u0 + 114, v0 + 26, u0 + 184, v0 + 96, z0);
 isoBox(u0 + 16, v0 + 118, u0 + 34, v0 + 166, z0 + 2, z0 + 24, p.porcelainTop, p.porcelainL, p.porcelainR, OUTLINE_COL, 1.3);
 isoBox(u0 + 18, v0 + 139, u0 + 23, v0 + 144, z0 + 24, z0 + 29, "#cbd5e1", "#94a3b8", "#64748b", null, 0);
 isoBox(u0 + 11, v0 + 124, u0 + 13, v0 + 160, z0 + 32, z0 + 52, p.toiletMirrorTop, p.toiletMirrorL, p.toiletMirrorR, OUTLINE_COL, 1);
+const toiletConn = (typeof isToiletConnected === "function") ? isToiletConnected(s) : true;
+if (!toiletConn) {
+isoLabel("⚠️ WC (Kapalı)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 10.5, "#991b1b", "#fef2f2", 5, 2.2);
+} else {
 isoLabel("🚽 GENEL WC (%" + Math.round(s.maintenance) + ")", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 76, 11, "#fff8eb", "#2b6cb0");
+}
 addHitPoly(roomPoly, () => {
 if (pending && s.Ready && !s.guest && !s.onFire) {
 selSlot = s;
@@ -23626,12 +23852,32 @@ if (g.spaElapsed > 90 && typeof rescueSpaGuest === "function") rescueSpaGuest(g)
 } else if (g.state === "ToRoom" && g.cafeInFlow) {
 g.cafeElapsed = (g.cafeElapsed || 0) + dt;
 if (g.cafeElapsed > 90 && typeof rescueCafeGuest === "function") rescueCafeGuest(g);
+} else if (g.state === "ToRoom" && g.gymInFlow) {
+g.gymElapsed = (g.gymElapsed || 0) + dt;
+if (g.gymElapsed > 90 && typeof rescueGymGuest === "function") rescueGymGuest(g);
+} else if (g.state === "ToRoom" && g.toiletInFlow) {
+g.toiletElapsed = (g.toiletElapsed || 0) + dt;
+if (g.toiletElapsed > 90 && typeof rescueToiletGuest === "function") rescueToiletGuest(g);
+} else if (g.state === "ToGym" || g.state === "Exercising") {
+g.gymElapsed = (g.gymElapsed || 0) + dt;
+if (g.gymElapsed > 90) {
+if (typeof rescueGymGuest === "function") rescueGymGuest(g);
+} else if (!g.gym || g.gym.type !== "Gym" || !g.gym.floor || g.gym.floor.state !== "Built" || g.gym.onFire || (typeof isGymConnected === "function" && !isGymConnected(g.gym))) {
+if (typeof rescueGymGuest === "function") rescueGymGuest(g);
 } else if (g.state === "Exercising") {
 g.exLeft -= dt;
 if (g.exLeft <= 0) endExercise(g);
+}
+} else if (g.state === "ToToilet" || g.state === "UsingToilet") {
+g.toiletElapsed = (g.toiletElapsed || 0) + dt;
+if (g.toiletElapsed > 90) {
+if (typeof rescueToiletGuest === "function") rescueToiletGuest(g);
+} else if (!g.toilet || g.toilet.type !== "Toilet" || !g.toilet.floor || g.toilet.floor.state !== "Built" || g.toilet.onFire || (typeof isToiletConnected === "function" && !isToiletConnected(g.toilet))) {
+if (typeof rescueToiletGuest === "function") rescueToiletGuest(g);
 } else if (g.state === "UsingToilet") {
 g.exLeft -= dt;
 if (g.exLeft <= 0) endToilet(g);
+}
 } else if (g.state === "Attacking") {
 g.attackTimer = (g.attackTimer || 0) + dt;
 if (g.attackTimer > 90 || !g.pawn || g.pawn.dead) {
