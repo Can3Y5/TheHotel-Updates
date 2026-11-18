@@ -1706,6 +1706,16 @@ overflow-y: auto;
 overflow-x: hidden;
 box-sizing: border-box;
 }
+.fr-likes-summary {
+background: #fff1f2;
+border: 1.5px solid #fecdd3;
+border-radius: 8px;
+padding: 6px 10px;
+font-size: 12px;
+font-weight: 900;
+color: #9f1239;
+text-align: center;
+}
 .fr-card {
 background: #ffffff;
 border: 2px solid #3a281f;
@@ -1889,16 +1899,73 @@ white-space: nowrap;
 overflow: hidden;
 text-overflow: ellipsis;
 }
+.vb-like-btn {
+flex-shrink: 0;
+background: linear-gradient(180deg, #ffe4e6 0%, #fda4af 100%);
+border: 2px solid #3a281f;
+border-radius: 8px;
+padding: 5px 9px;
+font-size: 11px;
+font-weight: 900;
+color: #881337;
+cursor: pointer;
+}
+.vb-like-btn.is-liked,
+.vb-like-btn:disabled {
+background: #f1f5f9;
+color: #475569;
+border-color: #64748b;
+cursor: default;
+opacity: 0.9;
+}
+@keyframes likePopAnim {
+0% { transform: scale(1); }
+45% { transform: scale(1.16); }
+100% { transform: scale(1); }
+}
+.vb-like-btn.pop-anim {
+animation: likePopAnim 0.36s ease-out;
+}
 #btn-exit-visit {
 flex-shrink: 0;
 background: #fee2e2;
 border: 2px solid #3a281f;
 border-radius: 8px;
-padding: 5px 10px;
-font-size: 11.5px;
+padding: 5px 9px;
+font-size: 11px;
 font-weight: 900;
 color: #7f1d1d;
 cursor: pointer;
+}
+.vb-sub-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 6px;
+flex-wrap: wrap;
+}
+#visit-like-msg {
+font-size: 11px;
+font-weight: 800;
+color: #9f1239;
+}
+#like-notif-toast {
+position: fixed;
+top: max(68px, calc(12px + var(--sat)));
+left: 50%;
+transform: translateX(-50%);
+max-width: min(92vw, 380px);
+background: #fff1f2;
+border: 2.5px solid #be123c;
+border-radius: 12px;
+padding: 8px 14px;
+font-size: 12.5px;
+font-weight: 900;
+color: #881337;
+box-shadow: 0 4px 0 #881337, 0 8px 18px rgba(0,0,0,0.28);
+z-index: 970;
+pointer-events: none;
+text-align: center;
 }
 #visit-floor-tabs {
 display: flex;
@@ -2249,7 +2316,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.82-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.83-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -2412,10 +2479,16 @@ text-align: center;
   <div id="visit-banner" style="display:none;">
     <div class="vb-top">
       <div id="visit-banner-title">🏨 Otel Ziyareti</div>
+      <button type="button" id="btn-like-visit" class="vb-like-btn">❤️ Beğen</button>
       <button type="button" id="btn-exit-visit">✖ Ziyareti Bitir</button>
     </div>
-    <div id="visit-floor-tabs"></div>
+    <div class="vb-sub-row">
+      <div id="visit-floor-tabs"></div>
+      <span id="visit-like-msg" style="display:none;"></span>
+    </div>
   </div>
+  <!-- BEĞENİ BİLDİRİM TOAST (O3) -->
+  <div id="like-notif-toast" style="display:none;"></div>
   <!-- ARKADAŞLAR PENCERESİ (O2) -->
   <div id="friends-modal">
     <div class="onl-box fr-box">
@@ -2424,6 +2497,7 @@ text-align: center;
         <button type="button" id="btn-close-friends">✕ Kapat</button>
       </div>
       <div class="fr-body">
+        <div id="fr-total-likes-line" class="fr-likes-summary">❤️ Otelin toplam 0 beğeni aldı</div>
         <div class="fr-card">
           <div class="fr-card-lbl">Senin Arkadaş Kodun</div>
           <div class="fr-my-row">
@@ -12546,17 +12620,23 @@ else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif 
 offerBtn.textContent = "💬 Teklif Ver";
 }
 }
-const APP_VERSION_CODE = 90;
-const APP_VERSION_NAME = "1.9.82-beta";
+const APP_VERSION_CODE = 91;
+const APP_VERSION_NAME = "1.9.83-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.83-beta",
+title: "Otel beğenisi ve bildirim",
+latest: true,
+notes: "• ❤️ Otel Beğenisi: Arkadaşının otelini ziyaret ederken günde bir kez beğenebilirsin.\n• 🔔 Beğeni Bildirimi: Otelini beğenen arkadaşların oyun içinde bildirim olarak görünür ve Arkadaşlar penceresinde toplam beğeni sayısı listelenir."
+},
+{
 ver: "v1.9.82-beta",
 title: "Görüntü netliği ve çözünürlük iyileştirmesi",
-latest: true,
+latest: false,
 notes: "• ✨ Keskin Sahne Çizimi: Çözünürlük üst sınırı 2× DPR olarak güncellendi (yalnızca 30 FPS altında 1.5×), yüksek kalite kenar yumuşatma ve tam çözünürlüklü atmosfer katmanı ile bulanıklık ve kumlu benekler kaldırıldı."
 },
 {
@@ -21686,6 +21766,7 @@ showcaseDirty: false,
 showcaseBusy: false,
 friendCode: null,
 followerCount: 0,
+totalLikes: 0,
 migratedFollowersDone: false,
 autoSyncTimer: null,
 retryTimer: null,
@@ -21793,11 +21874,13 @@ await uploadCloudSave({ auto: true, reason: "initial_upload", _metaChecked: true
 if (typeof uploadProfileShowcase === "function") uploadProfileShowcase({ immediate: true });
 if (typeof migrateLegacyFollowingFollowers === "function") migrateLegacyFollowingFollowers();
 if (typeof refreshFollowerCountBadge === "function") refreshFollowerCountBadge();
+if (typeof checkAndNotifyNewLikes === "function") checkAndNotifyNewLikes();
 return;
 }
 if (typeof ensureFriendCodeAndProfile === "function") ensureFriendCodeAndProfile();
 if (typeof migrateLegacyFollowingFollowers === "function") migrateLegacyFollowingFollowers();
 if (typeof refreshFollowerCountBadge === "function") refreshFollowerCountBadge();
+if (typeof checkAndNotifyNewLikes === "function") checkAndNotifyNewLikes();
 const cloudHash = (typeof computeSaveHash === "function") ? computeSaveHash(meta.rawJson || "") : "";
 if (cloudHash === localHash) {
 ONLINE_STATE.lastUploadedHash = localHash;
@@ -21955,6 +22038,7 @@ ONLINE_STATE.lastShowcaseHash = "";
 ONLINE_STATE.lastShowcaseMs = 0;
 ONLINE_STATE.showcaseDirty = false;
 ONLINE_STATE.followerCount = 0;
+ONLINE_STATE.totalLikes = 0;
 ONLINE_STATE.migratedFollowersDone = false;
 ONLINE_STATE.status = "idle";
 notifyOnlineStateChange();
@@ -21988,6 +22072,7 @@ ONLINE_STATE.lastShowcaseHash = "";
 ONLINE_STATE.lastShowcaseMs = 0;
 ONLINE_STATE.showcaseDirty = false;
 ONLINE_STATE.followerCount = 0;
+ONLINE_STATE.totalLikes = 0;
 ONLINE_STATE.migratedFollowersDone = false;
 ONLINE_STATE.lastSyncMs = 0;
 ONLINE_STATE.lastUploadedHash = "";
@@ -22190,6 +22275,7 @@ notifyOnlineStateChange();
 function scheduleOnlineAutoSync() {
 if (typeof window !== "undefined" && (window.saveLocked || window.visitMode)) return;
 if (!ONLINE_STATE.initialized || !ONLINE_STATE.user) return;
+if (typeof checkAndNotifyNewLikes === "function") checkAndNotifyNewLikes().catch(() => {});
 if (ONLINE_STATE.showcaseDirty && typeof uploadProfileShowcase === "function") {
 uploadProfileShowcase({ auto: true }).catch(() => {});
 }
@@ -22239,8 +22325,9 @@ return;
 if (!ONLINE_STATE.initialized) initFirebaseOnline();
 if (!ONLINE_STATE.user && !ONLINE_STATE.manualSignOut) {
 _tryAutoAnonSignIn();
-} else if (ONLINE_STATE.user && ONLINE_STATE.dirty) {
-triggerCloudSyncNow("online_recover");
+} else if (ONLINE_STATE.user) {
+if (typeof checkAndNotifyNewLikes === "function") checkAndNotifyNewLikes();
+if (ONLINE_STATE.dirty) triggerCloudSyncNow("online_recover");
 }
 });
 window.addEventListener("offline", () => {
@@ -22598,7 +22685,12 @@ const LAST_SHOWCASE_HASH_KEY = "hotelore_last_showcase_hash_v1";
 const LAST_SHOWCASE_MS_KEY = "hotelore_last_showcase_ms_v1";
 const FOLLOWERS_SEEN_COUNT_KEY = "hotelore_followers_seen_count_v1";
 const HIDDEN_DELETED_FOLLOWERS_KEY = "hotelore_hidden_deleted_followers_v1";
+const LIKES_SEEN_AT_KEY = "hotelore_likes_seen_at_v1";
+const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const LIKES_CHECK_INTERVAL_MS = 120000;
 let _migratingFollowers = false;
+let _lastLikesCheckMs = 0;
+let _likesCheckBusy = false;
 function _withTimeout(promise, ms = 6000) {
 return Promise.race([
 promise,
@@ -23134,18 +23226,194 @@ const flwPromises = [];
 flwSnap.forEach(doc => flwPromises.push(doc.ref.delete().catch(() => {})));
 await Promise.all(flwPromises);
 } catch (_) {}
+try {
+const likeSnap = await _withTimeout(db.collection("likes").doc(uid).collection("items").limit(200).get(), 4500);
+const likePromises = [];
+likeSnap.forEach(doc => likePromises.push(doc.ref.delete().catch(() => {})));
+await Promise.all(likePromises);
+} catch (_) {}
 try { await _withTimeout(db.collection("profiles").doc(uid).delete(), 4500); } catch (_) {}
 ONLINE_STATE.friendCode = null;
 ONLINE_STATE.lastShowcaseHash = "";
 ONLINE_STATE.lastShowcaseMs = 0;
 ONLINE_STATE.followerCount = 0;
+ONLINE_STATE.totalLikes = 0;
 ONLINE_STATE.migratedFollowersDone = false;
+_lastLikesCheckMs = 0;
 _writeLS(LAST_SHOWCASE_HASH_KEY, "");
 _writeLS(LAST_SHOWCASE_MS_KEY, "0");
 _writeLS(FOLLOWERS_SEEN_COUNT_KEY, "0");
 _writeLS(HIDDEN_DELETED_FOLLOWERS_KEY, "[]");
+_writeLS(LIKES_SEEN_AT_KEY, "");
 } catch (err) {
 if (typeof console !== "undefined" && console.warn) console.warn("[CascadeDelete]", err);
+}
+}
+function _likeTimestampToMs(val) {
+if (!val) return 0;
+if (typeof val === "number") return isFinite(val) ? val : 0;
+if (typeof val.toMillis === "function") {
+try { return Number(val.toMillis()) || 0; } catch (_) { return 0; }
+}
+if (typeof val.seconds === "number") {
+return val.seconds * 1000 + Math.floor((Number(val.nanoseconds) || 0) / 1e6);
+}
+if (val instanceof Date) return val.getTime() || 0;
+const parsed = Date.parse(val);
+return isNaN(parsed) ? 0 : parsed;
+}
+function formatLikeNotificationMessage(names) {
+const clean = (Array.isArray(names) ? names : []).map(n => sanitizeFriendDisplayName(n)).filter(Boolean);
+if (clean.length === 0) return "";
+if (clean.length === 1) return "❤️ " + clean[0] + " senin otelini beğendi";
+if (clean.length === 2) return "❤️ " + clean[0] + " ve " + clean[1] + " otelini beğendi";
+if (clean.length === 3) return "❤️ " + clean[0] + ", " + clean[1] + " ve " + clean[2] + " otelini beğendi";
+return "❤️ " + clean[0] + ", " + clean[1] + " ve " + (clean.length - 2) + " kişi daha otelini beğendi";
+}
+async function checkMyLikeStatusForOwner(ownerUid) {
+if (typeof navigator !== "undefined" && navigator.onLine === false) {
+return { ok: false, canLike: false, likedToday: false, count: 0 };
+}
+if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db || !ownerUid) {
+return { ok: false, canLike: false, likedToday: false, count: 0 };
+}
+const myUid = ONLINE_STATE.user.uid;
+if (ownerUid === myUid) {
+return { ok: true, self: true, canLike: false, likedToday: false, count: 0 };
+}
+try {
+const snap = await _withTimeout(
+ONLINE_STATE.db.collection("likes").doc(ownerUid).collection("items").doc(myUid).get(),
+5000
+);
+if (!snap.exists) {
+return { ok: true, exists: false, canLike: true, likedToday: false, count: 0, lastLikeMs: 0 };
+}
+const d = snap.data() || {};
+const lastLikeMs = _likeTimestampToMs(d.lastLikeAt);
+const likedToday = lastLikeMs > 0 && (Date.now() - lastLikeMs) < LIKE_COOLDOWN_MS;
+const count = Math.max(1, Math.floor(Number(d.count) || 1));
+return { ok: true, exists: true, canLike: !likedToday, likedToday, count, lastLikeMs };
+} catch (_) {
+return { ok: false, canLike: true, likedToday: false, count: 0 };
+}
+}
+async function likeVisitedHotel(ownerUid) {
+if (typeof navigator !== "undefined" && navigator.onLine === false) {
+return { ok: false, error: "Şu an beğenilemedi" };
+}
+if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+return { ok: false, error: "Şu an beğenilemedi" };
+}
+const myUid = ONLINE_STATE.user.uid;
+if (!ownerUid || ownerUid === myUid) {
+return { ok: false, self: true, error: "Şu an beğenilemedi" };
+}
+try {
+const serverTs = (typeof firebase !== "undefined" && firebase.firestore && firebase.firestore.FieldValue && typeof firebase.firestore.FieldValue.serverTimestamp === "function")
+? firebase.firestore.FieldValue.serverTimestamp()
+: Date.now();
+const rawName = (typeof ensurePlayerName === "function") ? ensurePlayerName() : "Misafir";
+const displayName = sanitizeFriendDisplayName(rawName).slice(0, 30);
+const ref = ONLINE_STATE.db.collection("likes").doc(ownerUid).collection("items").doc(myUid);
+const snap = await _withTimeout(ref.get(), 5000);
+if (!snap.exists) {
+await _withTimeout(ref.set({
+count: 1,
+lastLikeAt: serverTs,
+displayName
+}), 5000);
+return { ok: true, count: 1, likedToday: true };
+}
+const d = snap.data() || {};
+const lastLikeMs = _likeTimestampToMs(d.lastLikeAt);
+if (lastLikeMs > 0 && (Date.now() - lastLikeMs) < LIKE_COOLDOWN_MS) {
+return { ok: false, likedToday: true, error: "Bugün beğendin ✓" };
+}
+const prevCount = Math.max(1, Math.floor(Number(d.count) || 1));
+const nextCount = prevCount + 1;
+await _withTimeout(ref.update({
+count: nextCount,
+lastLikeAt: serverTs,
+displayName
+}), 5000);
+return { ok: true, count: nextCount, likedToday: true };
+} catch (err) {
+if (typeof console !== "undefined" && console.warn) console.warn("[LikeHotel]", err);
+return { ok: false, error: "Şu an beğenilemedi" };
+}
+}
+async function checkAndNotifyNewLikes(opts = {}) {
+if (typeof navigator !== "undefined" && navigator.onLine === false) {
+return { ok: false, skipped: "offline" };
+}
+if (typeof ONLINE_STATE === "undefined" || !ONLINE_STATE.initialized || !ONLINE_STATE.user || !ONLINE_STATE.db) {
+return { ok: false, skipped: "no_auth" };
+}
+if (!opts.allowInVisit && typeof window !== "undefined" && window.visitMode) {
+return { ok: false, skipped: "visiting" };
+}
+if (_likesCheckBusy) {
+return { ok: false, skipped: "busy" };
+}
+const nowMs = Date.now();
+if (!opts.force && _lastLikesCheckMs > 0 && (nowMs - _lastLikesCheckMs) < LIKES_CHECK_INTERVAL_MS) {
+return { ok: true, skipped: "rate_limited", totalLikes: ONLINE_STATE.totalLikes || 0 };
+}
+_likesCheckBusy = true;
+try {
+const myUid = ONLINE_STATE.user.uid;
+const snap = await _withTimeout(
+ONLINE_STATE.db.collection("likes").doc(myUid).collection("items").limit(200).get(),
+6000
+);
+_lastLikesCheckMs = Date.now();
+let totalLikes = 0;
+let maxDocMs = 0;
+const rawSeen = _readLS(LIKES_SEEN_AT_KEY, "");
+const hasSeenKey = (rawSeen !== "");
+const seenMs = hasSeenKey ? (Number(rawSeen) || 0) : 0;
+const newLikers = [];
+snap.forEach(doc => {
+const d = doc.data() || {};
+const cnt = Math.max(0, Math.floor(Number(d.count) || 0));
+totalLikes += cnt;
+const docMs = _likeTimestampToMs(d.lastLikeAt);
+if (docMs > maxDocMs) maxDocMs = docMs;
+if (hasSeenKey && docMs > seenMs) {
+newLikers.push({
+uid: doc.id,
+displayName: sanitizeFriendDisplayName(d.displayName),
+ms: docMs
+});
+}
+});
+ONLINE_STATE.totalLikes = totalLikes;
+if (!hasSeenKey) {
+_writeLS(LIKES_SEEN_AT_KEY, String(Math.max(Date.now(), maxDocMs)));
+if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+return { ok: true, totalLikes, notified: 0, initialized: true };
+}
+if (newLikers.length > 0) {
+newLikers.sort((a, b) => b.ms - a.ms);
+const msg = formatLikeNotificationMessage(newLikers.map(x => x.displayName));
+const latestMs = newLikers[0].ms;
+_writeLS(LIKES_SEEN_AT_KEY, String(latestMs));
+if (msg) {
+if (typeof log === "function") log(msg);
+if (typeof floaties !== "undefined" && Array.isArray(floaties) && typeof camCenter === "object" && camCenter) {
+floaties.push({ x: camCenter.x, y: camCenter.y, msg, col: "#e11d48", life: 3.2, max: 3.2 });
+}
+if (typeof showLikeNotificationToast === "function") showLikeNotificationToast(msg);
+}
+}
+if (typeof notifyOnlineStateChange === "function") notifyOnlineStateChange();
+return { ok: true, totalLikes, notified: newLikers.length };
+} catch (err) {
+if (typeof console !== "undefined" && console.warn) console.warn("[CheckLikes]", err);
+return { ok: false, skipped: "error" };
+} finally {
+_likesCheckBusy = false;
 }
 }
 window.visitMode = false;
@@ -23255,7 +23523,13 @@ const frMenuBadge = document.getElementById("fr-menu-badge");
 const frHudBadge = document.getElementById("fr-hud-badge");
 const visitBannerTitle = document.getElementById("visit-banner-title");
 const visitFloorTabs = document.getElementById("visit-floor-tabs");
+const btnLikeVisit = document.getElementById("btn-like-visit");
+const visitLikeMsg = document.getElementById("visit-like-msg");
 const btnExitVisit = document.getElementById("btn-exit-visit");
+const frTotalLikesLine = document.getElementById("fr-total-likes-line");
+const likeNotifToast = document.getElementById("like-notif-toast");
+let _likeToastTimer = null;
+let _visitLikeMsgTimer = null;
 let activeFriendsTab = "following";
 let _cachedFollowing = [];
 let _cachedFollowers = [];
@@ -23291,9 +23565,35 @@ el.textContent = txt;
 el.style.display = cnt > 0 ? "inline-flex" : "none";
 });
 }
+function showLikeNotificationToast(msg) {
+if (!likeNotifToast || !msg) return;
+likeNotifToast.textContent = msg;
+likeNotifToast.style.display = "block";
+if (_likeToastTimer) clearTimeout(_likeToastTimer);
+_likeToastTimer = setTimeout(() => {
+_likeToastTimer = null;
+if (likeNotifToast) likeNotifToast.style.display = "none";
+}, 4500);
+}
+function _setVisitLikeMsg(msg) {
+if (!visitLikeMsg) return;
+visitLikeMsg.textContent = msg || "";
+visitLikeMsg.style.display = msg ? "inline-block" : "none";
+if (_visitLikeMsgTimer) { clearTimeout(_visitLikeMsgTimer); _visitLikeMsgTimer = null; }
+if (msg) {
+_visitLikeMsgTimer = setTimeout(() => {
+_visitLikeMsgTimer = null;
+if (visitLikeMsg) { visitLikeMsg.textContent = ""; visitLikeMsg.style.display = "none"; }
+}, 3500);
+}
+}
 function renderFriendsHeader() {
 const code = (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.friendCode) ? ONLINE_STATE.friendCode : "--------";
 if (frMyCodeEl) frMyCodeEl.textContent = code;
+if (frTotalLikesLine) {
+const tot = (typeof ONLINE_STATE !== "undefined" && typeof ONLINE_STATE.totalLikes === "number") ? ONLINE_STATE.totalLikes : 0;
+frTotalLikesLine.textContent = "❤️ Otelin toplam " + tot + " beğeni aldı";
+}
 if (btnShareMyCode) {
 btnShareMyCode.style.display = (typeof navigator !== "undefined" && typeof navigator.share === "function") ? "inline-flex" : "none";
 }
@@ -23416,6 +23716,9 @@ await ensureFirebaseSdkLoaded();
 if (typeof ensureFriendCodeAndProfile === "function") {
 await ensureFriendCodeAndProfile();
 }
+if (typeof checkAndNotifyNewLikes === "function") {
+checkAndNotifyNewLikes({ force: true }).catch(() => {});
+}
 renderFriendsHeader();
 await loadAndRenderFriendsList();
 }
@@ -23449,6 +23752,30 @@ function updateVisitBanner(prof) {
 if (!prof) return;
 if (visitBannerTitle) {
 visitBannerTitle.textContent = "🏨 " + (prof.hotelName || "HoteLore") + " — " + (prof.displayName || "Misafir") + " ⭐" + (prof.stars || 0) + " • Gün " + (prof.day || 1);
+}
+if (btnLikeVisit) {
+const myUid = (typeof ONLINE_STATE !== "undefined" && ONLINE_STATE.user) ? ONLINE_STATE.user.uid : "";
+const isSelf = !!(prof.uid && myUid && prof.uid === myUid);
+if (!prof.uid || isSelf) {
+btnLikeVisit.style.display = "none";
+} else {
+btnLikeVisit.style.display = "inline-flex";
+btnLikeVisit.disabled = false;
+btnLikeVisit.classList.remove("is-liked", "pop-anim");
+btnLikeVisit.textContent = "❤️ Beğen";
+_setVisitLikeMsg("");
+if (typeof checkMyLikeStatusForOwner === "function") {
+const targetUid = prof.uid;
+checkMyLikeStatusForOwner(targetUid).then(st => {
+if (!window.visitMode || !window.visitMeta || window.visitMeta.uid !== targetUid || !btnLikeVisit) return;
+if (st && st.likedToday) {
+btnLikeVisit.disabled = true;
+btnLikeVisit.classList.add("is-liked");
+btnLikeVisit.textContent = "Bugün beğendin ✓";
+}
+}).catch(() => {});
+}
+}
 }
 if (visitFloorTabs && typeof floors !== "undefined") {
 visitFloorTabs.innerHTML = "";
@@ -23552,6 +23879,37 @@ setFriendsStatusMsg("✅ Takip ediliyor: " + res.displayName + " (" + res.hotelN
 await loadAndRenderFriendsList();
 } else {
 setFriendsStatusMsg(res.error || "Bu kodla bir otel bulunamadı", true);
+}
+};
+}
+if (btnLikeVisit) {
+btnLikeVisit.onclick = async () => {
+if (!window.visitMode || !window.visitMeta || !window.visitMeta.uid) return;
+if (typeof play === "function") play("tap");
+const targetUid = window.visitMeta.uid;
+btnLikeVisit.disabled = true;
+_setVisitLikeMsg("");
+const res = (typeof likeVisitedHotel === "function") ? await likeVisitedHotel(targetUid) : { ok: false };
+if (!window.visitMode || !window.visitMeta || window.visitMeta.uid !== targetUid) return;
+if (res && (res.ok || res.likedToday)) {
+btnLikeVisit.disabled = true;
+btnLikeVisit.classList.add("is-liked");
+btnLikeVisit.textContent = "Bugün beğendin ✓";
+if (res.ok) {
+btnLikeVisit.classList.remove("pop-anim");
+void btnLikeVisit.offsetWidth;
+btnLikeVisit.classList.add("pop-anim");
+if (typeof play === "function") play("done");
+if (typeof floaties !== "undefined" && Array.isArray(floaties) && typeof camCenter === "object" && camCenter) {
+floaties.push({ x: camCenter.x, y: camCenter.y, msg: "❤️ Beğenildi!", col: "#e11d48", life: 2.2, max: 2.2 });
+}
+_setVisitLikeMsg("❤️ Beğenildi!");
+}
+} else {
+btnLikeVisit.disabled = false;
+btnLikeVisit.classList.remove("is-liked");
+btnLikeVisit.textContent = "❤️ Beğen";
+_setVisitLikeMsg((res && res.error) ? res.error : "Şu an beğenilemedi");
 }
 };
 }
