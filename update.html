@@ -13,6 +13,9 @@ button:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: non
 --sab: env(safe-area-inset-bottom, 0px);
 --sal: env(safe-area-inset-left, 0px);
 --sar: env(safe-area-inset-right, 0px);
+--bottom-panel-h: 0px;
+--lhb-base: 12px;
+--ba-base: 78px;
 }
 html, body {
 width: 100%; height: 100%;
@@ -206,7 +209,7 @@ background: radial-gradient(circle at 35% 35%, #fff6a8 0%, #f5b81d 65%, #c98608 
 border: 1px solid #7a4b06; box-shadow: 0 0 6px rgba(255, 215, 64, 0.85);
 }
 .hud-sub-pill {
-display: flex; align-items: center; gap: 6px; pointer-events: auto;
+display: flex; align-items: center; justify-content: space-between; gap: 6px; pointer-events: auto;
 background: rgba(34, 48, 42, 0.85); border: 2px solid #3a281f;
 border-radius: 14px; padding: 4px 8px;
 box-shadow: 0 3px 0 rgba(0,0,0,0.28);
@@ -258,8 +261,11 @@ display: flex; align-items: center; justify-content: center;
 box-shadow: 0 1.5px 0 rgba(0,0,0,0.3);
 }
 #left-hud-bottom {
-position: absolute; bottom: calc(12px + var(--sab)); left: calc(10px + var(--sal)); z-index: 11;
+position: absolute;
+bottom: calc(var(--lhb-base) + var(--sab) + var(--bottom-panel-h, 0px));
+left: calc(10px + var(--sal)); z-index: 16;
 display: flex; flex-direction: column; gap: 7px; pointer-events: none;
+transition: bottom 0.2s ease;
 }
 .sq-cream-btn {
 position: relative; width: 50px; height: 50px; pointer-events: auto;
@@ -358,7 +364,8 @@ display: flex; flex-direction: column; align-items: center; justify-content: cen
 cursor: pointer; transition: transform 0.08s;
 }
 .dock-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #3a281f; }
-.dock-btn.active-dock {
+.dock-btn.active-dock,
+.dock-btn.is-active {
 background: linear-gradient(180deg, #fff3b0 0%, #f7c648 100%);
 transform: translateY(-3px);
 }
@@ -371,7 +378,7 @@ border-radius: 7px; white-space: nowrap;
 box-shadow: 0 1.5px 0 rgba(0,0,0,0.35);
 }
 #bottom-area {
-position: absolute; left: 50%; bottom: calc(78px + var(--sab)); transform: translateX(-50%);
+position: absolute; left: 50%; bottom: calc(var(--ba-base) + var(--sab)); transform: translateX(-50%);
 width: min(95%, 670px); z-index: 15;
 display: flex; flex-direction: column; gap: 6px; pointer-events: none;
 }
@@ -895,6 +902,7 @@ font-size: 13px; font-weight: 800; color: #3a281f; cursor: pointer;
 #btn-do-update { background: #8ce099; }
 #btn-close-update { background: #e6e6eb; }
 @media (max-width: 640px), (max-height: 500px) {
+#app { --lhb-base: 74px; --ba-base: 62px; }
 #top-bar { padding: calc(4px + var(--sat)) calc(6px + var(--sar)) 4px calc(6px + var(--sal)); height: calc(48px + var(--sat)); }
 .hud-top-left { gap: 4px; }
 .lv-pill {
@@ -952,7 +960,7 @@ height: 26px; min-width: auto; padding: 2px 7px 2px 21px; font-size: 10.5px; bor
 .notif-dot { width: 14px; height: 14px; font-size: 9px; border-width: 1.5px; }
 #btn-staff, #btn-workers-hud { display: none !important; }
 #left-hud-bottom {
-bottom: calc(74px + var(--sab)); left: calc(6px + var(--sal)); gap: 5px;
+left: calc(6px + var(--sal)); gap: 5px;
 }
 .sq-cream-btn { width: 40px; height: 40px; font-size: 18px; border-radius: 11px; border-width: 2px; }
 .sq-cream-btn .sq-sub { font-size: 7.5px; margin-top: 0px; }
@@ -971,13 +979,14 @@ width: 92px; padding: 4px 6px; border-radius: 10px; border-width: 2px;
 .cam-mini-row { gap: 3px; }
 .vp-btn { width: 25px; height: 23px; font-size: 11px; border-radius: 6px; }
 #bottom-dock {
-padding: 4px 10px calc(5px + var(--sab)) 10px; gap: 6px; border-radius: 16px 16px 0 0; border-width: 2.5px;
+padding: 4px 8px calc(5px + var(--sab)) 8px; gap: 5px; border-radius: 16px 16px 0 0; border-width: 2.5px;
+max-width: calc(100% - 12px - var(--sal) - var(--sar));
 }
 .dock-btn {
-width: 46px; height: 46px; border-radius: 12px; border-width: 2px;
+width: 44px; height: 44px; border-radius: 12px; border-width: 2px;
 }
-.dock-icon { font-size: 20px; margin-top: -3px; }
-.dock-label { font-size: 8.5px; padding: 1px 5px; bottom: -5px; border-radius: 5px; }
+.dock-icon { font-size: 19px; margin-top: -3px; }
+.dock-label { font-size: 8px; padding: 1px 4px; bottom: -5px; border-radius: 5px; }
 #log-text {
 top: calc(52px + var(--sat)); max-width: 80%; padding: 3px 8px; font-size: 9.5px;
 border-radius: 8px; border-width: 1.5px;
@@ -985,7 +994,7 @@ border-radius: 8px; border-width: 1.5px;
 #ach-popup {
 top: calc(114px + var(--sat)); font-size: 13px; padding: 8px 14px;
 }
-#bottom-area { bottom: calc(62px + var(--sab)); width: 96%; }
+#bottom-area { width: 96%; }
 #sel-panel { padding: 6px 8px; border-radius: 12px; }
 #act-grid { gap: 4px; }
 .act-btn { font-size: 9px; padding: 3px 2px; min-height: 32px; }
@@ -1102,6 +1111,20 @@ padding: 2px 9px; border-radius: 11px; max-width: calc(100% - 154px - var(--sal)
 #left-hud-top { top: calc(68px + var(--sat)); }
 #log-text { top: calc(68px + var(--sat)); }
 #ach-popup { top: calc(136px + var(--sat)); }
+}
+#app.low-h-layout #hud-center-banner {
+left: 50%; transform: translateX(-50%); top: max(6px, calc(6px + var(--sat)));
+max-width: none; padding: 4px 13px 5px 13px;
+}
+#app.low-h-layout #left-hud-top { top: calc(46px + var(--sat)); }
+#app.low-h-layout #log-text { top: calc(52px + var(--sat)); }
+#app.low-h-layout #bottom-area #sel-panel {
+max-height: var(--low-h-panel-max, 190px);
+overflow-y: auto;
+}
+#app.low-h-layout.bottom-panel-open #left-hud-bottom {
+flex-direction: row;
+align-items: center;
 }
 #ach-list {
 display: none;
@@ -2162,12 +2185,9 @@ text-align: center;
         </div>
       </div>
       <div class="hud-sub-pill">
-        <button class="sub-icon-btn" id="hud-bell-btn" title="Resepsiyon / Bekleyen Müşteri">🛎️</button>
         <button class="sub-icon-btn" id="hud-rotate-btn" title="Yatay / Dikey Görünüm">🔄</button>
         <button class="sub-icon-btn" id="hud-theme-btn" title="Otel Teması">🎨</button>
-        <button class="sub-icon-btn" id="hud-garden-btn" title="Bahçe Süsleri (💎)">🌳</button>
         <button class="sub-icon-btn" id="hud-friends-btn" title="Arkadaşlar">👥<span class="fr-badge fr-hud-badge" id="fr-hud-badge" style="display:none;">0</span></button>
-        <button class="sub-icon-btn" id="hud-online-btn" title="Bulut Kayıt &amp; Hesap">☁️</button>
         <button class="sub-icon-btn" id="hud-gear-btn" title="Menü & Ayarlar">⚙️</button>
       </div>
     </div>
@@ -2223,7 +2243,7 @@ text-align: center;
   <!-- SOL ALT KARE KREM BUTONLAR -->
   <div id="left-hud-bottom">
     <button id="open-btn" class="sq-cream-btn is-closed" title="Oteli Aç / Kapat">
-      <span id="open-btn-ico">🎫</span>
+      <span id="open-btn-ico">🛎️</span>
       <span class="sq-sub" id="open-btn-lbl">KAPALI</span>
     </button>
     <button id="btn-guestbook" class="sq-cream-btn" title="Müşteri Kitabı">
@@ -2271,7 +2291,7 @@ text-align: center;
     </div>
   </div>
 
-  <!-- ALT ORTA 4'LÜ DOCK BARI -->
+  <!-- ALT ORTA 5'Lİ DOCK BARI -->
   <div id="bottom-dock">
     <div class="dock-btn" id="dock-build" title="5x5 Parsel Izgarasında Oda ve Tesis İnşa Et">
       <div class="notif-dot">!</div>
@@ -2291,6 +2311,10 @@ text-align: center;
       <div class="notif-dot">!</div>
       <div class="dock-icon">⬆️</div>
       <div class="dock-label">Yükselt</div>
+    </div>
+    <div class="dock-btn" id="hud-garden-btn" title="Bahçe Süsleri (💎)">
+      <div class="dock-icon">🌳</div>
+      <div class="dock-label">Bahçe</div>
     </div>
   </div>
 
@@ -2337,7 +2361,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.84-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.85-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -10883,7 +10907,14 @@ const btnGuestbook = document.getElementById("btn-guestbook");
 const guestbookModal = document.getElementById("guestbook-modal");
 const gbContent = document.getElementById("gb-content");
 const btnCloseGb = document.getElementById("btn-close-gb");
-openBtn.onclick = () => toggleOpen();
+openBtn.onclick = () => {
+const canToggle = isOpen || (typeof hasReadyRoom === "function" && hasReadyRoom());
+if (canToggle && typeof play === "function") play("bell");
+toggleOpen();
+if (canToggle && typeof floatText === "function" && typeof camCenter !== "undefined") {
+floatText(camCenter.x, camCenter.y, isOpen ? "🛎️ Resepsiyon Zili: Otel AÇIK (Misafirler Geliyor)" : "🛎️ Resepsiyon Zili: Otel KAPANDI", isOpen ? "#2ecc40" : "#e74c3c");
+}
+};
 document.getElementById("btn-zoom-in").onclick = () => { play("tap"); zoomBy(1.25); };
 document.getElementById("btn-zoom-out").onclick = () => { play("tap"); zoomBy(0.8); };
 document.getElementById("btn-fit").onclick = () => { play("tap"); fitView(); };
@@ -11044,7 +11075,7 @@ const hudMoneyPill = document.getElementById("hud-money-pill");
 if (hudMoneyPill) hudMoneyPill.title = "Mevcut Para: " + money + " TL (Sonraki Yıldız Hedefi: " + target + " İtibar)";
 openBtn.classList.toggle("is-open", isOpen);
 openBtn.classList.toggle("is-closed", !isOpen);
-if (openBtnIco) openBtnIco.textContent = isOpen ? "✅" : "🎫";
+if (openBtnIco) openBtnIco.textContent = "🛎️";
 if (openBtnLbl) openBtnLbl.textContent = isOpen ? "AÇIK" : "KAPALI";
 const stayingCount = allSlots.filter(s => s.type === "Room" && s.guest).length;
 const totalActive = stayingCount + queue.length;
@@ -11328,11 +11359,44 @@ const bagCountLbl = document.getElementById("bag-count-lbl");
 const satBarFill = document.getElementById("sat-bar-fill");
 const satSmileyIco = document.getElementById("sat-smiley-ico");
 const floorTabBtns = Array.from(document.querySelectorAll(".fl-tab-btn"));
+function syncBottomPanelOffset() {
+const appEl = document.getElementById("app");
+const bottomAreaEl = document.getElementById("bottom-area");
+const lhbEl = document.getElementById("left-hud-bottom");
+if (!appEl) return;
+const appH = appEl.clientHeight || window.innerHeight || 600;
+const isLowH = appH > 0 && appH <= 520;
+appEl.classList.toggle("low-h-layout", isLowH);
+if (isLowH) {
+appEl.style.setProperty("--low-h-panel-max", Math.max(130, appH - 185) + "px");
+} else {
+appEl.style.removeProperty("--low-h-panel-max");
+}
+const panelOpen = !!(selPanelEl && selPanelEl.classList.contains("open"));
+const guestOpen = !!(guestCardEl && guestCardEl.classList.contains("active"));
+const hasBottomPanel = panelOpen || guestOpen;
+appEl.classList.toggle("bottom-panel-open", hasBottomPanel);
+if (!hasBottomPanel || !bottomAreaEl || !lhbEl) {
+appEl.style.setProperty("--bottom-panel-h", "0px");
+return;
+}
+const cs = getComputedStyle(appEl);
+const baBase = parseFloat(cs.getPropertyValue("--ba-base")) || 62;
+const lhbBase = parseFloat(cs.getPropertyValue("--lhb-base")) || 74;
+const panelH = bottomAreaEl.offsetHeight || 0;
+const shift = panelH > 0 ? Math.max(0, Math.round(baBase + panelH + 8 - lhbBase)) : 0;
+appEl.style.setProperty("--bottom-panel-h", shift + "px");
+}
+if (typeof ResizeObserver === "function") {
+const _baObsEl = document.getElementById("bottom-area");
+if (_baObsEl) new ResizeObserver(() => syncBottomPanelOffset()).observe(_baObsEl);
+}
 function openDrawer(dockName = "") {
 drawerOpen = true;
 activeDock = dockName;
 if (selPanelEl) selPanelEl.classList.add("open");
 updateDockHighlights();
+syncBottomPanelOffset();
 }
 function closeDrawer() {
 drawerOpen = false;
@@ -11352,9 +11416,10 @@ selPanelEl.classList.remove("open", "decor-mode", "ach-mode");
 const gBtn = document.getElementById("hud-garden-btn");
 if (gBtn) gBtn.classList.remove("is-active");
 updateDockHighlights();
+syncBottomPanelOffset();
 }
 function updateDockHighlights() {
-const map = { build: "dock-build", staff: "dock-staff", shop: "dock-shop", upgrade: "dock-upgrade" };
+const map = { build: "dock-build", staff: "dock-staff", shop: "dock-shop", upgrade: "dock-upgrade", garden: "hud-garden-btn" };
 for (const [k, id] of Object.entries(map)) {
 const el = document.getElementById(id);
 if (el) el.classList.toggle("active-dock", drawerOpen && activeDock === k);
@@ -11479,13 +11544,10 @@ if (hudGemPillEl) {
 hudGemPillEl.onclick = () => { play("tap"); selectMode("Ach"); openDrawer("upgrade"); };
 }
 document.getElementById("satisfaction-card").onclick = () => { play("tap"); openGuestBook(); };
-document.getElementById("hud-bell-btn").onclick = () => {
-play("bell");
-toggleOpen();
-if (typeof floatText === "function" && typeof camCenter !== "undefined") {
-floatText(camCenter.x, camCenter.y, isOpen ? "🛎️ Resepsiyon Zili: Otel AÇIK (Misafirler Geliyor)" : "🛎️ Resepsiyon Zili: Otel KAPANDI", isOpen ? "#2ecc40" : "#e74c3c");
+const hudBellBtn = document.getElementById("hud-bell-btn");
+if (hudBellBtn) {
+hudBellBtn.onclick = () => { if (openBtn) openBtn.click(); };
 }
-};
 document.getElementById("hud-gear-btn").onclick = () => { play("tap"); openStartMenu(); };
 const hudGardenBtn = document.getElementById("hud-garden-btn");
 if (hudGardenBtn) {
@@ -11655,7 +11717,7 @@ decorSelectedSlotId = null;
 decorPreviewItemId = null;
 decorReplaceMode = false;
 }
-openDrawer(m === "Staff" || m === "Dorm" ? "staff" : m === "Storage" ? "shop" : "upgrade");
+openDrawer(m === "Decor" ? "garden" : m === "Staff" || m === "Dorm" ? "staff" : m === "Storage" ? "shop" : "upgrade");
 refresh();
 }
 function selectDecorSlot(slotId) {
@@ -11669,7 +11731,7 @@ else furnSelectedKey = null;
 decorSelectedSlotId = slotId;
 decorPreviewItemId = null;
 decorReplaceMode = false;
-openDrawer("upgrade");
+openDrawer("garden");
 refresh();
 }
 function focusDecorSlot(slotId) {
@@ -12218,6 +12280,7 @@ setAct(0, "🪓 Ağacı Kes\n(+1 Alet)", true, true);
 const existingStorage = allSlots.find(sl => sl.type === "Storage");
 const storageLbl = existingStorage ? "⚠️ Önce Ağacı Kes\n(Taşımak İçin)" : "⚠️ Önce Ağacı Kes\n(Depo İçin)";
 setAct(5, storageLbl, false, false);
+if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 return;
 }
 const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
@@ -12613,6 +12676,7 @@ if (!shown && sel === "Storage" && hasStorage() && sumArr(cart) > 0) {
 setAct(ActCount - 1, "🗑️ Sepeti Boşalt", true, true);
 actBtns[ActCount - 1].style.background = "#ffd6d6";
 }
+if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
 function wantList(g, cn) {
 const w = [];
@@ -12663,18 +12727,25 @@ else offerBtn.textContent = curPrice <= g.offer ? "✅ Kabul Et" : "💬 Teklif 
 } else {
 offerBtn.textContent = "💬 Teklif Ver";
 }
+if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 92;
-const APP_VERSION_NAME = "1.9.84-beta";
+const APP_VERSION_CODE = 93;
+const APP_VERSION_NAME = "1.9.85-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.85-beta",
+title: "HUD düzeni",
+latest: true,
+notes: "• 🎮 Alt Dock & Sol Alt Düğmeler: 🌳 Bahçe düğmesi alt dock'un sağına taşındı; sol alt aç/kapa düğmesi 🛎️ resepsiyon zili ikonu ve zil sesi/yazısı ile birleştirildi; alttaki panel açıldığında sol alt grup panelin üzerine kayar.\n• 🔝 Sade Üst Çubuk: Üst sağdaki 🛎️ ve ☁️ simgeleri kaldırıldı (Bulut/Hesap ana menüden erişilir), 🔄 🎨 👥 ⚙️ ikonları eşit aralıklı dizildi."
+},
+{
 ver: "v1.9.84-beta",
 title: "Yatay ekran / tam ekran düzeltmesi",
-latest: true,
+latest: false,
 notes: "• 📱 Yatay Tam Ekran Düzeltmesi: Telefon yan yatırıldığında oluşan kare ekran/siyah çentik kenarı sorunu giderildi, #app ve kamera yön değişiminde tam ekranı kaplayacak şekilde senkronize edildi."
 },
 {
@@ -13540,6 +13611,7 @@ appEl.classList.toggle("force-landscape", !!_userForceLandscapePref);
 }
 const orientChanged = (_lastOrientLandscape !== isPhysLandscape);
 _lastOrientLandscape = isPhysLandscape;
+if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 return orientChanged || (prevForce !== appEl.classList.contains("force-landscape"));
 }
 function getRenderDpr() {

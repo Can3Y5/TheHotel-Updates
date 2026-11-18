@@ -1,8 +1,8 @@
 {
-  "versionCode": 92,
-  "versionName": "1.9.84-beta",
+  "versionCode": 93,
+  "versionName": "1.9.85-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Yatay ekran / tam ekran düzeltmesi"
+  "notes": "HUD düzeni"
 }
