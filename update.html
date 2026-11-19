@@ -2143,6 +2143,199 @@ padding: 8px 10px;
 font-size: 12.5px;
 text-align: center;
 }
+#pet-modal {
+position: fixed;
+inset: 0;
+background: rgba(15, 23, 42, 0.72);
+display: none;
+align-items: center;
+justify-content: center;
+z-index: 960;
+padding: 10px;
+box-sizing: border-box;
+}
+.pet-box {
+max-width: 460px;
+width: 100%;
+max-height: 90dvh;
+display: flex;
+flex-direction: column;
+}
+#btn-close-pet {
+background: #fee2e2;
+border: 2px solid #3a281f;
+border-radius: 8px;
+padding: 4px 9px;
+font-weight: 900;
+font-size: 12px;
+color: #7f1d1d;
+cursor: pointer;
+}
+.pet-body {
+padding: 10px 12px;
+display: flex;
+flex-direction: column;
+gap: 8px;
+overflow-y: auto;
+overflow-x: hidden;
+box-sizing: border-box;
+}
+#pet-preview-wrap {
+position: relative;
+border: 2px solid #3a281f;
+border-radius: 12px;
+overflow: hidden;
+background: #d9f99d;
+flex-shrink: 0;
+}
+#pet-preview-canvas {
+display: block;
+width: 100%;
+height: 112px;
+}
+#pet-preview-badge {
+position: absolute;
+left: 8px;
+top: 7px;
+background: rgba(255, 253, 246, 0.92);
+border: 1.5px solid #3a281f;
+border-radius: 999px;
+padding: 2px 8px;
+font-size: 10.5px;
+font-weight: 900;
+color: #3a281f;
+}
+.pet-name-row {
+display: flex;
+gap: 6px;
+align-items: center;
+flex-wrap: wrap;
+}
+#pet-name-input {
+flex: 1 1 120px;
+min-width: 0;
+border: 2px solid #3a281f;
+border-radius: 8px;
+padding: 6px 8px;
+font-size: 12px;
+font-weight: 800;
+color: #1e293b;
+background: #ffffff;
+user-select: text;
+-webkit-user-select: text;
+}
+#pet-status-msg {
+display: none;
+font-size: 11px;
+font-weight: 800;
+padding: 6px 9px;
+border-radius: 8px;
+background: #dcfce7;
+border: 1.5px solid #16a34a;
+color: #14532d;
+}
+#pet-status-msg.is-err {
+background: #fee2e2;
+border-color: #dc2626;
+color: #7f1d1d;
+}
+#pet-tab-body {
+display: flex;
+flex-direction: column;
+gap: 9px;
+}
+.pet-sec-title {
+font-size: 11.5px;
+font-weight: 900;
+color: #5a3e26;
+margin-bottom: 4px;
+}
+.pet-opt-grid {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 6px;
+}
+.pet-swatch-row {
+display: flex;
+flex-wrap: wrap;
+gap: 6px;
+}
+.pet-opt-btn {
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+gap: 2px;
+background: #fffdf8;
+border: 2px solid #3a281f;
+border-radius: 10px;
+padding: 6px 8px;
+font-size: 11.5px;
+font-weight: 800;
+color: #2c2017;
+cursor: pointer;
+text-align: left;
+position: relative;
+}
+.pet-opt-btn.is-swatch {
+flex-direction: row;
+align-items: center;
+gap: 6px;
+padding: 5px 8px;
+border-radius: 999px;
+}
+.pet-opt-btn.is-equipped {
+background: #dcfce7;
+border-color: #15803d;
+box-shadow: 0 2px 0 #15803d;
+}
+.pet-opt-btn.is-special {
+background: #fff1f2;
+border-color: #be185d;
+}
+.pet-opt-btn.is-special.is-equipped {
+background: #fce7f3;
+box-shadow: 0 2px 0 #be185d;
+}
+.pet-opt-top {
+display: flex;
+align-items: center;
+justify-content: space-between;
+width: 100%;
+gap: 4px;
+}
+.pet-opt-sub {
+font-size: 10px;
+font-weight: 800;
+color: #6b4e35;
+}
+.pet-special-tag {
+font-size: 9px;
+font-weight: 900;
+padding: 1px 5px;
+border-radius: 999px;
+background: linear-gradient(180deg, #f472b6, #db2777);
+color: #ffffff;
+}
+.pet-swatch-dot {
+width: 14px;
+height: 14px;
+border-radius: 50%;
+border: 1.5px solid #3a281f;
+flex-shrink: 0;
+}
+#pet-footer-info {
+font-size: 11px;
+font-weight: 800;
+color: #4b3621;
+background: #fef3c7;
+border: 1.5px solid #d97706;
+border-radius: 8px;
+padding: 6px 9px;
+text-align: center;
+}
+#app.low-h-layout #pet-preview-canvas {
+height: 86px;
+}
 </style>
 </head>
 <body>
@@ -2361,7 +2554,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.86-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.87-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -2591,6 +2784,33 @@ text-align: center;
       </div>
     </div>
   </div>
+  <!-- EVCİL HAYVAN & KULÜBE ÖZELLEŞTİRME MODALI -->
+  <div id="pet-modal">
+    <div class="onl-box pet-box">
+      <div class="gb-header">
+        <div class="gb-title">🐾 Evcil Hayvan &amp; Kulübe</div>
+        <button type="button" id="btn-close-pet">✕ Kapat</button>
+      </div>
+      <div class="pet-body">
+        <div id="pet-preview-wrap">
+          <canvas id="pet-preview-canvas" width="360" height="122"></canvas>
+          <div id="pet-preview-badge"></div>
+        </div>
+        <div class="pet-name-row">
+          <input id="pet-name-input" type="text" maxlength="14" placeholder="Evcil hayvan adı..." autocomplete="off" spellcheck="false" />
+          <button type="button" id="btn-save-pet-name" class="onl-btn up">🏷️ Kaydet</button>
+          <button type="button" id="btn-toggle-pet-active" class="onl-btn">💤 Dinlendir</button>
+        </div>
+        <div class="fr-tabs">
+          <button type="button" id="pet-tab-btn-pet" class="fr-tab-btn active">🐾 Evcil Hayvan</button>
+          <button type="button" id="pet-tab-btn-kennel" class="fr-tab-btn">🏠 Kulübe</button>
+        </div>
+        <div id="pet-status-msg"></div>
+        <div id="pet-tab-body"></div>
+        <div id="pet-footer-info"></div>
+      </div>
+    </div>
+  </div>
   <!-- AÇILIR KONTROL ÇEKMECESİ VE PAZARLIK KARTI -->
   <div id="bottom-area">
     <div id="guest-card">
@@ -2656,6 +2876,64 @@ const ChanceThreat = 0.08, ChanceNeedy = 0.12, ChanceFamily = 0.22, ChanceChines
 const ChancePetGuest = 0.14, PetGuestCooldown = 3;
 const PetTypes = ["cat", "dog", "ginger", "corgi"];
 const PetNames = ["Pati", "Pamuk", "Boncuk", "Tarçın", "Karamel", "Lokum", "Badem", "Duman", "Fındık", "Bisküvi"];
+const PET_SPECIES = {
+cat:    { id: "cat",    label: "Tekir Kedi",   icon: "🐱", adoptCost: 150, dailyCost: 12 },
+ginger: { id: "ginger", label: "Sarman Kedi",  icon: "🐈", adoptCost: 150, dailyCost: 12 },
+dog:    { id: "dog",    label: "Golden Köpek", icon: "🐶", adoptCost: 200, dailyCost: 16 },
+corgi:  { id: "corgi",  label: "Korgi Köpek",  icon: "🐕", adoptCost: 220, dailyCost: 16 }
+};
+const PET_COATS = [
+{ id: "default",  name: "Doğal",       cost: 0,  currency: "tl", swatch: "#cbd5e1", overrides: null },
+{ id: "snow",     name: "Kar Beyazı",  cost: 40, currency: "tl", swatch: "#f8fafc", overrides: { body: "#f8fafc", belly: "#ffffff", ear: "#cbd5e1", earIn: "#fda4af", tail: "#e2e8f0", spots: "#cbd5e1" } },
+{ id: "midnight", name: "Gece Siyahı", cost: 40, currency: "tl", swatch: "#334155", overrides: { body: "#334155", belly: "#94a3b8", ear: "#1e293b", earIn: "#fda4af", tail: "#1e293b", spots: "#0f172a" } },
+{ id: "caramel",  name: "Karamel",     cost: 40, currency: "tl", swatch: "#d97706", overrides: { body: "#d97706", belly: "#fef3c7", ear: "#92400e", earIn: "#fda4af", tail: "#b45309", spots: "#78350f" } }
+];
+const PET_COLLARS = [
+{ id: "red",      name: "Klasik Kırmızı", cost: 0,  currency: "tl", col: "#ef4444" },
+{ id: "blue",     name: "Safir Mavi",     cost: 20, currency: "tl", col: "#2563eb" },
+{ id: "pink",     name: "Pembe",          cost: 20, currency: "tl", col: "#ec4899" },
+{ id: "emerald",  name: "Zümrüt",         cost: 25, currency: "tl", col: "#10b981" },
+{ id: "lavender", name: "Lavanta",        cost: 25, currency: "tl", col: "#8b5cf6" },
+{ id: "gold",     name: "Altın Yıldız",   cost: 40, currency: "tl", col: "#eab308" }
+];
+const PET_ACCESSORIES = [
+{ id: "none",     name: "Aksesuarsız",    icon: "➖", cost: 0,  currency: "tl",  special: false },
+{ id: "bow_pink", name: "Pembe Fiyonk",   icon: "🎀", cost: 10, currency: "gem", special: true },
+{ id: "bow_red",  name: "Kırmızı Fiyonk", icon: "🎀", cost: 10, currency: "gem", special: true },
+{ id: "bowtie",   name: "Otel Papyonu",   icon: "🤵", cost: 60, currency: "tl",  special: true },
+{ id: "bandana",  name: "Kırmızı Fular",  icon: "🧣", cost: 55, currency: "tl",  special: false },
+{ id: "flower",   name: "Çiçek Toka",     icon: "🌸", cost: 8,  currency: "gem", special: true },
+{ id: "glasses",  name: "Güneş Gözlüğü",  icon: "🕶️", cost: 12, currency: "gem", special: true },
+{ id: "crown",    name: "Kraliyet Tacı",  icon: "👑", cost: 20, currency: "gem", special: true }
+];
+const KENNEL_STYLES = [
+{ id: "classic", name: "Klasik Ahşap",   icon: "🪵", cost: 0,   currency: "tl",  special: false },
+{ id: "cottage", name: "Kır Evi",        icon: "🏡", cost: 90,  currency: "tl",  special: false },
+{ id: "modern",  name: "Modern Villa",   icon: "🏙️", cost: 140, currency: "tl",  special: false },
+{ id: "royal",   name: "Kraliyet Köşkü", icon: "🏰", cost: 20,  currency: "gem", special: true }
+];
+const KENNEL_ROOFS = [
+{ id: "red",    name: "Kiremit",  cost: 0,  currency: "tl",  top: "#dc2626", edge: "#991b1b", light: "#ef4444", special: false },
+{ id: "blue",   name: "Okyanus",  cost: 30, currency: "tl",  top: "#2563eb", edge: "#1e40af", light: "#60a5fa", special: false },
+{ id: "pink",   name: "Pembe",    cost: 30, currency: "tl",  top: "#f472b6", edge: "#db2777", light: "#f9a8d4", special: false },
+{ id: "mint",   name: "Nane",     cost: 30, currency: "tl",  top: "#10b981", edge: "#047857", light: "#6ee7b7", special: false },
+{ id: "purple", name: "Lavanta",  cost: 35, currency: "tl",  top: "#8b5cf6", edge: "#6d28d9", light: "#c4b5fd", special: false },
+{ id: "gold",   name: "Altın",    cost: 12, currency: "gem", top: "#f59e0b", edge: "#b45309", light: "#fde047", special: true }
+];
+const KENNEL_WALLS = [
+{ id: "wood",   name: "Ahşap",    cost: 0,  currency: "tl", top: "#f5e1c0", left: "#e7c99f", right: "#cfa670" },
+{ id: "cream",  name: "Krem",     cost: 30, currency: "tl", top: "#fffbeb", left: "#fef3c7", right: "#e5d3a8" },
+{ id: "stone",  name: "Taş",      cost: 45, currency: "tl", top: "#e2e8f0", left: "#cbd5e1", right: "#94a3b8" },
+{ id: "pastel", name: "Pastel",   cost: 35, currency: "tl", top: "#fce7f3", left: "#fbcfe8", right: "#f9a8d4" },
+{ id: "slate",  name: "Antrasit", cost: 45, currency: "tl", top: "#64748b", left: "#475569", right: "#334155" }
+];
+const KENNEL_DECORS = [
+{ id: "bowl",         name: "Mama & Su Kabı",    icon: "🥣", cost: 0,  currency: "tl",  special: false },
+{ id: "flowers",      name: "Çiçek Süsü",        icon: "🌸", cost: 45, currency: "tl",  special: false },
+{ id: "cushion",      name: "Minder & Oyuncak",  icon: "🛋️", cost: 60, currency: "tl",  special: false },
+{ id: "fairy_lights", name: "Peri Işıkları",     icon: "✨", cost: 12, currency: "gem", special: true },
+{ id: "bow_plaque",   name: "Fiyonklu İsimlik",  icon: "🎀", cost: 15, currency: "gem", special: true }
+];
 const StarTargets = [Star1, Star2, Star3];
 const FloorCost = [0, 400, 700, 1000];
 const FloorBuildSec = [0, 40, 60, 80];
@@ -3131,8 +3409,32 @@ let gardenTipShown = false;
 let totalServed = 0, firesExtinguished = 0, gasLeaksFixed = 0, killersCaught = 0, vipServed = 0;
 let themesTried = ["classic"];
 let guestsSinceNeedy = 6, saveTimer = 0;
-let hotelMascot = "cat";
+let hotelMascot = "none";
 let guestsSincePet = 3;
+function makeDefaultHotelPet() {
+return {
+adopted: false,
+active: false,
+type: "cat",
+name: "Pati",
+coat: "default",
+collar: "red",
+accessory: "none",
+kennelStyle: "classic",
+kennelRoof: "red",
+kennelWall: "wood",
+kennelDecor: "bowl",
+ownedSpecies: [],
+ownedCoats: ["default"],
+ownedCollars: ["red"],
+ownedAccessories: ["none"],
+ownedKennelStyles: ["classic"],
+ownedKennelRoofs: ["red"],
+ownedKennelWalls: ["wood"],
+ownedKennelDecors: ["bowl"]
+};
+}
+let hotelPet = makeDefaultHotelPet();
 const stock = new Array(ItemCount).fill(0);
 const cart = new Array(ItemCount).fill(0);
 const shipments = [];
@@ -3146,7 +3448,7 @@ const dormWorkers = [];
 let kitchenState = "Locked", kitchenLeft = 0, cookLevel = 0, cookPawn = null;
 const kitchenWorkers = [];
 let towerOrder = [];
-let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0 };
+let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 };
 let summaryOpen = false;
 let killerActiveThisWeek = false;
 let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
@@ -5478,7 +5780,8 @@ vipServed,
 themesTried: Array.isArray(themesTried) ? themesTried.slice() : ["classic"],
 todayServed,
 guestsSinceNeedy,
-hotelMascot: (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(hotelMascot) : (hotelMascot || "cat"),
+hotelMascot: (typeof hasActiveHotelPet === "function" && hasActiveHotelPet()) ? hotelPet.type : "none",
+hotelPet: (typeof cloneHotelPetState === "function") ? cloneHotelPetState() : null,
 guestsSincePet: typeof guestsSincePet === "number" ? guestsSincePet : 3,
 stock: stock.slice(),
 crateItems: crateItems.slice(),
@@ -5700,7 +6003,7 @@ weekMurders = data.weekMurders || 0;
 marketEvent = (data.marketEvent && typeof data.marketEvent === "object") ? data.marketEvent : { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 0 };
 unreadNewspaper = !!data.unreadNewspaper;
 if (data.dayStats && typeof data.dayStats === "object") {
-dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0 }, data.dayStats);
+dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 }, data.dayStats);
 }
 activeEvent = (data.activeEvent && EventTypes.includes(data.activeEvent)) ? data.activeEvent : "";
 eventDaysLeft = Math.max(0, Math.floor(Number(data.eventDaysLeft) || 0));
@@ -5768,9 +6071,14 @@ gardenTipShown = !!data.gardenTipShown;
 if (typeof resetDecorState === "function") resetDecorState(data.decor);
 todayServed = data.todayServed || 0;
 guestsSinceNeedy = typeof data.guestsSinceNeedy === "number" ? data.guestsSinceNeedy : 6;
-hotelMascot = (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(data.hotelMascot) : (data.hotelMascot || "cat");
+if (data.hotelPet && typeof data.hotelPet === "object" && typeof resetHotelPetState === "function") {
+resetHotelPetState(data.hotelPet);
+} else if (typeof resetHotelPetState === "function") {
+resetHotelPetState(null);
+} else {
+hotelMascot = "none";
+}
 guestsSincePet = typeof data.guestsSincePet === "number" ? data.guestsSincePet : 3;
-if (typeof resetHotelMascotPos === "function") resetHotelMascotPos();
 if (Array.isArray(data.stock)) for (let k = 0; k < ItemCount; k++) stock[k] = data.stock[k] || 0;
 if (Array.isArray(data.crateItems)) for (let k = 0; k < ItemCount; k++) crateItems[k] = data.crateItems[k] || 0;
 if (Array.isArray(data.shipments)) {
@@ -6253,7 +6561,7 @@ cafeSessionsToday = 0;
 cafeRevenueToday = 0;
 cafeSessionsTotal = 0;
 cafeIncomeTotal = 0;
-dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0 };
+dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 };
 summaryOpen = false;
 document.getElementById("day-modal").style.display = "none";
 stock.fill(0);
@@ -6276,9 +6584,9 @@ securityPawn = null;
 cookPawn = null;
 pending = null;
 lastFront = null;
-hotelMascot = "cat";
+if (typeof resetHotelPetState === "function") resetHotelPetState(null);
+else hotelMascot = "none";
 guestsSincePet = 3;
-if (typeof resetHotelMascotPos === "function") resetHotelMascotPos();
 for (let i = 0; i < treePlanted.length; i++) treePlanted[i] = (i === 0 || i === 4);
 for (const a of ACHIEVEMENTS) a.done = false;
 for (let f = 0; f < FloorCount; f++) {
@@ -6379,7 +6687,8 @@ dorm: [dormState, dormLevel || 1],
 kit: [kitchenState, cookLevel || 0],
 tw: Array.isArray(towerOrder) ? towerOrder.slice() : [],
 tp: Array.isArray(treePlanted) ? treePlanted.map(v => v ? 1 : 0) : [],
-mc: (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(hotelMascot) : "cat",
+mc: (typeof hasActiveHotelPet === "function" && hasActiveHotelPet()) ? hotelPet.type : "none",
+pet: (typeof serializeHotelPetShowcase === "function") ? serializeHotelPetShowcase() : null,
 decor: (typeof cloneDecorState === "function") ? cloneDecorState() : {},
 floors: floors.map((fl, fIdx) => ({
 st: fl.state,
@@ -6473,8 +6782,12 @@ for (let i = 0; i < treePlanted.length && i < snap.tp.length; i++) treePlanted[i
 }
 if (typeof resetDecorState === "function") resetDecorState(snap.decor || {});
 if (typeof reconcileDecorStateOnLoad === "function") reconcileDecorStateOnLoad();
-hotelMascot = (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(snap.mc) : "cat";
+if (typeof applyHotelPetShowcase === "function") {
+applyHotelPetShowcase(snap.pet, snap.mc);
+} else {
+hotelMascot = "none";
 if (typeof resetHotelMascotPos === "function") resetHotelMascotPos();
+}
 for (let f = 0; f < FloorCount; f++) {
 const fl = floors[f];
 const flData = snap.floors[f];
@@ -9956,6 +10269,17 @@ log("☕ Kafe: " + (cafeSessionsToday || 0) + " seans, +" + (cafeRevenueToday ||
 }
 cafeSessionsToday = 0;
 cafeRevenueToday = 0;
+const petCareDue = (typeof getHotelPetDailyCareCost === "function") ? getHotelPetDailyCareCost() : 0;
+if (petCareDue > 0) {
+const petPaid = Math.min(petCareDue, money);
+if (petPaid > 0) {
+money = Math.max(0, money - petPaid);
+dayStats.petCare = (dayStats.petCare || 0) + petPaid;
+floatText(waitX(), floors[0].WalkY + 115, "-" + petPaid + " TL hayvan bakımı", "#b33333");
+}
+const petLabel = (typeof hotelPet === "object" && hotelPet && hotelPet.name) ? hotelPet.name : "Evcil Hayvan";
+log("🐾 " + petLabel + " günlük bakım/mama gideri: -" + petPaid + " TL");
+}
 for (const g of guests) {
 g.tennisToday = 0;
 g.spaDay = false;
@@ -10213,7 +10537,7 @@ if (notif) notif.style.display = "none";
 const weekNo = Math.max(1, Math.floor((day - 1) / 7) + (isWeekEnd ? 0 : 1));
 const st = dayStats;
 const net = money - (st.money0 !== undefined ? st.money0 : money);
-const known = st.income + st.meals - st.mealCost - st.wage - st.gas - (st.spaCost || 0) - st.spent;
+const known = st.income + st.meals - st.mealCost - st.wage - st.gas - (st.spaCost || 0) - (st.cafeCost || 0) - (st.petCare || 0) - st.spent;
 const other = net - known;
 const avg = st.rCnt > 0 ? (st.rSum / st.rCnt).toFixed(1) : "-";
 const repD = reputation - st.rep0;
@@ -10279,6 +10603,8 @@ h += row("🛏️ Oda gelirleri", "+" + st.income + " TL", "#166534");
 if (st.meals > 0) h += row("🍳 Yemek geliri (net)", sg(st.meals - st.mealCost), "#166534");
 if (st.wage > 0) h += row("👷 Personel maaşları", "-" + st.wage + " TL", "#991b1b");
 if ((st.spaCost || 0) > 0) h += row("♨️ Spa işletme gideri", "-" + st.spaCost + " TL", "#991b1b");
+if ((st.cafeCost || 0) > 0) h += row("☕ Kafe işletme gideri", "-" + st.cafeCost + " TL", "#991b1b");
+if ((st.petCare || 0) > 0) h += row("🐾 Evcil hayvan bakımı", "-" + st.petCare + " TL", "#991b1b");
 if (st.gas > 0) h += row("🔥 Doğalgaz faturası", "-" + st.gas + " TL", "#991b1b");
 if (st.orders > 0) h += row("📦 Depo siparişleri", "-" + st.orders + " TL", "#991b1b");
 if (st.spent - st.orders > 0) h += row("🏗️ Yapı, eşya ve bakım", "-" + (st.spent - st.orders) + " TL", "#991b1b");
@@ -10299,7 +10625,7 @@ document.getElementById("day-modal").style.display = "flex";
 summaryOpen = true;
 if (isWeekEnd) {
 weekMurders = 0;
-dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: reputation, bonus: 0, money0: money, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0 };
+dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: reputation, bonus: 0, money0: money, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 };
 }
 }
 function closeDaySummary() {
@@ -10956,7 +11282,7 @@ else if (i === 2) cycleRecMinPrice();
 else if (i === 3) toggleRecAllowFree();
 else if (i === 4) toggleRecAutoPlace();
 else if (i === 5) fireReceptionist();
-else if (i === 7 && typeof cycleHotelMascot === "function") cycleHotelMascot();
+else if (i === 7 && typeof openPetModal === "function") openPetModal("pet");
 } else if (s.type === "Gas") {
 if (i === 0) { toggleGas(); saveGame(); }
 else if (i === 1) doMaint(s);
@@ -12024,6 +12350,16 @@ infoText.textContent = "🌳 " + slot.label + " (" + zLbl + ") · Boyut: " + slo
 const frag = document.createDocumentFragment();
 const slotBar = document.createElement("div");
 slotBar.className = "decor-slot-bar";
+const petChip = document.createElement("button");
+petChip.type = "button";
+petChip.className = "decor-slot-chip" + ((typeof hasActiveHotelPet === "function" && hasActiveHotelPet()) ? " filled" : "");
+petChip.setAttribute("data-pet-shortcut", "1");
+petChip.textContent = "🐾 Evcil Hayvan & Kulübe";
+petChip.onclick = () => {
+if (typeof play === "function") play("tap");
+if (typeof openPetModal === "function") openPetModal("pet");
+};
+slotBar.appendChild(petChip);
 for (let i = 0; i < DECOR_SLOTS.length; i++) {
 const sl = DECOR_SLOTS[i];
 const pid = getPlacedDecorItemId(sl.id);
@@ -12567,8 +12903,15 @@ const bonusTxt = rLv === 0 ? "Resepsiyonist yok (Çince çeviri ve filtreler kap
 rLv === 1 ? "Resepsiyonist Sv.1 (Çince çeviri + Filtreler açık)" :
 rLv === 2 ? "Resepsiyonist Sv.2 (+%15 Pazarlık Bonusu + Filtreler)" :
 "Resepsiyonist Sv.3 (+%25 Pazarlık + Otomatik Oda Yerleştirme)";
-const mLbl = (typeof getMascotLabel === "function" && typeof hotelMascot !== "undefined") ? getMascotLabel(hotelMascot) : "🐱 Tekir Kedi";
-infoText.textContent = "🛎️ Giriş Lobisi & Resepsiyon " + coordStr + "  •  " + bonusTxt + "  •  Maskot: " + mLbl +
+const hasPet = typeof hasActiveHotelPet === "function" && hasActiveHotelPet();
+const petAdopted = typeof hotelPet === "object" && hotelPet && hotelPet.adopted;
+const petCare = typeof getHotelPetDailyCareCost === "function" ? getHotelPetDailyCareCost() : 0;
+const mLbl = !petAdopted
+? "Yok"
+: (hasPet
+? ((hotelPet.name || "Pati") + " (" + getMascotLabel(hotelPet.type) + ", " + petCare + " TL/gün)")
+: ((hotelPet.name || "Pati") + " (Dinleniyor)"));
+infoText.textContent = "🛎️ Giriş Lobisi & Resepsiyon " + coordStr + "  •  " + bonusTxt + "  •  Evcil Hayvan: " + mLbl +
 (rLv >= 1 ? ("\nFiltreler: Çocuklu=" + (recNoKids ? "REDDET" : "KABUL") + " | Alt Sınır=" + (recMinPrice > 0 ? recMinPrice + " TL" : "YOK") + " | Ücretsiz=" + (recAllowFree ? "KABUL" : "REDDET") + (rLv >= 3 ? (" | Oto-Yerleştir=" + (recAutoPlace ? "AÇIK" : "KAPALI")) : "")) : "");
 if (rLv < 3) {
 const rCost = RecHireCost[rLv + 1];
@@ -12586,7 +12929,7 @@ const nextFl = floors.find(f => f.state === "Locked");
 if (nextFl) {
 setAct(6, "🏢 " + (nextFl.idx + 1) + ". Katı Aç\n" + FloorCost[nextFl.idx] + " TL", true, stars() >= nextFl.idx && floors[nextFl.idx - 1].state === "Built");
 }
-setAct(7, "🐾 Maskot\n" + mLbl, true, true);
+setAct(7, petAdopted ? "🐾 Evcil Hayvan\n& Kulübe" : "🐾 Evcil Hayvan\nSahiplen", true, true);
 } else if (cur.type === "Gas") {
 infoText.textContent = "🔥 Doğalgaz Dairesi " + coordStr + "  •  Vana: " + (gasOn ? "AÇIK" : "KAPALI") + "  •  Bakım: %" + Math.round(cur.maintenance) +
 (gasLeak ? "\n🚨 GAZ KAÇAĞI! " + Math.ceil(gasLeakLeft) + " sn içinde vanayı kapat!" : "\nKışın odaları ısıtır (günlük " + GasPerRoom + " TL/oda).");
@@ -12848,17 +13191,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 94;
-const APP_VERSION_NAME = "1.9.86-beta";
+const APP_VERSION_CODE = 95;
+const APP_VERSION_NAME = "1.9.87-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.87-beta",
+title: "Özelleştirilebilir evcil hayvan, fiyonk & aksesuarlar, bakım gideri ve ön bahçe kulübesi",
+latest: true,
+notes: "• 🐾 İsteğe Bağlı Sahiplenme: Evcil hayvan artık otomatik gelmez; Resepsiyon, Bahçe paneli veya ön bahçedeki kulübesinden dilediğin zaman kedi/köpek sahiplenebilirsin.\n• 🎀 Özel Aksesuarlar & Özelleştirme: Evcil hayvanına isim ver, tüy/tasma rengini değiştir, pembe/kırmızı fiyonk, papyon, fular, çiçek toka, güneş gözlüğü ve kraliyet tacı tak.\n• 🏠 Ön Bahçe Kulübesi & Bakım Gideri: Otel önündeki çim alana özel kulübe yerleşir (model, çatı, duvar ve çiçek/minder/peri ışığı/fiyonklu isimlik ile özelleştirilebilir); aktif evcil hayvan için günlük bakım ücreti işler."
+},
+{
 ver: "v1.9.86-beta",
 title: "Hayvanlar: maskot, evcil hayvanlı misafir ve canlı bahçe",
-latest: true,
+latest: false,
 notes: "• 🐾 Otel Maskotu: Resepsiyondan kedi, köpek, sarman veya corgi maskot seç; lobide ve koridorlarda gezer, dokununca sevinip kuyruk sabrını sakinleştirir.\n• 🧳 Evcil Hayvanlı Misafirler: Arada sırada dostuyla gelen misafirler yüksek bütçe ve bahşişle gelir (park, maskot veya bahçe yuvası varsa ekstra ödül!).\n• 🦋 Canlı Bahçe & Çevre: Yeni kedi/köpek evi ve koi göleti süsleri, mevcut kuş evi ve nilüfer göletine hareketli kuş/koi eklendi; park ördekleri, bahçe kelebekleri ve kaldırımda gezinen köpek."
 },
 {
@@ -17728,6 +18077,9 @@ drawDecorItemsLayer(frontDecorItems, si, isNight, decorGlow);
 });
 drawDecorLiveLayer(frontDecorItems, si, isNight, decorGlow, timeNow);
 }
+if (typeof drawHotelPetKennel === "function") {
+drawHotelPetKennel(si, isNight, decorGlow, timeNow);
+}
 if (typeof drawAmbientButterflies === "function") {
 drawAmbientButterflies(si, isNight);
 }
@@ -21566,7 +21918,10 @@ happyTimer: p.happyTimer,
 animT: p.animT,
 facing: p.facing,
 scale: p.scale || 1,
-leashOwnerPt: p.leashOwnerPt || null
+leashOwnerPt: p.leashOwnerPt || null,
+coat: p.petCoat || null,
+collar: p.petCollar || null,
+accessory: p.petAccessory || null
 });
 if (p.isMascot && typeof addHitPoly === "function") {
 addHitPoly([
@@ -22098,14 +22453,15 @@ out.push({ p: a.pawn, uvz, pt: iso(a.u, a.v, a.z) });
 return out;
 }
 const VALID_MASCOTS = ["cat", "dog", "ginger", "corgi", "none"];
+const MASCOT_KENNEL_POS = { u: 1212, v: 642, z: 0 };
 function sanitizeHotelMascot(v) {
-return VALID_MASCOTS.includes(v) ? v : "cat";
+return VALID_MASCOTS.includes(v) ? v : "none";
 }
 function getMascotLabel(type) {
 if (type === "dog") return "🐶 Golden Köpek";
 if (type === "ginger") return "🐈 Sarman Kedi";
 if (type === "corgi") return "🐕 Korgi Köpek";
-if (type === "none") return "🚫 Kapalı";
+if (type === "none") return "🚫 Yok";
 return "🐱 Tekir Kedi";
 }
 function isDogType(t) {
@@ -22113,6 +22469,242 @@ return t === "dog" || t === "corgi";
 }
 function getPetTypeTr(t) {
 return isDogType(t) ? "Köpeği" : "Kedisi";
+}
+function _getPetOpt(list, id) {
+if (!Array.isArray(list) || list.length === 0) return null;
+return list.find(x => x && x.id === id) || list[0];
+}
+function _sanitizeOwnedList(rawArr, list, mustIncludeId) {
+const validIds = new Set((list || []).map(x => x.id));
+const out = [];
+if (Array.isArray(rawArr)) {
+for (let i = 0; i < rawArr.length; i++) {
+const id = rawArr[i];
+if (validIds.has(id) && !out.includes(id)) out.push(id);
+}
+}
+const defId = (list && list[0]) ? list[0].id : null;
+if (defId && !out.includes(defId)) out.unshift(defId);
+if (mustIncludeId && validIds.has(mustIncludeId) && !out.includes(mustIncludeId)) out.push(mustIncludeId);
+return out;
+}
+function sanitizeHotelPet(raw) {
+const def = typeof makeDefaultHotelPet === "function" ? makeDefaultHotelPet() : {
+adopted: false, active: false, type: "cat", name: "Pati",
+coat: "default", collar: "red", accessory: "none",
+kennelStyle: "classic", kennelRoof: "red", kennelWall: "wood", kennelDecor: "bowl",
+ownedSpecies: [], ownedCoats: ["default"], ownedCollars: ["red"], ownedAccessories: ["none"],
+ownedKennelStyles: ["classic"], ownedKennelRoofs: ["red"], ownedKennelWalls: ["wood"], ownedKennelDecors: ["bowl"]
+};
+if (!raw || typeof raw !== "object") return def;
+const spMap = (typeof PET_SPECIES !== "undefined" && PET_SPECIES) ? PET_SPECIES : null;
+const type = (raw.type && spMap && spMap[raw.type]) ? raw.type : "cat";
+const adopted = !!raw.adopted;
+const active = adopted ? (raw.active !== undefined ? !!raw.active : true) : false;
+const cleanName = String(raw.name || "Pati").trim().replace(/\s+/g, " ").slice(0, 14) || "Pati";
+const coatObj = typeof PET_COATS !== "undefined" ? _getPetOpt(PET_COATS, raw.coat) : null;
+const collarObj = typeof PET_COLLARS !== "undefined" ? _getPetOpt(PET_COLLARS, raw.collar) : null;
+const accObj = typeof PET_ACCESSORIES !== "undefined" ? _getPetOpt(PET_ACCESSORIES, raw.accessory) : null;
+const kStyleObj = typeof KENNEL_STYLES !== "undefined" ? _getPetOpt(KENNEL_STYLES, raw.kennelStyle) : null;
+const kRoofObj = typeof KENNEL_ROOFS !== "undefined" ? _getPetOpt(KENNEL_ROOFS, raw.kennelRoof) : null;
+const kWallObj = typeof KENNEL_WALLS !== "undefined" ? _getPetOpt(KENNEL_WALLS, raw.kennelWall) : null;
+const kDecorObj = typeof KENNEL_DECORS !== "undefined" ? _getPetOpt(KENNEL_DECORS, raw.kennelDecor) : null;
+const coat = coatObj ? coatObj.id : "default";
+const collar = collarObj ? collarObj.id : "red";
+const accessory = accObj ? accObj.id : "none";
+const kennelStyle = kStyleObj ? kStyleObj.id : "classic";
+const kennelRoof = kRoofObj ? kRoofObj.id : "red";
+const kennelWall = kWallObj ? kWallObj.id : "wood";
+const kennelDecor = kDecorObj ? kDecorObj.id : "bowl";
+const validSpecies = spMap ? Object.keys(spMap) : ["cat", "ginger", "dog", "corgi"];
+const ownedSpecies = [];
+if (Array.isArray(raw.ownedSpecies)) {
+for (let i = 0; i < raw.ownedSpecies.length; i++) {
+const sid = raw.ownedSpecies[i];
+if (validSpecies.includes(sid) && !ownedSpecies.includes(sid)) ownedSpecies.push(sid);
+}
+}
+if (adopted && !ownedSpecies.includes(type)) ownedSpecies.push(type);
+return {
+adopted, active, type, name: cleanName,
+coat, collar, accessory,
+kennelStyle, kennelRoof, kennelWall, kennelDecor,
+ownedSpecies,
+ownedCoats: typeof PET_COATS !== "undefined" ? _sanitizeOwnedList(raw.ownedCoats, PET_COATS, coat) : ["default"],
+ownedCollars: typeof PET_COLLARS !== "undefined" ? _sanitizeOwnedList(raw.ownedCollars, PET_COLLARS, collar) : ["red"],
+ownedAccessories: typeof PET_ACCESSORIES !== "undefined" ? _sanitizeOwnedList(raw.ownedAccessories, PET_ACCESSORIES, accessory) : ["none"],
+ownedKennelStyles: typeof KENNEL_STYLES !== "undefined" ? _sanitizeOwnedList(raw.ownedKennelStyles, KENNEL_STYLES, kennelStyle) : ["classic"],
+ownedKennelRoofs: typeof KENNEL_ROOFS !== "undefined" ? _sanitizeOwnedList(raw.ownedKennelRoofs, KENNEL_ROOFS, kennelRoof) : ["red"],
+ownedKennelWalls: typeof KENNEL_WALLS !== "undefined" ? _sanitizeOwnedList(raw.ownedKennelWalls, KENNEL_WALLS, kennelWall) : ["wood"],
+ownedKennelDecors: typeof KENNEL_DECORS !== "undefined" ? _sanitizeOwnedList(raw.ownedKennelDecors, KENNEL_DECORS, kennelDecor) : ["bowl"]
+};
+}
+function hasActiveHotelPet() {
+return !!(
+typeof hotelPet !== "undefined" && hotelPet &&
+hotelPet.adopted && hotelPet.active &&
+typeof hotelMascot !== "undefined" && hotelMascot && hotelMascot !== "none"
+);
+}
+function getHotelPetDailyCareCost() {
+if (!hasActiveHotelPet()) return 0;
+const sp = (typeof PET_SPECIES !== "undefined" && PET_SPECIES[hotelPet.type]) ? PET_SPECIES[hotelPet.type] : null;
+return sp ? sp.dailyCost : 12;
+}
+function cloneHotelPetState() {
+return sanitizeHotelPet(typeof hotelPet !== "undefined" ? hotelPet : null);
+}
+function resetHotelPetState(raw) {
+hotelPet = raw ? sanitizeHotelPet(raw) : (typeof makeDefaultHotelPet === "function" ? makeDefaultHotelPet() : sanitizeHotelPet(null));
+hotelMascot = (hotelPet.adopted && hotelPet.active) ? hotelPet.type : "none";
+if (typeof resetHotelMascotPos === "function") resetHotelMascotPos();
+}
+function serializeHotelPetShowcase() {
+if (!hasActiveHotelPet()) return null;
+return {
+t: hotelPet.type,
+n: hotelPet.name || "Pati",
+ct: hotelPet.coat || "default",
+cl: hotelPet.collar || "red",
+ac: hotelPet.accessory || "none",
+ks: hotelPet.kennelStyle || "classic",
+kr: hotelPet.kennelRoof || "red",
+kw: hotelPet.kennelWall || "wood",
+kd: hotelPet.kennelDecor || "bowl"
+};
+}
+function applyHotelPetShowcase(petSnap, legacyMc) {
+if (petSnap && typeof petSnap === "object") {
+resetHotelPetState({
+adopted: true,
+active: true,
+type: petSnap.t || legacyMc || "cat",
+name: petSnap.n || "Pati",
+coat: petSnap.ct || "default",
+collar: petSnap.cl || "red",
+accessory: petSnap.ac || "none",
+kennelStyle: petSnap.ks || "classic",
+kennelRoof: petSnap.kr || "red",
+kennelWall: petSnap.kw || "wood",
+kennelDecor: petSnap.kd || "bowl"
+});
+return;
+}
+resetHotelPetState(null);
+}
+const _PET_OPTION_META = {
+coat:        { list: () => typeof PET_COATS !== "undefined" ? PET_COATS : [],               field: "coat",        owned: "ownedCoats" },
+collar:      { list: () => typeof PET_COLLARS !== "undefined" ? PET_COLLARS : [],           field: "collar",      owned: "ownedCollars" },
+accessory:   { list: () => typeof PET_ACCESSORIES !== "undefined" ? PET_ACCESSORIES : [],   field: "accessory",   owned: "ownedAccessories" },
+kennelStyle: { list: () => typeof KENNEL_STYLES !== "undefined" ? KENNEL_STYLES : [],       field: "kennelStyle", owned: "ownedKennelStyles" },
+kennelRoof:  { list: () => typeof KENNEL_ROOFS !== "undefined" ? KENNEL_ROOFS : [],         field: "kennelRoof",  owned: "ownedKennelRoofs" },
+kennelWall:  { list: () => typeof KENNEL_WALLS !== "undefined" ? KENNEL_WALLS : [],         field: "kennelWall",  owned: "ownedKennelWalls" },
+kennelDecor: { list: () => typeof KENNEL_DECORS !== "undefined" ? KENNEL_DECORS : [],       field: "kennelDecor", owned: "ownedKennelDecors" }
+};
+function _chargePetPrice(cost, currency, reason) {
+if (!cost || cost <= 0) return true;
+if (currency === "gem") {
+if (typeof spendGems === "function" && spendGems(cost, reason || "pet_custom")) return true;
+if (typeof play === "function") play("reject");
+return false;
+}
+if (typeof pay === "function") return !!pay(cost);
+if (typeof money !== "undefined" && money >= cost) {
+money -= cost;
+if (typeof dayStats === "object" && dayStats) dayStats.spent = (dayStats.spent || 0) + cost;
+return true;
+}
+if (typeof play === "function") play("reject");
+return false;
+}
+function adoptOrSelectPetSpecies(speciesId) {
+if (typeof PET_SPECIES === "undefined" || !PET_SPECIES[speciesId]) {
+return { ok: false, reason: "invalid_species", msg: "Geçersiz tür." };
+}
+if (!hotelPet || typeof hotelPet !== "object") resetHotelPetState(null);
+const sp = PET_SPECIES[speciesId];
+const wasAdopted = !!hotelPet.adopted;
+const alreadyOwned = Array.isArray(hotelPet.ownedSpecies) && hotelPet.ownedSpecies.includes(speciesId);
+if (!alreadyOwned) {
+if (!_chargePetPrice(sp.adoptCost, "tl", "pet_species:" + speciesId)) {
+return { ok: false, reason: "insufficient_tl", msg: sp.label + " için " + sp.adoptCost + " TL gerekiyor!" };
+}
+if (!Array.isArray(hotelPet.ownedSpecies)) hotelPet.ownedSpecies = [];
+hotelPet.ownedSpecies.push(speciesId);
+}
+hotelPet.adopted = true;
+hotelPet.active = true;
+hotelPet.type = speciesId;
+hotelMascot = speciesId;
+if (!wasAdopted) resetHotelMascotPos();
+if (typeof play === "function") play(isDogType(speciesId) ? "bark" : "meow");
+const actionMsg = !wasAdopted
+? ("🐾 " + hotelPet.name + " (" + sp.label + ") sahiplenildi ve bahçe kulübesine yerleşti! (Günlük bakım: " + sp.dailyCost + " TL)")
+: (!alreadyOwned
+? ("🐾 Yeni dost sahiplenildi: " + sp.label + " (-" + sp.adoptCost + " TL)")
+: ("🐾 Evcil hayvan değiştirildi: " + sp.label));
+if (typeof log === "function") log(actionMsg);
+if (typeof saveGame === "function") saveGame();
+if (typeof refresh === "function") refresh();
+return { ok: true, action: alreadyOwned ? "switched" : "adopted", msg: actionMsg };
+}
+function buyOrEquipPetOption(category, itemId) {
+const meta = _PET_OPTION_META[category];
+if (!meta) return { ok: false, reason: "invalid_category", msg: "Geçersiz kategori." };
+if (!hotelPet || !hotelPet.adopted) {
+if (typeof play === "function") play("reject");
+return { ok: false, reason: "not_adopted", msg: "Önce yukarıdan bir evcil hayvan sahiplen!" };
+}
+const list = meta.list();
+const item = list.find(x => x.id === itemId);
+if (!item) return { ok: false, reason: "invalid_item", msg: "Seçenek bulunamadı." };
+const ownedArr = Array.isArray(hotelPet[meta.owned]) ? hotelPet[meta.owned] : [];
+hotelPet[meta.owned] = ownedArr;
+const alreadyOwned = ownedArr.includes(itemId) || (item.cost || 0) <= 0;
+if (!alreadyOwned) {
+if (!_chargePetPrice(item.cost, item.currency || "tl", "pet_" + category + ":" + itemId)) {
+const unit = item.currency === "gem" ? "💎" : "TL";
+return { ok: false, reason: item.currency === "gem" ? "insufficient_gems" : "insufficient_tl", msg: item.name + " için " + item.cost + " " + unit + " gerekiyor!" };
+}
+ownedArr.push(itemId);
+}
+hotelPet[meta.field] = itemId;
+if (typeof play === "function") play(alreadyOwned ? "tap" : "coin");
+const unit = item.currency === "gem" ? " 💎" : " TL";
+const msg = alreadyOwned
+? ("✨ " + item.name + " kuşanıldı.")
+: ("🛍️ " + item.name + " satın alındı ve takıldı (-" + item.cost + unit + ")");
+if (!alreadyOwned && typeof log === "function") log(msg);
+if (typeof saveGame === "function") saveGame();
+if (typeof refresh === "function") refresh();
+return { ok: true, action: alreadyOwned ? "equipped" : "purchased", msg };
+}
+function setHotelPetName(rawName) {
+if (!hotelPet || typeof hotelPet !== "object") resetHotelPetState(null);
+const cleaned = String(rawName || "").trim().replace(/\s+/g, " ").slice(0, 14);
+if (!cleaned) return { ok: false, msg: "Geçerli bir isim yaz." };
+hotelPet.name = cleaned;
+if (typeof play === "function") play("tap");
+if (typeof log === "function") log("🏷️ Evcil hayvanın adı '" + cleaned + "' olarak güncellendi.");
+if (typeof saveGame === "function") saveGame();
+if (typeof refresh === "function") refresh();
+return { ok: true, name: cleaned, msg: "İsim kaydedildi: " + cleaned };
+}
+function toggleHotelPetActive() {
+if (!hotelPet || !hotelPet.adopted) {
+return { ok: false, reason: "not_adopted", msg: "Önce bir evcil hayvan sahiplen!" };
+}
+hotelPet.active = !hotelPet.active;
+hotelMascot = hotelPet.active ? hotelPet.type : "none";
+if (hotelPet.active) resetHotelMascotPos();
+if (typeof play === "function") play(hotelPet.active ? (isDogType(hotelPet.type) ? "bark" : "meow") : "tap");
+const msg = hotelPet.active
+? ("🐾 " + hotelPet.name + " bahçeye ve otele döndü!")
+: ("🏠 " + hotelPet.name + " geçici olarak dinlenmeye alındı (Bakım ücreti yok).");
+if (typeof log === "function") log(msg);
+if (typeof saveGame === "function") saveGame();
+if (typeof refresh === "function") refresh();
+return { ok: true, active: hotelPet.active, msg };
 }
 function attachGuestPetPawn(g, isoPos, fallbackPos) {
 if (!g || !g.petType || typeof makePawn !== "function") return null;
@@ -22133,7 +22725,7 @@ g.petPawn = petP;
 return petP;
 }
 function hasPetFriendlyAmenity() {
-if (typeof hotelMascot !== "undefined" && hotelMascot && hotelMascot !== "none") return true;
+if (hasActiveHotelPet()) return true;
 if (typeof parkState !== "undefined" && parkState === "Built") return true;
 if (typeof hasPetDecor === "function" && hasPetDecor()) return true;
 return false;
@@ -22144,9 +22736,118 @@ ginger: { body: "#f59e0b", belly: "#fef3c7", ear: "#d97706", earIn: "#fda4af", c
 dog:    { body: "#f5b841", belly: "#fef3c7", ear: "#b45309", earIn: "#92400e", collar: "#e11d48", tail: "#d97706", spots: "#d97706" },
 corgi:  { body: "#ea8c38", belly: "#fffbeb", ear: "#c2621a", earIn: "#fda4af", collar: "#2563eb", tail: "#fffbeb", spots: "#ffffff" }
 };
+function _resolvePetPalette(kind, coatId, collarId) {
+const base = _PET_PALETTES[kind] || _PET_PALETTES.cat;
+const pal = Object.assign({}, base);
+if (coatId && coatId !== "default" && typeof PET_COATS !== "undefined") {
+const coatObj = PET_COATS.find(c => c.id === coatId);
+if (coatObj && coatObj.overrides) Object.assign(pal, coatObj.overrides);
+}
+if (collarId && typeof PET_COLLARS !== "undefined") {
+const colObj = PET_COLLARS.find(c => c.id === collarId);
+if (colObj && colObj.col) pal.collar = colObj.col;
+}
+return pal;
+}
+function _drawRibbonBow(g, bx, by, fillMain, fillEdge, fillHi) {
+g.save();
+g.translate(bx, by);
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.2;
+g.fillStyle = fillEdge;
+g.beginPath();
+g.moveTo(-1, 1); g.lineTo(-4.2, 5.2); g.lineTo(-1.4, 4.4);
+g.moveTo(1, 1);  g.lineTo(4.2, 5.2);  g.lineTo(1.4, 4.4);
+g.fill(); g.stroke();
+g.fillStyle = fillMain;
+g.beginPath();
+g.moveTo(0, 0);
+g.bezierCurveTo(-5.6, -4.4, -7.2, 2.2, 0, 1.0);
+g.bezierCurveTo(7.2, 2.2, 5.6, -4.4, 0, 0);
+g.fill(); g.stroke();
+g.fillStyle = fillHi;
+g.beginPath();
+g.arc(0, 0, 1.75, 0, Math.PI * 2);
+g.fill(); g.stroke();
+g.restore();
+}
+function _drawPetAccessory(g, accessoryId, headX, headY, sleeping) {
+if (!accessoryId || accessoryId === "none") return;
+g.save();
+if (accessoryId === "bow_pink") {
+_drawRibbonBow(g, headX - 0.5, headY - 5.2, "#f472b6", "#db2777", "#fbcfe8");
+} else if (accessoryId === "bow_red") {
+_drawRibbonBow(g, headX - 0.5, headY - 5.2, "#ef4444", "#b91c1c", "#fecaca");
+} else if (accessoryId === "crown") {
+g.translate(headX - 0.3, headY - 4.8);
+g.fillStyle = "#fbbf24";
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.25;
+g.beginPath();
+g.moveTo(-4.2, 0);
+g.lineTo(-4.8, -5.2);
+g.lineTo(-1.6, -2.5);
+g.lineTo(0, -6.4);
+g.lineTo(1.6, -2.5);
+g.lineTo(4.8, -5.2);
+g.lineTo(4.2, 0);
+g.closePath();
+g.fill(); g.stroke();
+g.fillStyle = "#e11d48";
+g.beginPath(); g.arc(0, -2.1, 1.15, 0, Math.PI * 2); g.fill();
+} else if (accessoryId === "flower") {
+const fx = headX - 3.6, fy = headY - 3.8;
+g.translate(fx, fy);
+g.fillStyle = "#fb7185";
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 0.9;
+for (let k = 0; k < 5; k++) {
+const a = (k * Math.PI * 2) / 5;
+g.beginPath();
+g.arc(Math.cos(a) * 2.2, Math.sin(a) * 2.2, 1.5, 0, Math.PI * 2);
+g.fill(); g.stroke();
+}
+g.fillStyle = "#fde047";
+g.beginPath(); g.arc(0, 0, 1.4, 0, Math.PI * 2); g.fill();
+} else if (accessoryId === "glasses" && !sleeping) {
+g.fillStyle = "#0f172a";
+g.strokeStyle = "#334155";
+g.lineWidth = 1.1;
+g.beginPath();
+g.roundRect(headX - 2.3, headY - 2.1, 3.0, 2.3, 0.8);
+g.roundRect(headX + 1.2, headY - 2.1, 3.0, 2.3, 0.8);
+g.fill(); g.stroke();
+g.beginPath();
+g.moveTo(headX + 0.6, headY - 1.1); g.lineTo(headX + 1.3, headY - 1.1);
+g.moveTo(headX - 4.6, headY - 1.4); g.lineTo(headX - 2.2, headY - 1.0);
+g.stroke();
+g.strokeStyle = "rgba(255,255,255,0.75)";
+g.lineWidth = 0.8;
+g.beginPath();
+g.moveTo(headX - 1.6, headY - 1.7); g.lineTo(headX - 0.8, headY - 0.9);
+g.moveTo(headX + 1.9, headY - 1.7); g.lineTo(headX + 2.7, headY - 0.9);
+g.stroke();
+} else if (accessoryId === "bowtie" && !sleeping) {
+_drawRibbonBow(g, 5.2, -7.8, "#be123c", "#881337", "#fbbf24");
+} else if (accessoryId === "bandana" && !sleeping) {
+g.fillStyle = "#dc2626";
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.1;
+g.beginPath();
+g.moveTo(2.0, -9.2);
+g.lineTo(6.8, -7.2);
+g.lineTo(4.7, -3.2);
+g.closePath();
+g.fill(); g.stroke();
+g.fillStyle = "#ffffff";
+g.beginPath(); g.arc(4.8, -6.2, 0.75, 0, Math.PI * 2); g.fill();
+}
+g.restore();
+}
 function drawIsoAnimal(petType, pt, uvz, opts = {}) {
+const g = opts.ctx || ctx;
 const kind = VALID_MASCOTS.includes(petType) && petType !== "none" ? petType : "cat";
-const pal = _PET_PALETTES[kind] || _PET_PALETTES.cat;
+const pal = _resolvePetPalette(kind, opts.coat, opts.collar);
 const dog = isDogType(kind);
 const t = (typeof timeNow !== "undefined" ? timeNow : 0);
 const moving = !!opts.moving;
@@ -22157,54 +22858,55 @@ const facing = opts.facing === -1 ? -1 : 1;
 const sc = opts.scale || 1;
 if (dog && opts.leashOwnerPt) {
 const ownerPt = opts.leashOwnerPt;
-ctx.save();
-ctx.strokeStyle = "#5c3a21";
-ctx.lineWidth = 1.4;
-ctx.beginPath();
-ctx.moveTo(ownerPt.x + 4, ownerPt.y - 12);
-ctx.quadraticCurveTo((ownerPt.x + pt.x) * 0.5, Math.max(ownerPt.y, pt.y) - 3, pt.x + facing * 3, pt.y - 7 * sc);
-ctx.stroke();
-ctx.restore();
+g.save();
+g.strokeStyle = "#5c3a21";
+g.lineWidth = 1.4;
+g.beginPath();
+g.moveTo(ownerPt.x + 4, ownerPt.y - 12);
+g.quadraticCurveTo((ownerPt.x + pt.x) * 0.5, Math.max(ownerPt.y, pt.y) - 3, pt.x + facing * 3, pt.y - 7 * sc);
+g.stroke();
+g.restore();
 }
-ctx.save();
-ctx.translate(pt.x, pt.y);
-ctx.scale(facing * sc, sc);
-ctx.fillStyle = "rgba(0,0,0,0.20)";
-ctx.beginPath();
-ctx.ellipse(0, 1.5, dog ? 10.5 : 8.8, 4.4, 0, 0, Math.PI * 2);
-ctx.fill();
+g.save();
+g.translate(pt.x, pt.y);
+g.scale(facing * sc, sc);
+g.fillStyle = "rgba(0,0,0,0.20)";
+g.beginPath();
+g.ellipse(0, 1.5, dog ? 10.5 : 8.8, 4.4, 0, 0, Math.PI * 2);
+g.fill();
 if (sleeping) {
 const br = Math.sin(t * 2.4 + animT) * 0.7;
-ctx.fillStyle = pal.body;
-ctx.strokeStyle = OUTLINE_COL;
-ctx.lineWidth = 1.6;
-ctx.beginPath();
-ctx.ellipse(0, -3 + br * 0.3, 8.5, 5.2, 0, 0, Math.PI * 2);
-ctx.fill(); ctx.stroke();
-ctx.strokeStyle = pal.tail;
-ctx.lineWidth = 2.6;
-ctx.lineCap = "round";
-ctx.beginPath();
-ctx.arc(-2, -1, 7.2, Math.PI * 0.2, Math.PI * 0.95);
-ctx.stroke();
-ctx.fillStyle = pal.body;
-ctx.strokeStyle = OUTLINE_COL;
-ctx.lineWidth = 1.6;
-ctx.beginPath();
-ctx.arc(4.8, -5.2 + br * 0.3, 4.6, 0, Math.PI * 2);
-ctx.fill(); ctx.stroke();
-ctx.strokeStyle = OUTLINE_COL;
-ctx.lineWidth = 1.2;
-ctx.beginPath();
-ctx.moveTo(4.0, -5.5); ctx.lineTo(6.4, -5.5);
-ctx.stroke();
-ctx.restore();
+g.fillStyle = pal.body;
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.6;
+g.beginPath();
+g.ellipse(0, -3 + br * 0.3, 8.5, 5.2, 0, 0, Math.PI * 2);
+g.fill(); g.stroke();
+g.strokeStyle = pal.tail;
+g.lineWidth = 2.6;
+g.lineCap = "round";
+g.beginPath();
+g.arc(-2, -1, 7.2, Math.PI * 0.2, Math.PI * 0.95);
+g.stroke();
+g.fillStyle = pal.body;
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.6;
+g.beginPath();
+g.arc(4.8, -5.2 + br * 0.3, 4.6, 0, Math.PI * 2);
+g.fill(); g.stroke();
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.2;
+g.beginPath();
+g.moveTo(4.0, -5.5); g.lineTo(6.4, -5.5);
+g.stroke();
+_drawPetAccessory(g, opts.accessory, 4.8, -5.2 + br * 0.3, true);
+g.restore();
 if (uvz && typeof isoLabel === "function") {
 const dr = ((t * 0.7 + animT) % 2.4) * 7;
-ctx.save();
-ctx.globalAlpha = 0.72;
+g.save();
+g.globalAlpha = 0.72;
 isoLabel("z Z", uvz.u, uvz.v, (uvz.z || 0) + 14 + dr, 9.5, "#334155", "rgba(255,255,255,0.88)", 3.5, 1.5);
-ctx.restore();
+g.restore();
 }
 return;
 }
@@ -22212,151 +22914,150 @@ const stepCycle = Math.sin(animT * 1.4);
 const happyJump = happyTimer > 0 ? Math.abs(Math.sin(t * 10)) * 5.2 : 0;
 const bob = (moving ? Math.abs(stepCycle) * 2.4 : Math.sin(t * 2.8 + animT) * 0.5) + happyJump;
 const tailWag = Math.sin(t * (happyTimer > 0 ? 15 : (dog ? 8 : 3.5)) + animT) * (dog ? 4.2 : 2.6);
-ctx.translate(0, -bob);
-ctx.strokeStyle = OUTLINE_COL;
-ctx.lineWidth = dog && kind === "corgi" ? 4.2 : 3.6;
-ctx.lineCap = "round";
-ctx.beginPath();
+g.translate(0, -bob);
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = dog && kind === "corgi" ? 4.2 : 3.6;
+g.lineCap = "round";
+g.beginPath();
 if (dog) {
-ctx.moveTo(-6, -6);
-ctx.quadraticCurveTo(-11, -11 + tailWag * 0.4, -9 + tailWag * 0.35, -14);
+g.moveTo(-6, -6);
+g.quadraticCurveTo(-11, -11 + tailWag * 0.4, -9 + tailWag * 0.35, -14);
 } else {
-ctx.moveTo(-5.5, -5.5);
-ctx.bezierCurveTo(-10, -9, -11 + tailWag * 0.4, -17, -7 + tailWag * 0.5, -19);
+g.moveTo(-5.5, -5.5);
+g.bezierCurveTo(-10, -9, -11 + tailWag * 0.4, -17, -7 + tailWag * 0.5, -19);
 }
-ctx.stroke();
-ctx.strokeStyle = pal.tail;
-ctx.lineWidth = dog && kind === "corgi" ? 2.4 : 2.0;
-ctx.stroke();
+g.stroke();
+g.strokeStyle = pal.tail;
+g.lineWidth = dog && kind === "corgi" ? 2.4 : 2.0;
+g.stroke();
 const legLiftA = moving ? Math.max(0, stepCycle) * 2.8 : 0;
 const legLiftB = moving ? Math.max(0, -stepCycle) * 2.8 : 0;
-ctx.fillStyle = kind === "corgi" || kind === "cat" ? pal.belly : pal.body;
-ctx.strokeStyle = OUTLINE_COL;
-ctx.lineWidth = 1.4;
-ctx.beginPath(); ctx.ellipse(-4.5, -1.5 - legLiftA, 2.3, 2.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-ctx.beginPath(); ctx.ellipse(4.0, -1.5 - legLiftB, 2.3, 2.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-ctx.fillStyle = pal.body;
-ctx.strokeStyle = OUTLINE_COL;
-ctx.lineWidth = 1.7;
-ctx.beginPath();
-ctx.roundRect(-7.5, -11.5, 14.5, 9.5, 4.8);
-ctx.fill(); ctx.stroke();
-ctx.fillStyle = pal.belly;
-ctx.beginPath();
-ctx.ellipse(3.6, -6.5, 3.2, 3.6, 0.2, 0, Math.PI * 2);
-ctx.fill();
+g.fillStyle = kind === "corgi" || kind === "cat" ? pal.belly : pal.body;
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.4;
+g.beginPath(); g.ellipse(-4.5, -1.5 - legLiftA, 2.3, 2.6, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+g.beginPath(); g.ellipse(4.0, -1.5 - legLiftB, 2.3, 2.6, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+g.fillStyle = pal.body;
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.7;
+g.beginPath();
+g.roundRect(-7.5, -11.5, 14.5, 9.5, 4.8);
+g.fill(); g.stroke();
+g.fillStyle = pal.belly;
+g.beginPath();
+g.ellipse(3.6, -6.5, 3.2, 3.6, 0.2, 0, Math.PI * 2);
+g.fill();
 if (kind === "cat" || kind === "ginger") {
-ctx.strokeStyle = pal.spots;
-ctx.lineWidth = 1.3;
-ctx.beginPath();
-ctx.moveTo(-4, -10.8); ctx.lineTo(-2.8, -7.8);
-ctx.moveTo(-1, -10.8); ctx.lineTo(0.2, -7.8);
-ctx.stroke();
+g.strokeStyle = pal.spots;
+g.lineWidth = 1.3;
+g.beginPath();
+g.moveTo(-4, -10.8); g.lineTo(-2.8, -7.8);
+g.moveTo(-1, -10.8); g.lineTo(0.2, -7.8);
+g.stroke();
 }
-ctx.strokeStyle = pal.collar;
-ctx.lineWidth = 2.0;
-ctx.beginPath();
-ctx.moveTo(1.5, -10.5); ctx.lineTo(5.6, -8.2);
-ctx.stroke();
-ctx.fillStyle = "#fde047";
-ctx.beginPath(); ctx.arc(5.4, -7.8, 1.4, 0, Math.PI * 2); ctx.fill();
+g.strokeStyle = pal.collar;
+g.lineWidth = 2.0;
+g.beginPath();
+g.moveTo(1.5, -10.5); g.lineTo(5.6, -8.2);
+g.stroke();
+g.fillStyle = "#fde047";
+g.beginPath(); g.arc(5.4, -7.8, 1.4, 0, Math.PI * 2); g.fill();
 const headY = -13.5;
-ctx.fillStyle = pal.body;
-ctx.strokeStyle = OUTLINE_COL;
-ctx.lineWidth = 1.7;
-ctx.beginPath();
-ctx.ellipse(4.8, headY, dog ? 5.6 : 5.4, dog ? 5.2 : 4.8, 0, 0, Math.PI * 2);
-ctx.fill(); ctx.stroke();
+g.fillStyle = pal.body;
+g.strokeStyle = OUTLINE_COL;
+g.lineWidth = 1.7;
+g.beginPath();
+g.ellipse(4.8, headY, dog ? 5.6 : 5.4, dog ? 5.2 : 4.8, 0, 0, Math.PI * 2);
+g.fill(); g.stroke();
 if (kind === "dog") {
-ctx.fillStyle = pal.ear;
-ctx.beginPath();
-ctx.ellipse(1.6, headY + 0.5, 2.0, 3.6, 0.25, 0, Math.PI * 2);
-ctx.fill(); ctx.stroke();
+g.fillStyle = pal.ear;
+g.beginPath();
+g.ellipse(1.6, headY + 0.5, 2.0, 3.6, 0.25, 0, Math.PI * 2);
+g.fill(); g.stroke();
 } else {
-ctx.fillStyle = pal.ear;
-ctx.beginPath();
-ctx.moveTo(1.0, headY - 3.0); ctx.lineTo(2.0, headY - 7.8); ctx.lineTo(4.2, headY - 4.0);
-ctx.closePath(); ctx.fill(); ctx.stroke();
-ctx.beginPath();
-ctx.moveTo(4.6, headY - 4.0); ctx.lineTo(6.8, headY - 7.8); ctx.lineTo(7.8, headY - 2.8);
-ctx.closePath(); ctx.fill(); ctx.stroke();
+g.fillStyle = pal.ear;
+g.beginPath();
+g.moveTo(1.0, headY - 3.0); g.lineTo(2.0, headY - 7.8); g.lineTo(4.2, headY - 4.0);
+g.closePath(); g.fill(); g.stroke();
+g.beginPath();
+g.moveTo(4.6, headY - 4.0); g.lineTo(6.8, headY - 7.8); g.lineTo(7.8, headY - 2.8);
+g.closePath(); g.fill(); g.stroke();
 }
-ctx.fillStyle = pal.belly;
-ctx.beginPath();
-ctx.ellipse(6.5, headY + 1.6, 3.0, 2.2, 0, 0, Math.PI * 2);
-ctx.fill();
-ctx.fillStyle = OUTLINE_COL;
-ctx.beginPath();
-ctx.arc(3.8, headY - 0.6, 1.0, 0, Math.PI * 2);
-ctx.arc(7.1, headY - 0.6, 1.0, 0, Math.PI * 2);
-ctx.fill();
-ctx.fillStyle = dog ? "#1c1917" : "#fb7185";
-ctx.beginPath();
-ctx.arc(5.8, headY + 1.0, dog ? 1.3 : 1.0, 0, Math.PI * 2);
-ctx.fill();
+g.fillStyle = pal.belly;
+g.beginPath();
+g.ellipse(6.5, headY + 1.6, 3.0, 2.2, 0, 0, Math.PI * 2);
+g.fill();
+g.fillStyle = OUTLINE_COL;
+g.beginPath();
+g.arc(3.8, headY - 0.6, 1.0, 0, Math.PI * 2);
+g.arc(7.1, headY - 0.6, 1.0, 0, Math.PI * 2);
+g.fill();
+g.fillStyle = dog ? "#1c1917" : "#fb7185";
+g.beginPath();
+g.arc(5.8, headY + 1.0, dog ? 1.3 : 1.0, 0, Math.PI * 2);
+g.fill();
 if (!dog) {
-ctx.strokeStyle = "#475569";
-ctx.lineWidth = 0.85;
-ctx.beginPath();
-ctx.moveTo(8.5, headY + 0.8); ctx.lineTo(11.6, headY + 0.2);
-ctx.moveTo(8.5, headY + 1.8); ctx.lineTo(11.4, headY + 2.5);
-ctx.stroke();
+g.strokeStyle = "#475569";
+g.lineWidth = 0.85;
+g.beginPath();
+g.moveTo(8.5, headY + 0.8); g.lineTo(11.6, headY + 0.2);
+g.moveTo(8.5, headY + 1.8); g.lineTo(11.4, headY + 2.5);
+g.stroke();
 }
-ctx.restore();
+_drawPetAccessory(g, opts.accessory, 4.8, headY, false);
+g.restore();
 if (happyTimer > 0) {
 const hLift = (2.4 - Math.min(2.4, happyTimer)) * 9;
 const alpha = Math.min(1, happyTimer * 1.2);
-ctx.save();
-ctx.globalAlpha = alpha;
-ctx.font = "900 13px 'Segoe UI', Roboto, Arial, sans-serif";
-ctx.textAlign = "center";
-ctx.fillText("❤️", pt.x, pt.y - 24 * sc - hLift);
-ctx.restore();
+g.save();
+g.globalAlpha = alpha;
+g.font = "900 13px 'Segoe UI', Roboto, Arial, sans-serif";
+g.textAlign = "center";
+g.fillText("❤️", pt.x, pt.y - 24 * sc - hLift);
+g.restore();
 }
 }
 const hotelMascotActor = {
-u: 1095, v: 495, z: 8,
-targetU: 1095, targetV: 495, targetZ: 8,
+u: 1236, v: 644, z: 1,
+targetU: 1236, targetV: 644, targetZ: 1,
 state: "idle", timer: 1.8, happyTimer: 0, petCooldown: 0,
 facing: 1, animT: 0
 };
 function resetHotelMascotPos() {
-hotelMascotActor.u = 1095;
-hotelMascotActor.v = 495;
-hotelMascotActor.z = 8;
-hotelMascotActor.targetU = 1095;
-hotelMascotActor.targetV = 495;
-hotelMascotActor.targetZ = 8;
+hotelMascotActor.u = MASCOT_KENNEL_POS.u + 24;
+hotelMascotActor.v = MASCOT_KENNEL_POS.v + 2;
+hotelMascotActor.z = 1;
+hotelMascotActor.targetU = MASCOT_KENNEL_POS.u + 24;
+hotelMascotActor.targetV = MASCOT_KENNEL_POS.v + 2;
+hotelMascotActor.targetZ = 1;
 hotelMascotActor.state = "idle";
 hotelMascotActor.timer = 1.6;
 hotelMascotActor.happyTimer = 0;
 hotelMascotActor.petCooldown = 0;
 }
 function cycleHotelMascot() {
-const cur = sanitizeHotelMascot(typeof hotelMascot !== "undefined" ? hotelMascot : "cat");
-const next = VALID_MASCOTS[(VALID_MASCOTS.indexOf(cur) + 1) % VALID_MASCOTS.length];
-hotelMascot = next;
-if (next !== "none") {
-resetHotelMascotPos();
-if (typeof play === "function") play(isDogType(next) ? "bark" : "meow");
-if (typeof log === "function") log("🐾 Otel maskotu seçildi: " + getMascotLabel(next));
-} else {
-if (typeof play === "function") play("tap");
-if (typeof log === "function") log("🐾 Otel maskotu gizlendi (Kapalı).");
+if (!hotelPet || !hotelPet.adopted || !Array.isArray(hotelPet.ownedSpecies) || hotelPet.ownedSpecies.length === 0) {
+if (typeof openPetModal === "function") openPetModal("pet");
+return;
 }
-if (typeof saveGame === "function") saveGame();
-if (typeof refresh === "function") refresh();
+const owned = hotelPet.ownedSpecies;
+const idx = owned.indexOf(hotelPet.type);
+const next = owned[(idx + 1) % owned.length];
+adoptOrSelectPetSpecies(next);
 }
 function petHotelMascot() {
-const mType = sanitizeHotelMascot(typeof hotelMascot !== "undefined" ? hotelMascot : "cat");
-if (mType === "none") return;
+if (!hasActiveHotelPet()) return;
+const mType = sanitizeHotelMascot(hotelMascot);
 hotelMascotActor.happyTimer = 2.4;
 hotelMascotActor.state = "happy";
 hotelMascotActor.timer = 2.2;
 if (typeof play === "function") play(isDogType(mType) ? "bark" : "meow");
-const pt = iso(hotelMascotActor.u, hotelMascotActor.v, hotelMascotActor.z || 8);
+const pt = iso(hotelMascotActor.u, hotelMascotActor.v, hotelMascotActor.z || 1);
 if (typeof floaties !== "undefined") {
-const txt = isDogType(mType) ? "🐶 Hav hav! ❤️" : "🐱 Mırıl mırıl... ❤️";
+const pName = (hotelPet && hotelPet.name) ? hotelPet.name : "";
+const txt = isDogType(mType)
+? ("🐶 " + (pName ? pName + ": " : "") + "Hav hav! ❤️")
+: ("🐱 " + (pName ? pName + ": " : "") + "Mırıl mırıl... ❤️");
 floaties.push({ x: pt.x, y: -pt.y + 34, msg: txt, col: "#e11d48", life: 1.8, max: 1.8 });
 }
 const isVisit = typeof window !== "undefined" && !!window.visitMode;
@@ -22371,11 +23072,13 @@ fq.patience = Math.min(fq.maxPatience, fq.patience + 2);
 }
 }
 function _pickMascotRoamTarget() {
+const ku = MASCOT_KENNEL_POS.u, kv = MASCOT_KENNEL_POS.v;
 const spots = [
+{ u: ku + 24, v: kv + 2, z: 1 },
+{ u: ku + 4, v: kv + 32, z: 1 },
+{ u: 1215, v: 495, z: 2 },
 { u: 1095, v: 495, z: 8 },
-{ u: 1145, v: 465, z: 8 },
-{ u: 1205, v: 490, z: 2 },
-{ u: 1230, v: 540, z: 2 }
+{ u: 1145, v: 465, z: 8 }
 ];
 if (typeof floors !== "undefined" && floors[0] && floors[0].state === "Built") {
 const corrSpots = floors[0].slots.filter(s =>
@@ -22395,7 +23098,8 @@ z: b.z0 + 8
 return spots[Math.floor(Math.random() * spots.length)];
 }
 function updateHotelMascot(dt) {
-const mType = typeof hotelMascot !== "undefined" ? sanitizeHotelMascot(hotelMascot) : "cat";
+if (!hasActiveHotelPet()) return;
+const mType = sanitizeHotelMascot(hotelMascot);
 if (mType === "none") return;
 const a = hotelMascotActor;
 if (a.petCooldown > 0) a.petCooldown = Math.max(0, a.petCooldown - dt);
@@ -22441,11 +23145,12 @@ a.state = "walk";
 }
 }
 function getMascotMappedPawn() {
-const mType = typeof hotelMascot !== "undefined" ? sanitizeHotelMascot(hotelMascot) : "cat";
+if (!hasActiveHotelPet()) return null;
+const mType = sanitizeHotelMascot(hotelMascot);
 if (mType === "none") return null;
 if (typeof viewFloor !== "undefined" && viewFloor !== 0) return null;
 const a = hotelMascotActor;
-const uvz = { u: a.u, v: a.v, z: a.z || 8, inPool: false };
+const uvz = { u: a.u, v: a.v, z: a.z || 1, inPool: false };
 return {
 uvz,
 pt: iso(uvz.u, uvz.v, uvz.z),
@@ -22453,6 +23158,9 @@ p: {
 isPet: true,
 isMascot: true,
 petType: mType,
+petCoat: hotelPet ? hotelPet.coat : "default",
+petCollar: hotelPet ? hotelPet.collar : "red",
+petAccessory: hotelPet ? hotelPet.accessory : "none",
 facing: a.facing,
 moving: a.state === "walk",
 sleeping: a.state === "sleep",
@@ -22461,6 +23169,147 @@ animT: a.animT,
 scale: 0.94
 }
 };
+}
+function drawHotelPetKennel(si, isNight, glow, t) {
+if (!hasActiveHotelPet() || typeof hotelPet !== "object" || !hotelPet) return;
+if (typeof viewFloor !== "undefined" && viewFloor !== 0) return;
+const u = MASCOT_KENNEL_POS.u;
+const v = MASCOT_KENNEL_POS.v;
+const styleId = hotelPet.kennelStyle || "classic";
+const roofObj = (typeof KENNEL_ROOFS !== "undefined" ? KENNEL_ROOFS.find(x => x.id === hotelPet.kennelRoof) : null) || { top: "#dc2626", edge: "#991b1b", light: "#ef4444" };
+const wallObj = (typeof KENNEL_WALLS !== "undefined" ? KENNEL_WALLS.find(x => x.id === hotelPet.kennelWall) : null) || { top: "#f5e1c0", left: "#e7c99f", right: "#cfa670" };
+const decorId = hotelPet.kennelDecor || "bowl";
+const pal = typeof _dPal === "function" ? _dPal() : { sTop: "#ede7da", sL: "#cfc5b4", sR: "#b0a490" };
+const winterSnow = (si === 3);
+const rTop = winterSnow ? "#f8fafc" : roofObj.top;
+const rEdge = winterSnow ? "#cbd5e1" : roofObj.edge;
+const rLight = winterSnow ? "#ffffff" : roofObj.light;
+ctx.save();
+if (typeof _dShadow === "function") _dShadow(u, v, 24, 12);
+const isModern = styleId === "modern";
+const isRoyal = styleId === "royal";
+const isCottage = styleId === "cottage";
+const baseTop = isRoyal ? "#fde68a" : (isModern ? "#cbd5e1" : pal.sTop);
+const baseL = isRoyal ? "#d97706" : (isModern ? "#94a3b8" : pal.sL);
+const baseR = isRoyal ? "#b45309" : (isModern ? "#64748b" : pal.sR);
+isoBox(u - 16, v - 16, u + 16, v + 16, 0, 3, baseTop, baseL, baseR, OUTLINE_COL, 1.5);
+if (isRoyal) {
+isoQuad(u + 16, v - 7, u + 28, v + 7, 0.7, "#be123c", OUTLINE_COL, 1.1);
+isoQuad(u + 17, v - 5, u + 26, v + 5, 0.9, "#fbbf24", null, 0);
+}
+const wallH = isModern ? 20 : (isRoyal ? 22 : 19);
+isoBox(u - 12, v - 12, u + 12, v + 12, 3, wallH, wallObj.top, wallObj.left, wallObj.right, OUTLINE_COL, 1.6);
+if (isRoyal) {
+isoBox(u + 10.5, v + 10.5, u + 13.2, v + 13.2, 3, wallH + 1, "#fde047", "#eab308", "#b45309", OUTLINE_COL, 1);
+isoBox(u + 10.5, v - 13.2, u + 13.2, v - 10.5, 3, wallH + 1, "#fde047", "#eab308", "#b45309", OUTLINE_COL, 1);
+} else if (isModern) {
+isoBox(u - 12.5, v - 12.5, u + 12.5, v + 12.5, 3, 2.2, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1);
+}
+if ((isCottage || isModern) && typeof drawPoly2D === "function") {
+const winCol = isNight ? "#fde047" : "#bae6fd";
+drawPoly2D([
+iso(u - 3.5, v + 12.1, 9.5),
+iso(u + 3.5, v + 12.1, 9.5),
+iso(u + 3.5, v + 12.1, 15.5),
+iso(u - 3.5, v + 12.1, 15.5)
+], winCol, OUTLINE_COL, 1.15);
+}
+if (typeof _dCircle === "function") {
+_dCircle(u + 12.3, v, 10, 4.8, 6.4, "#1c1410", OUTLINE_COL, 1.25);
+}
+if (isModern) {
+isoBox(u - 15, v - 14.5, u + 15.5, v + 14.5, 3 + wallH, 4.5, rLight, rTop, rEdge, OUTLINE_COL, 1.5);
+if (winterSnow) {
+isoQuad(u - 14.5, v - 14, u + 15, v + 14, 7.7 + wallH, "#f8fafc", null, 0);
+}
+} else {
+const peakZ = 3 + wallH + (isRoyal ? 14 : (isCottage ? 12 : 11));
+if (typeof _dPyramidRoof === "function") {
+_dPyramidRoof(u, v, 15.8, 3 + wallH - 1, peakZ, rTop, rEdge, rLight);
+}
+if (isRoyal) {
+const rp = iso(u, v, peakZ + 3);
+ctx.fillStyle = "#fbbf24";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.2;
+ctx.beginPath();
+ctx.moveTo(rp.x - 4, rp.y + 2);
+ctx.lineTo(rp.x - 4, rp.y - 4);
+ctx.lineTo(rp.x, rp.y - 6);
+ctx.lineTo(rp.x + 4, rp.y - 4);
+ctx.lineTo(rp.x + 4, rp.y + 2);
+ctx.closePath();
+ctx.fill(); ctx.stroke();
+} else if (isCottage) {
+isoBox(u - 8, v - 8, u - 3, v - 3, 3 + wallH + 3, 8, "#cbd5e1", "#94a3b8", "#64748b", OUTLINE_COL, 1.1);
+}
+}
+if (typeof _dCircle === "function") {
+_dCircle(u + 19, v - 9, 1.5, 3.6, 2.2, "#f97316", OUTLINE_COL, 1.0);
+_dCircle(u + 19, v - 9, 2.3, 2.4, 1.4, "#92400e", null, 0);
+_dCircle(u + 19, v + 9, 1.5, 3.6, 2.2, "#38bdf8", OUTLINE_COL, 1.0);
+_dCircle(u + 19, v + 9, 2.3, 2.4, 1.4, "#7dd3fc", null, 0);
+}
+if (decorId === "flowers" && !winterSnow) {
+const flCols = ["#fb7185", "#facc15", "#c084fc", "#f472b6"];
+for (let k = 0; k < 2; k++) {
+const fv = k === 0 ? v - 16 : v + 16;
+isoBox(u + 6, fv - 4, u + 13, fv + 4, 0, 4, "#7c5234", "#5c3b24", "#472c1b", OUTLINE_COL, 1.0);
+const fp = iso(u + 9.5, fv, 5);
+ctx.fillStyle = "#22c55e";
+ctx.beginPath(); ctx.ellipse(fp.x, fp.y, 5.5, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+ctx.fillStyle = flCols[k * 2];
+ctx.beginPath(); ctx.arc(fp.x - 2, fp.y - 1.5, 1.8, 0, Math.PI * 2); ctx.fill();
+ctx.fillStyle = flCols[k * 2 + 1];
+ctx.beginPath(); ctx.arc(fp.x + 2, fp.y - 1.0, 1.8, 0, Math.PI * 2); ctx.fill();
+}
+} else if (decorId === "cushion") {
+isoBox(u + 15, v + 13, u + 24, v + 22, 0.5, 3.2, "#f472b6", "#ec4899", "#db2777", OUTLINE_COL, 1.1);
+const tp = iso(u + 20, v + 18, 4.5);
+ctx.fillStyle = "#fde047";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.0;
+ctx.beginPath(); ctx.arc(tp.x, tp.y, 3.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+} else if (decorId === "fairy_lights") {
+const lz = 3 + wallH + 1;
+const bulbCols = ["#fde047", "#fb7185", "#38bdf8", "#a78bfa", "#4ade80"];
+const tm = t || 0;
+for (let k = 0; k < 5; k++) {
+const f = k / 4;
+const bu = u + 13;
+const bv = v - 12 + f * 24;
+const pulse = 0.55 + 0.45 * Math.sin(tm * 4 + k * 1.3);
+if (isNight && typeof _dNightGlowDot === "function") {
+_dNightGlowDot(bu, bv, lz, 7 * pulse, Math.max(glow || 0.7, 0.5), bulbCols[k]);
+}
+const bp = iso(bu, bv, lz);
+ctx.fillStyle = bulbCols[k];
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 0.8;
+ctx.beginPath(); ctx.arc(bp.x, bp.y, 2.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+}
+} else if (decorId === "bow_plaque") {
+const pp = iso(u + 13.5, v, 3 + wallH - 3);
+ctx.fillStyle = "#fde047";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.1;
+ctx.beginPath(); ctx.roundRect(pp.x - 8, pp.y - 4.5, 16, 7.5, 2.5); ctx.fill(); ctx.stroke();
+_drawRibbonBow(ctx, pp.x, pp.y - 5.2, "#f472b6", "#db2777", "#fbcfe8");
+}
+const isVisit = typeof window !== "undefined" && !!window.visitMode;
+if (!isVisit && typeof addHitPoly === "function") {
+const kp = iso(u, v, 10);
+addHitPoly([
+{ x: kp.x - 24, y: kp.y - 28 },
+{ x: kp.x + 24, y: kp.y - 28 },
+{ x: kp.x + 24, y: kp.y + 18 },
+{ x: kp.x - 24, y: kp.y + 18 }
+], () => {
+if (typeof play === "function") play("tap");
+if (typeof openPetModal === "function") openPetModal();
+});
+}
+ctx.restore();
 }
 const _ambientButterflies = [
 { baseU: 1225, baseV: 350, phase: 0.4, speed: 1.4, cA: "#f472b6", cB: "#fbcfe8" },
@@ -22574,6 +23423,348 @@ ctx.beginPath(); ctx.arc(-wingW * 0.5, -1, 1.1, 0, Math.PI * 2); ctx.arc(wingW *
 ctx.restore();
 }
 }
+(function() {
+const modalEl = document.getElementById("pet-modal");
+const closeBtn = document.getElementById("btn-close-pet");
+const previewCanvas = document.getElementById("pet-preview-canvas");
+const previewBadge = document.getElementById("pet-preview-badge");
+const nameInput = document.getElementById("pet-name-input");
+const saveNameBtn = document.getElementById("btn-save-pet-name");
+const toggleActiveBtn = document.getElementById("btn-toggle-pet-active");
+const tabBtnPet = document.getElementById("pet-tab-btn-pet");
+const tabBtnKennel = document.getElementById("pet-tab-btn-kennel");
+const tabBodyEl = document.getElementById("pet-tab-body");
+const statusMsgEl = document.getElementById("pet-status-msg");
+const footerInfoEl = document.getElementById("pet-footer-info");
+let _petModalTab = "pet";
+let _statusTimer = null;
+function _showStatus(text, isErr) {
+if (!statusMsgEl) return;
+statusMsgEl.textContent = text || "";
+statusMsgEl.classList.toggle("is-err", !!isErr);
+statusMsgEl.style.display = text ? "block" : "none";
+if (_statusTimer) clearTimeout(_statusTimer);
+if (text) {
+_statusTimer = setTimeout(() => {
+if (statusMsgEl) statusMsgEl.style.display = "none";
+}, 3200);
+}
+}
+function _drawKennelPreview2D(pctx, cx, by, pet) {
+const styleId = (pet && pet.kennelStyle) || "classic";
+const roofObj = (typeof KENNEL_ROOFS !== "undefined" ? KENNEL_ROOFS.find(x => x.id === pet.kennelRoof) : null) || { top: "#dc2626", edge: "#991b1b", light: "#ef4444" };
+const wallObj = (typeof KENNEL_WALLS !== "undefined" ? KENNEL_WALLS.find(x => x.id === pet.kennelWall) : null) || { top: "#f5e1c0", left: "#e7c99f", right: "#cfa670" };
+const decorId = (pet && pet.kennelDecor) || "bowl";
+pctx.save();
+pctx.translate(cx, by);
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineJoin = "round";
+pctx.fillStyle = "rgba(15, 23, 42, 0.16)";
+pctx.beginPath(); pctx.ellipse(0, 4, 46, 10, 0, 0, Math.PI * 2); pctx.fill();
+if (styleId === "royal") {
+pctx.fillStyle = "#be123c";
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineWidth = 1.5;
+pctx.beginPath(); pctx.roundRect(-20, 0, 40, 10, 3); pctx.fill(); pctx.stroke();
+}
+pctx.fillStyle = styleId === "royal" ? "#d97706" : (styleId === "modern" ? "#94a3b8" : "#cbd5e1");
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineWidth = 1.8;
+pctx.beginPath(); pctx.roundRect(-36, -6, 72, 10, 3); pctx.fill(); pctx.stroke();
+const wallH = styleId === "royal" ? 42 : (styleId === "modern" ? 38 : 36);
+pctx.fillStyle = wallObj.left;
+pctx.beginPath(); pctx.roundRect(-29, -6 - wallH, 58, wallH, 3); pctx.fill(); pctx.stroke();
+pctx.fillStyle = wallObj.right;
+pctx.fillRect(15, -5 - wallH, 13, wallH - 1);
+if (styleId === "royal") {
+pctx.fillStyle = "#fbbf24";
+pctx.fillRect(-29, -6 - wallH, 5, wallH);
+pctx.fillRect(24, -6 - wallH, 5, wallH);
+} else if (styleId === "cottage" || styleId === "modern") {
+pctx.fillStyle = "#bae6fd";
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineWidth = 1.3;
+pctx.beginPath(); pctx.roundRect(-23, -6 - wallH + 10, 11, 11, 2); pctx.fill(); pctx.stroke();
+}
+pctx.fillStyle = "#1c1410";
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineWidth = 1.6;
+pctx.beginPath();
+pctx.moveTo(-9, -6);
+pctx.lineTo(-9, -22);
+pctx.arc(0, -22, 9, Math.PI, 0, false);
+pctx.lineTo(9, -6);
+pctx.closePath();
+pctx.fill(); pctx.stroke();
+if (styleId === "modern") {
+pctx.fillStyle = roofObj.top;
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineWidth = 2;
+pctx.beginPath(); pctx.roundRect(-36, -13 - wallH, 72, 10, 4); pctx.fill(); pctx.stroke();
+pctx.fillStyle = roofObj.light;
+pctx.fillRect(-33, -12 - wallH, 66, 3);
+} else {
+if (styleId === "cottage") {
+pctx.fillStyle = "#94a3b8";
+pctx.beginPath(); pctx.rect(14, -22 - wallH, 8, 16); pctx.fill(); pctx.stroke();
+}
+pctx.fillStyle = roofObj.top;
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineWidth = 2;
+pctx.beginPath();
+pctx.moveTo(-36, -5 - wallH);
+pctx.lineTo(0, -30 - wallH);
+pctx.lineTo(36, -5 - wallH);
+pctx.closePath();
+pctx.fill(); pctx.stroke();
+if (styleId === "royal") {
+pctx.fillStyle = "#fbbf24";
+pctx.beginPath();
+pctx.moveTo(-6, -30 - wallH); pctx.lineTo(-7, -38 - wallH);
+pctx.lineTo(0, -34 - wallH); pctx.lineTo(7, -38 - wallH); pctx.lineTo(6, -30 - wallH);
+pctx.closePath(); pctx.fill(); pctx.stroke();
+}
+}
+pctx.fillStyle = "#f97316";
+pctx.strokeStyle = OUTLINE_COL;
+pctx.lineWidth = 1.3;
+pctx.beginPath(); pctx.ellipse(38, 1, 6, 3.2, 0, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+pctx.fillStyle = "#38bdf8";
+pctx.beginPath(); pctx.ellipse(52, 1, 6, 3.2, 0, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+if (decorId === "flowers") {
+pctx.fillStyle = "#7c5234";
+pctx.beginPath(); pctx.roundRect(-48, -6, 14, 7, 2); pctx.fill(); pctx.stroke();
+pctx.fillStyle = "#22c55e";
+pctx.beginPath(); pctx.ellipse(-41, -8, 7, 4, 0, 0, Math.PI * 2); pctx.fill();
+pctx.fillStyle = "#fb7185";
+pctx.beginPath(); pctx.arc(-44, -9, 2.3, 0, Math.PI * 2); pctx.fill();
+pctx.fillStyle = "#facc15";
+pctx.beginPath(); pctx.arc(-38, -8, 2.3, 0, Math.PI * 2); pctx.fill();
+} else if (decorId === "cushion") {
+pctx.fillStyle = "#f472b6";
+pctx.beginPath(); pctx.ellipse(-44, -1, 10, 4.5, 0, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+pctx.fillStyle = "#fde047";
+pctx.beginPath(); pctx.arc(-40, -6, 3.8, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+} else if (decorId === "fairy_lights") {
+const cols = ["#fde047", "#fb7185", "#38bdf8", "#a78bfa", "#4ade80"];
+for (let i = 0; i < cols.length; i++) {
+pctx.fillStyle = cols[i];
+pctx.beginPath(); pctx.arc(-26 + i * 13, -5 - wallH, 2.8, 0, Math.PI * 2); pctx.fill(); pctx.stroke();
+}
+} else if (decorId === "bow_plaque") {
+pctx.fillStyle = "#fde047";
+pctx.beginPath(); pctx.roundRect(-12, -wallH - 4, 24, 9, 3); pctx.fill(); pctx.stroke();
+if (typeof _drawRibbonBow === "function") {
+_drawRibbonBow(pctx, 0, -wallH - 4, "#f472b6", "#db2777", "#fbcfe8");
+}
+}
+pctx.restore();
+}
+function renderPetPreviewCanvas() {
+if (!previewCanvas || typeof hotelPet !== "object" || !hotelPet) return;
+const pctx = previewCanvas.getContext("2d");
+if (!pctx) return;
+const w = previewCanvas.width, h = previewCanvas.height;
+const skyGrad = pctx.createLinearGradient(0, 0, 0, h);
+skyGrad.addColorStop(0, "#bae6fd");
+skyGrad.addColorStop(0.66, "#e0f2fe");
+skyGrad.addColorStop(0.67, "#86efac");
+skyGrad.addColorStop(1, "#4ade80");
+pctx.fillStyle = skyGrad;
+pctx.fillRect(0, 0, w, h);
+pctx.fillStyle = "rgba(255,255,255,0.75)";
+pctx.beginPath(); pctx.ellipse(58, 22, 22, 8, 0, 0, Math.PI * 2); pctx.fill();
+pctx.beginPath(); pctx.ellipse(290, 26, 26, 9, 0, 0, Math.PI * 2); pctx.fill();
+_drawKennelPreview2D(pctx, 118, 96, hotelPet);
+if (typeof drawIsoAnimal === "function") {
+drawIsoAnimal(hotelPet.type || "cat", { x: 256, y: 98 }, null, {
+ctx: pctx,
+scale: 2.05,
+facing: 1,
+animT: 0.35,
+happyTimer: 0,
+coat: hotelPet.coat,
+collar: hotelPet.collar,
+accessory: hotelPet.accessory
+});
+}
+if (previewBadge) {
+const sp = (typeof PET_SPECIES !== "undefined" && PET_SPECIES[hotelPet.type]) ? PET_SPECIES[hotelPet.type] : null;
+if (!hotelPet.adopted) {
+previewBadge.textContent = "🐾 Henüz sahiplenilmedi • Aşağıdan seç";
+} else if (!hotelPet.active) {
+previewBadge.textContent = "💤 " + (hotelPet.name || "Pati") + " dinleniyor • Bakım: 0 TL";
+} else {
+previewBadge.textContent = (sp ? sp.icon + " " : "🐾 ") + (hotelPet.name || "Pati") + " • Bakım: " + (sp ? sp.dailyCost : 12) + " TL/gün";
+}
+}
+}
+function _appendSection(parent, titleText, isSwatchRow, items, currentId, ownedList, onPick) {
+const sec = document.createElement("div");
+const hdr = document.createElement("div");
+hdr.className = "pet-sec-title";
+hdr.textContent = titleText;
+sec.appendChild(hdr);
+const wrap = document.createElement("div");
+wrap.className = isSwatchRow ? "pet-swatch-row" : "pet-opt-grid";
+for (let i = 0; i < items.length; i++) {
+const item = items[i];
+const equipped = item.id === currentId;
+const owned = (Array.isArray(ownedList) && ownedList.includes(item.id)) || (item.cost || 0) <= 0;
+const btn = document.createElement("button");
+btn.type = "button";
+btn.className = "pet-opt-btn" +
+(isSwatchRow ? " is-swatch" : "") +
+(equipped ? " is-equipped" : "") +
+(item.special ? " is-special" : "");
+btn.setAttribute("data-pet-opt", item.id);
+if (isSwatchRow) {
+const dot = document.createElement("span");
+dot.className = "pet-swatch-dot";
+dot.style.background = item.swatch || item.col || item.top || "#cbd5e1";
+btn.appendChild(dot);
+const lbl = document.createElement("span");
+const priceTag = equipped ? " ✓" : (owned ? "" : (" · " + item.cost + (item.currency === "gem" ? "💎" : "₺")));
+lbl.textContent = item.name + priceTag;
+btn.appendChild(lbl);
+} else {
+const top = document.createElement("div");
+top.className = "pet-opt-top";
+const nameSpan = document.createElement("span");
+nameSpan.textContent = (item.icon ? item.icon + " " : "") + item.name;
+top.appendChild(nameSpan);
+if (item.special) {
+const badge = document.createElement("span");
+badge.className = "pet-special-tag";
+badge.textContent = "✨ ÖZEL";
+top.appendChild(badge);
+}
+btn.appendChild(top);
+const sub = document.createElement("div");
+sub.className = "pet-opt-sub";
+if (equipped) sub.textContent = "✓ Takılı / Seçili";
+else if (owned) sub.textContent = "Sahipsin · Tak";
+else sub.textContent = item.cost + (item.currency === "gem" ? " 💎" : " TL");
+btn.appendChild(sub);
+}
+btn.onclick = () => onPick(item);
+wrap.appendChild(btn);
+}
+sec.appendChild(wrap);
+parent.appendChild(sec);
+}
+function _appendSpeciesSection(parent, pet) {
+if (typeof PET_SPECIES === "undefined") return;
+const sec = document.createElement("div");
+const hdr = document.createElement("div");
+hdr.className = "pet-sec-title";
+hdr.textContent = pet.adopted ? "🐾 Tür Değiştir / Yeni Dost Sahiplen" : "🐾 Evcil Hayvan Türü Seç ve Sahiplen";
+sec.appendChild(hdr);
+const grid = document.createElement("div");
+grid.className = "pet-opt-grid";
+for (const sp of Object.values(PET_SPECIES)) {
+const selected = pet.adopted && pet.type === sp.id;
+const owned = Array.isArray(pet.ownedSpecies) && pet.ownedSpecies.includes(sp.id);
+const btn = document.createElement("button");
+btn.type = "button";
+btn.className = "pet-opt-btn" + (selected ? " is-equipped" : "");
+btn.setAttribute("data-pet-species", sp.id);
+const top = document.createElement("div");
+top.className = "pet-opt-top";
+const nm = document.createElement("span");
+nm.textContent = sp.icon + " " + sp.label;
+top.appendChild(nm);
+btn.appendChild(top);
+const sub = document.createElement("div");
+sub.className = "pet-opt-sub";
+if (selected) sub.textContent = "✓ Aktif · Bakım " + sp.dailyCost + " TL/gün";
+else if (owned) sub.textContent = "Sahipsin · Geç (" + sp.dailyCost + " TL/gün)";
+else sub.textContent = sp.adoptCost + " TL · Bakım " + sp.dailyCost + " TL/gün";
+btn.appendChild(sub);
+btn.onclick = () => {
+const res = adoptOrSelectPetSpecies(sp.id);
+_showStatus(res.msg, !res.ok);
+renderPetModal();
+};
+grid.appendChild(btn);
+}
+sec.appendChild(grid);
+parent.appendChild(sec);
+}
+function renderPetModal() {
+if (!modalEl || typeof hotelPet !== "object" || !hotelPet) return;
+const pet = hotelPet;
+if (nameInput && document.activeElement !== nameInput) {
+nameInput.value = pet.name || "Pati";
+}
+if (toggleActiveBtn) {
+toggleActiveBtn.style.display = pet.adopted ? "inline-flex" : "none";
+toggleActiveBtn.textContent = pet.active ? "💤 Dinlendir" : "🐾 Çıkar";
+}
+if (tabBtnPet) tabBtnPet.classList.toggle("active", _petModalTab === "pet");
+if (tabBtnKennel) tabBtnKennel.classList.toggle("active", _petModalTab === "kennel");
+renderPetPreviewCanvas();
+if (tabBodyEl) {
+const frag = document.createDocumentFragment();
+const pickCategory = (category) => (item) => {
+const res = buyOrEquipPetOption(category, item.id);
+_showStatus(res.msg, !res.ok);
+renderPetModal();
+};
+if (_petModalTab === "pet") {
+_appendSpeciesSection(frag, pet);
+_appendSection(frag, "🎨 Tüy Rengi", true, typeof PET_COATS !== "undefined" ? PET_COATS : [], pet.coat, pet.ownedCoats, pickCategory("coat"));
+_appendSection(frag, "📿 Tasma Rengi", true, typeof PET_COLLARS !== "undefined" ? PET_COLLARS : [], pet.collar, pet.ownedCollars, pickCategory("collar"));
+_appendSection(frag, "🎀 Özel Aksesuarlar", false, typeof PET_ACCESSORIES !== "undefined" ? PET_ACCESSORIES : [], pet.accessory, pet.ownedAccessories, pickCategory("accessory"));
+} else {
+_appendSection(frag, "🏠 Kulübe Modeli (Ön Bahçe)", false, typeof KENNEL_STYLES !== "undefined" ? KENNEL_STYLES : [], pet.kennelStyle, pet.ownedKennelStyles, pickCategory("kennelStyle"));
+_appendSection(frag, "🟥 Çatı Rengi", true, typeof KENNEL_ROOFS !== "undefined" ? KENNEL_ROOFS : [], pet.kennelRoof, pet.ownedKennelRoofs, pickCategory("kennelRoof"));
+_appendSection(frag, "🧱 Duvar Malzemesi", true, typeof KENNEL_WALLS !== "undefined" ? KENNEL_WALLS : [], pet.kennelWall, pet.ownedKennelWalls, pickCategory("kennelWall"));
+_appendSection(frag, "✨ Kulübe Süslemesi", false, typeof KENNEL_DECORS !== "undefined" ? KENNEL_DECORS : [], pet.kennelDecor, pet.ownedKennelDecors, pickCategory("kennelDecor"));
+}
+tabBodyEl.innerHTML = "";
+tabBodyEl.appendChild(frag);
+}
+if (footerInfoEl) {
+const m = typeof money !== "undefined" ? money : 0;
+const g = typeof gems !== "undefined" ? gems : 0;
+const care = typeof getHotelPetDailyCareCost === "function" ? getHotelPetDailyCareCost() : 0;
+footerInfoEl.textContent = "💰 " + m + " TL  •  💎 " + g + " Elmas  •  " +
+(care > 0 ? ("Günlük bakım gideri: -" + care + " TL/gün") : "Günlük bakım gideri: 0 TL/gün");
+}
+}
+function openPetModal(initialTab) {
+if (typeof window !== "undefined" && window.visitMode) return;
+if (initialTab === "pet" || initialTab === "kennel") _petModalTab = initialTab;
+_showStatus("", false);
+renderPetModal();
+if (modalEl) modalEl.style.display = "flex";
+}
+function closePetModal() {
+if (modalEl) modalEl.style.display = "none";
+}
+if (closeBtn) closeBtn.onclick = () => { if (typeof play === "function") play("tap"); closePetModal(); };
+if (modalEl) modalEl.onclick = (e) => { if (e.target === modalEl) closePetModal(); };
+if (tabBtnPet) tabBtnPet.onclick = () => { if (typeof play === "function") play("tap"); _petModalTab = "pet"; renderPetModal(); };
+if (tabBtnKennel) tabBtnKennel.onclick = () => { if (typeof play === "function") play("tap"); _petModalTab = "kennel"; renderPetModal(); };
+if (saveNameBtn) {
+saveNameBtn.onclick = () => {
+const res = setHotelPetName(nameInput ? nameInput.value : "");
+_showStatus(res.msg, !res.ok);
+renderPetModal();
+};
+}
+if (toggleActiveBtn) {
+toggleActiveBtn.onclick = () => {
+const res = toggleHotelPetActive();
+_showStatus(res.msg, !res.ok);
+renderPetModal();
+};
+}
+window.openPetModal = openPetModal;
+window.closePetModal = closePetModal;
+window.renderPetModal = renderPetModal;
+})();
 const FIREBASE_CONFIG = {
 apiKey: "AIzaSyCQukKGihoWkstixa074mGNOKVrsgtZE4Q",
 authDomain: "hotelore-online.firebaseapp.com",
