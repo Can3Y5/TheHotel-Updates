@@ -2361,7 +2361,7 @@ text-align: center;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.85-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.86-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -2653,6 +2653,9 @@ const MaxQueue = 4, LeaveRating = 1, GymPoints = 2, ExerciseSec = 8;
 const FireCost = 60, FireSec = 25, GasPerRoom = 6, GasLeakSec = 25;
 const MaxDirt = 8, GiftChance = 0.18, Ach1Reward = 250, Ach2Reward = 400;
 const ChanceThreat = 0.08, ChanceNeedy = 0.12, ChanceFamily = 0.22, ChanceChinese = 0.07;
+const ChancePetGuest = 0.14, PetGuestCooldown = 3;
+const PetTypes = ["cat", "dog", "ginger", "corgi"];
+const PetNames = ["Pati", "Pamuk", "Boncuk", "Tarçın", "Karamel", "Lokum", "Badem", "Duman", "Fındık", "Bisküvi"];
 const StarTargets = [Star1, Star2, Star3];
 const FloorCost = [0, 400, 700, 1000];
 const FloorBuildSec = [0, 40, 60, 80];
@@ -2703,7 +2706,10 @@ greenhouse: 170,
 windmill: 190,
 treehouse: 200,
 grand_pool_fountain: 220,
-botanical_arch: 145
+botanical_arch: 145,
+cat_house: 35,
+dog_house: 55,
+koi_pond: 70
 };
 const SeasonNames = ["İlkbahar", "Yaz", "Sonbahar", "Kış"];
 const SeasonSpawn = [1.0, 1.3, 1.0, 0.75];
@@ -2883,8 +2889,11 @@ alarm:  { freqs: [233.0, 196.0, 233.0, 196.0],     step: 0.14, len: 0.3, decay: 
 tap:    { freqs: [660.0],                          step: 0.04, len: 0.08,decay: 22, vol: 0.20 },
 clean:  { freqs: [587.33, 783.99, 987.77],         step: 0.06, len: 0.22,decay: 12, vol: 0.26 },
 reject: { freqs: [196.0, 146.83],                  step: 0.12, len: 0.28,decay: 8,  vol: 0.32 },
-place:  { freqs: [440.0, 554.37, 659.25],          step: 0.07, len: 0.3, decay: 8,  vol: 0.28 }
+place:  { freqs: [440.0, 554.37, 659.25],          step: 0.07, len: 0.3, decay: 8,  vol: 0.28 },
+meow:   { freqs: [880, 1046.5, 740],               step: 0.055,len: 0.18,decay: 7,  vol: 0.22 },
+bark:   { freqs: [420, 560, 420],                  step: 0.08, len: 0.11,decay: 14, vol: 0.24 }
 };
+const _NATIVE_APK_SOUNDS = { open: 1, close: 1, bell: 1, coin: 1, build: 1, done: 1, alarm: 1, tap: 1, clean: 1, reject: 1, place: 1 };
 function makePcmSamples(freqs, step, noteLen, decay, vol, rate = 22050) {
 const total = step * (freqs.length - 1) + noteLen;
 const n = Math.ceil(total * rate);
@@ -2954,7 +2963,7 @@ audioCtx.resume().catch(() => {});
 function play(name) {
 if (!sfxEnabled) return;
 initAudio();
-if (window.AndroidUpdater && typeof window.AndroidUpdater.playSound === "function") {
+if (_NATIVE_APK_SOUNDS[name] && window.AndroidUpdater && typeof window.AndroidUpdater.playSound === "function") {
 try { window.AndroidUpdater.playSound(name); return; } catch (_) {}
 }
 if (audioCtx && sounds[name] && audioCtx.state === "running") {
@@ -3122,6 +3131,8 @@ let gardenTipShown = false;
 let totalServed = 0, firesExtinguished = 0, gasLeaksFixed = 0, killersCaught = 0, vipServed = 0;
 let themesTried = ["classic"];
 let guestsSinceNeedy = 6, saveTimer = 0;
+let hotelMascot = "cat";
+let guestsSincePet = 3;
 const stock = new Array(ItemCount).fill(0);
 const cart = new Array(ItemCount).fill(0);
 const shipments = [];
@@ -3964,8 +3975,19 @@ draw(u, v, si) { if (typeof drawDecorLavenderBed === "function") drawDecorLavend
 },
 {
 id: "birdhouse", name: "Kuş Evi", icon: "🐦", size: "K", cost: DecorPrices.birdhouse,
-drawFn: "drawDecorBirdhouse", seasonal: true, nightGlow: false,
-draw(u, v, si) { if (typeof drawDecorBirdhouse === "function") drawDecorBirdhouse(u, v, si); }
+drawFn: "drawDecorBirdhouse", seasonal: true, nightGlow: false, animated: true,
+draw(u, v, si) { if (typeof drawDecorBirdhouse === "function") drawDecorBirdhouse(u, v, si); },
+drawLive(u, v, si, _flip, _isNight, _glow, t) {
+if (typeof drawLiveDecorBirdhouse === "function") drawLiveDecorBirdhouse(u, v, si, t);
+}
+},
+{
+id: "cat_house", name: "Kedi Evi", icon: "🐱", size: "K", cost: DecorPrices.cat_house,
+drawFn: "drawDecorCatHouse", seasonal: true, nightGlow: false, animated: true,
+draw(u, v, si) { if (typeof drawDecorCatHouse === "function") drawDecorCatHouse(u, v, si); },
+drawLive(u, v, si, _flip, isNight, _glow, t) {
+if (typeof drawLiveDecorCatHouse === "function") drawLiveDecorCatHouse(u, v, si, isNight, t);
+}
 },
 {
 id: "garden_gnome", name: "Bahçe Cücesi", icon: "🍄", size: "K", cost: DecorPrices.garden_gnome,
@@ -4052,6 +4074,23 @@ drawFn: "drawDecorLilyPond", seasonal: false, nightGlow: false, animated: true,
 draw(u, v, si) { if (typeof drawDecorLilyPond === "function") drawDecorLilyPond(u, v, si); },
 drawLive(u, v, si, _flip, _isNight, _glow, t) {
 if (si !== 3 && typeof drawLiveDecorRipple === "function") drawLiveDecorRipple(u + 1, v - 1, 2, 13, t);
+if (typeof drawLiveDecorKoiFish === "function") drawLiveDecorKoiFish(u + 1, v - 1, 2.2, 11, t, 2, si === 3);
+}
+},
+{
+id: "dog_house", name: "Köpek Kulübesi", icon: "🐶", size: "O", cost: DecorPrices.dog_house,
+drawFn: "drawDecorDogHouse", seasonal: true, nightGlow: false, animated: true,
+draw(u, v, si) { if (typeof drawDecorDogHouse === "function") drawDecorDogHouse(u, v, si); },
+drawLive(u, v, si, _flip, isNight, _glow, t) {
+if (typeof drawLiveDecorDogHouse === "function") drawLiveDecorDogHouse(u, v, si, isNight, t);
+}
+},
+{
+id: "koi_pond", name: "Koi Balık Havuzu", icon: "🐟", size: "O", cost: DecorPrices.koi_pond,
+drawFn: "drawDecorKoiPond", seasonal: true, nightGlow: false, animated: true,
+draw(u, v, si) { if (typeof drawDecorKoiPond === "function") drawDecorKoiPond(u, v, si); },
+drawLive(u, v, si, _flip, _isNight, _glow, t) {
+if (typeof drawLiveDecorKoiPond === "function") drawLiveDecorKoiPond(u, v, si, t);
 }
 },
 {
@@ -4199,6 +4238,14 @@ if (!decor || typeof decor !== "object") return false;
 for (let i = 0; i < DECOR_SLOTS.length; i++) {
 const slot = DECOR_SLOTS[i];
 if (decor[slot.id] === "street_lamp") return true;
+}
+return false;
+}
+const _PET_DECOR_IDS = { cat_house: 1, dog_house: 1, koi_pond: 1, birdhouse: 1, koipond_bridge: 1 };
+function hasPetDecor() {
+if (!decor || typeof decor !== "object") return false;
+for (const k of Object.keys(decor)) {
+if (_PET_DECOR_IDS[decor[k]]) return true;
 }
 return false;
 }
@@ -5431,6 +5478,8 @@ vipServed,
 themesTried: Array.isArray(themesTried) ? themesTried.slice() : ["classic"],
 todayServed,
 guestsSinceNeedy,
+hotelMascot: (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(hotelMascot) : (hotelMascot || "cat"),
+guestsSincePet: typeof guestsSincePet === "number" ? guestsSincePet : 3,
 stock: stock.slice(),
 crateItems: crateItems.slice(),
 shipments: shipments.map(sh => ({ items: sh.items.slice(), left: sh.left, total: sh.total }))
@@ -5452,6 +5501,8 @@ bodyguardBooked: !!g.bodyguardBooked,
 eventTag: g.eventTag || "",
 expired: !!g.expired,
 kids: g.kids || 0,
+petType: g.petType || "",
+petName: g.petName || "",
 overstay: g.overstay || 0,
 fed: !!g.fed,
 budget: g.budget || 0,
@@ -5517,6 +5568,8 @@ bodyguardBooked: !!s.guest.bodyguardBooked,
 eventTag: s.guest.eventTag || "",
 expired: !!s.guest.expired,
 kids: s.guest.kids || 0,
+petType: s.guest.petType || "",
+petName: s.guest.petName || "",
 overstay: s.guest.overstay || 0,
 fed: !!s.guest.fed,
 budget: s.guest.budget || 0,
@@ -5715,6 +5768,9 @@ gardenTipShown = !!data.gardenTipShown;
 if (typeof resetDecorState === "function") resetDecorState(data.decor);
 todayServed = data.todayServed || 0;
 guestsSinceNeedy = typeof data.guestsSinceNeedy === "number" ? data.guestsSinceNeedy : 6;
+hotelMascot = (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(data.hotelMascot) : (data.hotelMascot || "cat");
+guestsSincePet = typeof data.guestsSincePet === "number" ? data.guestsSincePet : 3;
+if (typeof resetHotelMascotPos === "function") resetHotelMascotPos();
 if (Array.isArray(data.stock)) for (let k = 0; k < ItemCount; k++) stock[k] = data.stock[k] || 0;
 if (Array.isArray(data.crateItems)) for (let k = 0; k < ItemCount; k++) crateItems[k] = data.crateItems[k] || 0;
 if (Array.isArray(data.shipments)) {
@@ -5801,6 +5857,8 @@ bodyguardBooked: !!gd.bodyguardBooked,
 eventTag: gd.eventTag || "",
 expired: !!gd.expired,
 kids: gd.kids || 0,
+petType: gd.petType || "",
+petName: gd.petName || "",
 overstay: gd.overstay || 0,
 fed: !!gd.fed,
 budget: gd.budget || 0,
@@ -5820,7 +5878,7 @@ tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(gd.tennisTo
 tennis: null, tennisIdx: 0, tennisPlayed: !!gd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
 crimeTimer: rnd(10, 18), crimeDone: !!gd.crimeDone,
 sneaky: !!gd.sneaky, sneakyDays: gd.sneakyDays || 0,
-parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
+parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petPawn: null, pawn: null,
 hasBubble: false, bubbleLines: ["", ""]
 };
 const spawnPos = { x: s.X0 + SlotW * 0.5, y: fl.WalkY };
@@ -5848,6 +5906,9 @@ for (let k = 0; k < g.kids; k++) {
 const kid = makeRandomPawn({ x: spawnPos.x - 24 * (k + 1), y: fl.WalkY });
 kid.scale = 0.68; kid.follow = g.pawn; kid.followOffset = 48 * (k + 1);
 g.kidPawns.push(kid);
+}
+if (g.petType && typeof attachGuestPetPawn === "function") {
+attachGuestPetPawn(g, null, { x: spawnPos.x - 16, y: fl.WalkY });
 }
 s.guest = g;
 guests.push(g);
@@ -5970,7 +6031,8 @@ tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(qd.tennisTo
 tennis: null, tennisIdx: 0, tennisPlayed: !!qd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
 crimeTimer: rnd(10, 18), crimeDone: !!qd.crimeDone,
 sneaky: !!qd.sneaky, sneakyDays: qd.sneakyDays || 0,
-parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
+parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petPawn: null, pawn: null,
+petType: qd.petType || "", petName: qd.petName || "",
 hasBubble: false, bubbleLines: ["", ""]
 };
 const slotPos = (typeof getQueueSlotPos === "function") ? getQueueSlotPos(i) : { u: 1070, v: 472, z: 8 };
@@ -6000,6 +6062,9 @@ kid.followOffsetU = 14 * (k + 1);
 kid.followOffsetV = 18 * (k + 1);
 kid.iso = { u: slotPos.u + 14 * (k + 1), v: slotPos.v + 18 * (k + 1), z: slotPos.z };
 g.kidPawns.push(kid);
+}
+if (g.petType && typeof attachGuestPetPawn === "function") {
+attachGuestPetPawn(g, { u: slotPos.u + 16, v: slotPos.v + 18, z: slotPos.z }, { x: wx, y: floors[0].WalkY });
 }
 queue.push(g);
 guests.push(g);
@@ -6211,6 +6276,9 @@ securityPawn = null;
 cookPawn = null;
 pending = null;
 lastFront = null;
+hotelMascot = "cat";
+guestsSincePet = 3;
+if (typeof resetHotelMascotPos === "function") resetHotelMascotPos();
 for (let i = 0; i < treePlanted.length; i++) treePlanted[i] = (i === 0 || i === 4);
 for (const a of ACHIEVEMENTS) a.done = false;
 for (let f = 0; f < FloorCount; f++) {
@@ -6311,6 +6379,7 @@ dorm: [dormState, dormLevel || 1],
 kit: [kitchenState, cookLevel || 0],
 tw: Array.isArray(towerOrder) ? towerOrder.slice() : [],
 tp: Array.isArray(treePlanted) ? treePlanted.map(v => v ? 1 : 0) : [],
+mc: (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(hotelMascot) : "cat",
 decor: (typeof cloneDecorState === "function") ? cloneDecorState() : {},
 floors: floors.map((fl, fIdx) => ({
 st: fl.state,
@@ -6404,6 +6473,8 @@ for (let i = 0; i < treePlanted.length && i < snap.tp.length; i++) treePlanted[i
 }
 if (typeof resetDecorState === "function") resetDecorState(snap.decor || {});
 if (typeof reconcileDecorStateOnLoad === "function") reconcileDecorStateOnLoad();
+hotelMascot = (typeof sanitizeHotelMascot === "function") ? sanitizeHotelMascot(snap.mc) : "cat";
+if (typeof resetHotelMascotPos === "function") resetHotelMascotPos();
 for (let f = 0; f < FloorCount; f++) {
 const fl = floors[f];
 const flData = snap.floors[f];
@@ -6637,6 +6708,7 @@ function spawnGuest() {
 resetSpawn();
 if (queue.length >= MaxQueue) return;
 guestsSinceNeedy++;
+if (typeof guestsSincePet === "number") guestsSincePet++;
 const roll = Math.random();
 let gType = "Normal";
 if (guestsSinceNeedy >= 15) {
@@ -6660,7 +6732,7 @@ spaTimer: rnd(12, 30), spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, s
 cafeTimer: rnd(1, 3), cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
 tennisTimer: rnd(10, 25), tennisToday: 0, tennis: null, tennisIdx: 0, tennisPlayed: false, tennisInFlow: false, tennisElapsed: 0,
 crimeTimer: rnd(10, 18), crimeDone: false,
-parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
+parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petType: "", petName: "", petPawn: null, pawn: null,
 hasBubble: true, bubbleLines: ["", ""]
 };
 g.chinese = g.type === "Normal" && Math.random() < ChanceChinese;
@@ -6702,6 +6774,15 @@ g.hint = "Festival için şehre geldik! Üst katta balkonlu bir odanız varsa ha
 }
 }
 g.kids = (g.type !== "Threat" && g.role === "None" && !g.isVip && Math.random() < ChanceFamily) ? rndInt(1, 3) : 0;
+if (
+g.type === "Normal" && g.role === "None" && !g.isVip && !g.chinese && g.kids === 0 &&
+typeof guestsSincePet === "number" && guestsSincePet >= PetGuestCooldown &&
+Math.random() < ChancePetGuest
+) {
+guestsSincePet = 0;
+g.petType = pick(PetTypes);
+g.petName = pick(PetNames);
+}
 if (activeEvent === "Tennis" && g.type === "Normal" && g.role === "None" && !g.isVip && !g.chinese && g.kids === 0 && tennisGuestsThisEvent < TennisMaxGuestsPerEvent) {
 if (Math.random() < 0.90) {
 g.eventTag = "Tennis";
@@ -6719,6 +6800,7 @@ else if (g.eventTag === "Festival") b *= 1.25;
 else if (g.eventTag === "Tennis") b *= 1.2;
 if (g.chinese) b *= 1.4;
 if (g.kids > 0) b *= 1.2;
+if (g.petType) b *= 1.2;
 if (g.wantsBalcony) b *= 1.25;
 if (g.role === "Vampire" || g.role === "Killer") b *= 1.2;
 if (receptionistLevel === 2) b *= 1.15;
@@ -6807,6 +6889,9 @@ kid.followOffsetU = 14 * (k + 1);
 kid.followOffsetV = 18 * (k + 1);
 kid.iso = { u: spawnU + 14 * (k + 1), v: spawnV - 20 * (k + 1), z: 0 };
 g.kidPawns.push(kid);
+}
+if (g.petType && typeof attachGuestPetPawn === "function") {
+attachGuestPetPawn(g, { u: spawnU + 16, v: spawnV - 18, z: 0 }, { x: waitX(), y: floors[0].WalkY });
 }
 const vacantRooms = allSlots.filter(s => s.type === "Room" && s.floor.state === "Built" && s.Ready && !s.guest && !s.onFire).length;
 if (vacantRooms === 0 && queue.length >= 3 && Math.random() < 0.65) {
@@ -7013,6 +7098,9 @@ if (typeof freeTennisSlot === "function") freeTennisSlot(g);
 for (const kid of g.kidPawns) {
 kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = p;
 }
+if (g.petPawn) {
+g.petPawn.wander = false; g.petPawn.path = []; g.petPawn.onArrive = null; g.petPawn.follow = p;
+}
 g.kidsAtPark = false;
 p.wander = false; p.exercise = false; p.tennis = false; p.spa = false; p.spaIdx = 0; p.cafe = false; p.cafeIdx = 0; p.speed = 110; p.path = []; p.isoPath = []; p.onIsoArrive = null;
 if ((wasTennis || wasSpa || wasCafe || wasGym || wasToilet) && leaveRoom) p.iso = null;
@@ -7045,6 +7133,7 @@ p.isoPath = exitPath;
 p.onIsoArrive = () => {
 destroyPawn(g.pawn);
 for (const k of g.kidPawns) destroyPawn(k);
+if (g.petPawn) destroyPawn(g.petPawn);
 const gi = guests.indexOf(g);
 if (gi >= 0) guests.splice(gi, 1);
 };
@@ -7290,6 +7379,20 @@ reputation += 12;
 reasons.push("festival balkon bonusu +12 İtibar");
 }
 if (g.kids > 0 && parkState !== "Built") { r -= 1; reasons.push("park yoktu"); }
+if (g.petType) {
+const petOk = (typeof hasPetFriendlyAmenity === "function") && hasPetFriendlyAmenity();
+if (petOk) {
+if (r >= 4) {
+money += 30;
+dayStats.income += 30;
+reputation += 4;
+reasons.push("evcil hayvan dostu +30 TL bahşiş");
+}
+} else {
+r -= 0.5;
+reasons.push("evcil hayvan alanı yoktu");
+}
+}
 if (g.price > g.budget * 0.9) { r -= 1; reasons.push("pahalıydı"); }
 if (s.maintenance < 20) { r -= 2; reasons.push("oda bakımsızdı"); }
 else if (s.maintenance < 50) { r -= 1; reasons.push("oda biraz eskiydi"); }
@@ -8281,6 +8384,7 @@ log("🔪 KORKUNÇ CİNAYET! Seri Katil " + g.name + ", koridordan " + vSlot.roo
 if (typeof freeTennisSlot === "function") freeTennisSlot(victim);
 destroyPawn(victim.pawn);
 for (const kp of victim.kidPawns) destroyPawn(kp);
+if (victim.petPawn) destroyPawn(victim.petPawn);
 const vi = guests.indexOf(victim);
 if (vi >= 0) guests.splice(vi, 1);
 vSlot.guest = null;
@@ -8354,6 +8458,7 @@ log("😱 KORKUNÇ GECE! Vampir " + g.name + ", " + vSlot.roomNo + ". odaya gizl
 if (typeof freeTennisSlot === "function") freeTennisSlot(victim);
 destroyPawn(victim.pawn);
 for (const kp of victim.kidPawns) destroyPawn(kp);
+if (victim.petPawn) destroyPawn(victim.petPawn);
 const vi = guests.indexOf(victim);
 if (vi >= 0) guests.splice(vi, 1);
 vSlot.guest = null;
@@ -8551,7 +8656,7 @@ gymTimer: 999, toiletTimer: 999, parkTimer: 999, spaTimer: 999, cafeTimer: 999,
 spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
 cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
 crimeTimer: 999, crimeDone: true,
-parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], pawn: null,
+parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petType: "", petName: "", petPawn: null, pawn: null,
 hasBubble: false, bubbleLines: ["", ""]
 };
 bg.pawn = makePawn({ x: vipGuest.pawn ? vipGuest.pawn.pos.x - 45 : -500, y: floors[0].WalkY }, pick(Skins), "#1a1412", "#1c202b");
@@ -9865,7 +9970,7 @@ if (s.floor.state !== "Built") continue;
 if (s.type === "Gas") s.maintenance = Math.max(0, s.maintenance - 3);
 if (!s.guest) continue;
 const g = s.guest;
-s.maintenance = Math.max(0, s.maintenance - 10);
+s.maintenance = Math.max(0, s.maintenance - (g.petType ? 13 : 10));
 if (g.expired) { g.overstay++; continue; }
 if (g.sneaky) {
 g.sneakyDays = (g.sneakyDays || 0) + 1;
@@ -10851,6 +10956,7 @@ else if (i === 2) cycleRecMinPrice();
 else if (i === 3) toggleRecAllowFree();
 else if (i === 4) toggleRecAutoPlace();
 else if (i === 5) fireReceptionist();
+else if (i === 7 && typeof cycleHotelMascot === "function") cycleHotelMascot();
 } else if (s.type === "Gas") {
 if (i === 0) { toggleGas(); saveGame(); }
 else if (i === 1) doMaint(s);
@@ -11127,7 +11233,8 @@ topRow.className = "gb-card-top";
 const nameEl = document.createElement("div");
 nameEl.className = "gb-name";
 const kidTag = g.kids > 0 ? " (" + g.kids + " çocuklu)" : "";
-nameEl.textContent = "👤 " + g.name + kidTag;
+const petTag = g.petType ? (" • 🐾 " + (g.petName || "Pati")) : "";
+nameEl.textContent = "👤 " + g.name + kidTag + petTag;
 const badge = document.createElement("div");
 badge.className = "gb-room-badge";
 const flLabel = (s.floor.idx + 1) + ". Kat";
@@ -11199,6 +11306,14 @@ anyWant = true;
 const tag = document.createElement("span");
 tag.className = "gb-tag " + (parkAvail ? "ok" : "miss");
 tag.textContent = (g.chinese && !canTranslate() ? (parkAvail ? "✅ 公园" : "❌ 公园") : (parkAvail ? "✅ Park" : "❌ Park (Yok)"));
+wantsWrap.appendChild(tag);
+}
+if (g.petType) {
+anyWant = true;
+const petOk = (typeof hasPetFriendlyAmenity === "function") && hasPetFriendlyAmenity();
+const tag = document.createElement("span");
+tag.className = "gb-tag " + (petOk ? "ok" : "miss");
+tag.textContent = petOk ? "✅ 🐾 Evcil Hayvan Dostu" : "❌ 🐾 Evcil Hayvan Alanı Yok";
 wantsWrap.appendChild(tag);
 }
 if (si === 3) {
@@ -12452,7 +12567,8 @@ const bonusTxt = rLv === 0 ? "Resepsiyonist yok (Çince çeviri ve filtreler kap
 rLv === 1 ? "Resepsiyonist Sv.1 (Çince çeviri + Filtreler açık)" :
 rLv === 2 ? "Resepsiyonist Sv.2 (+%15 Pazarlık Bonusu + Filtreler)" :
 "Resepsiyonist Sv.3 (+%25 Pazarlık + Otomatik Oda Yerleştirme)";
-infoText.textContent = "🛎️ Giriş Lobisi & Resepsiyon " + coordStr + "  •  " + bonusTxt +
+const mLbl = (typeof getMascotLabel === "function" && typeof hotelMascot !== "undefined") ? getMascotLabel(hotelMascot) : "🐱 Tekir Kedi";
+infoText.textContent = "🛎️ Giriş Lobisi & Resepsiyon " + coordStr + "  •  " + bonusTxt + "  •  Maskot: " + mLbl +
 (rLv >= 1 ? ("\nFiltreler: Çocuklu=" + (recNoKids ? "REDDET" : "KABUL") + " | Alt Sınır=" + (recMinPrice > 0 ? recMinPrice + " TL" : "YOK") + " | Ücretsiz=" + (recAllowFree ? "KABUL" : "REDDET") + (rLv >= 3 ? (" | Oto-Yerleştir=" + (recAutoPlace ? "AÇIK" : "KAPALI")) : "")) : "");
 if (rLv < 3) {
 const rCost = RecHireCost[rLv + 1];
@@ -12470,6 +12586,7 @@ const nextFl = floors.find(f => f.state === "Locked");
 if (nextFl) {
 setAct(6, "🏢 " + (nextFl.idx + 1) + ". Katı Aç\n" + FloorCost[nextFl.idx] + " TL", true, stars() >= nextFl.idx && floors[nextFl.idx - 1].state === "Built");
 }
+setAct(7, "🐾 Maskot\n" + mLbl, true, true);
 } else if (cur.type === "Gas") {
 infoText.textContent = "🔥 Doğalgaz Dairesi " + coordStr + "  •  Vana: " + (gasOn ? "AÇIK" : "KAPALI") + "  •  Bakım: %" + Math.round(cur.maintenance) +
 (gasLeak ? "\n🚨 GAZ KAÇAĞI! " + Math.ceil(gasLeakLeft) + " sn içinde vanayı kapat!" : "\nKışın odaları ısıtır (günlük " + GasPerRoom + " TL/oda).");
@@ -12685,6 +12802,7 @@ if (g.wantsToilet) w.push(cn ? "厕所" : "Tuvalet/Banyo");
 if (g.wantsBalcony) w.push(cn ? "阳台" : "Balkon");
 if (g.isVip) w.push(g.vipRule === "Bodyguard" ? "🕶️ Yan Odada Koruma" : "🤫 Sessiz Yan Oda");
 if (g.kids > 0) w.push(cn ? "公园" : "Havuz/Park");
+if (g.petType) w.push(cn ? "宠物友好" : "🐾 Evcil Hayvan Dostu");
 return w.join(cn ? "、" : ", ");
 }
 function refreshGuest() {
@@ -12697,6 +12815,7 @@ if (g) {
 const more = queue.length > 1 ? "  •  👥 Sırada: " + (queue.length - 1) : "";
 const status = "⏳ Sabır: " + Math.ceil(g.patience) + " sn  •  🎯 Hak: " + (3 - g.attempts) + more;
 const kidTr = g.kids > 0 ? " (" + g.kids + " çocuklu)" : "";
+const petTr = g.petType ? (" (🐾 " + (typeof getPetTypeTr === "function" ? getPetTypeTr(g.petType) : "Evcil Hayvanı") + " " + (g.petName || "Pati") + " ile)") : "";
 let secWarn = "";
 if (g.role === "Thief" && securityLevel >= 2) secWarn = "\n🚨 GÜVENLİK: Bu kişi HIRSIZ! (Reddet veya Kameralı odaya al)";
 else if (g.role === "Vampire" && securityLevel >= 3) secWarn = "\n🚨 GÜVENLİK: Bu kişi VAMPİR! (Reddet!)";
@@ -12719,7 +12838,7 @@ let t = "🌏 " + g.name + " · " + g.days + "天" + (g.kids > 0 ? "（带孩子
 if (canTranslate()) t += "\n🛎️ Çeviri: " + g.days + " gün, " + g.offer + " TL" + kidTr + " • İstek: " + wantList(g, false);
 guestText.textContent = t;
 } else {
-guestText.textContent = "🛎️ " + g.name + " • " + g.days + " gün" + kidTr + " • 💰 " + g.offer + " TL öneriyor\n📌 İstek: " + wantList(g, false) + "  |  " + status + hintLine;
+guestText.textContent = "🛎️ " + g.name + " • " + g.days + " gün" + kidTr + petTr + " • 💰 " + g.offer + " TL öneriyor\n📌 İstek: " + wantList(g, false) + "  |  " + status + hintLine;
 }
 if (pending) offerBtn.textContent = "✔ Odaya Yerleştir";
 else if (g.type !== "Normal") offerBtn.textContent = curPrice <= 0 ? "🤝 Bedava Al" : "💬 Teklif Ver";
@@ -12729,17 +12848,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 93;
-const APP_VERSION_NAME = "1.9.85-beta";
+const APP_VERSION_CODE = 94;
+const APP_VERSION_NAME = "1.9.86-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.86-beta",
+title: "Hayvanlar: maskot, evcil hayvanlı misafir ve canlı bahçe",
+latest: true,
+notes: "• 🐾 Otel Maskotu: Resepsiyondan kedi, köpek, sarman veya corgi maskot seç; lobide ve koridorlarda gezer, dokununca sevinip kuyruk sabrını sakinleştirir.\n• 🧳 Evcil Hayvanlı Misafirler: Arada sırada dostuyla gelen misafirler yüksek bütçe ve bahşişle gelir (park, maskot veya bahçe yuvası varsa ekstra ödül!).\n• 🦋 Canlı Bahçe & Çevre: Yeni kedi/köpek evi ve koi göleti süsleri, mevcut kuş evi ve nilüfer göletine hareketli kuş/koi eklendi; park ördekleri, bahçe kelebekleri ve kaldırımda gezinen köpek."
+},
+{
 ver: "v1.9.85-beta",
 title: "HUD düzeni",
-latest: true,
+latest: false,
 notes: "• 🎮 Alt Dock & Sol Alt Düğmeler: 🌳 Bahçe düğmesi alt dock'un sağına taşındı; sol alt aç/kapa düğmesi 🛎️ resepsiyon zili ikonu ve zil sesi/yazısı ile birleştirildi; alttaki panel açıldığında sol alt grup panelin üzerine kayar.\n• 🔝 Sade Üst Çubuk: Üst sağdaki 🛎️ ve ☁️ simgeleri kaldırıldı (Bulut/Hesap ana menüden erişilir), 🔄 🎨 👥 ⚙️ ikonları eşit aralıklı dizildi."
 },
 {
@@ -13830,13 +13955,14 @@ inPool: false
 }
 if (pawn && (pawn.sleeping || (pawn.follow && pawn.follow.sleeping))) {
 const parentPawn = (pawn.follow && pawn.follow.sleeping) ? pawn.follow : pawn;
-const isKid = !!(pawn.follow && pawn.follow.sleeping);
+const isKid = !!(pawn.follow && pawn.follow.sleeping && !pawn.isPet);
+const isPet = !!pawn.isPet;
 const guestObj = (typeof guests !== 'undefined' && Array.isArray(guests))
-? guests.find(g => g.pawn === parentPawn || (g.kidPawns && g.kidPawns.includes(parentPawn)))
+? guests.find(g => g.pawn === parentPawn || g.petPawn === parentPawn || (g.kidPawns && g.kidPawns.includes(parentPawn)))
 : null;
 const activeSlot = (guestObj && guestObj.room) ||
-allSlots.find(s => (s.guest && (s.guest.pawn === parentPawn || (s.guest.kidPawns && s.guest.kidPawns.includes(parentPawn))))) ||
-allSlots.find(s => (s.guests && s.guests.some(g => g.pawn === parentPawn || (g.kidPawns && g.kidPawns.includes(parentPawn)))));
+allSlots.find(s => (s.guest && (s.guest.pawn === parentPawn || s.guest.petPawn === parentPawn || (s.guest.kidPawns && s.guest.kidPawns.includes(parentPawn))))) ||
+allSlots.find(s => (s.guests && s.guests.some(g => g.pawn === parentPawn || g.petPawn === parentPawn || (g.kidPawns && g.kidPawns.includes(parentPawn)))));
 if (activeSlot) {
 ensureRoomFurnLayout(activeSlot);
 const b = slotIsoBox(activeSlot.floor.idx, activeSlot.idx);
@@ -13852,6 +13978,14 @@ headV = (by0 + by1) * 0.5 + (isKid ? 14 : -3);
 } else {
 headU = (bx0 + bx1) * 0.5 + (isKid ? 14 : -3);
 headV = by0 + 13;
+}
+if (isPet) {
+return {
+u: b.u0 + PARCEL_SIZE * 0.62,
+v: b.v0 + PARCEL_SIZE * 0.64,
+z: b.z0 + 8,
+inPool: false
+};
 }
 return {
 u: headU,
@@ -13907,11 +14041,11 @@ inPool: false
 };
 }
 const guestObj = (typeof guests !== "undefined" && Array.isArray(guests))
-? guests.find(g => g.pawn === pawn || (g.kidPawns && g.kidPawns.includes(pawn)))
+? guests.find(g => g.pawn === pawn || g.petPawn === pawn || (g.kidPawns && g.kidPawns.includes(pawn)))
 : null;
 const activeSlot = (guestObj && guestObj.room) ||
 allSlots.find(s =>
-(s.guest && (s.guest.pawn === pawn || (s.guest.kidPawns && s.guest.kidPawns.includes(pawn)))) ||
+(s.guest && (s.guest.pawn === pawn || s.guest.petPawn === pawn || (s.guest.kidPawns && s.guest.kidPawns.includes(pawn)))) ||
 cleaners.some(c => c.pawn === pawn && c.target === s)
 );
 if (activeSlot && activeSlot.floor.idx <= viewFloor) {
@@ -13935,7 +14069,7 @@ z: pb.z0 + 4,
 inPool: true
 };
 }
-const inQueueIdx = queue.findIndex(q => q.pawn === pawn || (q.kidPawns && q.kidPawns.includes(pawn)));
+const inQueueIdx = queue.findIndex(q => q.pawn === pawn || q.petPawn === pawn || (q.kidPawns && q.kidPawns.includes(pawn)));
 if (inQueueIdx >= 0) {
 const slotPos = getQueueSlotPos(inQueueIdx);
 return {
@@ -17070,6 +17204,158 @@ _dCircle(u + 16, v, 49, 8, 5, f.top, OUTLINE_COL, 1.3);
 _dCircle(u - 2, v + 2, 56, 3.2, 2.5, si === 3 ? "#f8fafc" : c.acc, OUTLINE_COL, 0.9);
 if (isNight && glow > 0.1) _dNightGlowDot(u, v, 52, 16, glow, "rgba(253, 224, 71, 0.55)");
 }
+function drawDecorCatHouse(u, v, si) {
+const c = _dPal();
+_dShadow(u, v, 15, 8);
+isoBox(u - 10, v - 10, u + 10, v + 10, 0, 3, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.4);
+isoBox(u - 8, v - 8, u + 8, v + 8, 3, 15, "#f5e1c0", "#e7c99f", "#cfa670", OUTLINE_COL, 1.5);
+_dCircle(u + 8, v, 8.5, 3.6, 4.2, "#291d16", OUTLINE_COL, 1.1);
+_dPyramidRoof(u, v, 11, 15, 24, si === 3 ? "#f8fafc" : "#fb7185", si === 3 ? "#cbd5e1" : "#e11d48", "#fda4af");
+isoQuad(u - 6, v + 10, u + 3, v + 17, 1.5, "#38bdf8", OUTLINE_COL, 1.1);
+_dCircle(u + 9, v + 9, 4, 2.8, 1.8, "#f59e0b", OUTLINE_COL, 1);
+}
+function drawLiveDecorCatHouse(u, v, _si, isNight, t) {
+const bob = Math.sin((t || 0) * 2.5 + u * 0.1) * 0.6;
+const tailWag = Math.sin((t || 0) * 3.8 + v * 0.1) * 3.2;
+const p = iso(u + 11, v + 4, 4 + (isNight ? 0 : Math.max(0, bob)));
+ctx.save();
+ctx.translate(p.x, p.y);
+ctx.strokeStyle = "#d97706";
+ctx.lineWidth = 2.2;
+ctx.lineCap = "round";
+ctx.beginPath();
+ctx.moveTo(-4, -1);
+ctx.quadraticCurveTo(-8, -5 + tailWag * 0.35, -7 + tailWag * 0.25, -8);
+ctx.stroke();
+ctx.fillStyle = "#f59e0b";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.3;
+ctx.beginPath(); ctx.ellipse(0, -1, 4.5, 3.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.arc(3.2, -5.5, 3.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(1.2, -8); ctx.lineTo(2.0, -11); ctx.lineTo(3.5, -8.5);
+ctx.moveTo(3.6, -8.5); ctx.lineTo(5.2, -11); ctx.lineTo(5.6, -7.8);
+ctx.fill(); ctx.stroke();
+ctx.fillStyle = OUTLINE_COL;
+if (isNight) {
+ctx.beginPath(); ctx.moveTo(2.4, -5.6); ctx.lineTo(4.4, -5.6); ctx.stroke();
+} else {
+ctx.beginPath(); ctx.arc(4.2, -5.8, 0.8, 0, Math.PI * 2); ctx.fill();
+}
+ctx.restore();
+}
+function drawDecorDogHouse(u, v, si) {
+const c = _dPal();
+_dShadow(u, v, 24, 12);
+isoBox(u - 16, v - 16, u + 16, v + 16, 0, 3, c.sTop, c.sL, c.sR, OUTLINE_COL, 1.5);
+isoBox(u - 12, v - 12, u + 12, v + 12, 3, 21, "#fef3c7", "#e7c99f", "#c9a372", OUTLINE_COL, 1.6);
+_dCircle(u + 12, v, 10, 4.5, 6.2, "#1c1410", OUTLINE_COL, 1.2);
+_dPyramidRoof(u, v, 15.5, 21, 34, si === 3 ? "#f8fafc" : "#dc2626", si === 3 ? "#cbd5e1" : "#991b1b", "#ef4444");
+isoBox(u + 11, v - 3.5, u + 13, v + 3.5, 16, 18.5, "#fffbeb", "#fef3c7", "#fde68a", OUTLINE_COL, 0.9);
+_dCircle(u + 16, v - 10, 3.5, 3.6, 2.2, "#38bdf8", OUTLINE_COL, 1.1);
+}
+function drawLiveDecorDogHouse(u, v, _si, isNight, t) {
+const tailWag = Math.sin((t || 0) * 6.5 + u * 0.05) * 3.5;
+const earBob = isNight ? 0 : Math.abs(Math.sin((t || 0) * 2.2)) * 1.1;
+const p = iso(u + 16, v + 5, 4);
+ctx.save();
+ctx.translate(p.x, p.y);
+ctx.strokeStyle = "#b45309";
+ctx.lineWidth = 2.4;
+ctx.lineCap = "round";
+ctx.beginPath();
+ctx.moveTo(-5, -2);
+ctx.quadraticCurveTo(-9, -6 + tailWag * 0.4, -7 + tailWag * 0.35, -10);
+ctx.stroke();
+ctx.fillStyle = "#f59e0b";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.4;
+ctx.beginPath(); ctx.ellipse(0, -2, 6, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.arc(4.8, -7.2 - earBob * 0.4, 4.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.fillStyle = "#b45309";
+ctx.beginPath(); ctx.ellipse(2.3, -6.5 + earBob * 0.4, 1.7, 3.0, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.fillStyle = "#ef4444";
+ctx.beginPath(); ctx.ellipse(3.6, -4.4, 2.8, 1.1, -0.2, 0, Math.PI * 2); ctx.fill();
+ctx.fillStyle = OUTLINE_COL;
+ctx.beginPath(); ctx.arc(7.6, -6.8 - earBob * 0.4, 1.1, 0, Math.PI * 2); ctx.fill();
+if (!isNight) {
+ctx.beginPath(); ctx.arc(5.8, -8.2 - earBob * 0.4, 0.85, 0, Math.PI * 2); ctx.fill();
+}
+ctx.restore();
+}
+function drawDecorKoiPond(u, v, si) {
+const c = _dPal();
+const f = _dFoliage(si);
+_dShadow(u, v, 27, 14);
+_dCircle(u, v, 0.8, 25.5, 13.5, c.sTop, OUTLINE_COL, 1.6);
+_dCircle(u, v, 1.8, 21.5, 11.2, si === 3 ? "#cbd5e1" : "#0ea5e9", OUTLINE_COL, 1.2);
+isoBox(u - 18, v - 10, u - 10, v - 2, 1, 11, c.sL, c.sR, "#64748b", OUTLINE_COL, 1.3);
+_dCircle(u - 7, v + 5, 2.2, 4.4, 2.4, f.mid, OUTLINE_COL, 1.0);
+_dCircle(u + 9, v - 4, 2.2, 3.6, 2.0, f.top, OUTLINE_COL, 1.0);
+if (si !== 3) _dCircle(u - 6, v + 5, 3.1, 2.0, 1.5, "#f472b6", OUTLINE_COL, 0.8);
+}
+function drawLiveDecorKoiFish(u, v, z, radius, t, count, frozen = false) {
+const cnt = count || 3;
+const speed = frozen ? 0.28 : 1.05;
+const cols = ["#f97316", "#facc15", "#ffffff"];
+ctx.save();
+if (frozen) ctx.globalAlpha = 0.42;
+for (let i = 0; i < cnt; i++) {
+const ang = (t || 0) * speed + i * ((Math.PI * 2) / cnt) + (u + v) * 0.01;
+const r = radius * (0.52 + 0.22 * Math.sin((t || 0) * 0.7 + i * 2));
+const fu = u + Math.cos(ang) * r;
+const fv = v + Math.sin(ang) * r;
+const fp = iso(fu, fv, z);
+const tangAngle = Math.atan2(
+iso(u + Math.cos(ang + 0.08) * r, v + Math.sin(ang + 0.08) * r, z).y - fp.y,
+iso(u + Math.cos(ang + 0.08) * r, v + Math.sin(ang + 0.08) * r, z).x - fp.x
+);
+ctx.save();
+ctx.translate(fp.x, fp.y);
+ctx.rotate(tangAngle);
+ctx.fillStyle = cols[i % cols.length];
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 0.9;
+ctx.beginPath(); ctx.ellipse(0, 0, 3.1, 1.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+const wiggle = Math.sin((t || 0) * 9 + i * 3) * 1.1;
+ctx.beginPath(); ctx.moveTo(-2.8, 0); ctx.lineTo(-5.0, -1.3 + wiggle); ctx.lineTo(-5.0, 1.3 + wiggle); ctx.closePath(); ctx.fill();
+ctx.restore();
+}
+ctx.restore();
+}
+function drawLiveDecorKoiPond(u, v, si, t) {
+if (si !== 3 && typeof drawLiveDecorRipple === "function") {
+drawLiveDecorRipple(u, v, 2.2, 13, t);
+}
+drawLiveDecorKoiFish(u, v, 2.3, 12, t, 3, si === 3);
+}
+function drawLiveDecorBirdhouse(u, v, si, t) {
+if (si === 3) return;
+const tm = (t || 0) + (u + v) * 0.02;
+const flyCycle = (tm * 0.45) % 4;
+const wing = Math.sin(tm * 16) * 2.4;
+let bu = u + 8.5, bv = v + 1, bz = 32;
+if (flyCycle > 2.6) {
+const k = (flyCycle - 2.6) / 1.4;
+bu += Math.sin(k * Math.PI) * 11;
+bv -= Math.sin(k * Math.PI) * 7;
+bz += Math.sin(k * Math.PI) * 13;
+}
+const bp = iso(bu, bv, bz);
+ctx.save();
+ctx.translate(bp.x, bp.y);
+ctx.fillStyle = "#38bdf8";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.0;
+ctx.beginPath(); ctx.ellipse(0, 0, 2.6, 1.9, -0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.arc(2.1, -1.1, 1.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.fillStyle = "#f59e0b";
+ctx.beginPath(); ctx.moveTo(3.4, -1.2); ctx.lineTo(5.0, -0.8); ctx.lineTo(3.4, -0.4); ctx.closePath(); ctx.fill();
+ctx.strokeStyle = "#0284c7";
+ctx.lineWidth = 1.4;
+ctx.beginPath(); ctx.moveTo(-0.5, -0.5); ctx.lineTo(-2.5, -2.5 + wing * 0.6); ctx.stroke();
+ctx.restore();
+}
 const WORLD_STATIC_CACHE_VER = "e3_decor_v1";
 const _GRASS_TUFTS = [
 [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
@@ -17442,6 +17728,9 @@ drawDecorItemsLayer(frontDecorItems, si, isNight, decorGlow);
 });
 drawDecorLiveLayer(frontDecorItems, si, isNight, decorGlow, timeNow);
 }
+if (typeof drawAmbientButterflies === "function") {
+drawAmbientButterflies(si, isNight);
+}
 drawCachedLayer("tennisBorder", `${si}|${WORLD_STATIC_CACHE_VER}|${decorShKey}`, () => {
 if (typeof drawTennisCourtTreeBorder === "function") {
 drawTennisCourtTreeBorder(si);
@@ -17479,6 +17768,14 @@ if (typeof inMenu !== "undefined" && inMenu && typeof getMenuAmbientMappedPawns 
 const amb = getMenuAmbientMappedPawns();
 for (let i = 0; i < amb.length; i++) mappedPawns.push(amb[i]);
 }
+if (typeof getMascotMappedPawn === "function") {
+const mc = getMascotMappedPawn();
+if (mc) mappedPawns.push(mc);
+}
+if (typeof getAmbientDogWalkerMappedPawns === "function") {
+const dw = getAmbientDogWalkerMappedPawns();
+for (let i = 0; i < dw.length; i++) mappedPawns.push(dw[i]);
+}
 mappedPawns.sort((a, b) => a.pt.y - b.pt.y);
 for (const mp of mappedPawns) {
 drawIsoPawn(mp.p, mp.pt, mp.uvz);
@@ -17489,6 +17786,20 @@ if (typeof drawLiveSpaSteam === "function") drawLiveSpaSteam();
 if (typeof drawLiveCafeSteam === "function") drawLiveCafeSteam();
 for (const car of cars) drawIsoCar(car);
 for (const t of trucks) drawIsoTruck(t);
+} else {
+const visitAnimalPawns = [];
+if (typeof getMascotMappedPawn === "function") {
+const mc = getMascotMappedPawn();
+if (mc) visitAnimalPawns.push(mc);
+}
+if (typeof getAmbientDogWalkerMappedPawns === "function") {
+const dw = getAmbientDogWalkerMappedPawns();
+for (let i = 0; i < dw.length; i++) visitAnimalPawns.push(dw[i]);
+}
+visitAnimalPawns.sort((a, b) => a.pt.y - b.pt.y);
+for (const mp of visitAnimalPawns) {
+drawIsoPawn(mp.p, mp.pt, mp.uvz);
+}
 }
 const oppRecSlot = allSlots.find(s => s.type === "Reception" && s.floor.idx === 0) || floors[0].slots[32];
 const oppRecBox = slotIsoBox(0, oppRecSlot.idx);
@@ -17500,6 +17811,9 @@ drawWroughtIronParkFence(oppSwU1 + 2, -750, 1950, oppRecCenterV - 52, oppRecCent
 });
 if (typeof drawParkLake === "function") {
 drawParkLake(si);
+}
+if (typeof drawAmbientParkDucks === "function") {
+drawAmbientParkDucks(si);
 }
 const parkShKey = isNight ? 0 : Math.round(((typeof shadowIntensity === "function") ? shadowIntensity() : 1) * 4);
 drawCachedLayer("parkProps", `${si}|${isNight}|${parkShKey}|${oppRecCenterV}`, () => {
@@ -21243,6 +21557,27 @@ isoLabel("z z Z 💤", uvz.u + 4, uvz.v + 4, uvz.z + 24 + driftY * 0.8, 11, "#2b
 ctx.restore();
 }
 function drawIsoPawn(p, pt, uvz) {
+if (p && p.isPet && typeof drawIsoAnimal === "function") {
+const sleepNow = !!(p.sleeping || (p.follow && p.follow.sleeping));
+drawIsoAnimal(p.petType, pt, uvz, {
+moving: p.moving,
+sleeping: sleepNow,
+happyTimer: p.happyTimer,
+animT: p.animT,
+facing: p.facing,
+scale: p.scale || 1,
+leashOwnerPt: p.leashOwnerPt || null
+});
+if (p.isMascot && typeof addHitPoly === "function") {
+addHitPoly([
+{ x: pt.x - 16, y: pt.y - 26 },
+{ x: pt.x + 16, y: pt.y - 26 },
+{ x: pt.x + 16, y: pt.y + 8 },
+{ x: pt.x - 16, y: pt.y + 8 }
+], () => { if (typeof petHotelMascot === "function") petHotelMascot(); });
+}
+return;
+}
 if (p.sleeping || (p.follow && p.follow.sleeping)) {
 drawSleepingCharacter(p, pt, uvz);
 return;
@@ -21761,6 +22096,483 @@ const uvz = { u: a.u, v: a.v, z: a.z, inPool: false };
 out.push({ p: a.pawn, uvz, pt: iso(a.u, a.v, a.z) });
 }
 return out;
+}
+const VALID_MASCOTS = ["cat", "dog", "ginger", "corgi", "none"];
+function sanitizeHotelMascot(v) {
+return VALID_MASCOTS.includes(v) ? v : "cat";
+}
+function getMascotLabel(type) {
+if (type === "dog") return "🐶 Golden Köpek";
+if (type === "ginger") return "🐈 Sarman Kedi";
+if (type === "corgi") return "🐕 Korgi Köpek";
+if (type === "none") return "🚫 Kapalı";
+return "🐱 Tekir Kedi";
+}
+function isDogType(t) {
+return t === "dog" || t === "corgi";
+}
+function getPetTypeTr(t) {
+return isDogType(t) ? "Köpeği" : "Kedisi";
+}
+function attachGuestPetPawn(g, isoPos, fallbackPos) {
+if (!g || !g.petType || typeof makePawn !== "function") return null;
+const pos = fallbackPos || { x: (typeof waitX === "function" ? waitX() : ElevW + 70), y: floors[0].WalkY };
+const petP = makePawn(pos, "#ffffff", "#333333", "#ffffff");
+petP.isPet = true;
+petP.petType = g.petType;
+petP.petGuest = g;
+petP.scale = 0.80;
+petP.follow = g.pawn;
+petP.followOffsetU = 16;
+petP.followOffsetV = 18;
+petP.followOffset = 26;
+if (isoPos) {
+petP.iso = { u: isoPos.u, v: isoPos.v, z: isoPos.z !== undefined ? isoPos.z : 0 };
+}
+g.petPawn = petP;
+return petP;
+}
+function hasPetFriendlyAmenity() {
+if (typeof hotelMascot !== "undefined" && hotelMascot && hotelMascot !== "none") return true;
+if (typeof parkState !== "undefined" && parkState === "Built") return true;
+if (typeof hasPetDecor === "function" && hasPetDecor()) return true;
+return false;
+}
+const _PET_PALETTES = {
+cat:    { body: "#94a3b8", belly: "#f1f5f9", ear: "#64748b", earIn: "#fda4af", collar: "#ef4444", tail: "#64748b", spots: "#475569" },
+ginger: { body: "#f59e0b", belly: "#fef3c7", ear: "#d97706", earIn: "#fda4af", collar: "#14b8a6", tail: "#d97706", spots: "#b45309" },
+dog:    { body: "#f5b841", belly: "#fef3c7", ear: "#b45309", earIn: "#92400e", collar: "#e11d48", tail: "#d97706", spots: "#d97706" },
+corgi:  { body: "#ea8c38", belly: "#fffbeb", ear: "#c2621a", earIn: "#fda4af", collar: "#2563eb", tail: "#fffbeb", spots: "#ffffff" }
+};
+function drawIsoAnimal(petType, pt, uvz, opts = {}) {
+const kind = VALID_MASCOTS.includes(petType) && petType !== "none" ? petType : "cat";
+const pal = _PET_PALETTES[kind] || _PET_PALETTES.cat;
+const dog = isDogType(kind);
+const t = (typeof timeNow !== "undefined" ? timeNow : 0);
+const moving = !!opts.moving;
+const sleeping = !!opts.sleeping;
+const happyTimer = opts.happyTimer || 0;
+const animT = opts.animT || 0;
+const facing = opts.facing === -1 ? -1 : 1;
+const sc = opts.scale || 1;
+if (dog && opts.leashOwnerPt) {
+const ownerPt = opts.leashOwnerPt;
+ctx.save();
+ctx.strokeStyle = "#5c3a21";
+ctx.lineWidth = 1.4;
+ctx.beginPath();
+ctx.moveTo(ownerPt.x + 4, ownerPt.y - 12);
+ctx.quadraticCurveTo((ownerPt.x + pt.x) * 0.5, Math.max(ownerPt.y, pt.y) - 3, pt.x + facing * 3, pt.y - 7 * sc);
+ctx.stroke();
+ctx.restore();
+}
+ctx.save();
+ctx.translate(pt.x, pt.y);
+ctx.scale(facing * sc, sc);
+ctx.fillStyle = "rgba(0,0,0,0.20)";
+ctx.beginPath();
+ctx.ellipse(0, 1.5, dog ? 10.5 : 8.8, 4.4, 0, 0, Math.PI * 2);
+ctx.fill();
+if (sleeping) {
+const br = Math.sin(t * 2.4 + animT) * 0.7;
+ctx.fillStyle = pal.body;
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.6;
+ctx.beginPath();
+ctx.ellipse(0, -3 + br * 0.3, 8.5, 5.2, 0, 0, Math.PI * 2);
+ctx.fill(); ctx.stroke();
+ctx.strokeStyle = pal.tail;
+ctx.lineWidth = 2.6;
+ctx.lineCap = "round";
+ctx.beginPath();
+ctx.arc(-2, -1, 7.2, Math.PI * 0.2, Math.PI * 0.95);
+ctx.stroke();
+ctx.fillStyle = pal.body;
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.6;
+ctx.beginPath();
+ctx.arc(4.8, -5.2 + br * 0.3, 4.6, 0, Math.PI * 2);
+ctx.fill(); ctx.stroke();
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.2;
+ctx.beginPath();
+ctx.moveTo(4.0, -5.5); ctx.lineTo(6.4, -5.5);
+ctx.stroke();
+ctx.restore();
+if (uvz && typeof isoLabel === "function") {
+const dr = ((t * 0.7 + animT) % 2.4) * 7;
+ctx.save();
+ctx.globalAlpha = 0.72;
+isoLabel("z Z", uvz.u, uvz.v, (uvz.z || 0) + 14 + dr, 9.5, "#334155", "rgba(255,255,255,0.88)", 3.5, 1.5);
+ctx.restore();
+}
+return;
+}
+const stepCycle = Math.sin(animT * 1.4);
+const happyJump = happyTimer > 0 ? Math.abs(Math.sin(t * 10)) * 5.2 : 0;
+const bob = (moving ? Math.abs(stepCycle) * 2.4 : Math.sin(t * 2.8 + animT) * 0.5) + happyJump;
+const tailWag = Math.sin(t * (happyTimer > 0 ? 15 : (dog ? 8 : 3.5)) + animT) * (dog ? 4.2 : 2.6);
+ctx.translate(0, -bob);
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = dog && kind === "corgi" ? 4.2 : 3.6;
+ctx.lineCap = "round";
+ctx.beginPath();
+if (dog) {
+ctx.moveTo(-6, -6);
+ctx.quadraticCurveTo(-11, -11 + tailWag * 0.4, -9 + tailWag * 0.35, -14);
+} else {
+ctx.moveTo(-5.5, -5.5);
+ctx.bezierCurveTo(-10, -9, -11 + tailWag * 0.4, -17, -7 + tailWag * 0.5, -19);
+}
+ctx.stroke();
+ctx.strokeStyle = pal.tail;
+ctx.lineWidth = dog && kind === "corgi" ? 2.4 : 2.0;
+ctx.stroke();
+const legLiftA = moving ? Math.max(0, stepCycle) * 2.8 : 0;
+const legLiftB = moving ? Math.max(0, -stepCycle) * 2.8 : 0;
+ctx.fillStyle = kind === "corgi" || kind === "cat" ? pal.belly : pal.body;
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.4;
+ctx.beginPath(); ctx.ellipse(-4.5, -1.5 - legLiftA, 2.3, 2.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.ellipse(4.0, -1.5 - legLiftB, 2.3, 2.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.fillStyle = pal.body;
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.7;
+ctx.beginPath();
+ctx.roundRect(-7.5, -11.5, 14.5, 9.5, 4.8);
+ctx.fill(); ctx.stroke();
+ctx.fillStyle = pal.belly;
+ctx.beginPath();
+ctx.ellipse(3.6, -6.5, 3.2, 3.6, 0.2, 0, Math.PI * 2);
+ctx.fill();
+if (kind === "cat" || kind === "ginger") {
+ctx.strokeStyle = pal.spots;
+ctx.lineWidth = 1.3;
+ctx.beginPath();
+ctx.moveTo(-4, -10.8); ctx.lineTo(-2.8, -7.8);
+ctx.moveTo(-1, -10.8); ctx.lineTo(0.2, -7.8);
+ctx.stroke();
+}
+ctx.strokeStyle = pal.collar;
+ctx.lineWidth = 2.0;
+ctx.beginPath();
+ctx.moveTo(1.5, -10.5); ctx.lineTo(5.6, -8.2);
+ctx.stroke();
+ctx.fillStyle = "#fde047";
+ctx.beginPath(); ctx.arc(5.4, -7.8, 1.4, 0, Math.PI * 2); ctx.fill();
+const headY = -13.5;
+ctx.fillStyle = pal.body;
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.7;
+ctx.beginPath();
+ctx.ellipse(4.8, headY, dog ? 5.6 : 5.4, dog ? 5.2 : 4.8, 0, 0, Math.PI * 2);
+ctx.fill(); ctx.stroke();
+if (kind === "dog") {
+ctx.fillStyle = pal.ear;
+ctx.beginPath();
+ctx.ellipse(1.6, headY + 0.5, 2.0, 3.6, 0.25, 0, Math.PI * 2);
+ctx.fill(); ctx.stroke();
+} else {
+ctx.fillStyle = pal.ear;
+ctx.beginPath();
+ctx.moveTo(1.0, headY - 3.0); ctx.lineTo(2.0, headY - 7.8); ctx.lineTo(4.2, headY - 4.0);
+ctx.closePath(); ctx.fill(); ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(4.6, headY - 4.0); ctx.lineTo(6.8, headY - 7.8); ctx.lineTo(7.8, headY - 2.8);
+ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+ctx.fillStyle = pal.belly;
+ctx.beginPath();
+ctx.ellipse(6.5, headY + 1.6, 3.0, 2.2, 0, 0, Math.PI * 2);
+ctx.fill();
+ctx.fillStyle = OUTLINE_COL;
+ctx.beginPath();
+ctx.arc(3.8, headY - 0.6, 1.0, 0, Math.PI * 2);
+ctx.arc(7.1, headY - 0.6, 1.0, 0, Math.PI * 2);
+ctx.fill();
+ctx.fillStyle = dog ? "#1c1917" : "#fb7185";
+ctx.beginPath();
+ctx.arc(5.8, headY + 1.0, dog ? 1.3 : 1.0, 0, Math.PI * 2);
+ctx.fill();
+if (!dog) {
+ctx.strokeStyle = "#475569";
+ctx.lineWidth = 0.85;
+ctx.beginPath();
+ctx.moveTo(8.5, headY + 0.8); ctx.lineTo(11.6, headY + 0.2);
+ctx.moveTo(8.5, headY + 1.8); ctx.lineTo(11.4, headY + 2.5);
+ctx.stroke();
+}
+ctx.restore();
+if (happyTimer > 0) {
+const hLift = (2.4 - Math.min(2.4, happyTimer)) * 9;
+const alpha = Math.min(1, happyTimer * 1.2);
+ctx.save();
+ctx.globalAlpha = alpha;
+ctx.font = "900 13px 'Segoe UI', Roboto, Arial, sans-serif";
+ctx.textAlign = "center";
+ctx.fillText("❤️", pt.x, pt.y - 24 * sc - hLift);
+ctx.restore();
+}
+}
+const hotelMascotActor = {
+u: 1095, v: 495, z: 8,
+targetU: 1095, targetV: 495, targetZ: 8,
+state: "idle", timer: 1.8, happyTimer: 0, petCooldown: 0,
+facing: 1, animT: 0
+};
+function resetHotelMascotPos() {
+hotelMascotActor.u = 1095;
+hotelMascotActor.v = 495;
+hotelMascotActor.z = 8;
+hotelMascotActor.targetU = 1095;
+hotelMascotActor.targetV = 495;
+hotelMascotActor.targetZ = 8;
+hotelMascotActor.state = "idle";
+hotelMascotActor.timer = 1.6;
+hotelMascotActor.happyTimer = 0;
+hotelMascotActor.petCooldown = 0;
+}
+function cycleHotelMascot() {
+const cur = sanitizeHotelMascot(typeof hotelMascot !== "undefined" ? hotelMascot : "cat");
+const next = VALID_MASCOTS[(VALID_MASCOTS.indexOf(cur) + 1) % VALID_MASCOTS.length];
+hotelMascot = next;
+if (next !== "none") {
+resetHotelMascotPos();
+if (typeof play === "function") play(isDogType(next) ? "bark" : "meow");
+if (typeof log === "function") log("🐾 Otel maskotu seçildi: " + getMascotLabel(next));
+} else {
+if (typeof play === "function") play("tap");
+if (typeof log === "function") log("🐾 Otel maskotu gizlendi (Kapalı).");
+}
+if (typeof saveGame === "function") saveGame();
+if (typeof refresh === "function") refresh();
+}
+function petHotelMascot() {
+const mType = sanitizeHotelMascot(typeof hotelMascot !== "undefined" ? hotelMascot : "cat");
+if (mType === "none") return;
+hotelMascotActor.happyTimer = 2.4;
+hotelMascotActor.state = "happy";
+hotelMascotActor.timer = 2.2;
+if (typeof play === "function") play(isDogType(mType) ? "bark" : "meow");
+const pt = iso(hotelMascotActor.u, hotelMascotActor.v, hotelMascotActor.z || 8);
+if (typeof floaties !== "undefined") {
+const txt = isDogType(mType) ? "🐶 Hav hav! ❤️" : "🐱 Mırıl mırıl... ❤️";
+floaties.push({ x: pt.x, y: -pt.y + 34, msg: txt, col: "#e11d48", life: 1.8, max: 1.8 });
+}
+const isVisit = typeof window !== "undefined" && !!window.visitMode;
+if (!isVisit && hotelMascotActor.petCooldown <= 0) {
+hotelMascotActor.petCooldown = 5.0;
+if (typeof queue !== "undefined" && Array.isArray(queue) && queue.length > 0 && queue[0]) {
+const fq = queue[0];
+if (typeof fq.patience === "number" && typeof fq.maxPatience === "number") {
+fq.patience = Math.min(fq.maxPatience, fq.patience + 2);
+}
+}
+}
+}
+function _pickMascotRoamTarget() {
+const spots = [
+{ u: 1095, v: 495, z: 8 },
+{ u: 1145, v: 465, z: 8 },
+{ u: 1205, v: 490, z: 2 },
+{ u: 1230, v: 540, z: 2 }
+];
+if (typeof floors !== "undefined" && floors[0] && floors[0].state === "Built") {
+const corrSpots = floors[0].slots.filter(s =>
+s && (s.type === "Corridor" || s.type === "Reception") &&
+typeof parcelCoords === "function"
+);
+if (corrSpots.length > 0 && typeof slotIsoBox === "function") {
+const cs = corrSpots[Math.floor(Math.random() * corrSpots.length)];
+const b = slotIsoBox(0, cs.idx);
+spots.push({
+u: (b.u0 + b.u1) * 0.5 + (Math.random() - 0.5) * 30,
+v: (b.v0 + b.v1) * 0.5 + (Math.random() - 0.5) * 30,
+z: b.z0 + 8
+});
+}
+}
+return spots[Math.floor(Math.random() * spots.length)];
+}
+function updateHotelMascot(dt) {
+const mType = typeof hotelMascot !== "undefined" ? sanitizeHotelMascot(hotelMascot) : "cat";
+if (mType === "none") return;
+const a = hotelMascotActor;
+if (a.petCooldown > 0) a.petCooldown = Math.max(0, a.petCooldown - dt);
+if (a.happyTimer > 0) a.happyTimer = Math.max(0, a.happyTimer - dt);
+if (a.state === "happy") {
+a.timer -= dt;
+a.animT += dt * 4;
+if (a.timer <= 0) {
+a.state = "idle";
+a.timer = 1.6;
+}
+return;
+}
+if (a.state === "walk") {
+const du = a.targetU - a.u;
+const dv = a.targetV - a.v;
+const dist = Math.hypot(du, dv);
+const step = 46 * dt;
+if (Math.abs(dv - du) > 0.2) a.facing = (dv - du >= 0) ? 1 : -1;
+if (dist <= step) {
+a.u = a.targetU;
+a.v = a.targetV;
+a.z = a.targetZ;
+const nightBias = (typeof isNight !== "undefined" && isNight) ? 0.55 : 0.22;
+a.state = Math.random() < nightBias ? "sleep" : "idle";
+a.timer = a.state === "sleep" ? (3.5 + Math.random() * 4.5) : (1.5 + Math.random() * 2.8);
+} else {
+a.u += (du / dist) * step;
+a.v += (dv / dist) * step;
+a.z += ((a.targetZ - a.z) / dist) * step;
+a.animT += dt * 9.5;
+}
+return;
+}
+a.timer -= dt;
+a.animT += dt * 2;
+if (a.timer <= 0) {
+const tgt = _pickMascotRoamTarget();
+a.targetU = tgt.u;
+a.targetV = tgt.v;
+a.targetZ = tgt.z;
+a.state = "walk";
+}
+}
+function getMascotMappedPawn() {
+const mType = typeof hotelMascot !== "undefined" ? sanitizeHotelMascot(hotelMascot) : "cat";
+if (mType === "none") return null;
+if (typeof viewFloor !== "undefined" && viewFloor !== 0) return null;
+const a = hotelMascotActor;
+const uvz = { u: a.u, v: a.v, z: a.z || 8, inPool: false };
+return {
+uvz,
+pt: iso(uvz.u, uvz.v, uvz.z),
+p: {
+isPet: true,
+isMascot: true,
+petType: mType,
+facing: a.facing,
+moving: a.state === "walk",
+sleeping: a.state === "sleep",
+happyTimer: a.happyTimer,
+animT: a.animT,
+scale: 0.94
+}
+};
+}
+const _ambientButterflies = [
+{ baseU: 1225, baseV: 350, phase: 0.4, speed: 1.4, cA: "#f472b6", cB: "#fbcfe8" },
+{ baseU: 1218, baseV: 620, phase: 2.1, speed: 1.7, cA: "#fbbf24", cB: "#fef08a" },
+{ baseU: 1232, baseV: 840, phase: 4.0, speed: 1.3, cA: "#38bdf8", cB: "#bae6fd" },
+{ baseU: 1220, baseV: 110, phase: 5.2, speed: 1.5, cA: "#c084fc", cB: "#e9d5ff" }
+];
+const _ambientDucks = [
+{ u: 1995, v: 490, centerU: 1995, centerV: 510, rU: 38, rV: 58, phase: 0.2, speed: 0.34, facing: 1 },
+{ u: 2045, v: 635, centerU: 2045, centerV: 625, rU: 32, rV: 52, phase: 2.8, speed: 0.28, facing: -1 }
+];
+const _ambientDogWalker = {
+u: 1575, v: -60, dir: 1, speed: 28, pause: 0, animT: 0,
+dogU: 1585, dogV: -82,
+humanPawn: { skin: "#fcd9b8", hair: "#4a2c11", shirt: "#14b8a6", facing: 1, moving: true, animT: 0, scale: 0.92 },
+dogPawn: { isPet: true, isAmbientDog: true, petType: "corgi", facing: 1, moving: true, animT: 0, scale: 0.84 }
+};
+function updateAmbientAnimals(dt) {
+for (let i = 0; i < _ambientDucks.length; i++) {
+const d = _ambientDucks[i];
+const prevU = d.u, prevV = d.v;
+const ang = (typeof timeNow !== "undefined" ? timeNow : 0) * d.speed + d.phase;
+d.u = d.centerU + Math.cos(ang) * d.rU;
+d.v = d.centerV + Math.sin(ang) * d.rV;
+const dScreen = (d.v - prevV) - (d.u - prevU);
+if (Math.abs(dScreen) > 0.01) d.facing = dScreen >= 0 ? 1 : -1;
+}
+const w = _ambientDogWalker;
+if (w.pause > 0) {
+w.pause -= dt;
+w.humanPawn.moving = false;
+w.dogPawn.moving = false;
+w.dogPawn.animT += dt * 3;
+} else {
+w.v += w.dir * w.speed * dt;
+if (w.v >= 1060) {
+w.v = 1060;
+w.dir = -1;
+w.pause = 2.0;
+} else if (w.v <= -140) {
+w.v = -140;
+w.dir = 1;
+w.pause = 2.0;
+}
+w.humanPawn.facing = w.dir >= 0 ? 1 : -1;
+w.dogPawn.facing = w.humanPawn.facing;
+w.humanPawn.moving = true;
+w.dogPawn.moving = true;
+w.humanPawn.animT += dt * 7.2;
+w.dogPawn.animT += dt * 10.5;
+}
+w.dogU = w.u + 14;
+w.dogV = w.v + (w.dir >= 0 ? 22 : -22);
+}
+function getAmbientDogWalkerMappedPawns() {
+const w = _ambientDogWalker;
+const hPt = iso(w.u, w.v, 0);
+const dPt = iso(w.dogU, w.dogV, 0);
+w.dogPawn.leashOwnerPt = hPt;
+return [
+{ uvz: { u: w.u, v: w.v, z: 0, inPool: false }, pt: hPt, p: w.humanPawn },
+{ uvz: { u: w.dogU, v: w.dogV, z: 0, inPool: false }, pt: dPt, p: w.dogPawn }
+];
+}
+function drawAmbientParkDucks(si) {
+if (si === 3) return;
+const t = typeof timeNow !== "undefined" ? timeNow : 0;
+for (let i = 0; i < _ambientDucks.length; i++) {
+const d = _ambientDucks[i];
+const dp = iso(d.u, d.v, 1.5);
+const bob = Math.sin(t * 3 + d.phase) * 0.7;
+ctx.save();
+ctx.translate(dp.x, dp.y + bob);
+ctx.strokeStyle = "rgba(255,255,255,0.45)";
+ctx.lineWidth = 1.1;
+ctx.beginPath();
+ctx.ellipse(0, 1.5, 6.5 + Math.sin(t * 4 + i) * 1.2, 2.8, 0, 0, Math.PI * 2);
+ctx.stroke();
+ctx.scale(d.facing, 1);
+ctx.fillStyle = "#f8fafc";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.2;
+ctx.beginPath(); ctx.ellipse(0, -1, 4.8, 2.9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.fillStyle = i === 0 ? "#15803d" : "#a16207";
+ctx.beginPath(); ctx.arc(3.6, -4.4, 2.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.fillStyle = "#f97316";
+ctx.beginPath(); ctx.ellipse(6.0, -4.1, 1.8, 0.9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.restore();
+}
+}
+function drawAmbientButterflies(si, isNight) {
+if (isNight || (si !== 0 && si !== 1)) return;
+const t = typeof timeNow !== "undefined" ? timeNow : 0;
+for (let i = 0; i < _ambientButterflies.length; i++) {
+const b = _ambientButterflies[i];
+const u = b.baseU + Math.sin(t * b.speed + b.phase) * 24;
+const v = b.baseV + Math.cos(t * (b.speed * 0.75) + b.phase * 1.3) * 42;
+const z = 18 + Math.sin(t * 3.1 + b.phase) * 6;
+const bp = iso(u, v, z);
+const flap = Math.abs(Math.sin(t * 14 + b.phase));
+const wingW = 1.4 + flap * 3.8;
+ctx.save();
+ctx.translate(bp.x, bp.y);
+ctx.fillStyle = b.cA;
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 0.85;
+ctx.beginPath(); ctx.ellipse(-wingW * 0.6, -1, wingW, 2.5, -0.35, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.ellipse(wingW * 0.6, -1, wingW, 2.5, 0.35, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.fillStyle = b.cB;
+ctx.beginPath(); ctx.arc(-wingW * 0.5, -1, 1.1, 0, Math.PI * 2); ctx.arc(wingW * 0.5, -1, 1.1, 0, Math.PI * 2); ctx.fill();
+ctx.restore();
+}
 }
 const FIREBASE_CONFIG = {
 apiKey: "AIzaSyCQukKGihoWkstixa074mGNOKVrsgtZE4Q",
@@ -24306,6 +25118,8 @@ timeNow += dt;
 if (typeof recordFrameDprCheck === "function") recordFrameDprCheck(rawFrameMs, !!inMenu);
 if (!camInit && viewport.clientWidth > 10) { camInit = true; fitView(); }
 updateCarsAndBirds(dt);
+if (typeof updateHotelMascot === "function") updateHotelMascot(dt);
+if (typeof updateAmbientAnimals === "function") updateAmbientAnimals(dt);
 if (inMenu || (typeof window !== "undefined" && window.visitMode)) {
 if (inMenu && typeof updateMenuAmbient === "function") updateMenuAmbient(dt);
 updateParticles(dt);
@@ -24331,7 +25145,8 @@ for (let i = queue.length - 1; i >= 0; i--) {
 const g = queue[i];
 if (!g.arrivedOnce) continue;
 const rate = 1 + i * 0.15;
-g.patience -= dt * rate;
+const mascotCalm = (typeof hotelMascot !== "undefined" && hotelMascot && hotelMascot !== "none") ? 0.88 : 1.0;
+g.patience -= dt * rate * mascotCalm;
 if (g.patience <= 0) queueTimeout(g);
 }
 }
@@ -24540,6 +25355,7 @@ g.leaveTimer = (g.leaveTimer || 0) + dt;
 if (g.leaveTimer > 10 || (g.pawn && g.pawn.iso && g.pawn.iso.v >= 1140) || (g.pawn && g.pawn.dead)) {
 destroyPawn(g.pawn);
 for (const k of g.kidPawns) destroyPawn(k);
+if (g.petPawn) destroyPawn(g.petPawn);
 guests.splice(i, 1);
 }
 }
@@ -24582,6 +25398,16 @@ p.iso.v += (dv / dist) * step;
 p.iso.z = (p.iso.z || 0) + (dz / (dist || 1)) * step;
 moving = true;
 }
+} else if (
+p.isPet && p.petGuest && p.petGuest.room &&
+(p.petGuest.state === "ToGym" || p.petGuest.state === "Exercising" || p.petGuest.state === "ToToilet" || p.petGuest.state === "UsingToilet" ||
+p.petGuest.state === "ToSpa" || p.petGuest.state === "InSpa" || p.petGuest.state === "ToCafe" || p.petGuest.state === "InCafe" ||
+p.petGuest.state === "ToTennis" || p.petGuest.state === "PlayingTennis")
+) {
+const rm = p.petGuest.room;
+const b = slotIsoBox(rm.floor.idx, rm.idx);
+p.iso = { u: (b.u0 + b.u1) * 0.5 + 16, v: (b.v0 + b.v1) * 0.5 + 12, z: b.z0 + 8 };
+moving = false;
 } else if (p.follow && p.follow.iso) {
 if (!p.iso) p.iso = { u: p.follow.iso.u, v: p.follow.iso.v - 20, z: p.follow.iso.z || 0 };
 const tx = p.follow.iso.u + (p.followOffsetU || 10);
@@ -24599,6 +25425,7 @@ moving = true;
 }
 }
 } else if (p.follow) {
+if (p.isPet) p.iso = null;
 if (p.follow.dead) p.follow = null;
 else {
 const tx = p.follow.pos.x - p.followOffset * p.follow.facing, ty = p.follow.pos.y;
