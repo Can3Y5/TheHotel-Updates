@@ -2239,6 +2239,11 @@ background: #fee2e2;
 border-color: #dc2626;
 color: #7f1d1d;
 }
+#pet-status-msg.is-info {
+background: #fef3c7;
+border-color: #d97706;
+color: #78350f;
+}
 #pet-tab-body {
 display: flex;
 flex-direction: column;
@@ -2288,9 +2293,23 @@ background: #dcfce7;
 border-color: #15803d;
 box-shadow: 0 2px 0 #15803d;
 }
+.pet-opt-btn.is-preview {
+background: #eff6ff;
+border: 2px dashed #2563eb;
+}
+.pet-opt-btn.is-armed {
+background: #fef3c7;
+border-color: #d97706;
+box-shadow: 0 2px 0 #b45309;
+}
 .pet-opt-btn.is-special {
 background: #fff1f2;
 border-color: #be185d;
+}
+.pet-opt-btn.is-special.is-armed {
+background: #fef3c7;
+border-color: #d97706;
+box-shadow: 0 2px 0 #b45309;
 }
 .pet-opt-btn.is-special.is-equipped {
 background: #fce7f3;
@@ -2554,7 +2573,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.87-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.88-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -13191,17 +13210,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 95;
-const APP_VERSION_NAME = "1.9.87-beta";
+const APP_VERSION_CODE = 96;
+const APP_VERSION_NAME = "1.9.88-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.88-beta",
+title: "Evcil hayvan duvar rota düzeltmesi ve 2 dokunuşla önizleyip satın alma",
+latest: true,
+notes: "• 🧱 Duvar & Kapı Rotası: Evcil hayvan artık duvarların, çiçekliklerin ve kapalı odaların içinden geçmez; yalnızca giriş taş yolu, resepsiyon kapısı ve açık kemerle bağlı koridorlardan yürür.\n• 👀 Önce Önizle, Sonra Satın Al: Hayvan türleri, aksesuarlar ve kulübe seçeneklerinde ilk dokunuşta canlı önizleme açılır, ikinci kez aynı öğeye dokununca satın alınır."
+},
+{
 ver: "v1.9.87-beta",
 title: "Özelleştirilebilir evcil hayvan, fiyonk & aksesuarlar, bakım gideri ve ön bahçe kulübesi",
-latest: true,
+latest: false,
 notes: "• 🐾 İsteğe Bağlı Sahiplenme: Evcil hayvan artık otomatik gelmez; Resepsiyon, Bahçe paneli veya ön bahçedeki kulübesinden dilediğin zaman kedi/köpek sahiplenebilirsin.\n• 🎀 Özel Aksesuarlar & Özelleştirme: Evcil hayvanına isim ver, tüy/tasma rengini değiştir, pembe/kırmızı fiyonk, papyon, fular, çiçek toka, güneş gözlüğü ve kraliyet tacı tak.\n• 🏠 Ön Bahçe Kulübesi & Bakım Gideri: Otel önündeki çim alana özel kulübe yerleşir (model, çatı, duvar ve çiçek/minder/peri ışığı/fiyonklu isimlik ile özelleştirilebilir); aktif evcil hayvan için günlük bakım ücreti işler."
 },
 {
@@ -23018,18 +23043,22 @@ g.restore();
 }
 }
 const hotelMascotActor = {
-u: 1236, v: 644, z: 1,
-targetU: 1236, targetV: 644, targetZ: 1,
+u: 1238, v: 644, z: 1,
+targetU: 1238, targetV: 644, targetZ: 1,
+nodeId: "kennel_front",
+path: [],
 state: "idle", timer: 1.8, happyTimer: 0, petCooldown: 0,
 facing: 1, animT: 0
 };
 function resetHotelMascotPos() {
-hotelMascotActor.u = MASCOT_KENNEL_POS.u + 24;
+hotelMascotActor.u = MASCOT_KENNEL_POS.u + 26;
 hotelMascotActor.v = MASCOT_KENNEL_POS.v + 2;
 hotelMascotActor.z = 1;
-hotelMascotActor.targetU = MASCOT_KENNEL_POS.u + 24;
-hotelMascotActor.targetV = MASCOT_KENNEL_POS.v + 2;
+hotelMascotActor.targetU = hotelMascotActor.u;
+hotelMascotActor.targetV = hotelMascotActor.v;
 hotelMascotActor.targetZ = 1;
+hotelMascotActor.nodeId = "kennel_front";
+hotelMascotActor.path = [];
 hotelMascotActor.state = "idle";
 hotelMascotActor.timer = 1.6;
 hotelMascotActor.happyTimer = 0;
@@ -23071,31 +23100,124 @@ fq.patience = Math.min(fq.maxPatience, fq.patience + 2);
 }
 }
 }
-function _pickMascotRoamTarget() {
+function _buildMascotNavGraph() {
 const ku = MASCOT_KENNEL_POS.u, kv = MASCOT_KENNEL_POS.v;
-const spots = [
-{ u: ku + 24, v: kv + 2, z: 1 },
-{ u: ku + 4, v: kv + 32, z: 1 },
-{ u: 1215, v: 495, z: 2 },
-{ u: 1095, v: 495, z: 8 },
-{ u: 1145, v: 465, z: 8 }
+const nodes = {
+kennel_front: { u: ku + 26, v: kv + 2, z: 1, kind: "yard" },
+curb_kennel:  { u: 1248, v: kv + 2, z: 1, kind: "transit" },
+kennel_side:  { u: 1248, v: kv + 30, z: 1, kind: "yard" },
+curb_entry:   { u: 1248, v: 488, z: 1, kind: "transit" },
+stone_mid:    { u: 1215, v: 488, z: 2, kind: "yard" }
+};
+const adj = {};
+const addEdge = (a, b) => {
+if (!nodes[a] || !nodes[b]) return;
+if (!adj[a]) adj[a] = [];
+if (!adj[b]) adj[b] = [];
+if (!adj[a].includes(b)) adj[a].push(b);
+if (!adj[b].includes(a)) adj[b].push(a);
+};
+addEdge("kennel_front", "curb_kennel");
+addEdge("curb_kennel", "kennel_side");
+addEdge("curb_kennel", "curb_entry");
+addEdge("curb_entry", "stone_mid");
+const fl0 = (typeof floors !== "undefined" && floors[0] && floors[0].state === "Built") ? floors[0] : null;
+const recSlot = fl0 && fl0.slots && fl0.slots[32];
+if (fl0 && recSlot && recSlot.type === "Reception") {
+nodes.entry_door  = { u: 1165, v: 488, z: 8, kind: "transit" };
+nodes.lobby_front = { u: 1148, v: 488, z: 8, kind: "lobby" };
+nodes.lobby_mid   = { u: 1068, v: 476, z: 8, kind: "lobby" };
+nodes.lobby_back  = { u: 1018, v: 496, z: 8, kind: "lobby" };
+addEdge("stone_mid", "entry_door");
+addEdge("entry_door", "lobby_front");
+addEdge("lobby_front", "lobby_mid");
+addEdge("lobby_mid", "lobby_back");
+if (typeof parcelCoords === "function" && typeof slotAtGrid === "function" && typeof slotIsoBox === "function") {
+const seeds = [];
+const addSeed = (slotIdx, archId, archU, archV) => {
+const sl = fl0.slots[slotIdx];
+if (!sl || sl.type !== "Corridor") return;
+const b = slotIsoBox(0, slotIdx);
+nodes[archId] = { u: archU, v: archV, z: 8, kind: "transit" };
+const cid = "corr_" + slotIdx;
+nodes[cid] = { u: (b.u0 + b.u1) * 0.5, v: (b.v0 + b.v1) * 0.5, z: 8, kind: "corridor" };
+addEdge("lobby_back", archId);
+addEdge(archId, cid);
+seeds.push(slotIdx);
+};
+addSeed(26, "arch_back",  975, 505);
+addSeed(31, "arch_left",  1022, 390);
+addSeed(33, "arch_right", 1035, 585);
+const seen = new Set(seeds);
+const q = seeds.slice();
+while (q.length > 0) {
+const curIdx = q.shift();
+const { gu, gv } = parcelCoords(curIdx);
+const nbs = [
+slotAtGrid(fl0, gu - 1, gv),
+slotAtGrid(fl0, gu + 1, gv),
+slotAtGrid(fl0, gu, gv - 1),
+slotAtGrid(fl0, gu, gv + 1)
 ];
-if (typeof floors !== "undefined" && floors[0] && floors[0].state === "Built") {
-const corrSpots = floors[0].slots.filter(s =>
-s && (s.type === "Corridor" || s.type === "Reception") &&
-typeof parcelCoords === "function"
-);
-if (corrSpots.length > 0 && typeof slotIsoBox === "function") {
-const cs = corrSpots[Math.floor(Math.random() * corrSpots.length)];
-const b = slotIsoBox(0, cs.idx);
-spots.push({
-u: (b.u0 + b.u1) * 0.5 + (Math.random() - 0.5) * 30,
-v: (b.v0 + b.v1) * 0.5 + (Math.random() - 0.5) * 30,
-z: b.z0 + 8
-});
+for (let k = 0; k < nbs.length; k++) {
+const nb = nbs[k];
+if (!nb || nb.idx >= 36 || nb.type !== "Corridor") continue;
+const nbId = "corr_" + nb.idx;
+if (!nodes[nbId]) {
+const b = slotIsoBox(0, nb.idx);
+nodes[nbId] = { u: (b.u0 + b.u1) * 0.5, v: (b.v0 + b.v1) * 0.5, z: 8, kind: "corridor" };
+}
+addEdge("corr_" + curIdx, nbId);
+if (!seen.has(nb.idx)) {
+seen.add(nb.idx);
+q.push(nb.idx);
 }
 }
-return spots[Math.floor(Math.random() * spots.length)];
+}
+}
+}
+return { nodes, adj };
+}
+function _findMascotGraphPath(graph, fromId, toId) {
+if (!graph || !graph.nodes[fromId] || !graph.nodes[toId] || fromId === toId) return [];
+const q = [fromId];
+const visited = new Set([fromId]);
+const parent = {};
+while (q.length > 0) {
+const cur = q.shift();
+if (cur === toId) {
+const out = [];
+let p = toId;
+while (p && p !== fromId) {
+const nd = graph.nodes[p];
+out.unshift({ u: nd.u, v: nd.v, z: nd.z, nodeId: p });
+p = parent[p];
+}
+return out;
+}
+const nbs = graph.adj[cur] || [];
+for (let i = 0; i < nbs.length; i++) {
+const nb = nbs[i];
+if (!visited.has(nb)) {
+visited.add(nb);
+parent[nb] = cur;
+q.push(nb);
+}
+}
+}
+return [];
+}
+function _pickMascotRoute() {
+const graph = _buildMascotNavGraph();
+const a = hotelMascotActor;
+if (!a.nodeId || !graph.nodes[a.nodeId]) {
+resetHotelMascotPos();
+return [];
+}
+const destIds = Object.keys(graph.nodes).filter(id => id !== a.nodeId && graph.nodes[id].kind !== "transit");
+if (destIds.length === 0) return [];
+const targetId = destIds[Math.floor(Math.random() * destIds.length)];
+return _findMascotGraphPath(graph, a.nodeId, targetId);
 }
 function updateHotelMascot(dt) {
 if (!hasActiveHotelPet()) return;
@@ -23108,28 +23230,57 @@ if (a.state === "happy") {
 a.timer -= dt;
 a.animT += dt * 4;
 if (a.timer <= 0) {
-a.state = "idle";
+a.state = Array.isArray(a.path) && a.path.length > 0 ? "walk" : "idle";
 a.timer = 1.6;
 }
 return;
 }
 if (a.state === "walk") {
-const du = a.targetU - a.u;
-const dv = a.targetV - a.v;
+if (!Array.isArray(a.path) || a.path.length === 0) {
+a.state = "idle";
+a.timer = 1.5;
+return;
+}
+const wp = a.path[0];
+if ((a.nodeId && a.nodeId.startsWith("corr_")) || (wp.nodeId && wp.nodeId.startsWith("corr_"))) {
+const graph = _buildMascotNavGraph();
+if (!graph.nodes[a.nodeId] || !graph.nodes[wp.nodeId]) {
+if (!graph.nodes[a.nodeId]) {
+resetHotelMascotPos();
+} else {
+const curNd = graph.nodes[a.nodeId];
+a.u = curNd.u; a.v = curNd.v; a.z = curNd.z;
+a.targetU = curNd.u; a.targetV = curNd.v; a.targetZ = curNd.z;
+a.path = [];
+a.state = "idle";
+a.timer = 1.2;
+}
+return;
+}
+}
+a.targetU = wp.u;
+a.targetV = wp.v;
+a.targetZ = wp.z;
+const du = wp.u - a.u;
+const dv = wp.v - a.v;
 const dist = Math.hypot(du, dv);
-const step = 46 * dt;
+const step = 48 * dt;
 if (Math.abs(dv - du) > 0.2) a.facing = (dv - du >= 0) ? 1 : -1;
 if (dist <= step) {
-a.u = a.targetU;
-a.v = a.targetV;
-a.z = a.targetZ;
+a.u = wp.u;
+a.v = wp.v;
+a.z = wp.z;
+a.nodeId = wp.nodeId;
+a.path.shift();
+if (a.path.length === 0) {
 const nightBias = (typeof isNight !== "undefined" && isNight) ? 0.55 : 0.22;
 a.state = Math.random() < nightBias ? "sleep" : "idle";
 a.timer = a.state === "sleep" ? (3.5 + Math.random() * 4.5) : (1.5 + Math.random() * 2.8);
+}
 } else {
 a.u += (du / dist) * step;
 a.v += (dv / dist) * step;
-a.z += ((a.targetZ - a.z) / dist) * step;
+a.z += ((wp.z - a.z) / dist) * step;
 a.animT += dt * 9.5;
 }
 return;
@@ -23137,11 +23288,16 @@ return;
 a.timer -= dt;
 a.animT += dt * 2;
 if (a.timer <= 0) {
-const tgt = _pickMascotRoamTarget();
-a.targetU = tgt.u;
-a.targetV = tgt.v;
-a.targetZ = tgt.z;
+const route = _pickMascotRoute();
+if (route && route.length > 0) {
+a.path = route;
+a.targetU = route[0].u;
+a.targetV = route[0].v;
+a.targetZ = route[0].z;
 a.state = "walk";
+} else {
+a.timer = 1.5;
+}
 }
 }
 function getMascotMappedPawn() {
@@ -23438,16 +23594,27 @@ const statusMsgEl = document.getElementById("pet-status-msg");
 const footerInfoEl = document.getElementById("pet-footer-info");
 let _petModalTab = "pet";
 let _statusTimer = null;
-function _showStatus(text, isErr) {
+let _previewDraft = {};
+let _armedPurchase = null;
+function _getPreviewPet() {
+const base = (typeof hotelPet === "object" && hotelPet) ? hotelPet : {};
+return Object.assign({}, base, _previewDraft);
+}
+function _isArmed(kind, category, id) {
+return !!(_armedPurchase && _armedPurchase.kind === kind && _armedPurchase.category === category && _armedPurchase.id === id);
+}
+function _showStatus(text, mode) {
 if (!statusMsgEl) return;
+const m = mode === true ? "err" : (mode === false ? "ok" : (mode || "ok"));
 statusMsgEl.textContent = text || "";
-statusMsgEl.classList.toggle("is-err", !!isErr);
+statusMsgEl.classList.toggle("is-err", m === "err");
+statusMsgEl.classList.toggle("is-info", m === "info");
 statusMsgEl.style.display = text ? "block" : "none";
 if (_statusTimer) clearTimeout(_statusTimer);
 if (text) {
 _statusTimer = setTimeout(() => {
 if (statusMsgEl) statusMsgEl.style.display = "none";
-}, 3200);
+}, 3600);
 }
 }
 function _drawKennelPreview2D(pctx, cx, by, pet) {
@@ -23575,23 +23742,27 @@ pctx.fillRect(0, 0, w, h);
 pctx.fillStyle = "rgba(255,255,255,0.75)";
 pctx.beginPath(); pctx.ellipse(58, 22, 22, 8, 0, 0, Math.PI * 2); pctx.fill();
 pctx.beginPath(); pctx.ellipse(290, 26, 26, 9, 0, 0, Math.PI * 2); pctx.fill();
-_drawKennelPreview2D(pctx, 118, 96, hotelPet);
+const viewPet = _getPreviewPet();
+_drawKennelPreview2D(pctx, 118, 96, viewPet);
 if (typeof drawIsoAnimal === "function") {
-drawIsoAnimal(hotelPet.type || "cat", { x: 256, y: 98 }, null, {
+drawIsoAnimal(viewPet.type || "cat", { x: 256, y: 98 }, null, {
 ctx: pctx,
 scale: 2.05,
 facing: 1,
 animT: 0.35,
 happyTimer: 0,
-coat: hotelPet.coat,
-collar: hotelPet.collar,
-accessory: hotelPet.accessory
+coat: viewPet.coat,
+collar: viewPet.collar,
+accessory: viewPet.accessory
 });
 }
 if (previewBadge) {
-const sp = (typeof PET_SPECIES !== "undefined" && PET_SPECIES[hotelPet.type]) ? PET_SPECIES[hotelPet.type] : null;
-if (!hotelPet.adopted) {
-previewBadge.textContent = "🐾 Henüz sahiplenilmedi • Aşağıdan seç";
+const sp = (typeof PET_SPECIES !== "undefined" && PET_SPECIES[viewPet.type]) ? PET_SPECIES[viewPet.type] : null;
+const hasDraft = Object.keys(_previewDraft).length > 0;
+if (_armedPurchase || hasDraft) {
+previewBadge.textContent = "👀 Önizleme · " + (sp ? sp.icon + " " + sp.label : "Önizleme") + " (Satın alınmadı)";
+} else if (!hotelPet.adopted) {
+previewBadge.textContent = "🐾 Henüz sahiplenilmedi • Önizlemek için dokun";
 } else if (!hotelPet.active) {
 previewBadge.textContent = "💤 " + (hotelPet.name || "Pati") + " dinleniyor • Bakım: 0 TL";
 } else {
@@ -23599,7 +23770,7 @@ previewBadge.textContent = (sp ? sp.icon + " " : "🐾 ") + (hotelPet.name || "P
 }
 }
 }
-function _appendSection(parent, titleText, isSwatchRow, items, currentId, ownedList, onPick) {
+function _appendSection(parent, titleText, isSwatchRow, items, category, fieldName, currentId, ownedList, petAdopted) {
 const sec = document.createElement("div");
 const hdr = document.createElement("div");
 hdr.className = "pet-sec-title";
@@ -23609,23 +23780,30 @@ const wrap = document.createElement("div");
 wrap.className = isSwatchRow ? "pet-swatch-row" : "pet-opt-grid";
 for (let i = 0; i < items.length; i++) {
 const item = items[i];
-const equipped = item.id === currentId;
+const equipped = petAdopted && item.id === currentId;
 const owned = (Array.isArray(ownedList) && ownedList.includes(item.id)) || (item.cost || 0) <= 0;
+const armed = petAdopted && !owned && _isArmed("option", category, item.id);
+const isPreviewed = _previewDraft[fieldName] === item.id && !equipped;
 const btn = document.createElement("button");
 btn.type = "button";
 btn.className = "pet-opt-btn" +
 (isSwatchRow ? " is-swatch" : "") +
 (equipped ? " is-equipped" : "") +
+(armed ? " is-armed" : (isPreviewed ? " is-preview" : "")) +
 (item.special ? " is-special" : "");
 btn.setAttribute("data-pet-opt", item.id);
+const unitSym = item.currency === "gem" ? "💎" : "₺";
+const unitTxt = item.currency === "gem" ? " 💎" : " TL";
 if (isSwatchRow) {
 const dot = document.createElement("span");
 dot.className = "pet-swatch-dot";
 dot.style.background = item.swatch || item.col || item.top || "#cbd5e1";
 btn.appendChild(dot);
 const lbl = document.createElement("span");
-const priceTag = equipped ? " ✓" : (owned ? "" : (" · " + item.cost + (item.currency === "gem" ? "💎" : "₺")));
-lbl.textContent = item.name + priceTag;
+if (equipped) lbl.textContent = item.name + " ✓";
+else if (armed) lbl.textContent = item.name + " · Tekrar bas (" + item.cost + unitSym + ")";
+else if (owned) lbl.textContent = item.name;
+else lbl.textContent = item.name + " · " + item.cost + unitSym;
 btn.appendChild(lbl);
 } else {
 const top = document.createElement("div");
@@ -23643,11 +23821,42 @@ btn.appendChild(top);
 const sub = document.createElement("div");
 sub.className = "pet-opt-sub";
 if (equipped) sub.textContent = "✓ Takılı / Seçili";
-else if (owned) sub.textContent = "Sahipsin · Tak";
-else sub.textContent = item.cost + (item.currency === "gem" ? " 💎" : " TL");
+else if (armed) sub.textContent = "👆 Tekrar dokun: " + item.cost + unitTxt + " Al";
+else if (owned) sub.textContent = petAdopted ? "Sahipsin · Tak" : "Ücretsiz (Önizle)";
+else sub.textContent = "👀 Önizle · " + item.cost + unitTxt;
 btn.appendChild(sub);
 }
-btn.onclick = () => onPick(item);
+btn.onclick = () => {
+if (!petAdopted) {
+_previewDraft[fieldName] = item.id;
+_armedPurchase = null;
+if (typeof play === "function") play("tap");
+_showStatus("👀 Önizleme: " + item.name + " — Önce yukarıdan bir türe 2 kez dokunup sahiplen!", "info");
+renderPetModal();
+return;
+}
+if (owned) {
+_armedPurchase = null;
+delete _previewDraft[fieldName];
+const res = buyOrEquipPetOption(category, item.id);
+_showStatus(res.msg, res.ok ? "ok" : "err");
+renderPetModal();
+return;
+}
+if (!armed) {
+_previewDraft[fieldName] = item.id;
+_armedPurchase = { kind: "option", category, id: item.id };
+if (typeof play === "function") play("tap");
+_showStatus("👀 Önizleme: " + item.name + " — Satın almak için tekrar dokun (" + item.cost + unitTxt.trim() + ")", "info");
+renderPetModal();
+return;
+}
+const res = buyOrEquipPetOption(category, item.id);
+_armedPurchase = null;
+if (res.ok) delete _previewDraft[fieldName];
+_showStatus(res.msg, res.ok ? "ok" : "err");
+renderPetModal();
+};
 wrap.appendChild(btn);
 }
 sec.appendChild(wrap);
@@ -23658,16 +23867,22 @@ if (typeof PET_SPECIES === "undefined") return;
 const sec = document.createElement("div");
 const hdr = document.createElement("div");
 hdr.className = "pet-sec-title";
-hdr.textContent = pet.adopted ? "🐾 Tür Değiştir / Yeni Dost Sahiplen" : "🐾 Evcil Hayvan Türü Seç ve Sahiplen";
+hdr.textContent = pet.adopted
+? "🐾 Tür Değiştir / Yeni Dost (1. dokunuş önizle, 2. satın al)"
+: "🐾 Tür Seç (1. dokunuş önizle, 2. dokunuş sahiplen)";
 sec.appendChild(hdr);
 const grid = document.createElement("div");
 grid.className = "pet-opt-grid";
 for (const sp of Object.values(PET_SPECIES)) {
 const selected = pet.adopted && pet.type === sp.id;
 const owned = Array.isArray(pet.ownedSpecies) && pet.ownedSpecies.includes(sp.id);
+const armed = !owned && _isArmed("species", "species", sp.id);
+const isPreviewed = _previewDraft.type === sp.id && !selected;
 const btn = document.createElement("button");
 btn.type = "button";
-btn.className = "pet-opt-btn" + (selected ? " is-equipped" : "");
+btn.className = "pet-opt-btn" +
+(selected ? " is-equipped" : "") +
+(armed ? " is-armed" : (isPreviewed ? " is-preview" : ""));
 btn.setAttribute("data-pet-species", sp.id);
 const top = document.createElement("div");
 top.className = "pet-opt-top";
@@ -23677,13 +23892,32 @@ top.appendChild(nm);
 btn.appendChild(top);
 const sub = document.createElement("div");
 sub.className = "pet-opt-sub";
-if (selected) sub.textContent = "✓ Aktif · Bakım " + sp.dailyCost + " TL/gün";
+if (armed) sub.textContent = "👆 Tekrar dokun: " + sp.adoptCost + " TL Sahiplen";
+else if (selected) sub.textContent = "✓ Aktif · Bakım " + sp.dailyCost + " TL/gün";
 else if (owned) sub.textContent = "Sahipsin · Geç (" + sp.dailyCost + " TL/gün)";
-else sub.textContent = sp.adoptCost + " TL · Bakım " + sp.dailyCost + " TL/gün";
+else sub.textContent = "👀 Önizle · " + sp.adoptCost + " TL (" + sp.dailyCost + " TL/gün)";
 btn.appendChild(sub);
 btn.onclick = () => {
+if (owned) {
+_armedPurchase = null;
+delete _previewDraft.type;
 const res = adoptOrSelectPetSpecies(sp.id);
-_showStatus(res.msg, !res.ok);
+_showStatus(res.msg, res.ok ? "ok" : "err");
+renderPetModal();
+return;
+}
+if (!armed) {
+_previewDraft.type = sp.id;
+_armedPurchase = { kind: "species", category: "species", id: sp.id };
+if (typeof play === "function") play("tap");
+_showStatus("👀 Önizleme: " + sp.icon + " " + sp.label + " — Sahiplenmek için tekrar dokun (" + sp.adoptCost + " TL)", "info");
+renderPetModal();
+return;
+}
+const res = adoptOrSelectPetSpecies(sp.id);
+_armedPurchase = null;
+if (res.ok) delete _previewDraft.type;
+_showStatus(res.msg, res.ok ? "ok" : "err");
 renderPetModal();
 };
 grid.appendChild(btn);
@@ -23706,21 +23940,16 @@ if (tabBtnKennel) tabBtnKennel.classList.toggle("active", _petModalTab === "kenn
 renderPetPreviewCanvas();
 if (tabBodyEl) {
 const frag = document.createDocumentFragment();
-const pickCategory = (category) => (item) => {
-const res = buyOrEquipPetOption(category, item.id);
-_showStatus(res.msg, !res.ok);
-renderPetModal();
-};
 if (_petModalTab === "pet") {
 _appendSpeciesSection(frag, pet);
-_appendSection(frag, "🎨 Tüy Rengi", true, typeof PET_COATS !== "undefined" ? PET_COATS : [], pet.coat, pet.ownedCoats, pickCategory("coat"));
-_appendSection(frag, "📿 Tasma Rengi", true, typeof PET_COLLARS !== "undefined" ? PET_COLLARS : [], pet.collar, pet.ownedCollars, pickCategory("collar"));
-_appendSection(frag, "🎀 Özel Aksesuarlar", false, typeof PET_ACCESSORIES !== "undefined" ? PET_ACCESSORIES : [], pet.accessory, pet.ownedAccessories, pickCategory("accessory"));
+_appendSection(frag, "🎨 Tüy Rengi", true, typeof PET_COATS !== "undefined" ? PET_COATS : [], "coat", "coat", pet.coat, pet.ownedCoats, !!pet.adopted);
+_appendSection(frag, "📿 Tasma Rengi", true, typeof PET_COLLARS !== "undefined" ? PET_COLLARS : [], "collar", "collar", pet.collar, pet.ownedCollars, !!pet.adopted);
+_appendSection(frag, "🎀 Özel Aksesuarlar", false, typeof PET_ACCESSORIES !== "undefined" ? PET_ACCESSORIES : [], "accessory", "accessory", pet.accessory, pet.ownedAccessories, !!pet.adopted);
 } else {
-_appendSection(frag, "🏠 Kulübe Modeli (Ön Bahçe)", false, typeof KENNEL_STYLES !== "undefined" ? KENNEL_STYLES : [], pet.kennelStyle, pet.ownedKennelStyles, pickCategory("kennelStyle"));
-_appendSection(frag, "🟥 Çatı Rengi", true, typeof KENNEL_ROOFS !== "undefined" ? KENNEL_ROOFS : [], pet.kennelRoof, pet.ownedKennelRoofs, pickCategory("kennelRoof"));
-_appendSection(frag, "🧱 Duvar Malzemesi", true, typeof KENNEL_WALLS !== "undefined" ? KENNEL_WALLS : [], pet.kennelWall, pet.ownedKennelWalls, pickCategory("kennelWall"));
-_appendSection(frag, "✨ Kulübe Süslemesi", false, typeof KENNEL_DECORS !== "undefined" ? KENNEL_DECORS : [], pet.kennelDecor, pet.ownedKennelDecors, pickCategory("kennelDecor"));
+_appendSection(frag, "🏠 Kulübe Modeli (Ön Bahçe)", false, typeof KENNEL_STYLES !== "undefined" ? KENNEL_STYLES : [], "kennelStyle", "kennelStyle", pet.kennelStyle, pet.ownedKennelStyles, !!pet.adopted);
+_appendSection(frag, "🟥 Çatı Rengi", true, typeof KENNEL_ROOFS !== "undefined" ? KENNEL_ROOFS : [], "kennelRoof", "kennelRoof", pet.kennelRoof, pet.ownedKennelRoofs, !!pet.adopted);
+_appendSection(frag, "🧱 Duvar Malzemesi", true, typeof KENNEL_WALLS !== "undefined" ? KENNEL_WALLS : [], "kennelWall", "kennelWall", pet.kennelWall, pet.ownedKennelWalls, !!pet.adopted);
+_appendSection(frag, "✨ Kulübe Süslemesi", false, typeof KENNEL_DECORS !== "undefined" ? KENNEL_DECORS : [], "kennelDecor", "kennelDecor", pet.kennelDecor, pet.ownedKennelDecors, !!pet.adopted);
 }
 tabBodyEl.innerHTML = "";
 tabBodyEl.appendChild(frag);
@@ -23736,28 +23965,33 @@ footerInfoEl.textContent = "💰 " + m + " TL  •  💎 " + g + " Elmas  •  "
 function openPetModal(initialTab) {
 if (typeof window !== "undefined" && window.visitMode) return;
 if (initialTab === "pet" || initialTab === "kennel") _petModalTab = initialTab;
-_showStatus("", false);
+_armedPurchase = null;
+_previewDraft = {};
+_showStatus("", "ok");
 renderPetModal();
 if (modalEl) modalEl.style.display = "flex";
 }
 function closePetModal() {
+_armedPurchase = null;
+_previewDraft = {};
 if (modalEl) modalEl.style.display = "none";
 }
 if (closeBtn) closeBtn.onclick = () => { if (typeof play === "function") play("tap"); closePetModal(); };
 if (modalEl) modalEl.onclick = (e) => { if (e.target === modalEl) closePetModal(); };
-if (tabBtnPet) tabBtnPet.onclick = () => { if (typeof play === "function") play("tap"); _petModalTab = "pet"; renderPetModal(); };
-if (tabBtnKennel) tabBtnKennel.onclick = () => { if (typeof play === "function") play("tap"); _petModalTab = "kennel"; renderPetModal(); };
+if (tabBtnPet) tabBtnPet.onclick = () => { if (typeof play === "function") play("tap"); _armedPurchase = null; _petModalTab = "pet"; renderPetModal(); };
+if (tabBtnKennel) tabBtnKennel.onclick = () => { if (typeof play === "function") play("tap"); _armedPurchase = null; _petModalTab = "kennel"; renderPetModal(); };
 if (saveNameBtn) {
 saveNameBtn.onclick = () => {
 const res = setHotelPetName(nameInput ? nameInput.value : "");
-_showStatus(res.msg, !res.ok);
+_showStatus(res.msg, res.ok ? "ok" : "err");
 renderPetModal();
 };
 }
 if (toggleActiveBtn) {
 toggleActiveBtn.onclick = () => {
+_armedPurchase = null;
 const res = toggleHotelPetActive();
-_showStatus(res.msg, !res.ok);
+_showStatus(res.msg, res.ok ? "ok" : "err");
 renderPetModal();
 };
 }
