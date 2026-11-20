@@ -325,6 +325,7 @@ display: flex; flex-direction: column; gap: 4px;
 pointer-events: none;
 }
 .fl-tab-btn {
+position: relative;
 pointer-events: auto;
 background: rgba(255, 248, 232, 0.94); border: 2px solid #3a281f; border-radius: 9px;
 padding: 3px 8px; font-size: 10.5px; font-weight: 900; color: #3a281f;
@@ -335,6 +336,21 @@ background: linear-gradient(180deg, #ffe066 0%, #f5b41b 100%);
 }
 .fl-tab-btn.locked {
 background: rgba(215, 222, 232, 0.88); color: #526075;
+}
+.fl-tab-btn.has-alert {
+border-color: #dc2626;
+box-shadow: 0 2px 0 #b91c1c, 0 0 8px rgba(239, 68, 68, 0.45);
+}
+.fl-tab-btn.has-alert::after {
+content: "!";
+position: absolute; top: -5px; left: -6px;
+width: 15px; height: 15px; border-radius: 50%;
+background: #e62e2e; border: 1.5px solid #3a281f;
+color: #ffffff; font-size: 10px; font-weight: 900; line-height: 1;
+display: flex; align-items: center; justify-content: center;
+box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+animation: pulse-dot 1.2s infinite;
+pointer-events: none;
 }
 .cam-mini-row { display: flex; gap: 4px; pointer-events: none; }
 .vp-btn {
@@ -975,6 +991,7 @@ width: 92px; padding: 4px 6px; border-radius: 10px; border-width: 2px;
 .sat-smiley { width: 16px; height: 16px; font-size: 10px; left: -8px; top: -4px; border-width: 1.5px; }
 .floor-tabs { gap: 3px; }
 .fl-tab-btn { padding: 3px 6px; font-size: 9px; border-radius: 6px; display: flex; align-items: center; }
+.fl-tab-btn.has-alert::after { width: 13px; height: 13px; font-size: 8.5px; top: -5px; left: -5px; }
 .fl-tab-btn.locked { display: flex !important; opacity: 0.88; background: rgba(226, 232, 240, 0.92); color: #64748b; }
 .cam-mini-row { gap: 3px; }
 .vp-btn { width: 25px; height: 23px; font-size: 11px; border-radius: 6px; }
@@ -2573,7 +2590,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.93-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.94-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -11732,6 +11749,30 @@ _repBalloonTimer = setTimeout(() => {
 if (balloon) balloon.classList.remove("show");
 }, 3000);
 }
+function getFloorAlertInfo(fIdx) {
+const fl = (typeof floors !== "undefined" && floors) ? floors[fIdx] : null;
+if (!fl || fl.state !== "Built" || !fl.slots) return { alert: false, slot: null, reason: "" };
+let corpseSlot = null, gasSlotFound = null, expiredSlot = null, maintSlot = null;
+const noCleaners = typeof cleaners === "undefined" || cleaners.length === 0;
+for (let i = 0; i < fl.slots.length; i++) {
+const s = fl.slots[i];
+if (!s) continue;
+if (s.onFire) return { alert: true, slot: s, reason: "🔥 Yangın!" };
+if (!corpseSlot && s.hasCorpse) corpseSlot = s;
+if (!gasSlotFound && typeof gasLeak !== "undefined" && gasLeak && s.type === "Gas") gasSlotFound = s;
+if (!expiredSlot && s.guest && s.guest.expired && s.guest.room === s) expiredSlot = s;
+if (!maintSlot && noCleaners && s.type === "Room" && !s.guest && s.hasDoor && s.maintenance < 30) maintSlot = s;
+}
+if (corpseSlot) return { alert: true, slot: corpseSlot, reason: "💀 Olay Yeri!" };
+if (gasSlotFound) return { alert: true, slot: gasSlotFound, reason: "🚨 Gaz Kaçağı!" };
+if (expiredSlot) return { alert: true, slot: expiredSlot, reason: "⏰ Süresi Dolmuş Misafir!" };
+if (fIdx === 0 && typeof queue !== "undefined" && queue.some(q => q && q.arrivedOnce && (q.type === "Threat" || q.patience <= 10))) {
+const rec = fl.slots.find(sl => sl && sl.type === "Reception") || fl.slots[32];
+return { alert: true, slot: rec, reason: "🛎️ Lobide Acil Misafir!" };
+}
+if (maintSlot) return { alert: true, slot: maintSlot, reason: "🔧 Bakım Gerekli!" };
+return { alert: false, slot: null, reason: "" };
+}
 function refreshHud() {
 const st = stars();
 const target = st === 0 ? Star1 : st === 1 ? Star2 : Star3;
@@ -11800,10 +11841,15 @@ for (const btn of floorTabBtns) {
 const fIdx = Number(btn.getAttribute("data-floor")) || 0;
 const fl = floors[fIdx];
 const isAct = viewFloor === fIdx && fl.state === "Built";
+const alertInfo = (fIdx !== viewFloor) ? getFloorAlertInfo(fIdx) : { alert: false, reason: "" };
 btn.classList.toggle("active", isAct);
 btn.classList.toggle("locked", fl.state !== "Built");
+btn.classList.toggle("has-alert", !!alertInfo.alert);
+const nextTitle = alertInfo.alert ? alertInfo.reason : "";
+if (btn.title !== nextTitle) btn.title = nextTitle;
 const prefix = fl.state === "Built" ? "🏨 " : fl.state === "Building" ? "🏗️ " : "🔒 ";
-btn.textContent = prefix + (fIdx + 1) + ". Kat";
+const nextTxt = prefix + (fIdx + 1) + ". Kat";
+if (btn.textContent !== nextTxt) btn.textContent = nextTxt;
 }
 if (guestbookModal.style.display === "flex") renderGuestBook();
 }
@@ -12409,7 +12455,9 @@ const fIdx = Number(btn.getAttribute("data-floor")) || 0;
 const fl = floors[fIdx];
 if (fl.state === "Built") {
 viewFloor = fIdx;
-const targetS = fl.slots.find(s => s.type !== "Empty" && s.type !== "TennisClub") ||
+const alertInfo = (typeof getFloorAlertInfo === "function") ? getFloorAlertInfo(fIdx) : null;
+const targetS = (alertInfo && alertInfo.slot) ||
+fl.slots.find(s => s.type !== "Empty" && s.type !== "TennisClub") ||
 fl.slots.find(s => isParcelBuildable(fIdx, s.idx)) ||
 fl.slots[21];
 selectSlot(targetS);
@@ -13526,17 +13574,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 101;
-const APP_VERSION_NAME = "1.9.93-beta";
+const APP_VERSION_CODE = 102;
+const APP_VERSION_NAME = "1.9.94-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.94-beta",
+title: "Kat bazlı müşteri görünümü ve kat butonunda ünlem bildirimi",
+latest: true,
+notes: "• 👀 Sadece Aktif Katın Müşterileri: Hangi kattaysan artık yalnızca o kattaki müşteriler, konuşma balonları ve süresi doldu uyarıları görünür; alt/üst kattaki müşteriler gizlenir.\n• ❗ Kat Butonunda Uyarı Ünlemi: Başka bir katta yangın, olay yeri, süresi dolan misafir, gaz kaçağı veya acil resepsiyon durumu olursa ilgili kat butonunun üzerinde kırmızı '!' belirir ve tıklayınca doğrudan o odaya odaklanır."
+},
+{
 ver: "v1.9.93-beta",
 title: "Üst üste asansör kuralı ve oda/yapı yıkma",
-latest: true,
+latest: false,
 notes: "• 🛗 Dikey Asansör Şaftı: Üst katlarda yeni asansörler artık yalnızca alt kattaki asansörün tam üzerine kurulabilir.\n• 🧱 Oda & Yapı Yıkımı (%50 İade): Yanlış kurulan odalar, koridorlar, asansörler ve tesisler 2 dokunuşlu onay ile yıkılıp %50 maliyeti iade alınabilir (üst katında yapı varsa veya odada misafir/yangın varsa güvenli şekilde uyarır)."
 },
 {
@@ -14666,6 +14720,13 @@ camCenter.y = -p.y;
 }
 function _hideIfBelowViewFloor(uvz, pawn) {
 if (!pawn || !uvz || uvz.hidden) return uvz;
+const isInMenuNow = (typeof inMenu !== "undefined" && !!inMenu);
+if (!isInMenuNow && typeof viewFloor === "number" && typeof FloorCount === "number" && typeof FLOOR_Z === "number") {
+const pawnFloor = Math.max(0, Math.min(FloorCount - 1, Math.floor(Math.max(0, (uvz.z || 0) - 2) / FLOOR_Z)));
+if (pawnFloor !== viewFloor) {
+return { u: uvz.u, v: uvz.v, z: uvz.z, inPool: false, hidden: true };
+}
+}
 if (uvz.z < FLOOR_Z && typeof floors !== "undefined" && floors[0] && floors[0].slots && floors[0].slots[38]) {
 const tc = floors[0].slots[38];
 const ts = tc.tennisState || "Ruin";
@@ -14731,6 +14792,11 @@ const activeSlot = (guestObj && guestObj.room) ||
 allSlots.find(s => (s.guest && (s.guest.pawn === parentPawn || s.guest.petPawn === parentPawn || (s.guest.kidPawns && s.guest.kidPawns.includes(parentPawn))))) ||
 allSlots.find(s => (s.guests && s.guests.some(g => g.pawn === parentPawn || g.petPawn === parentPawn || (g.kidPawns && g.kidPawns.includes(parentPawn)))));
 if (activeSlot) {
+if (typeof inMenu === "undefined" || !inMenu) {
+if (activeSlot.floor.idx !== viewFloor) {
+return { u: 0, v: 0, z: 0, hidden: true };
+}
+}
 ensureRoomFurnLayout(activeSlot);
 const b = slotIsoBox(activeSlot.floor.idx, activeSlot.idx);
 const bedPos = (activeSlot.furnLayout && activeSlot.furnLayout[4]) || { ru: 0, rv: 2, rot: 0 };
@@ -14844,7 +14910,10 @@ const activeSlot = (guestObj && guestObj.room) ||
 (s.guest && (s.guest.pawn === pawn || s.guest.petPawn === pawn || (s.guest.kidPawns && s.guest.kidPawns.includes(pawn)))) ||
 cleaners.some(c => c.pawn === pawn && c.target === s)
 ));
-if (activeSlot && activeSlot.floor.idx <= viewFloor) {
+if (activeSlot) {
+if ((typeof inMenu === "undefined" || !inMenu) && activeSlot.floor.idx !== viewFloor) {
+return { u: 0, v: 0, z: 0, hidden: true };
+}
 const b = slotIsoBox(activeSlot.floor.idx, activeSlot.idx);
 const localT = clamp(((wx - activeSlot.X0) / SlotW), 0.25, 0.75);
 return {
@@ -18859,6 +18928,7 @@ drawHighwayTunnelPortal(1440, roadV1, false, si);
 for (const g of guests) {
 if (!g.pawn || g.pawn.dead) continue;
 const uvz = logicalToIsoUVZ(g.pawn.pos.x, g.pawn.pos.y, g.pawn);
+if (!uvz || uvz.hidden) continue;
 if (g.expired) {
 const poly = isoLabel("⏰ Süre doldu!\nTıkla: Gönder", uvz.u, uvz.v, uvz.z + 78, 12.5, "#3a281f", "#ffe875", 9, 5);
 addHitPoly(poly, () => sendOff(g));
