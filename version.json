@@ -1,8 +1,8 @@
 {
-  "versionCode": 102,
-  "versionName": "1.9.94-beta",
+  "versionCode": 103,
+  "versionName": "1.9.95-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Kat bazlı müşteri görünümü ve kat butonunda ünlem bildirimi"
+  "notes": "Otomatik cephe seçen balkonlar ve balkon alanı koruması"
 }

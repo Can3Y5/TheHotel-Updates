@@ -2590,7 +2590,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.94-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.95-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -3348,7 +3348,7 @@ const isTreeSlot = (f === 0 && (i === 36 || i === 37));
 const s = {
 floor: fl, idx: i,
 type: isInitRec ? "Reception" : (isTennisClub ? "TennisClub" : "Empty"),
-parcelBuilt: isInitStarter, hasEnsuite: false, furnLayout: {}, roomNo: 0, hasDoor: false, hasBalcony: false,
+parcelBuilt: isInitStarter, hasEnsuite: false, furnLayout: {}, roomNo: 0, hasDoor: false, hasBalcony: false, balconyWall: null,
 hasTree: isTreeSlot,
 tennisState: isTennisClub ? "Ruin" : null,
 items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
@@ -5692,12 +5692,99 @@ if (typeof play === "function") play("tap");
 if (typeof refresh === "function") refresh();
 if (typeof saveGame === "function") saveGame();
 }
+function getParcelNeighborInDir(fIdx, idx, dir) {
+if (idx < 0 || idx >= 36) return null;
+const fl = floors[fIdx];
+if (!fl) return null;
+const { gu, gv } = parcelCoords(idx);
+if (dir === "front") return gu < 5 ? slotAtGrid(fl, gu + 1, gv) : null;
+if (dir === "right") return gv < 5 ? slotAtGrid(fl, gu, gv + 1) : null;
+if (dir === "left") return gv > 0 ? slotAtGrid(fl, gu, gv - 1) : null;
+if (dir === "back") return gu > 0 ? slotAtGrid(fl, gu - 1, gv) : null;
+return null;
+}
+function _isSlotEmptyForBalcony(nb) {
+if (!nb) return true;
+return nb.type === "Empty" && !nb.parcelBuilt && !nb.hasTree;
+}
+function _isSlotClaimedByOtherBalcony(ownerSlot, nb) {
+if (!nb || !ownerSlot || !ownerSlot.floor) return false;
+const fIdx = ownerSlot.floor.idx;
+const dirs = [
+["front", "back"],
+["right", "left"],
+["left", "right"],
+["back", "front"]
+];
+for (const [d, opp] of dirs) {
+const cand = getParcelNeighborInDir(fIdx, nb.idx, d);
+if (cand && cand !== ownerSlot && cand.type === "Room" && cand.hasBalcony && cand.balconyWall === opp) {
+return true;
+}
+}
+return false;
+}
+function getRoomAvailableBalconyWalls(s) {
+if (!s || s.type !== "Room" || !s.floor || s.floor.idx < 1 || s.idx < 0 || s.idx >= 36) return [];
+const fIdx = s.floor.idx;
+const doorWall = (typeof getRoomDoorWall === "function") ? getRoomDoorWall(s) : null;
+const primary = [];
+const fallback = [];
+const ordered = [
+{ dir: "front", frontCam: true },
+{ dir: "right", frontCam: true },
+{ dir: "left", frontCam: false },
+{ dir: "back", frontCam: false }
+];
+for (const { dir, frontCam } of ordered) {
+if (dir === doorWall) continue;
+const nb = getParcelNeighborInDir(fIdx, s.idx, dir);
+if (!_isSlotEmptyForBalcony(nb)) continue;
+if (nb && _isSlotClaimedByOtherBalcony(s, nb)) {
+fallback.push({ dir, frontCam, outer: false });
+} else {
+primary.push({ dir, frontCam, outer: !nb });
+}
+}
+primary.sort((a, b) => (b.frontCam - a.frontCam) || (b.outer - a.outer));
+return primary.map(x => x.dir).concat(fallback.map(x => x.dir));
+}
+function getRoomBalconyWall(s) {
+if (!s || s.type !== "Room" || !s.hasBalcony || !s.floor || s.floor.idx < 1 || s.idx < 0 || s.idx >= 36) return null;
+const doorWall = (typeof getRoomDoorWall === "function") ? getRoomDoorWall(s) : null;
+if (s.balconyWall && s.balconyWall !== doorWall) {
+const nb = getParcelNeighborInDir(s.floor.idx, s.idx, s.balconyWall);
+if (_isSlotEmptyForBalcony(nb)) return s.balconyWall;
+}
+const avail = getRoomAvailableBalconyWalls(s);
+s.balconyWall = avail[0] || null;
+return s.balconyWall;
+}
+function getParcelBalconyBlocker(fIdx, idx) {
+if (fIdx < 1 || idx < 0 || idx >= 36) return null;
+const fl = floors[fIdx];
+if (!fl || fl.state !== "Built") return null;
+const checks = [
+["back", "front"],
+["left", "right"],
+["right", "left"],
+["front", "back"]
+];
+for (const [nbDir, balDir] of checks) {
+const nb = getParcelNeighborInDir(fIdx, idx, nbDir);
+if (nb && nb.type === "Room" && nb.hasBalcony && getRoomBalconyWall(nb) === balDir) {
+return nb;
+}
+}
+return null;
+}
 function isParcelBuildable(fIdx, idx) {
 if (fIdx === 0 && idx === 38) return false;
 const fl = floors[fIdx];
 if (!fl || fl.state !== "Built") return false;
 const s = fl.slots[idx];
 if (!s || s.type !== "Empty") return false;
+if (getParcelBalconyBlocker(fIdx, idx)) return false;
 if (s.parcelBuilt) return true;
 if (fIdx === 0) {
 if ((idx === 36 || idx === 37) && !s.hasTree) return true;
@@ -5887,6 +5974,7 @@ roomNo: s.roomNo,
 hasDoor: s.hasDoor,
 doorWall: s.doorWall || null,
 hasBalcony: !!s.hasBalcony,
+balconyWall: s.balconyWall || null,
 hasCorpse: !!s.hasCorpse,
 corpseName: s.corpseName || "",
 items: s.items.slice(),
@@ -6172,6 +6260,7 @@ s.roomNo = sd.roomNo || 0;
 s.hasDoor = !!sd.hasDoor;
 s.doorWall = sd.doorWall || null;
 s.hasBalcony = !!(sd.hasBalcony && f >= 1);
+s.balconyWall = (sd.balconyWall && s.hasBalcony) ? sd.balconyWall : null;
 s.hasCorpse = !!sd.hasCorpse;
 s.corpseName = sd.corpseName || "";
 if (Array.isArray(sd.items)) {
@@ -6656,6 +6745,7 @@ s.furnLayout = {};
 s.roomNo = 0;
 s.hasDoor = false;
 s.hasBalcony = false;
+s.balconyWall = null;
 s.hasCorpse = false;
 s.corpseName = "";
 s.items.fill(false);
@@ -6747,6 +6837,7 @@ if (s.roomNo) c.rn = s.roomNo;
 if (s.hasDoor) c.d = 1;
 if (s.doorWall) c.dw = s.doorWall;
 if (s.hasBalcony) c.b = 1;
+if (s.hasBalcony && s.balconyWall) c.bw = s.balconyWall;
 if (Array.isArray(s.items) && s.items.some(Boolean)) c.it = s.items.map(v => v ? 1 : 0);
 if (s.wall) c.w = s.wall;
 if (s.picColor) c.pc = s.picColor;
@@ -6863,6 +6954,8 @@ s.roomNo = 0;
 s.hasDoor = false;
 s.doorWall = null;
 s.hasBalcony = false;
+s.balconyWall = null;
+s.balconyWall = null;
 s.items.fill(false);
 s.gymLevel = 1; s.spaLevel = 1; s.cafeLevel = 1; s.level = 1;
 continue;
@@ -6878,6 +6971,7 @@ s.roomNo = sd.rn || 0;
 s.hasDoor = !!sd.d;
 s.doorWall = sd.dw || null;
 s.hasBalcony = !!(sd.b && f >= 1);
+s.balconyWall = (sd.bw && s.hasBalcony) ? sd.bw : null;
 for (let k = 0; k < ItemCount; k++) s.items[k] = !!(Array.isArray(sd.it) && sd.it[k]);
 if (sd.w) s.wall = sd.w;
 if (sd.pc) s.picColor = sd.pc;
@@ -10890,6 +10984,7 @@ s.hasDoor = false;
 s.doorWall = null;
 s.hasEnsuite = false;
 s.hasBalcony = false;
+s.balconyWall = null;
 s.roomNo = 0;
 s.level = 1;
 s.maintenance = 100;
@@ -11016,7 +11111,12 @@ return;
 }
 if (!isParcelBuildable(s.floor.idx, s.idx)) {
 play("reject");
+const balBlocker = (typeof getParcelBalconyBlocker === "function") ? getParcelBalconyBlocker(s.floor.idx, s.idx) : null;
+if (balBlocker) {
+log("🌿 " + (balBlocker.roomNo ? (balBlocker.roomNo + ". odanın") : "Bitişik odanın") + " balkonu bu parsele bakıyor; buraya yapı kurulamaz!");
+} else {
 log("Önce bu parselin yanındaki (veya altındaki) parsele bina kurmalısın!");
+}
 return;
 }
 if (i === 8 || (i === 0 && s.floor.idx === 0 && (s.idx === 26 || s.idx === 25))) {
@@ -11338,12 +11438,8 @@ log("🚪 " + s.roomNo + ". oda için kapı alındı! Artık sol alttan Oteli A�
 tryPlacePendingBodyguards();
 saveGame();
 }
-} else if (s.floor.idx >= 1 && !s.hasBalcony) {
-if (pay(CostBalcony)) {
-s.hasBalcony = true; play("build");
-log("🌿 " + s.roomNo + ". odaya Balkon eklendi!");
-saveGame();
-}
+} else if (s.floor.idx >= 1 && !s.hasBalcony && (typeof getRoomAvailableBalconyWalls !== "function" || getRoomAvailableBalconyWalls(s).length > 0)) {
+buildBalconyOnRoom(s);
 } else {
 if (s.hasEnsuite) {
 if (furnSelectedKey === IBanyo) {
@@ -11591,8 +11687,8 @@ if (i === 0 && !s.hasDoor && pay(CostDoor)) {
 s.hasDoor = true; play("build"); log(s.roomNo + ". oda için kapı alındı! Artık sağ üstten Oteli Açabilirsin.");
 tryPlacePendingBodyguards();
 saveGame();
-} else if (i === 0 && s.hasDoor && s.floor.idx >= 1 && !s.hasBalcony && pay(CostBalcony)) {
-s.hasBalcony = true; play("build"); log("🌿 " + s.roomNo + ". odaya Balkon eklendi! Balkonlu oda isteyen müşteriler memnun kalacak."); saveGame();
+} else if (i === 0 && s.hasDoor && s.floor.idx >= 1 && !s.hasBalcony) {
+buildBalconyOnRoom(s);
 } else if (i >= 1 && i <= ItemCount) {
 if (!hasReadyRoom()) {
 play("reject");
@@ -11606,6 +11702,24 @@ doMaint(s);
 }
 }
 refresh();
+}
+function buildBalconyOnRoom(s) {
+if (!s || s.type !== "Room" || !s.floor || s.floor.idx < 1 || s.hasBalcony) return false;
+const avail = (typeof getRoomAvailableBalconyWalls === "function") ? getRoomAvailableBalconyWalls(s) : ["front"];
+if (!avail.length) {
+play("reject");
+log("⚠️ Bu odanın dışarıya açılan boş bir kenarı yok! Çevresi tamamen dolu odalara balkon yapılamaz.");
+return false;
+}
+if (!pay(CostBalcony)) return false;
+s.hasBalcony = true;
+s.balconyWall = avail[0];
+play("build");
+const wTr = (typeof getWallTrName === "function") ? getWallTrName(s.balconyWall) : "";
+log("🌿 " + s.roomNo + ". odaya " + (wTr ? (wTr + " cepheye ") : "") + "Balkon eklendi!");
+if (typeof pcInvalidateAll === "function") pcInvalidateAll();
+saveGame();
+return true;
 }
 let zoom = 0.55, camCenter = { x: TotalW * 0.5, y: 300 }, camInit = false;
 const topLeft = document.getElementById("top-left");
@@ -13097,6 +13211,7 @@ return;
 }
 const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
 const canBuildHere = isParcelBuildable(cur.floor.idx, cur.idx);
+const balBlocker = (typeof getParcelBalconyBlocker === "function") ? getParcelBalconyBlocker(cur.floor.idx, cur.idx) : null;
 const belowElev = (typeof hasElevatorBelow === "function") ? hasElevatorBelow(cur) : true;
 if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 26) {
 infoText.textContent = "🚪 1. Koridor Yeri (Resepsiyon Arkası) • 60 TL " + coordStr +
@@ -13115,6 +13230,8 @@ infoText.textContent = "🛣️ Yol Kenarı Parseli (" + (cur.idx === 36 ? "Sol"
 infoText.textContent = anyRoomBuilt
 ? "⚠️ Başlangıç Adımı: 1. Odaya tıklayıp Kapı al (50 TL) ve oteli aç!"
 : ("💡 Başlangıç Adımı: Önce 1. ve 2. Koridoru (60 TL), ardından 1. Odanı kur! " + coordStr);
+} else if (balBlocker) {
+infoText.textContent = "🌿 Balkon Alanı " + coordStr + "  •  " + (balBlocker.roomNo ? (balBlocker.roomNo + ". odanın") : "Bitişik odanın") + " balkonu bu kısma bakmaktadır; buraya oda veya yapı kurulamaz.";
 } else if (!canBuildHere) {
 infoText.textContent = "🔒 " + coordStr + "  •  Otel odası kurmak için binaya bitişik olmalıdır. Ancak Depo binası binaya yapışık olmadan bağımsız kurulabilir!";
 } else if (cur.floor.idx >= 1 && belowElev) {
@@ -13424,7 +13541,15 @@ else pre = "⚠️ Odayı açmak için önce Kapı al (50 TL)!  •  ";
 } else if (cur.onFire) pre = "🔥 YANGIN! (" + Math.ceil(cur.fireLeft) + " sn)  •  ";
 else if (cur.hasCorpse) pre = "💀 OLAY YERİ! (" + cur.corpseName + " - Polise Bildir)  •  ";
 else if (cur.guest && cur.guest.expired) pre = "⏰ " + cur.guest.name + " süresi doldu!  •  ";
-const balInfo = cur.floor.idx >= 1 ? ("  |  Balkon: " + (cur.hasBalcony ? "Var 🌿" : "Yok")) : "";
+const availBalWalls = (cur.floor.idx >= 1 && !cur.hasBalcony && typeof getRoomAvailableBalconyWalls === "function")
+? getRoomAvailableBalconyWalls(cur)
+: [];
+const curBalWall = (cur.floor.idx >= 1 && cur.hasBalcony && typeof getRoomBalconyWall === "function")
+? getRoomBalconyWall(cur)
+: null;
+const balInfo = cur.floor.idx >= 1
+? ("  |  Balkon: " + (cur.hasBalcony ? ("Var" + (curBalWall ? " (" + getWallTrName(curBalWall) + ")" : "") + " 🌿") : (availBalWalls.length > 0 ? "Yok" : "Dış Cephe Yok")))
+: "";
 const wallTag = doorWall ? (" (Kapı: " + (doorWall === "left" ? "Sol" : doorWall === "right" ? "Sağ" : doorWall === "back" ? "Arka" : "Ön") + " Koridora)") : " (Koridor Yok ❌)";
 infoText.textContent = pre + "🚪 " + cur.roomNo + ". Oda " + coordStr + "  |  Kapı: " + (cur.hasDoor ? "Var" : "Yok") + wallTag + balInfo + "  |  Bakım: %" + Math.round(cur.maintenance) + match + "\n📦 Eşyalar: " + items;
 if (!cur.hasDoor) {
@@ -13434,8 +13559,9 @@ setAct(0, "⚠️ Koridor Gerekli\n(Kapı Takılamaz)", true, false, true);
 const wLbl = doorWall === "left" ? "Sol" : doorWall === "right" ? "Sağ" : doorWall === "back" ? "Arka" : "Ön";
 setAct(0, "🚪 Kapı Al (" + wLbl + ")\n" + CostDoor + " TL", true, money >= CostDoor, false);
 }
-} else if (cur.floor.idx >= 1 && !cur.hasBalcony) {
-setAct(0, "🌿 Balkon Yap\n" + CostBalcony + " TL", true, true, false);
+} else if (cur.floor.idx >= 1 && !cur.hasBalcony && availBalWalls.length > 0) {
+const bLbl = (typeof getWallTrName === "function") ? getWallTrName(availBalWalls[0]) : "";
+setAct(0, "🌿 Balkon Yap" + (bLbl ? (" (" + bLbl + ")") : "") + "\n" + CostBalcony + " TL", true, money >= CostBalcony, false);
 } else {
 setAct(0, cur.hasEnsuite ? "🚿 Banyo (2x1)\n(Taşı / Seç)" : ("🚿 Özel Banyo (2x1)\n" + CostEnsuite + " TL"), true, readyOnce, cur.hasEnsuite, furnSelectedKey === IBanyo);
 }
@@ -13574,17 +13700,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 102;
-const APP_VERSION_NAME = "1.9.94-beta";
+const APP_VERSION_CODE = 103;
+const APP_VERSION_NAME = "1.9.95-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.95-beta",
+title: "Otomatik cephe seçen balkonlar ve balkon alanı koruması",
+latest: true,
+notes: "• 🌿 Otomatik Dış Cephe Balkonu: Balkon artık yalnızca sağ kenara çizilmez; odanın açık olan dış cephesine (ön, sağ, sol veya arka) cam korkuluklu, saksılı ve balkon kapılı şekilde otomatik yerleşir.\n• 🧱 Balkon Parseli Koruması: Bir odanın balkonunun uzandığı bitişik boş parsele sonradan başka bir oda veya yapı kurulamaz (balkonlu oda yıkılırsa alan tekrar açılır)."
+},
+{
 ver: "v1.9.94-beta",
 title: "Kat bazlı müşteri görünümü ve kat butonunda ünlem bildirimi",
-latest: true,
+latest: false,
 notes: "• 👀 Sadece Aktif Katın Müşterileri: Hangi kattaysan artık yalnızca o kattaki müşteriler, konuşma balonları ve süresi doldu uyarıları görünür; alt/üst kattaki müşteriler gizlenir.\n• ❗ Kat Butonunda Uyarı Ünlemi: Başka bir katta yangın, olay yeri, süresi dolan misafir, gaz kaçağı veya acil resepsiyon durumu olursa ilgili kat butonunun üzerinde kırmızı '!' belirir ve tıklayınca doğrudan o odaya odaklanır."
 },
 {
@@ -16195,8 +16327,9 @@ _pcBusyMask(s.gymBusy) + ":" + _pcBusyMask(s.spaBusy) + ":" + _pcBusyMask(s.cafe
 _pcBusyMask(s.toiletBusy) + ":" + _pcBusyMask(s.tennisCourtBusy);
 }
 const tVer = (typeof THEME !== "undefined" && THEME) ? THEME.version : 0;
+const balBlock = (typeof getParcelBalconyBlocker === "function" && getParcelBalconyBlocker(fIdx, sIdx)) ? 1 : 0;
 return st + "|" + (s.parcelBuilt ? 1 : 0) + "|" + (s.hasDoor ? 1 : 0) + "|" + (s.doorWall || "") + "|" +
-(s.hasEnsuite ? 1 : 0) + "|" + (s.hasBalcony ? 1 : 0) + "|" + (s.level || 1) + "|" +
+(s.hasEnsuite ? 1 : 0) + "|" + (s.hasBalcony ? 1 : 0) + "|" + (s.balconyWall || "") + "|" + balBlock + "|" + (s.level || 1) + "|" +
 Math.round(s.maintenance || 0) + "|" + (s.hasCorpse ? 1 : 0) + "|" + (s.onFire ? 1 : 0) + "|" +
 (s.broken ? 1 : 0) + "|" + (s.hasTree ? 1 : 0) + "|" + (s.tennisState || "") + "|" + (s.roomNo || 0) + "|" +
 guestTag + "|" + itemMask + "|" + (isSel ? 1 : 0) + "|" + (canBuildHere ? 1 : 0) + "|" +
@@ -18741,7 +18874,8 @@ const isBuilt = (s.type !== "Empty" || s.parcelBuilt || s.hasTree);
 const isSel = (sel === "Slot" && selSlot === s);
 if (isBuilt || (f === viewFloor && (showBuildGrid || isSel))) {
 const canB = isBuilt ? true : isParcelBuildable(f, idx);
-if (isBuilt || canB) {
+const hasBalBlock = !isBuilt && !canB && f === viewFloor && typeof getParcelBalconyBlocker === "function" && !!getParcelBalconyBlocker(f, idx);
+if (isBuilt || canB || hasBalBlock) {
 if (!isSel && typeof isParcelInViewport === "function" && !isParcelInViewport(f, idx, cw, ch)) {
 continue;
 }
@@ -19489,6 +19623,10 @@ syncFront();
 refreshGuest();
 }
 });
+} else if (!canBuildHere && (showBuildGrid || isSel) && typeof getParcelBalconyBlocker === "function" && getParcelBalconyBlocker(fIdx, sIdx)) {
+const poly = isoQuad(u0 + 42, v0 + 42, u1 - 42, v1 - 42, z0 + 0.5, isSel ? "rgba(255, 210, 80, 0.45)" : "rgba(251, 146, 60, 0.22)", isSel ? "#ff8c00" : "#ea580c", isSel ? 3.2 : 1.8);
+isoLabel("🌿 BALKON ALANI\n(Kurulamaz)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 18, 9.5, "#7c2d12", "rgba(255, 247, 237, 0.92)", 5, 2.5);
+addHitPoly(poly, () => selectSlot(s));
 } else if ((canBuildHere || (fIdx === 0 && !s.hasTree)) && (showBuildGrid || isSel)) {
 const poly = isoQuad(u0 + 6, v0 + 6, u1 - 6, v1 - 6, z0, isSel ? "rgba(255, 210, 80, 0.55)" : "rgba(72, 228, 92, 0.38)", isSel ? "#ff8c00" : "#1f7a2e", isSel ? 3.8 : 2.4);
 const posLabel = (sIdx === 36) ? "YOL SOL" : (sIdx === 37 ? "YOL SAĞ" : (gu + 1) + "," + (gv + 1));
@@ -21184,6 +21322,78 @@ isoBox(uWall + 2, vA + 12, uWall + 4.5, vA + 15, z0 + 39, z0 + 46, tsTop, tsL, t
 isoBox(uWall + 2, vB - 15, uWall + 4.5, vB - 12, z0 + 39, z0 + 46, tsTop, tsL, tsR, null, 0);
 }
 }
+function _drawBalconyPlanter(cu, cv, z) {
+isoBox(cu - 5, cv - 5, cu + 5, cv + 5, z, z + 7, "#b45309", "#92400e", "#78350f", OUTLINE_COL, 1.0);
+isoBox(cu - 6.5, cv - 6.5, cu + 6.5, cv + 6.5, z + 7, z + 15, "#22c55e", "#16a34a", "#15803d", OUTLINE_COL, 1.0);
+}
+function _drawBalconyRailSegment(au0, av0, au1, av1, zBase, pal) {
+const glassTop = "rgba(186, 230, 253, 0.52)";
+const glassL = "rgba(147, 197, 253, 0.56)";
+const glassR = "rgba(125, 211, 252, 0.52)";
+isoBox(au0 + 0.6, av0 + 0.6, au1 - 0.6, av1 - 0.6, zBase, zBase + 18, glassTop, glassL, glassR, "rgba(56, 189, 248, 0.72)", 0.8);
+isoBox(au0, av0, au1, av1, zBase + 18, zBase + 22, pal.furnWoodL, pal.furnWoodL, pal.furnWoodDeep, OUTLINE_COL, 1.2);
+}
+function drawRoomBalconyDeckAndRail(u0, v0, u1, v1, z0, pal, dir, s) {
+const depth = 32;
+const pad = 22;
+const rw = 4.2;
+const bTop = pal.balconyTop || "#d9c7b2";
+const bL = pal.balconyL || "#b8a38a";
+const bR = pal.balconyR || "#9e8970";
+const deckZ0 = z0 - 2;
+const deckZ1 = z0 + 4;
+let deckBox, sideA, sideB, outer, potPos, posts;
+const backFirst = (dir === "left" || dir === "back");
+if (dir === "front") {
+const bu0 = u1, bu1 = u1 + depth, bv0 = v0 + pad, bv1 = v1 - pad, bm = (bv0 + bv1) * 0.5;
+deckBox = [bu0, bv0, bu1, bv1];
+sideA = [bu0, bv0, bu1, bv0 + rw];
+sideB = [bu0, bv1 - rw, bu1, bv1];
+outer = [bu1 - rw, bv0, bu1, bv1];
+potPos = [bu0 + 13, bv0 + 14];
+posts = [[bu1 - rw, bv0], [bu1 - rw, bm - 2], [bu1 - rw, bv1 - rw]];
+} else if (dir === "right") {
+const bu0 = u0 + pad, bu1 = u1 - pad, bv0 = v1, bv1 = v1 + depth, bm = (bu0 + bu1) * 0.5;
+deckBox = [bu0, bv0, bu1, bv1];
+sideA = [bu0, bv0, bu0 + rw, bv1];
+sideB = [bu1 - rw, bv0, bu1, bv1];
+outer = [bu0, bv1 - rw, bu1, bv1];
+potPos = [bu0 + 14, bv0 + 13];
+posts = [[bu0, bv1 - rw], [bm - 2, bv1 - rw], [bu1 - rw, bv1 - rw]];
+} else if (dir === "left") {
+const bu0 = u0 + pad, bu1 = u1 - pad, bv0 = v0 - depth, bv1 = v0, bm = (bu0 + bu1) * 0.5;
+deckBox = [bu0, bv0, bu1, bv1];
+sideA = [bu0, bv0, bu0 + rw, bv1];
+sideB = [bu1 - rw, bv0, bu1, bv1];
+outer = [bu0, bv0, bu1, bv0 + rw];
+potPos = [bm, bv0 + 16];
+posts = [[bu0, bv0], [bm - 2, bv0], [bu1 - rw, bv0]];
+} else {
+const bu0 = u0 - depth, bu1 = u0, bv0 = v0 + pad, bv1 = v1 - pad, bm = (bv0 + bv1) * 0.5;
+deckBox = [bu0, bv0, bu1, bv1];
+sideA = [bu0, bv0, bu1, bv0 + rw];
+sideB = [bu0, bv1 - rw, bu1, bv1];
+outer = [bu0, bv0, bu0 + rw, bv1];
+potPos = [bu0 + 16, bm];
+posts = [[bu0, bv0], [bu0, bm - 2], [bu0, bv1 - rw]];
+}
+const drawOuter = () => {
+_drawBalconyRailSegment(outer[0], outer[1], outer[2], outer[3], deckZ1, pal);
+for (const [pu, pv] of posts) {
+isoBox(pu, pv, pu + rw, pv + rw, deckZ1, deckZ1 + 22, "#475569", "#334155", "#1e293b", OUTLINE_COL, 1.0);
+}
+};
+if (backFirst) drawOuter();
+const hitPoly = isoBox(deckBox[0], deckBox[1], deckBox[2], deckBox[3], deckZ0, deckZ1, bTop, bL, bR, OUTLINE_COL, 1.5);
+isoQuad(deckBox[0] + 3, deckBox[1] + 3, deckBox[2] - 3, deckBox[3] - 3, deckZ1 + 0.15, "rgba(255, 250, 240, 0.28)", "rgba(120, 90, 60, 0.25)", 0.8);
+_drawBalconyRailSegment(sideA[0], sideA[1], sideA[2], sideA[3], deckZ1, pal);
+_drawBalconyPlanter(potPos[0], potPos[1], deckZ1);
+if (!backFirst) drawOuter();
+_drawBalconyRailSegment(sideB[0], sideB[1], sideB[2], sideB[3], deckZ1, pal);
+if (s && typeof pending !== "undefined" && !pending) {
+addHitPoly(hitPoly, () => selectSlot(s));
+}
+}
 function drawParcelRoomShell(s, u0, v0, u1, v1, z0, z1, isSel, avail, leftSlot, rightSlot, doorWall) {
 const P = THEME.room;
 const fWood = P.floorWood, fWoodAlt = P.floorWoodAlt;
@@ -21217,6 +21427,10 @@ s.type === "Gym" ? fGym :
 s.type === "Gas" ? fGas :
 s.type === "Spa" ? fSpa :
 s.type === "Cafe" ? fCafeA : fWood;
+const balWall = (s.type === "Room" && s.hasBalcony && typeof getRoomBalconyWall === "function") ? getRoomBalconyWall(s) : null;
+if (balWall === "back" || balWall === "left") {
+drawRoomBalconyDeckAndRail(u0, v0, u1, v1, z0, P, balWall, s);
+}
 const roomSlabBot = Math.max(0, z0 - ((s && s.floor && s.floor.idx >= 1) ? 14 : 6));
 const roomPoly = isoBox(u0, v0, u1, v1, roomSlabBot, z0, floorCol, fEdgeL, fEdgeR, isSel ? "#ff8c00" : avail ? "#2ecc40" : OUTLINE_COL, isSel || avail ? 4 : 2.2);
 const rLvl = (s.type === "Room") ? getRoomLevel(s) : 1;
@@ -21306,6 +21520,15 @@ isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 7, u0 + 0.5, (vd0 + vd1) * 0.5 + 7, z0 + 48
 isoLabel(String(s.roomNo || 101), u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#3a281f", null, 0, 0);
 }
 }
+} else if (balWall === "back") {
+const vd0 = v0 + 48, vd1 = v1 - 48;
+isoBox(u0, v0, u0 + wallThick, vd0, z0, z1, waTop, waL, waR, OUTLINE_COL, 1.8);
+isoBox(u0, vd1, u0 + wallThick, v1, z0, z1, waTop, waL, waR, OUTLINE_COL, 1.8);
+isoBox(u0, vd0, u0 + wallThick, vd1, z0 + 70, z1, waTop, waL, waR, OUTLINE_COL, 1.6);
+isoBox(u0 - 0.5, vd0 - 1.5, u0 + wallThick + 0.5, vd0 + 1.5, z0, z0 + 70, tTop, tL, tR, OUTLINE_COL, 1.0);
+isoBox(u0 - 0.5, vd1 - 1.5, u0 + wallThick + 0.5, vd1 + 1.5, z0, z0 + 70, tTop, tL, tR, OUTLINE_COL, 1.0);
+isoBox(u0 + 2, vd0 + 2, u0 + 5, (vd0 + vd1) * 0.5, z0 + 2, z0 + 68, "rgba(186,230,253,0.45)", "rgba(147,197,253,0.5)", "rgba(125,211,252,0.45)", "#334155", 1.0);
+isoQuad(u0 - 1, vd0, u0 + wallThick + 1, vd1, z0 + 0.3, thr, thrL, 0.9);
 } else {
 isoBox(u0, v0, u0 + wallThick, v1, z0, z1, waTop, waL, waR, OUTLINE_COL, 2);
 isoBox(u0 + wallThick - 1, v0, u0 + wallThick + 2, v1, z0, z0 + 7, taTop, taL, taR, OUTLINE_COL, 1.2);
@@ -21355,6 +21578,15 @@ isoBox(ud0 + 4, v0 + 2, ud0 + 7, v0 + 5, z0 + 30, z0 + 33, gTop, gL, gR, null, 0
 }
 }
 } else if (leftSlot && leftSlot.type === "Reception") {
+} else if (balWall === "left") {
+const ud0 = u0 + 48, ud1 = u1 - 48;
+isoBox(u0, v0, ud0, v0 + wallThick, z0, z1, waTop, waL, waR, OUTLINE_COL, 1.8);
+isoBox(ud1, v0, u1, v0 + wallThick, z0, z1, waTop, waL, waR, OUTLINE_COL, 1.8);
+isoBox(ud0, v0, ud1, v0 + wallThick, z0 + 70, z1, waTop, waL, waR, OUTLINE_COL, 1.6);
+isoBox(ud0 - 1.5, v0 - 0.5, ud0 + 1.5, v0 + wallThick + 0.5, z0, z0 + 70, tTop, tL, tR, OUTLINE_COL, 1.0);
+isoBox(ud1 - 1.5, v0 - 0.5, ud1 + 1.5, v0 + wallThick + 0.5, z0, z0 + 70, tTop, tL, tR, OUTLINE_COL, 1.0);
+isoBox(ud0 + 2, v0 + 2, (ud0 + ud1) * 0.5, v0 + 5, z0 + 2, z0 + 68, "rgba(186,230,253,0.45)", "rgba(147,197,253,0.5)", "rgba(125,211,252,0.45)", "#334155", 1.0);
+isoQuad(ud0, v0 - 1, ud1, v0 + wallThick + 1, z0 + 0.3, thr, thrL, 0.9);
 } else {
 isoBox(u0, v0, u1, v0 + wallThick, z0, z1, waTop, waL, waR, OUTLINE_COL, 1.8);
 isoBox(u0, v0 + wallThick - 1, u1, v0 + wallThick + 2, z0, z0 + 7, taTop, taL, taR, OUTLINE_COL, 1.1);
@@ -21399,6 +21631,12 @@ isoBox(ud0 + 4, v1 - 5, ud0 + 7, v1 - 2, z0 + 30, z0 + 33, gTop, gL, gR, null, 0
 }
 }
 } else if (rightSlot && rightSlot.type === "Reception") {
+} else if (balWall === "right" && s.type === "Room") {
+const ub0 = u0 + 56, ub1 = u1 - 56;
+isoBox(u0, v1 - wallThick, ub0, v1, z0, z0 + 14, wTop, wL, wR, OUTLINE_COL, 1.2);
+isoBox(ub1, v1 - wallThick, u1, v1, z0, z0 + 14, wTop, wL, wR, OUTLINE_COL, 1.2);
+isoBox(ub0, v1 - wallThick + 2, (ub0 + ub1) * 0.5, v1 - 2, z0 + 1, z0 + 19, "rgba(186,230,253,0.5)", "rgba(147,197,253,0.55)", "rgba(125,211,252,0.5)", "#334155", 1.0);
+isoQuad(ub0, v1 - wallThick, ub1, v1 + 1, z0 + 0.4, thr, thrL, 0.9);
 } else if (s.type === "Room" || s.type === "Toilet" || s.type === "Gym" || s.type === "Spa" || s.type === "Cafe") {
 isoBox(u0, v1 - wallThick, u1, v1, z0, z0 + 14, wTop, wL, wR, OUTLINE_COL, 1.2);
 isoBox(u0, v1 - wallThick - 1, u1, v1 - wallThick + 2, z0 + 12, z0 + 15, tTop, tL, tR, null, 0);
@@ -21444,6 +21682,12 @@ isoBox(u1 - 6, vd0 + 4, u1 - 3, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0
 isoBox(u1 + 1.5, (vd0 + vd1) * 0.5 - 16, u1 + 3.5, (vd0 + vd1) * 0.5 + 16, z0 + 48, z0 + 55, cSignTop, cwL, cwR, OUTLINE_COL, 1);
 isoLabel(cSignTxt, u1 + 4, (vd0 + vd1) * 0.5, z0 + 51.5, 6.8, cSignFg, null, 0, 0);
 }
+} else if (balWall === "front" && s.type === "Room") {
+const vb0 = v0 + 56, vb1 = v1 - 56;
+isoBox(u1 - 4, v0, u1, vb0, z0, z0 + 14, waTop, waL, waR, OUTLINE_COL, 1.2);
+isoBox(u1 - 4, vb1, u1, v1, z0, z0 + 14, waTop, waL, waR, OUTLINE_COL, 1.2);
+isoBox(u1 - 3, vb0, u1 - 0.5, (vb0 + vb1) * 0.5, z0 + 1, z0 + 19, "rgba(186,230,253,0.5)", "rgba(147,197,253,0.55)", "rgba(125,211,252,0.5)", "#334155", 1.0);
+isoQuad(u1 - 4, vb0, u1 + 1, vb1, z0 + 0.4, thr, thrL, 0.9);
 } else {
 isoBox(u1 - 4, v0, u1, v1, z0, z0 + 14, waTop, waL, waR, OUTLINE_COL, 1.2);
 isoBox(u1 - 5, v0, u1 + 1, v1, z0 + 12, z0 + 15, tTop, tL, tR, null, 0);
@@ -21591,9 +21835,10 @@ selectSlot(s);
 }
 drawRoomFurnitureOn4x4(s, u0, v0, u1, v1, z0, z1, cellU, cellV, !!(isSel && furnEditMode && !pending));
 if (s.hasBalcony) {
-const p = getRoomPalette();
-isoBox(u0 + 20, v1, u1 - 20, v1 + 32, z0 - 4, z0 + 2, p.balconyTop, p.balconyL, p.balconyR, OUTLINE_COL, 1.6);
-isoBox(u0 + 20, v1 + 24, u1 - 20, v1 + 32, z0 + 2, z0 + 24, p.furnWoodL, p.furnWoodR, p.furnWoodDeep, OUTLINE_COL, 1.5);
+const balWall = (typeof getRoomBalconyWall === "function") ? getRoomBalconyWall(s) : "right";
+if (balWall === "front" || balWall === "right") {
+drawRoomBalconyDeckAndRail(u0, v0, u1, v1, z0, getRoomPalette(), balWall, s);
+}
 }
 const rLvlBadge = getRoomLevel(s);
 let badgeTxt = "🚪 " + s.roomNo + ". Oda" + (rLvlBadge > 1 ? (" (Sv." + rLvlBadge + ")") : "");
@@ -22022,8 +22267,8 @@ _drawFacadeFaceQuad(axis, u1, v1, t0 + 18, t1 - 18, 2.2, z0 + 61, z0 + 69, pal.c
 } else if (s.type === "Gas") {
 _drawFacadeWindowBatch(axis, u1, v1, [[tm - 28, tm + 28, z0 + 26, z0 + 62]], pal, false, isNightMode, true);
 _drawFacadeFaceQuad(axis, u1, v1, tm - 28, tm + 28, 0.6, z0 + 62, z0 + 66, axis === "front" ? pal.goldL : pal.goldR, OUTLINE_COL, 0.9);
-} else if (axis === "right" && s.type === "Room" && s.hasBalcony) {
-_drawFacadeWindowBatch(axis, u1, v1, [[t0 + 24, t0 + 70, z0 + 20, z0 + 64], [t1 - 70, t1 - 24, z0 + 20, z0 + 64]], pal, litNight, isNightMode, false);
+} else if (s.type === "Room" && s.hasBalcony && typeof getRoomBalconyWall === "function" && axis === getRoomBalconyWall(s)) {
+_drawFacadeWindowBatch(axis, u1, v1, [[tm - 44, tm + 44, z0 + 6, z0 + 66]], pal, litNight, isNightMode, false);
 } else {
 _drawFacadeWindowBatch(axis, u1, v1, [[t0 + 26, t0 + 80, z0 + 20, z0 + 64], [t1 - 80, t1 - 26, z0 + 20, z0 + 64]], pal, litNight, isNightMode, false);
 }
@@ -22039,9 +22284,11 @@ isoBox(u1 - cW, v1 - cW, u1 + 1.2, v1 + 1.2, z0, zWallTop, cTop, cL, cR, OUTLINE
 isoBox(u1 - cW - 0.5, v1 - cW - 0.5, u1 + 1.6, v1 + 1.6, z0, z0 + 6, pal.brassTop, pal.brassL, pal.brassR, OUTLINE_COL, 1.0);
 isoBox(u1 - cW - 0.5, v1 - cW - 0.5, u1 + 1.6, v1 + 1.6, zWallTop - 5, zWallTop, pal.brassTop, pal.brassL, pal.brassR, OUTLINE_COL, 1.0);
 }
-if (rightOpen && s.type === "Room" && s.hasBalcony) {
-isoBox(u0 + 20, v1, u1 - 20, v1 + 32, z0 - 4, z0 + 2, pal.balconyTop, pal.balconyL, pal.balconyR, OUTLINE_COL, 1.6);
-isoBox(u0 + 20, v1 + 24, u1 - 20, v1 + 32, z0 + 2, z0 + 24, pal.furnWoodL, pal.furnWoodR, pal.furnWoodDeep, OUTLINE_COL, 1.5);
+if (s.type === "Room" && s.hasBalcony && typeof drawRoomBalconyDeckAndRail === "function") {
+const balWall = (typeof getRoomBalconyWall === "function") ? getRoomBalconyWall(s) : "right";
+if ((balWall === "front" && frontOpen) || (balWall === "right" && rightOpen)) {
+drawRoomBalconyDeckAndRail(u0, v0, u1, v1, z0, pal, balWall, null);
+}
 }
 }
 function drawFurnBanyo(s, p, sp, u0, v0, z0, cellU, cellV) {
