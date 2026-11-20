@@ -2573,7 +2573,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.89-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.90-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -13251,17 +13251,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 97;
-const APP_VERSION_NAME = "1.9.89-beta";
+const APP_VERSION_CODE = 98;
+const APP_VERSION_NAME = "1.9.90-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.90-beta",
+title: "Arsa içi ağaç çakışması düzeltmesi",
+latest: true,
+notes: "• 🌴 Arsa İçi Palmiye Temizliği: Zemin kat 3,6 / 4,6 ve 1,6 parsellerinin içinde kalan eski 5×5 döneminden kalma 2 dekoratif palmiye ağacı kaldırıldı."
+},
+{
 ver: "v1.9.89-beta",
 title: "Spor salonu kapı ve üst kat bağlantı düzeltmesi",
-latest: true,
+latest: false,
 notes: "• 🏋️ Spor Salonu Kapı Görünümü: Arka veya sol duvardan koridora bağlanan spor salonlarında hatalı çıkan 'Kapı Al!' etiketi kaldırıldı; gerçek spor salonu kapısı ve GYM tabelası çizilir.\n• 🛗 Üst Kat Asansör & Koridor Bağlantısı: Resepsiyon çevresi ve birden fazla koridora değen asansörlerde bağlantı algılaması düzeltildi; eksik üst kat asansörü için net uyarı eklendi."
 },
 {
@@ -17777,7 +17783,7 @@ ctx.lineWidth = 1.4;
 ctx.beginPath(); ctx.moveTo(-0.5, -0.5); ctx.lineTo(-2.5, -2.5 + wing * 0.6); ctx.stroke();
 ctx.restore();
 }
-const WORLD_STATIC_CACHE_VER = "e3_decor_v1";
+const WORLD_STATIC_CACHE_VER = "e3_decor_v2";
 const _GRASS_TUFTS = [
 [-180, 80], [-120, 240], [-80, 420], [-150, 780], [-100, 960],
 [120, -180], [240, -120], [420, -150], [600, -100], [780, -140],
@@ -17789,8 +17795,6 @@ const _GRASS_TUFTS = [
 [1250, 140], [1240, 520], [1250, 1380]
 ];
 const WORLD_PALM_SPOTS = [
-{ u: 520, v: 1120, flip: 1, sc: 1.2 },
-{ u: 140, v: 1120, flip: -1, sc: 1.15 },
 { u: 1040, v: -320, flip: -1, sc: 1.08 }
 ];
 const WORLD_LUSH_BUSHES = [
