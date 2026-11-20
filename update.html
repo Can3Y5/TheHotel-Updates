@@ -2573,7 +2573,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.90-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.91-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -9265,9 +9265,10 @@ securityPawn = null;
 }
 if (cookLevel > 0 && hasKitchen()) {
 if (!cookPawn || cookPawn.dead) {
-cookPawn = makePawn({ x: DormX + DormW * 0.5, y: kitchenWalkY() }, pick(Skins), "#2b1b12", "#f2f2f2");
+cookPawn = makePawn({ x: DormX + DormW * 0.5, y: kitchenWalkY() }, pick(Skins), "#2b1b12", "#f8fafc");
 cookPawn.isCook = true;
-cookPawn.speed = 55;
+cookPawn.speed = 40;
+cookPawn.mood = "happy";
 cookPawn.wander = true;
 cookPawn.wMinX = DormX + 150;
 cookPawn.wMaxX = DormX + DormW - 60;
@@ -10855,6 +10856,7 @@ refresh(); saveGame(); return;
 if (s.floor.idx === 0) {
 if (i === 3 && !hasKitchen() && pay(CostKitchen)) {
 s.type = "Kitchen"; s.parcelBuilt = true; kitchenState = "Built";
+if (typeof syncStaffPawns === "function") syncStaffPawns();
 play("done"); log("🍳 Restoran & Mutfak seçtiğin parsele kuruldu! Artık Aşçı işe alabilirsin.");
 refresh(); saveGame(); return;
 }
@@ -13251,17 +13253,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 98;
-const APP_VERSION_NAME = "1.9.90-beta";
+const APP_VERSION_CODE = 99;
+const APP_VERSION_NAME = "1.9.91-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.91-beta",
+title: "Aşçı karakter tasarımı yenilendi",
+latest: true,
+notes: "• 👨‍🍳 Gerçek Chibi Aşçı: Restoran & Mutfak'taki statik mini figür yerine artık diğer tüm otel insanlarıyla aynı oranlarda, ayaklı, elli, kırmızı boyun fularlı, bel önlüklü, tahta kaşıklı ve kabarık aşçı şapkalı canlı aşçı karakteri çizilir.\n• 🍳 Canlı Mutfak Hareketi: Aşçı artık mutfak tezgâhı boyunca canlı yürüyüp kaşık karıştırma animasyonu yapar ve tezgâh/masa önü karakterlerle tutarlı görünür."
+},
+{
 ver: "v1.9.90-beta",
 title: "Arsa içi ağaç çakışması düzeltmesi",
-latest: true,
+latest: false,
 notes: "• 🌴 Arsa İçi Palmiye Temizliği: Zemin kat 3,6 / 4,6 ve 1,6 parsellerinin içinde kalan eski 5×5 döneminden kalma 2 dekoratif palmiye ağacı kaldırıldı."
 },
 {
@@ -14446,8 +14454,29 @@ inPool: false
 };
 }
 }
-if (pawn && (pawn.isCook || pawn.isReceptionist || pawn.isBarmen)) {
+if (pawn && (pawn.isReceptionist || pawn.isBarmen)) {
 return { u: 0, v: 0, z: 0, hidden: true };
+}
+if (pawn && pawn.isCook) {
+if (typeof viewFloor !== "undefined" && viewFloor > 0) {
+return { u: 0, v: 0, z: 0, hidden: true };
+}
+const kitchenSlot = (typeof floors !== "undefined" && floors[0])
+? floors[0].slots.find(sl => sl && sl.type === "Kitchen")
+: null;
+if (!kitchenSlot) {
+return { u: 0, v: 0, z: 0, hidden: true };
+}
+const kb = slotIsoBox(0, kitchenSlot.idx);
+const minX = (typeof pawn.wMinX === "number") ? pawn.wMinX : (DormX + 150);
+const maxX = (typeof pawn.wMaxX === "number") ? pawn.wMaxX : (DormX + DormW - 60);
+const t = clamp((wx - minX) / Math.max(1, maxX - minX), 0, 1);
+return {
+u: kb.u0 + 75,
+v: kb.v0 + 42 + t * 108,
+z: kb.z0 + 4,
+inPool: false
+};
 }
 if (pawn && pawn.isSecurity) {
 const t = clamp((wx + 140) / 440, 0, 1);
@@ -16201,6 +16230,9 @@ ctx.translate(idle.leanX || 0, -(idle.bobY || 0));
 ctx.scale(facing * scale, scale);
 ctx.fillStyle = "rgba(0,0,0,0.2)";
 ctx.beginPath(); ctx.ellipse(0, 2, 13, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+ctx.fillStyle = "#403028"; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.8;
+ctx.beginPath(); ctx.ellipse(-5, -2, 4.5, 3.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.ellipse(5, -2, 4.5, 3.4, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 ctx.fillStyle = shirt; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 2;
 ctx.beginPath(); ctx.roundRect(-11, -25, 22, 21, 7); ctx.fill(); ctx.stroke();
 if (idle) {
@@ -16214,6 +16246,10 @@ if (idle.writing) {
 ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.5;
 ctx.beginPath(); ctx.moveTo(rx, ry + 1); ctx.lineTo(rx + 4, ry + 3); ctx.stroke();
 }
+} else {
+ctx.fillStyle = skin; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.8;
+ctx.beginPath(); ctx.arc(-12.5, -14, 3.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.arc(12.5, -14, 3.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 }
 ctx.save();
 if (idle && (idle.headShiftX || idle.nodY)) {
@@ -16230,6 +16266,9 @@ ctx.fillStyle = OUTLINE_COL;
 ctx.beginPath(); ctx.arc(-4 + lx, -35, 1.8, 0, Math.PI * 2); ctx.fill();
 ctx.beginPath(); ctx.arc(4 + lx, -35, 1.8, 0, Math.PI * 2); ctx.fill();
 ctx.beginPath(); ctx.arc(lx * 0.5, -32, 2.5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+ctx.fillStyle = "rgba(244, 63, 94, 0.28)";
+ctx.beginPath(); ctx.arc(-6 + lx * 0.5, -33, 1.7, 0, Math.PI * 2); ctx.fill();
+ctx.beginPath(); ctx.arc(6 + lx * 0.5, -33, 1.7, 0, Math.PI * 2); ctx.fill();
 if (hatCol) {
 ctx.fillStyle = hatCol;
 ctx.beginPath(); ctx.roundRect(-11, -54, 22, 7, 3); ctx.fill(); ctx.stroke();
@@ -18216,6 +18255,20 @@ for (const car of cars) drawIsoCar(car);
 for (const t of trucks) drawIsoTruck(t);
 } else {
 const visitAnimalPawns = [];
+if (viewFloor === 0 && typeof cookLevel !== "undefined" && cookLevel > 0) {
+const visitKitchenSlot = (typeof floors !== "undefined" && floors[0])
+? floors[0].slots.find(sl => sl && sl.type === "Kitchen")
+: null;
+if (visitKitchenSlot) {
+const kb = slotIsoBox(0, visitKitchenSlot.idx);
+const uvzCook = { u: kb.u0 + 75, v: kb.v0 + 95, z: kb.z0 + 4, inPool: false };
+visitAnimalPawns.push({
+p: { isCook: true, skin: "#fcd9b8", hair: "#3a281f", shirt: "#f8fafc", mood: "happy", facing: 1, scale: 1, animT: 0, moving: false },
+uvz: uvzCook,
+pt: iso(uvzCook.u, uvzCook.v, uvzCook.z)
+});
+}
+}
 if (typeof getMascotMappedPawn === "function") {
 const mc = getMascotMappedPawn();
 if (mc) visitAnimalPawns.push(mc);
@@ -19038,9 +19091,6 @@ isoBox(u0, v0, u0 + 12, v1, z0, z1, kwTop, kwR, kwL, OUTLINE_COL, 2);
 isoBox(u0 + 18, v0 + 18, u0 + 62, v1 - 24, z0, z0 + 34, kcTop, cL, cR, OUTLINE_COL, 1.8);
 for (const tv of [v0 + 45, v0 + 125]) {
 isoBox(u0 + 105, tv, u0 + 158, tv + 46, z0, z0 + 24, ktTop, ktL, ktR, OUTLINE_COL, 1.8);
-}
-if (cookLevel > 0) {
-drawMiniChibi(u0 + 75, v0 + 95, z0 + 4, "#fcd9b8", "#3a281f", "#ffffff", 0.76, 1, "#ffffff");
 }
 if (isOpen && activeCount >= 1) {
 drawMiniChibi(u0 + 130, v0 + 55, z0 + 6, "#fcd9b8", "#59331a", "#74b859", 0.74, 1);
@@ -22062,6 +22112,50 @@ ctx.fillStyle = "#fbbf24";
 ctx.beginPath();
 ctx.arc(0, -16, 2.8, 0, Math.PI);
 ctx.fill();
+} else if (p.isCook) {
+ctx.fillStyle = "#334155";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.6;
+ctx.beginPath();
+ctx.roundRect(-11.5, -13.5, 23, 9.5, 4);
+ctx.fill();
+ctx.stroke();
+ctx.strokeStyle = "#94a3b8";
+ctx.lineWidth = 1.2;
+ctx.beginPath();
+ctx.moveTo(-10, -13.5);
+ctx.lineTo(10, -13.5);
+ctx.stroke();
+ctx.strokeStyle = "#cbd5e1";
+ctx.lineWidth = 1.1;
+ctx.beginPath();
+ctx.moveTo(1.5, -25);
+ctx.lineTo(1.5, -14.5);
+ctx.stroke();
+ctx.fillStyle = "#334155";
+for (const [bx, by] of [[-3.2, -21.5], [4.2, -21.5], [-3.2, -17], [4.2, -17]]) {
+ctx.beginPath();
+ctx.arc(bx, by, 1.25, 0, Math.PI * 2);
+ctx.fill();
+}
+ctx.fillStyle = "#dc2626";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.4;
+ctx.beginPath();
+ctx.moveTo(-7, -26.5);
+ctx.lineTo(7, -26.5);
+ctx.lineTo(4.5, -23);
+ctx.lineTo(0, -21);
+ctx.lineTo(-4.5, -23);
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+ctx.beginPath();
+ctx.arc(0, -23.5, 1.8, 0, Math.PI * 2);
+ctx.fill();
+ctx.stroke();
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 2;
 }
 if (p.tennis) {
 const cycle = ((timeNow || 0) * 0.7) % 2;
@@ -22106,7 +22200,39 @@ ctx.moveTo(-3, -29); ctx.lineTo(-3, -17);
 ctx.moveTo(3, -29); ctx.lineTo(3, -17);
 ctx.stroke();
 ctx.restore();
+} else if (p.isCook) {
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 2;
+ctx.fillStyle = p.skin || "#fcd9b8";
+ctx.beginPath(); ctx.arc(-14, -15 + (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+const stir = Math.sin((timeNow || 0) * 4.8 + (p.animT || 0));
+const hx = 14 + (walk ? 0 : stir * 1.1);
+const hy = -15 - (walk ? s * 4.2 : stir * 1.0);
+ctx.save();
+ctx.translate(hx, hy);
+ctx.rotate(0.32 + (walk ? 0 : stir * 0.14));
+ctx.strokeStyle = "#92400e";
+ctx.lineWidth = 2.6;
+ctx.lineCap = "round";
+ctx.beginPath();
+ctx.moveTo(0, 4);
+ctx.lineTo(0, -10);
+ctx.stroke();
+ctx.fillStyle = "#d97706";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.4;
+ctx.beginPath();
+ctx.ellipse(0, -13.5, 3.6, 5.0, 0, 0, Math.PI * 2);
+ctx.fill();
+ctx.stroke();
+ctx.restore();
+ctx.fillStyle = p.skin || "#fcd9b8";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 2;
+ctx.beginPath(); ctx.arc(hx, hy, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 } else if (!p.isCleaner || !isCleaning) {
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 2;
 ctx.fillStyle = p.skin || "#fcd9b8";
 ctx.beginPath(); ctx.arc(-14, -15 + (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 ctx.beginPath(); ctx.arc(14, -15 - (walk ? s * 4.2 : 0), 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -22142,8 +22268,27 @@ ctx.beginPath(); ctx.arc(4.5, -38, 2, 0, Math.PI * 2); ctx.fill();
 ctx.beginPath(); ctx.arc(0, -34.5, 2.4, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
 }
 if (p.isCook) {
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 3.6;
+ctx.beginPath(); ctx.arc(-6.5, -61, 5.8, 0, Math.PI * 2); ctx.stroke();
+ctx.beginPath(); ctx.arc(6.5, -61, 5.8, 0, Math.PI * 2); ctx.stroke();
+ctx.beginPath(); ctx.arc(0, -64.5, 7.5, 0, Math.PI * 2); ctx.stroke();
+ctx.strokeRect(-9.5, -62, 19, 7.5);
 ctx.fillStyle = "#ffffff";
-ctx.beginPath(); ctx.roundRect(-10, -62, 20, 13, 5); ctx.fill(); ctx.stroke();
+ctx.beginPath(); ctx.arc(-6.5, -61, 5.8, 0, Math.PI * 2); ctx.fill();
+ctx.beginPath(); ctx.arc(6.5, -61, 5.8, 0, Math.PI * 2); ctx.fill();
+ctx.beginPath(); ctx.arc(0, -64.5, 7.5, 0, Math.PI * 2); ctx.fill();
+ctx.fillRect(-9.5, -62, 19, 7.5);
+ctx.strokeStyle = "#cbd5e1";
+ctx.lineWidth = 1.2;
+ctx.beginPath();
+ctx.moveTo(-3.5, -56); ctx.lineTo(-4, -63);
+ctx.moveTo(3.5, -56); ctx.lineTo(4, -63);
+ctx.stroke();
+ctx.fillStyle = "#f1f5f9";
+ctx.strokeStyle = OUTLINE_COL;
+ctx.lineWidth = 1.8;
+ctx.beginPath(); ctx.roundRect(-11, -55.5, 22, 6, 2.5); ctx.fill(); ctx.stroke();
 } else if (p.isSecurity) {
 ctx.fillStyle = "#1d3557";
 ctx.beginPath(); ctx.roundRect(-13, -54, 26, 7, 3); ctx.fill(); ctx.stroke();
