@@ -2573,7 +2573,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.88-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.89-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -10118,18 +10118,44 @@ return !!(sl && (sl.type === "Corridor" || sl.type === "Elevator"));
 const slotPath = findCorridorSlotPath(fIdx, fromCorrIdx, toCorrIdx);
 return isSlotCorridorPathValid(fIdx, slotPath);
 }
+function _getAdjacentCorridors(slot) {
+if (!slot || !slot.floor) return [];
+const { gu, gv } = parcelCoords(slot.idx);
+const fl = slot.floor;
+const order = [
+slotAtGrid(fl, gu + 1, gv),
+slotAtGrid(fl, gu, gv - 1),
+slotAtGrid(fl, gu, gv + 1),
+slotAtGrid(fl, gu - 1, gv)
+];
+return order.filter(sl => sl && sl.type === "Corridor");
+}
+function _pickConnectedElevatorCorridor(elevSlot, targetIdx) {
+if (!elevSlot || !elevSlot.floor) return null;
+const adj = _getAdjacentCorridors(elevSlot);
+const fIdx = elevSlot.floor.idx;
+for (let i = 0; i < adj.length; i++) {
+if (_checkCorridorConnection(fIdx, adj[i].idx, targetIdx)) return adj[i];
+}
+return null;
+}
 function isDoorFacilityConnected(s, expectedType) {
 if (!s || s.type !== expectedType || !s.floor || s.floor.state !== "Built") return false;
 const corrSlot = getRoomCorridorSlot(s);
 if (!corrSlot || corrSlot.type !== "Corridor") return false;
 const fIdx = s.floor.idx;
-if (fIdx === 0) return _checkCorridorConnection(0, 26, corrSlot.idx);
-const elev0 = floors[0] && floors[0].slots.find(sl => sl.type === "Elevator");
-const elevF = s.floor.slots.find(sl => sl.type === "Elevator");
-const ec0 = getElevatorCorridorSlot(elev0);
-const ecF = getElevatorCorridorSlot(elevF);
-if (!ec0 || ec0.type !== "Corridor" || !ecF || ecF.type !== "Corridor") return false;
-return _checkCorridorConnection(0, 26, ec0.idx) && _checkCorridorConnection(fIdx, ecF.idx, corrSlot.idx);
+if (fIdx === 0) return _checkCorridorConnection(0, 32, corrSlot.idx);
+const elev0List = (floors[0] && floors[0].slots) ? floors[0].slots.filter(sl => sl.type === "Elevator") : [];
+const elevFList = s.floor.slots ? s.floor.slots.filter(sl => sl.type === "Elevator") : [];
+for (let i = 0; i < elev0List.length; i++) {
+const ec0 = _pickConnectedElevatorCorridor(elev0List[i], 32);
+if (!ec0) continue;
+for (let j = 0; j < elevFList.length; j++) {
+const ecF = _pickConnectedElevatorCorridor(elevFList[j], corrSlot.idx);
+if (ecF) return true;
+}
+}
+return false;
 }
 function isSpaConnected(s) {
 return isDoorFacilityConnected(s, "Spa");
@@ -10172,20 +10198,33 @@ if (!isSlotCorridorPathValid(fromF, slotPath)) return false;
 for (const sIdx of slotPath) path.push(getSlotCenterIso(fromF, sIdx));
 return true;
 }
-const elevFrom = floors[fromF] && floors[fromF].slots.find(sl => sl.type === "Elevator");
-const ecFrom = getElevatorCorridorSlot(elevFrom);
-const elevTo = floors[toF] && floors[toF].slots.find(sl => sl.type === "Elevator");
-const ecTo = getElevatorCorridorSlot(elevTo);
+const elevFromList = (floors[fromF] && floors[fromF].slots) ? floors[fromF].slots.filter(sl => sl.type === "Elevator") : [];
+const elevToList = (floors[toF] && floors[toF].slots) ? floors[toF].slots.filter(sl => sl.type === "Elevator") : [];
+let elevFrom = null, ecFrom = null, elevTo = null, ecTo = null;
+for (let i = 0; i < elevFromList.length && !elevFrom; i++) {
+const cFrom = _pickConnectedElevatorCorridor(elevFromList[i], fromCorrIdx);
+if (!cFrom) continue;
+for (let j = 0; j < elevToList.length; j++) {
+const cTo = _pickConnectedElevatorCorridor(elevToList[j], toCorrIdx);
+if (cTo) {
+elevFrom = elevFromList[i];
+ecFrom = cFrom;
+elevTo = elevToList[j];
+ecTo = cTo;
+break;
+}
+}
+}
 if (!elevFrom || !ecFrom || !elevTo || !ecTo) return false;
 const p1 = findCorridorSlotPath(fromF, fromCorrIdx, ecFrom.idx);
 if (!isSlotCorridorPathValid(fromF, p1)) return false;
 const p2 = findCorridorSlotPath(toF, ecTo.idx, toCorrIdx);
 if (!isSlotCorridorPathValid(toF, p2)) return false;
 for (const sIdx of p1) path.push(getSlotCenterIso(fromF, sIdx));
-const elevB = slotIsoBox(0, elevFrom.idx);
-const eu = (elevB.u0 + elevB.u1) * 0.5, ev = (elevB.v0 + elevB.v1) * 0.5;
-path.push({ u: eu, v: ev, z: getSlotCenterIso(fromF, 0).z });
-path.push({ u: eu, v: ev, z: getSlotCenterIso(toF, 0).z });
+const elevBFrom = slotIsoBox(fromF, elevFrom.idx);
+const elevBTo = slotIsoBox(toF, elevTo.idx);
+path.push({ u: (elevBFrom.u0 + elevBFrom.u1) * 0.5, v: (elevBFrom.v0 + elevBFrom.v1) * 0.5, z: getSlotCenterIso(fromF, 0).z });
+path.push({ u: (elevBTo.u0 + elevBTo.u1) * 0.5, v: (elevBTo.v0 + elevBTo.v1) * 0.5, z: getSlotCenterIso(toF, 0).z });
 for (const sIdx of p2) path.push(getSlotCenterIso(toF, sIdx));
 return true;
 }
@@ -12959,8 +12998,10 @@ const lv = Math.max(1, Math.min(3, cur.gymLevel || 1));
 const conn = (typeof isGymConnected === "function") ? isGymConnected(cur) : true;
 const busyArr = Array.isArray(cur.gymBusy) ? cur.gymBusy : [false, false, false];
 const busyCnt = busyArr.slice(0, lv).filter(Boolean).length;
+const missingUpperElev = cur.floor.idx > 0 && !cur.floor.slots.some(sl => sl.type === "Elevator");
+const gymClosedMsg = missingUpperElev ? "⚠️ Spor kapalı: bu kata asansör + koridor bağla" : "⚠️ Spor kapalı: koridorla bağla";
 infoText.textContent = "🏋️ Spor Odası (Seviye " + lv + "/3) " + coordStr + "  •  Aynı anda " + lv + " kişi spor yapabilir (+" + GymPoints + " İtibar).\n" +
-(conn ? "🟢 Açık" : "⚠️ Spor kapalı: koridorla bağla") + " • Dolu: " + busyCnt + "/" + lv;
+(conn ? "🟢 Açık" : gymClosedMsg) + " • Dolu: " + busyCnt + "/" + lv;
 if (cur.gymLevel < 3) setAct(0, "⬆️ Yükselt\n" + gymUpgradeCost(cur.gymLevel) + " TL", true, true);
 else setAct(0, "✅ Son Seviye", true, false, true);
 const availWalls = getRoomAvailableDoorWalls(cur);
@@ -13210,17 +13251,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 96;
-const APP_VERSION_NAME = "1.9.88-beta";
+const APP_VERSION_CODE = 97;
+const APP_VERSION_NAME = "1.9.89-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.89-beta",
+title: "Spor salonu kapı ve üst kat bağlantı düzeltmesi",
+latest: true,
+notes: "• 🏋️ Spor Salonu Kapı Görünümü: Arka veya sol duvardan koridora bağlanan spor salonlarında hatalı çıkan 'Kapı Al!' etiketi kaldırıldı; gerçek spor salonu kapısı ve GYM tabelası çizilir.\n• 🛗 Üst Kat Asansör & Koridor Bağlantısı: Resepsiyon çevresi ve birden fazla koridora değen asansörlerde bağlantı algılaması düzeltildi; eksik üst kat asansörü için net uyarı eklendi."
+},
+{
 ver: "v1.9.88-beta",
 title: "Evcil hayvan duvar rota düzeltmesi ve 2 dokunuşla önizleyip satın alma",
-latest: true,
+latest: false,
 notes: "• 🧱 Duvar & Kapı Rotası: Evcil hayvan artık duvarların, çiçekliklerin ve kapalı odaların içinden geçmez; yalnızca giriş taş yolu, resepsiyon kapısı ve açık kemerle bağlı koridorlardan yürür.\n• 👀 Önce Önizle, Sonra Satın Al: Hayvan türleri, aksesuarlar ve kulübe seçeneklerinde ilk dokunuşta canlı önizleme açılır, ikinci kez aynı öğeye dokununca satın alınır."
 },
 {
@@ -20593,7 +20640,12 @@ isoBox(u0 + 1, vd0 + 2, u0 + wallThick + 6, vd0 + 6, z0, z0 + 63, cwTop, cwL, cw
 isoBox(u0 + 2, vd0 + 4, u0 + 5, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
 isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 16, u0 + 0.5, (vd0 + vd1) * 0.5 + 16, z0 + 48, z0 + 55, cSignTop, cwL, cwR, OUTLINE_COL, 1);
 isoLabel(cSignTxt, u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 6.8, cSignFg, null, 0, 0);
-} else if (!s.hasDoor) {
+} else if (s.type === "Gym") {
+isoBox(u0 + 1, vd0 + 2, u0 + wallThick + 6, vd0 + 6, z0, z0 + 63, gsTop, gsL, gsR, OUTLINE_COL, 1.3);
+isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 14, u0 + 0.5, (vd0 + vd1) * 0.5 + 14, z0 + 48, z0 + 55, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
+isoLabel("GYM 🏋️", u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#ffffff", null, 0, 0);
+} else if (s.type === "Room") {
+if (!s.hasDoor) {
 isoQuad(u0 + wallThick * 0.5, vd0 + 4, u0 + wallThick * 0.5, vd1 - 4, z0 + 28, "#fbbf24", "#d97706", 1.8);
 isoLabel("🚪 Kapı Al!", u0 + wallThick + 3, (vd0 + vd1) * 0.5, z0 + 32, 7.5, "#995200", "#fff3cd", 4, 1.5);
 } else {
@@ -20601,6 +20653,7 @@ isoBox(u0 + 1, vd0 + 2, u0 + wallThick + 6, vd0 + 6, z0, z0 + 63, dTop, dL, dR, 
 isoBox(u0 + 2, vd0 + 4, u0 + 5, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
 isoBox(u0 - 1.5, (vd0 + vd1) * 0.5 - 7, u0 + 0.5, (vd0 + vd1) * 0.5 + 7, z0 + 48, z0 + 55, gaTop, gaL, gaR, OUTLINE_COL, 1);
 isoLabel(String(s.roomNo || 101), u0 - 2, (vd0 + vd1) * 0.5, z0 + 51.5, 7, "#3a281f", null, 0, 0);
+}
 }
 } else {
 isoBox(u0, v0, u0 + wallThick, v1, z0, z1, waTop, waL, waR, OUTLINE_COL, 2);
@@ -20635,6 +20688,10 @@ isoBox(ud0 + 2, v0 + 1, ud0 + 6, v0 + wallThick + 6, z0, z0 + 63, cwTop, cwL, cw
 isoBox(ud0 + 4, v0 + 2, ud0 + 7, v0 + 5, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
 isoBox((ud0 + ud1) * 0.5 - 16, v0 - 1.5, (ud0 + ud1) * 0.5 + 16, v0 + 0.5, z0 + 48, z0 + 55, cSignTop, cwL, cwR, OUTLINE_COL, 1);
 isoLabel(cSignTxt, (ud0 + ud1) * 0.5, v0 - 2, z0 + 51.5, 6.8, cSignFg, null, 0, 0);
+} else if (s.type === "Gym") {
+isoBox(ud0 + 2, v0 + 1, ud0 + 6, v0 + wallThick + 6, z0, z0 + 63, gsTop, gsL, gsR, OUTLINE_COL, 1.3);
+isoBox((ud0 + ud1) * 0.5 - 14, v0 - 1.5, (ud0 + ud1) * 0.5 + 14, v0 + 0.5, z0 + 48, z0 + 55, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
+isoLabel("GYM 🏋️", (ud0 + ud1) * 0.5, v0 - 2, z0 + 51.5, 7, "#ffffff", null, 0, 0);
 } else if (s.type === "Room") {
 isoBox((ud0 + ud1) * 0.5 - 6, v0 - 1.5, (ud0 + ud1) * 0.5 + 6, v0 + wallThick + 2, z0 + 48, z0 + 55, gaTop, gaL, gaR, OUTLINE_COL, 1);
 isoLabel(String(s.roomNo || 102), (ud0 + ud1) * 0.5, v0 + wallThick + 3, z0 + 51.5, 7, "#3a281f", null, 0, 0);
@@ -26788,7 +26845,8 @@ guests.splice(i, 1);
 for (let i = pawns.length - 1; i >= 0; i--) {
 const p = pawns[i];
 const inTennis = p.tennis || (p.guest && (p.guest.tennisInFlow || p.guest.state === "ToTennis" || p.guest.state === "PlayingTennis"));
-if (p.dead || (!p.isStaff && !p.isCleaner && !inTennis && p.iso && p.iso.v >= 1140)) {
+const inFacility = !!(p.guest && (p.guest.gymInFlow || p.guest.toiletInFlow || p.guest.spaInFlow || p.guest.cafeInFlow));
+if (p.dead || (!p.isStaff && !p.isCleaner && !inTennis && !inFacility && p.iso && p.iso.v >= 1140)) {
 pawns.splice(i, 1);
 continue;
 }
