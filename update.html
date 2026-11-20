@@ -2573,7 +2573,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.91-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.92-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -11860,12 +11860,26 @@ const bagCountLbl = document.getElementById("bag-count-lbl");
 const satBarFill = document.getElementById("sat-bar-fill");
 const satSmileyIco = document.getElementById("sat-smiley-ico");
 const floorTabBtns = Array.from(document.querySelectorAll(".fl-tab-btn"));
-function syncBottomPanelOffset() {
+let _lastBpOrientKey = "", _lastBpOpen = null, _lastBpGuest = null, _lastBpPanelH = -1, _lastBpShift = -1;
+let _bpBaBase = 62, _bpLhbBase = 74, _bpCachedAppH = 0;
+function syncBottomPanelOffset(forceMeasure) {
+const panelOpen = !!(selPanelEl && selPanelEl.classList.contains("open"));
+const guestOpen = !!(guestCardEl && guestCardEl.classList.contains("active"));
+if (!forceMeasure && !panelOpen && !guestOpen && !_lastBpOpen && !_lastBpGuest && _lastBpShift === 0 && _bpCachedAppH > 0) {
+return;
+}
 const appEl = document.getElementById("app");
 const bottomAreaEl = document.getElementById("bottom-area");
 const lhbEl = document.getElementById("left-hud-bottom");
 if (!appEl) return;
-const appH = appEl.clientHeight || window.innerHeight || 600;
+if (forceMeasure || _bpCachedAppH <= 0) {
+_bpCachedAppH = appEl.clientHeight || window.innerHeight || 600;
+}
+const appH = _bpCachedAppH;
+const orientKey = appH + "|" + (appEl.classList.contains("force-landscape") ? 1 : 0);
+const hasBottomPanel = panelOpen || guestOpen;
+if (orientKey !== _lastBpOrientKey) {
+_lastBpOrientKey = orientKey;
 const isLowH = appH > 0 && appH <= 520;
 appEl.classList.toggle("low-h-layout", isLowH);
 if (isLowH) {
@@ -11873,24 +11887,39 @@ appEl.style.setProperty("--low-h-panel-max", Math.max(130, appH - 185) + "px");
 } else {
 appEl.style.removeProperty("--low-h-panel-max");
 }
-const panelOpen = !!(selPanelEl && selPanelEl.classList.contains("open"));
-const guestOpen = !!(guestCardEl && guestCardEl.classList.contains("active"));
-const hasBottomPanel = panelOpen || guestOpen;
+const cs = getComputedStyle(appEl);
+_bpBaBase = parseFloat(cs.getPropertyValue("--ba-base")) || 62;
+_bpLhbBase = parseFloat(cs.getPropertyValue("--lhb-base")) || 74;
+_lastBpPanelH = -1;
+}
+if (panelOpen !== _lastBpOpen || guestOpen !== _lastBpGuest) {
+_lastBpOpen = panelOpen;
+_lastBpGuest = guestOpen;
 appEl.classList.toggle("bottom-panel-open", hasBottomPanel);
+}
 if (!hasBottomPanel || !bottomAreaEl || !lhbEl) {
+if (_lastBpShift !== 0) {
+_lastBpShift = 0;
+_lastBpPanelH = 0;
 appEl.style.setProperty("--bottom-panel-h", "0px");
+}
 return;
 }
-const cs = getComputedStyle(appEl);
-const baBase = parseFloat(cs.getPropertyValue("--ba-base")) || 62;
-const lhbBase = parseFloat(cs.getPropertyValue("--lhb-base")) || 74;
 const panelH = bottomAreaEl.offsetHeight || 0;
-const shift = panelH > 0 ? Math.max(0, Math.round(baBase + panelH + 8 - lhbBase)) : 0;
+if (panelH === _lastBpPanelH && _lastBpShift >= 0) return;
+_lastBpPanelH = panelH;
+const shift = panelH > 0 ? Math.max(0, Math.round(_bpBaBase + panelH + 8 - _bpLhbBase)) : 0;
+if (shift !== _lastBpShift) {
+_lastBpShift = shift;
 appEl.style.setProperty("--bottom-panel-h", shift + "px");
+}
 }
 if (typeof ResizeObserver === "function") {
 const _baObsEl = document.getElementById("bottom-area");
-if (_baObsEl) new ResizeObserver(() => syncBottomPanelOffset()).observe(_baObsEl);
+if (_baObsEl) new ResizeObserver(() => syncBottomPanelOffset(true)).observe(_baObsEl);
+}
+if (typeof window !== "undefined") {
+window.addEventListener("resize", () => syncBottomPanelOffset(true));
 }
 function openDrawer(dockName = "") {
 drawerOpen = true;
@@ -13253,17 +13282,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 99;
-const APP_VERSION_NAME = "1.9.91-beta";
+const APP_VERSION_CODE = 100;
+const APP_VERSION_NAME = "1.9.92-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.92-beta",
+title: "Kalabalık otel FPS ve akıcılık optimizasyonu",
+latest: true,
+notes: "• ⚡ Kaydırmaya Dayanıklı Parsel Önbelleği: Kamera kaydırılırken tüm parsel önbelleğinin bozulması giderildi ve pan sırasında GPU/readback takılmaları kaldırıldı.\n• 🚀 O(1) Durum Kontrolü & Piyon/Çevre Kırpma: Parsellerde gereksiz komut kaydı, ağaç önbellek bozulması, zorunlu UI reflow ve ekran dışı çevre/piyon çizimleri azaltıldı; kalabalık 4 katlı otelde ~4-5 kat hız artışı sağlandı."
+},
+{
 ver: "v1.9.91-beta",
 title: "Aşçı karakter tasarımı yenilendi",
-latest: true,
+latest: false,
 notes: "• 👨‍🍳 Gerçek Chibi Aşçı: Restoran & Mutfak'taki statik mini figür yerine artık diğer tüm otel insanlarıyla aynı oranlarda, ayaklı, elli, kırmızı boyun fularlı, bel önlüklü, tahta kaşıklı ve kabarık aşçı şapkalı canlı aşçı karakteri çizilir.\n• 🍳 Canlı Mutfak Hareketi: Aşçı artık mutfak tezgâhı boyunca canlı yürüyüp kaşık karıştırma animasyonu yapar ve tezgâh/masa önü karakterlerle tutarlı görünür."
 },
 {
@@ -14171,7 +14206,7 @@ appEl.classList.toggle("force-landscape", !!_userForceLandscapePref);
 }
 const orientChanged = (_lastOrientLandscape !== isPhysLandscape);
 _lastOrientLandscape = isPhysLandscape;
-if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
+if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset(true);
 return orientChanged || (prevForce !== appEl.classList.contains("force-landscape"));
 }
 function getRenderDpr() {
@@ -14277,42 +14312,89 @@ z0,
 z1: z0 + FLOOR_Z
 };
 }
+let _frameMapsReady = false;
+let _frameCw = 0, _frameCh = 0;
+let _frameLobbyBox = null, _frameKitchenSlot = null, _frameParkSlot = null;
+const _frameGuestByPawn = new Map();
+const _frameCleanerSlotByPawn = new Map();
+const _frameCleanerSet = new Set();
+const _frameQueueIdxByPawn = new Map();
+function prepareFrameRenderLookup(cw, ch) {
+_frameCw = cw || 800;
+_frameCh = ch || 600;
+const f0 = (typeof floors !== "undefined" && floors && floors[0]) ? floors[0] : null;
+let lobbySlot = null, kitchenSlot = null, parkSlot = null;
+if (typeof allSlots !== "undefined" && Array.isArray(allSlots)) {
+for (let i = 0; i < allSlots.length; i++) {
+const s = allSlots[i];
+if (!s) continue;
+if (!lobbySlot && s.type === "Reception") lobbySlot = s;
+else if (!kitchenSlot && s.floor && s.floor.idx === 0 && s.type === "Kitchen") kitchenSlot = s;
+if (!parkSlot && s.type === "Park" && s.floor && s.floor.state === "Built") parkSlot = s;
+}
+}
+_frameLobbyBox = slotIsoBox(0, lobbySlot ? lobbySlot.idx : (f0 ? 32 : 32));
+_frameKitchenSlot = kitchenSlot;
+_frameParkSlot = parkSlot;
+_frameGuestByPawn.clear();
+if (typeof guests !== "undefined" && Array.isArray(guests)) {
+for (let i = 0; i < guests.length; i++) {
+const g = guests[i];
+if (!g) continue;
+if (g.pawn) _frameGuestByPawn.set(g.pawn, g);
+if (g.petPawn) _frameGuestByPawn.set(g.petPawn, g);
+if (g.kidPawns && g.kidPawns.length) {
+for (let j = 0; j < g.kidPawns.length; j++) if (g.kidPawns[j]) _frameGuestByPawn.set(g.kidPawns[j], g);
+}
+}
+}
+_frameCleanerSlotByPawn.clear();
+_frameCleanerSet.clear();
+if (typeof cleaners !== "undefined" && Array.isArray(cleaners)) {
+for (let i = 0; i < cleaners.length; i++) {
+const c = cleaners[i];
+if (!c || !c.pawn) continue;
+_frameCleanerSet.add(c.pawn);
+if (c.target) _frameCleanerSlotByPawn.set(c.pawn, c.target);
+}
+}
+_frameQueueIdxByPawn.clear();
+if (typeof queue !== "undefined" && Array.isArray(queue)) {
+for (let i = 0; i < queue.length; i++) {
+const q = queue[i];
+if (!q) continue;
+if (q.pawn) _frameQueueIdxByPawn.set(q.pawn, i);
+if (q.petPawn) _frameQueueIdxByPawn.set(q.petPawn, i);
+if (q.kidPawns && q.kidPawns.length) {
+for (let j = 0; j < q.kidPawns.length; j++) if (q.kidPawns[j]) _frameQueueIdxByPawn.set(q.kidPawns[j], i);
+}
+}
+}
+_frameMapsReady = true;
+}
+function endFrameRenderLookup() {
+_frameMapsReady = false;
+}
+function isIsoBoxVisible(u0, v0, u1, v1, z0, z1, pad = 120, cw, ch) {
+let cW = cw || _frameCw;
+let cH = ch || _frameCh;
+if (!cW || !cH) {
+const curDpr = (typeof getRenderDpr === "function" ? getRenderDpr() : Math.min(window.devicePixelRatio || 1, 2.0));
+cW = (typeof viewport !== "undefined" && viewport && viewport.clientWidth) || (typeof canvas !== "undefined" && canvas.width ? canvas.width / curDpr : 800);
+cH = (typeof viewport !== "undefined" && viewport && viewport.clientHeight) || (typeof canvas !== "undefined" && canvas.height ? canvas.height / curDpr : 600);
+}
+const halfW = cW * 0.5, halfH = cH * 0.5;
+const minX = halfW + ((v0 - u1) * ISO_W - camCenter.x) * zoom;
+const maxX = halfW + ((v1 - u0) * ISO_W - camCenter.x) * zoom;
+const minY = halfH + ((u0 + v0) * ISO_H - z1 + camCenter.y) * zoom;
+const maxY = halfH + ((u1 + v1) * ISO_H - z0 + camCenter.y) * zoom;
+return !(maxX < -pad || minX > cW + pad || maxY < -pad || minY > cH + pad);
+}
 function isParcelInViewport(fIdx, sIdx, cw, ch) {
 if (typeof slotIsoBox !== "function") return true;
 const b = slotIsoBox(fIdx, sIdx);
 if (!b) return true;
-const curDpr = (typeof getRenderDpr === "function" ? getRenderDpr() : Math.min(window.devicePixelRatio || 1, 2.0));
-const cW = cw || (typeof viewport !== "undefined" && viewport.clientWidth) || (typeof canvas !== "undefined" && canvas.width ? canvas.width / curDpr : 800);
-const cH = ch || (typeof viewport !== "undefined" && viewport.clientHeight) || (typeof canvas !== "undefined" && canvas.height ? canvas.height / curDpr : 600);
-const halfW = cW * 0.5;
-const halfH = cH * 0.5;
-const zBot = b.z0 - (fIdx >= 1 ? 14 : 6);
-const zTop = b.z1 + 75;
-const corners = [
-iso(b.u0, b.v0, zBot),
-iso(b.u1, b.v0, zBot),
-iso(b.u0, b.v1, zBot),
-iso(b.u1, b.v1, zBot),
-iso(b.u0, b.v0, zTop),
-iso(b.u1, b.v0, zTop),
-iso(b.u0, b.v1, zTop),
-iso(b.u1, b.v1, zTop)
-];
-let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-for (let i = 0; i < 8; i++) {
-const pt = corners[i];
-const sx = halfW + (pt.x - camCenter.x) * zoom;
-const sy = halfH + (pt.y + camCenter.y) * zoom;
-if (sx < minX) minX = sx;
-if (sx > maxX) maxX = sx;
-if (sy < minY) minY = sy;
-if (sy > maxY) maxY = sy;
-}
-const pad = 75;
-if (maxX < -pad || minX > cW + pad || maxY < -pad || minY > cH + pad) {
-return false;
-}
-return true;
+return isIsoBoxVisible(b.u0, b.v0, b.u1, b.v1, b.z0 - (fIdx >= 1 ? 14 : 6), b.z1 + 75, 75, cw, ch);
 }
 function focusIsoSlot(s) {
 if (!s) return;
@@ -14438,8 +14520,12 @@ z: pawn.iso.z !== undefined ? pawn.iso.z : 0,
 inPool: false
 };
 }
-const lobbySlot = (typeof allSlots !== "undefined" && allSlots.find(s => s.type === "Reception")) || (typeof floors !== "undefined" && floors[0].slots[32]);
-const lobbyB = slotIsoBox(0, lobbySlot ? lobbySlot.idx : 32);
+const lobbyB = (_frameMapsReady && _frameLobbyBox)
+? _frameLobbyBox
+: (() => {
+const ls = (typeof allSlots !== "undefined" && allSlots.find(s => s.type === "Reception")) || (typeof floors !== "undefined" && floors[0].slots[32]);
+return slotIsoBox(0, ls ? ls.idx : 32);
+})();
 const wX0 = typeof waitX === "function" ? waitX() : (ElevW + 70);
 if (!pawn) {
 const flIdx = typeof floorOf === "function" ? floorOf(wy) : 0;
@@ -14461,9 +14547,9 @@ if (pawn && pawn.isCook) {
 if (typeof viewFloor !== "undefined" && viewFloor > 0) {
 return { u: 0, v: 0, z: 0, hidden: true };
 }
-const kitchenSlot = (typeof floors !== "undefined" && floors[0])
-? floors[0].slots.find(sl => sl && sl.type === "Kitchen")
-: null;
+const kitchenSlot = _frameMapsReady
+? _frameKitchenSlot
+: ((typeof floors !== "undefined" && floors[0]) ? floors[0].slots.find(sl => sl && sl.type === "Kitchen") : null);
 if (!kitchenSlot) {
 return { u: 0, v: 0, z: 0, hidden: true };
 }
@@ -14496,14 +14582,18 @@ z: 10 + fProg * FLOOR_Z,
 inPool: false
 };
 }
-const guestObj = (typeof guests !== "undefined" && Array.isArray(guests))
+const guestObj = _frameMapsReady
+? (_frameGuestByPawn.get(pawn) || null)
+: ((typeof guests !== "undefined" && Array.isArray(guests))
 ? guests.find(g => g.pawn === pawn || g.petPawn === pawn || (g.kidPawns && g.kidPawns.includes(pawn)))
-: null;
+: null);
 const activeSlot = (guestObj && guestObj.room) ||
-allSlots.find(s =>
+(_frameMapsReady
+? (_frameCleanerSlotByPawn.get(pawn) || null)
+: allSlots.find(s =>
 (s.guest && (s.guest.pawn === pawn || s.guest.petPawn === pawn || (s.guest.kidPawns && s.guest.kidPawns.includes(pawn)))) ||
 cleaners.some(c => c.pawn === pawn && c.target === s)
-);
+));
 if (activeSlot && activeSlot.floor.idx <= viewFloor) {
 const b = slotIsoBox(activeSlot.floor.idx, activeSlot.idx);
 const localT = clamp(((wx - activeSlot.X0) / SlotW), 0.25, 0.75);
@@ -14514,7 +14604,7 @@ z: b.z0 + 8,
 inPool: false
 };
 }
-const parkSlot = allSlots.find(s => s.type === "Park" && s.floor.state === "Built");
+const parkSlot = _frameMapsReady ? _frameParkSlot : allSlots.find(s => s.type === "Park" && s.floor.state === "Built");
 if (parkSlot && (wx >= ParkX - 80 || (guestObj && guestObj.kidsAtPark))) {
 const pb = slotIsoBox(parkSlot.floor.idx, parkSlot.idx);
 const t = clamp((wx - ParkX) / Math.max(1, ParkW), 0.1, 0.9);
@@ -14525,7 +14615,9 @@ z: pb.z0 + 4,
 inPool: true
 };
 }
-const inQueueIdx = queue.findIndex(q => q.pawn === pawn || q.petPawn === pawn || (q.kidPawns && q.kidPawns.includes(pawn)));
+const inQueueIdx = _frameMapsReady
+? (_frameQueueIdxByPawn.has(pawn) ? _frameQueueIdxByPawn.get(pawn) : -1)
+: queue.findIndex(q => q.pawn === pawn || q.petPawn === pawn || (q.kidPawns && q.kidPawns.includes(pawn)));
 if (inQueueIdx >= 0) {
 const slotPos = getQueueSlotPos(inQueueIdx);
 return {
@@ -14535,7 +14627,7 @@ z: slotPos.z,
 inPool: false
 };
 }
-if (cleaners.some(c => c.pawn === pawn)) {
+if (_frameMapsReady ? _frameCleanerSet.has(pawn) : cleaners.some(c => c.pawn === pawn)) {
 return {
 u: lobbyB.u0 + 145,
 v: lobbyB.v0 + 155,
@@ -15593,14 +15685,17 @@ const _pcF64 = new Float64Array(1), _pcI32 = new Int32Array(_pcF64.buffer);
 const _pcDesc = new WeakMap();
 const _pcImgId = new WeakMap(); let _pcImgSeq = 0;
 class ParcelRecorder {
-constructor() { this.ops = []; this.n = 0; this.sh = {}; this.dash = []; this.stack = []; this.objs = []; this.reset(null); }
+constructor() { this.ops = []; this.n = 0; this.sh = {}; this.dash = []; this._pool = []; this.objs = []; this.reset(null); }
 reset(real) {
-this.real = real; this.n = 0; this.h1 = 0x811c9dc5 | 0; this.h2 = 0x9e3779b9 | 0; this.depth = 0; this.bad = null; this.stack.length = 0;
+this.real = real; this.n = 0; this.h1 = 0x811c9dc5 | 0; this.h2 = 0x9e3779b9 | 0; this.depth = 0; this.bad = null;
 if (real) {
-for (const p of PC_PROPS) this.sh[p] = real[p];
+for (let i = 0; i < PC_PROPS.length; i++) {
+const p = PC_PROPS[i], v = real[p];
+this.sh[p] = v;
+this.mixVal(v);
+}
 this.dash = real.getLineDash();
-for (const p of PC_PROPS) this.mixVal(this.sh[p]);
-for (const d of this.dash) this.mixN(d);
+for (let i = 0; i < this.dash.length; i++) this.mixN(this.dash[i]);
 }
 }
 mixN(x) {
@@ -15662,13 +15757,20 @@ for (let j = 0; j < k - 1; j++) { o[n++] = args[j]; this.mixN(args[j]); }
 this.n = n;
 }
 save() {
-const snap = { dash: this.dash }; for (const p of PC_PROPS) snap[p] = this.sh[p];
-this.stack.push(snap); this.depth++; this.push(OP.SAVE);
+let snap = this._pool[this.depth];
+if (!snap) snap = this._pool[this.depth] = { dash: null, sh: {} };
+snap.dash = this.dash;
+const s = this.sh, d = snap.sh;
+for (let i = 0; i < PC_PROPS.length; i++) { const p = PC_PROPS[i]; d[p] = s[p]; }
+this.depth++; this.push(OP.SAVE);
 }
 restore() {
 if (this.depth <= 0) { this.bad = "restore dengesiz"; return; }
-const snap = this.stack.pop(); this.depth--;
-for (const p of PC_PROPS) this.sh[p] = snap[p]; this.dash = snap.dash;
+this.depth--;
+const snap = this._pool[this.depth];
+const s = this.sh, d = snap.sh;
+for (let i = 0; i < PC_PROPS.length; i++) { const p = PC_PROPS[i]; s[p] = d[p]; }
+this.dash = snap.dash;
 this.push(OP.RESTORE);
 }
 _tf() { if (this.depth === 0) this.bad = "save dışı dönüşüm"; }
@@ -15691,15 +15793,16 @@ if (!PC.measure) PC.measure = document.createElement("canvas").getContext("2d");
 PC.measure.font = this.sh.font; return PC.measure.measureText(t);
 }
 }
-for (const p of PC_PROPS) {
+PC_PROPS.forEach((p, idx) => {
 Object.defineProperty(ParcelRecorder.prototype, p, {
 get() { return this.sh[p]; },
 set(v) {
 if (p === "globalCompositeOperation" && v !== "source-over") this.bad = "birleştirme modu";
-this.sh[p] = v; this.push(OP.SET, p, v);
+if (this.sh[p] === v) return;
+this.sh[p] = v; this.push(OP.SET, idx, v);
 }
 });
-}
+});
 const PC_REC = new ParcelRecorder();
 function pcReplay(ops, n, c) {
 let i = 0;
@@ -15734,16 +15837,68 @@ case OP.TRANSFORM: c.transform(ops[i], ops[i + 1], ops[i + 2], ops[i + 3], ops[i
 case OP.SETTRANSFORM: c.setTransform(ops[i], ops[i + 1], ops[i + 2], ops[i + 3], ops[i + 4], ops[i + 5]); break;
 case OP.DASH: c.setLineDash(ops[i]); break;
 case OP.CLIP: c.clip(); break;
-case OP.SET: c[ops[i]] = ops[i + 1]; break;
+case OP.SET: c[PC_PROPS[ops[i]]] = ops[i + 1]; break;
 }
 i += (code === OP.DI3 ? 3 : code === OP.DI5 ? 5 : code === OP.DI9 ? 9 : OP_ARITY[code]);
 }
 }
 function pcDropEntry(e) { if (e.cv) { PC.bytes -= e.cv.width * e.cv.height * 4; e.cv = null; } }
+let _pcFrameActiveCount = 0, _pcFrameCafePeriod = "cafe", _pcFrameShLevel = 4, _pcFrameStockTotal = 0, _pcFrameStaffTotal = 0;
+function _pcBusyMask(arr) {
+if (!arr || !arr.length) return 0;
+let m = 0;
+for (let i = 0; i < arr.length; i++) if (arr[i]) m |= (1 << i);
+return m;
+}
+function _pcSlotNbrTag(fl, gu, gv) {
+const n = slotAtGrid(fl, gu, gv);
+if (!n) return "-";
+return n.type + (n.parcelBuilt ? "1" : "0") + (n.tennisState || "");
+}
+function _pcParcelQuickSig(s, fIdx, sIdx, canBuildHere, showBuildGrid, isSel) {
+let itemMask = 0;
+if (s.items) {
+for (let i = 0; i < s.items.length; i++) if (s.items[i]) itemMask |= (1 << i);
+}
+const fl = floors[fIdx];
+const { gu, gv } = parcelCoords(sIdx);
+const guestTag = s.guest ? (s.guest.sleeping ? 2 : 1) : 0;
+let extra = "";
+const st = s.type;
+if (s.hasTree) extra = "|t" + _pcFrameShLevel;
+else if (st === "Dorm") extra = "|d" + dormLevel + ":" + _pcFrameStaffTotal;
+else if (st === "Storage") extra = "|s" + storageLevel + ":" + _pcFrameStockTotal;
+else if (st === "Reception") extra = "|r" + hotelName;
+else if (st === "Gym" || st === "Spa" || st === "Cafe" || st === "Toilet" || st === "TennisClub") {
+extra = "|f" + (s.gymLevel || 1) + ":" + (s.spaLevel || 1) + ":" + (s.cafeLevel || 1) + ":" +
+(typeof barmenHired !== "undefined" && barmenHired ? 1 : 0) + ":" +
+_pcBusyMask(s.gymBusy) + ":" + _pcBusyMask(s.spaBusy) + ":" + _pcBusyMask(s.cafeBusy) + ":" +
+_pcBusyMask(s.toiletBusy) + ":" + _pcBusyMask(s.tennisCourtBusy);
+}
+const tVer = (typeof THEME !== "undefined" && THEME) ? THEME.version : 0;
+return st + "|" + (s.parcelBuilt ? 1 : 0) + "|" + (s.hasDoor ? 1 : 0) + "|" + (s.doorWall || "") + "|" +
+(s.hasEnsuite ? 1 : 0) + "|" + (s.hasBalcony ? 1 : 0) + "|" + (s.level || 1) + "|" +
+Math.round(s.maintenance || 0) + "|" + (s.hasCorpse ? 1 : 0) + "|" + (s.onFire ? 1 : 0) + "|" +
+(s.broken ? 1 : 0) + "|" + (s.hasTree ? 1 : 0) + "|" + (s.tennisState || "") + "|" + (s.roomNo || 0) + "|" +
+guestTag + "|" + itemMask + "|" + (isSel ? 1 : 0) + "|" + (canBuildHere ? 1 : 0) + "|" +
+(showBuildGrid ? 1 : 0) + "|" + viewFloor + "|" + tVer + "|" + (isNight ? 1 : 0) + "|" +
+(isOpen ? 1 : 0) + "|" + (pending ? 1 : 0) + "|" + _pcFrameActiveCount + "|" + _pcFrameCafePeriod + "|" +
+_pcSlotNbrTag(fl, gu, gv - 1) + "|" + _pcSlotNbrTag(fl, gu, gv + 1) + "|" +
+_pcSlotNbrTag(fl, gu - 1, gv) + "|" + _pcSlotNbrTag(fl, gu + 1, gv) + extra;
+}
+function _pcSaveExitState(e, rec) {
+if (!e.exitSh) e.exitSh = new Array(PC_PROPS.length);
+for (let i = 0; i < PC_PROPS.length; i++) e.exitSh[i] = rec.sh[PC_PROPS[i]];
+e.exitDash = rec.dash ? rec.dash.slice() : [];
+}
+function _pcApplyExitState(real, e) {
+if (!e.exitSh) return;
+for (let i = 0; i < PC_PROPS.length; i++) real[PC_PROPS[i]] = e.exitSh[i];
+real.setLineDash(e.exitDash);
+}
+let _pcPrevCamX = 1e9, _pcPrevCamY = 1e9, _pcPrevZoom = -1, _pcCamSettled = 0;
 function pcBuild(e, rec, m, fIdx, sIdx) {
-const W = canvas.width, H = canvas.height;
 if (!PC.scratch) { PC.scratch = document.createElement("canvas"); PC.sctx = PC.scratch.getContext("2d", { willReadFrequently: true }); }
-if (PC.scratch.width !== W || PC.scratch.height !== H) { PC.scratch.width = W; PC.scratch.height = H; }
 const sc = PC.sctx;
 const bx = slotIsoBox(fIdx, sIdx);
 const corners = [iso(bx.u0, bx.v0, bx.z0), iso(bx.u0, bx.v1, bx.z0), iso(bx.u1, bx.v0, bx.z0), iso(bx.u1, bx.v1, bx.z0),
@@ -15752,75 +15907,117 @@ let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
 for (const p of corners) { if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; }
 for (let attempt = 0; attempt < 2; attempt++) {
 const k = attempt === 0 ? 1 : 2.5;
-const x0 = Math.max(0, Math.floor((minX - 150 * k) * m.a + m.e)), x1 = Math.min(W, Math.ceil((maxX + 150 * k) * m.a + m.e));
-const y0 = Math.max(0, Math.floor((minY - 260 * k) * m.d + m.f)), y1 = Math.min(H, Math.ceil((maxY + 90 * k) * m.d + m.f));
-const w = x1 - x0, h = y1 - y0;
-if (w <= 0 || h <= 0) return "no";
+const bx0 = Math.floor((minX - 150 * k) * m.a + m.e), bx1 = Math.ceil((maxX + 150 * k) * m.a + m.e);
+const by0 = Math.floor((minY - 260 * k) * m.d + m.f), by1 = Math.ceil((maxY + 90 * k) * m.d + m.f);
+const w = bx1 - bx0, h = by1 - by0;
+if (w <= 0 || h <= 0 || w > 1800 || h > 1800) return "no";
+if (PC.scratch.width < w || PC.scratch.height < h) {
+PC.scratch.width = Math.max(PC.scratch.width || 0, w);
+PC.scratch.height = Math.max(PC.scratch.height || 0, h);
+}
 sc.setTransform(1, 0, 0, 1, 0, 0);
-sc.clearRect(x0, y0, w, h);
+sc.clearRect(0, 0, w, h);
 sc.save();
-sc.beginPath(); sc.rect(x0, y0, w, h); sc.clip();
-sc.setTransform(m);
+sc.beginPath(); sc.rect(0, 0, w, h); sc.clip();
+sc.setTransform(m.a, 0, 0, m.d, m.e - bx0, m.f - by0);
 applyCtxState(sc, rec.initState);
 if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(sc, false);
 pcReplay(rec.ops, rec.n, sc);
 sc.restore();
-const px = sc.getImageData(x0, y0, w, h).data;
-let l = w, r = -1, t = h, b = -1;
-for (let y = 0; y < h; y++) {
-const row = y * w * 4;
-for (let x = 0; x < w; x++) if (px[row + x * 4 + 3]) { if (x < l) l = x; if (x > r) r = x; if (y < t) t = y; if (y > b) b = y; }
+const px32 = new Uint32Array(sc.getImageData(0, 0, w, h).data.buffer);
+let t = 0;
+topScan: for (; t < h; t++) {
+const row = t * w;
+for (let x = 0; x < w; x++) if (px32[row + x]) break topScan;
 }
 sc.setTransform(1, 0, 0, 1, 0, 0);
-if (r < 0) { sc.clearRect(x0, y0, w, h); e.cv = null; e.x = e.y = 0; return "ready"; }
-const touches = (l === 0 && x0 > 0) || (t === 0 && y0 > 0) || (r === w - 1 && x1 < W) || (b === h - 1 && y1 < H);
-if (touches) { sc.clearRect(x0, y0, w, h); if (attempt === 0) continue; return "no"; }
+if (t >= h) { sc.clearRect(0, 0, w, h); e.cv = null; e.x = e.y = 0; return "ready"; }
+let b = h - 1;
+botScan: for (; b > t; b--) {
+const row = b * w;
+for (let x = 0; x < w; x++) if (px32[row + x]) break botScan;
+}
+let l = w - 1, r = 0;
+for (let y = t; y <= b; y++) {
+const row = y * w;
+for (let x = 0; x < l; x++) if (px32[row + x]) { l = x; break; }
+for (let x = w - 1; x > r; x--) if (px32[row + x]) { r = x; break; }
+}
+const touches = (l === 0) || (t === 0) || (r === w - 1) || (b === h - 1);
+if (touches) { sc.clearRect(0, 0, w, h); if (attempt === 0) continue; return "no"; }
 const bw = r - l + 1, bh = b - t + 1;
-if (PC.bytes + bw * bh * 4 > PC.MAX_BYTES) { sc.clearRect(x0, y0, w, h); return "no"; }
+if (PC.bytes + bw * bh * 4 > PC.MAX_BYTES) { sc.clearRect(0, 0, w, h); return "no"; }
 const cv = document.createElement("canvas"); cv.width = bw; cv.height = bh;
 const cvx = cv.getContext("2d");
 if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(cvx, false);
-cvx.drawImage(PC.scratch, x0 + l, y0 + t, bw, bh, 0, 0, bw, bh);
-sc.clearRect(x0, y0, w, h);
-e.cv = cv; e.x = x0 + l; e.y = y0 + t; PC.bytes += bw * bh * 4;
+cvx.drawImage(PC.scratch, l, t, bw, bh, 0, 0, bw, bh);
+sc.clearRect(0, 0, w, h);
+e.cv = cv; e.x = bx0 + l; e.y = by0 + t;
+e.me = m.e; e.mf = m.f;
+PC.bytes += bw * bh * 4;
 return "ready";
 }
 return "no";
 }
-function drawParcelCached(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
-if (typeof isParcelInViewport === "function" && !(typeof sel === "string" && sel === "Slot" && selSlot === s)) {
+function drawParcelCached(s, fIdx, sIdx, canBuildHere, showBuildGrid, skipCull) {
+const isSel = (typeof sel === "string" && sel === "Slot" && selSlot === s);
+if (!skipCull && !isSel && typeof isParcelInViewport === "function") {
 if (!isParcelInViewport(fIdx, sIdx)) return;
 }
 if (!PARCEL_CACHE_ON || ctx === PC_REC) { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); return; }
-const real = ctx, rec = PC_REC;
-rec.reset(real);
-rec.initState = captureCtxState(real);
-ctx = rec;
-try { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); } finally { ctx = real; }
-if (!rec.bad && rec.depth !== 0) rec.bad = "save/restore dengesiz";
-if (rec.bad) { PC.stats.unsupported++; pcReplay(rec.ops, rec.n, real); return; }
+const real = ctx;
 const m = real.getTransform();
-const camKey = canvas.width + "x" + canvas.height + "|" + m.a + "," + m.d + "," + m.e + "," + m.f;
+const zoomKey = canvas.width + "x" + canvas.height + "|" + m.a + "," + m.d;
 const key = fIdx * 64 + sIdx;
 let e = PC.store.get(key);
-const same = e && e.h1 === rec.h1 && e.h2 === rec.h2 && e.n === rec.n && e.camKey === camKey;
-if (same) e.last = PC.frame;
-if (same && e.state === "ready") {
+const qSig = !isSel ? _pcParcelQuickSig(s, fIdx, sIdx, canBuildHere, showBuildGrid, false) : "";
+const dx = e ? (m.e - e.me) : 0, dy = e ? (m.f - e.mf) : 0;
+if (!isSel && e && e.state === "ready" && e.zoomKey === zoomKey && e.qSig === qSig && ((key + PC.frame) & 31) !== 0) {
+PC.stats.hit++;
+e.last = PC.frame;
+if (e.hits) {
+for (let i = 0; i < e.hits.length; i++) hitRegions.push(e.hits[i]);
+}
+if (e.cv) {
+real.save();
+real.setTransform(1, 0, 0, 1, 0, 0);
+if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(real, false);
+real.drawImage(e.cv, e.x + dx, e.y + dy);
+real.restore();
+}
+_pcApplyExitState(real, e);
+return;
+}
+const rec = PC_REC;
+rec.reset(real);
+rec.initState = captureCtxState(real);
+const hitN0 = hitRegions.length;
+ctx = rec;
+try { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); } finally { ctx = real; }
+const hitsSlice = hitRegions.slice(hitN0);
+if (!rec.bad && rec.depth !== 0) rec.bad = "save/restore dengesiz";
+if (rec.bad) { PC.stats.unsupported++; pcReplay(rec.ops, rec.n, real); return; }
+const sameGeom = !!(e && e.h1 === rec.h1 && e.h2 === rec.h2 && e.n === rec.n && e.zoomKey === zoomKey);
+if (sameGeom) {
+e.last = PC.frame;
+e.qSig = qSig;
+e.hits = hitsSlice;
+_pcSaveExitState(e, rec);
+if (e.state === "ready") {
 PC.stats.hit++;
 if (e.cv) {
 real.save();
 real.setTransform(1, 0, 0, 1, 0, 0);
 if (typeof applyCanvasSmoothing === "function") applyCanvasSmoothing(real, false);
-real.drawImage(e.cv, e.x, e.y);
+real.drawImage(e.cv, e.x + dx, e.y + dy);
 real.restore();
 }
-for (const p of PC_PROPS) real[p] = rec.sh[p];
+for (let i = 0; i < PC_PROPS.length; i++) real[PC_PROPS[i]] = rec.sh[PC_PROPS[i]];
 real.setLineDash(rec.dash);
 return;
 }
 PC.stats.miss++;
 pcReplay(rec.ops, rec.n, real);
-if (same) {
 if (e.state === "seen" && PC.buildsLeft > 0) {
 PC.buildsLeft--; PC.stats.build++;
 e.state = pcBuild(e, rec, m, fIdx, sIdx);
@@ -15828,8 +16025,12 @@ if (e.state === "no") PC.stats.noCache++;
 }
 return;
 }
+PC.stats.miss++;
+pcReplay(rec.ops, rec.n, real);
 if (e) pcDropEntry(e);
-PC.store.set(key, { h1: rec.h1, h2: rec.h2, n: rec.n, camKey, state: "seen", cv: null, x: 0, y: 0, last: PC.frame });
+e = { h1: rec.h1, h2: rec.h2, n: rec.n, zoomKey, me: m.e, mf: m.f, qSig, hits: hitsSlice, exitSh: null, exitDash: null, state: "seen", cv: null, x: 0, y: 0, last: PC.frame };
+_pcSaveExitState(e, rec);
+PC.store.set(key, e);
 }
 function pcInvalidateAll() {
 if (typeof PC !== "undefined" && PC && PC.store) {
@@ -15840,7 +16041,33 @@ PC.store.clear();
 }
 }
 function pcBeginFrame() {
-PC.frame++; PC.buildsLeft = PC.BUILDS_PER_FRAME;
+PC.frame++;
+const cx = (typeof camCenter !== "undefined") ? camCenter.x : 0;
+const cy = (typeof camCenter !== "undefined") ? camCenter.y : 0;
+const zm = (typeof zoom !== "undefined") ? zoom : 1;
+if (cx === _pcPrevCamX && cy === _pcPrevCamY && zm === _pcPrevZoom) {
+_pcCamSettled++;
+} else {
+_pcCamSettled = 0;
+_pcPrevCamX = cx; _pcPrevCamY = cy; _pcPrevZoom = zm;
+}
+PC.buildsLeft = (_pcCamSettled >= 2) ? PC.BUILDS_PER_FRAME : 0;
+let ac = 0;
+if (typeof allSlots !== "undefined" && Array.isArray(allSlots)) {
+for (let i = 0; i < allSlots.length; i++) {
+const sl = allSlots[i];
+if (sl && sl.type === "Room" && sl.guest) ac++;
+}
+}
+_pcFrameActiveCount = ac;
+_pcFrameCafePeriod = (typeof getCafeTimePeriod === "function") ? getCafeTimePeriod() : "cafe";
+_pcFrameShLevel = (typeof shadowIntensity === "function") ? Math.round(shadowIntensity() * 4) : 4;
+let stSum = 0;
+if (typeof stock !== "undefined" && Array.isArray(stock)) {
+for (let i = 0; i < stock.length; i++) stSum += stock[i] || 0;
+}
+_pcFrameStockTotal = stSum;
+_pcFrameStaffTotal = (typeof totalStaffCount === "function") ? totalStaffCount() : 0;
 if (PC.frame % 120 === 0) for (const [k, e] of PC.store) if (PC.frame - e.last > 240) { pcDropEntry(e); PC.store.delete(k); }
 }
 const GAME_TEXTURES = {
@@ -16006,7 +16233,7 @@ gradLeft.addColorStop(0, "rgba(25, 15, 8, 0.24)");
 gradLeft.addColorStop(1, "rgba(25, 15, 8, 0)");
 drawPoly2D([p0, p0_b, p3_r, p3], gradLeft, null, 0);
 }
-function drawPalmTree(u, v, z, scale = 1.0, flip = 1) {
+function drawPalmTree(u, v, z, scale = 1.0, flip = 1, animate = true) {
 const p = iso(u, v, z);
 ctx.save();
 ctx.translate(p.x, p.y);
@@ -16018,14 +16245,15 @@ for (let a = 0; a < Math.PI * 2; a += 0.7) {
 const sx = Math.cos(a) * 22, sy = Math.sin(a) * 10 + 2;
 ctx.beginPath(); ctx.ellipse(sx, sy, 3, 2, a, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 }
-const shInt = (typeof shadowIntensity === "function") ? shadowIntensity() : 1.0;
+const rawSh = (typeof shadowIntensity === "function") ? shadowIntensity() : 1.0;
+const shInt = animate ? rawSh : (Math.round(rawSh * 4) / 4);
 if (shInt > 0.04) {
 ctx.fillStyle = "rgba(10, 30, 12, " + (0.25 * shInt).toFixed(3) + ")";
 ctx.beginPath(); ctx.ellipse(22, 12, 48, 18, 0.24, 0, Math.PI * 2); ctx.fill();
 ctx.fillStyle = "rgba(10, 30, 12, " + (0.16 * shInt).toFixed(3) + ")";
 ctx.beginPath(); ctx.ellipse(36, 18, 32, 13, 0.3, 0, Math.PI * 2); ctx.fill();
 }
-const sway = Math.sin((timeNow || 0) * 1.6 + (u + v) * 0.02) * 3.5;
+const sway = animate ? Math.sin((timeNow || 0) * 1.6 + (u + v) * 0.02) * 3.5 : 0;
 ctx.beginPath();
 ctx.moveTo(-9, 2);
 ctx.quadraticCurveTo(-22 + sway * 0.5, -48, -6 + sway, -100);
@@ -16457,12 +16685,18 @@ ctx.beginPath(); ctx.ellipse(18, -98, 12, 4, 0.2, 0, Math.PI * 2); ctx.fill();
 ctx.restore();
 }
 function drawWroughtIronParkFence(u, v0, v1, gateV0, gateV1) {
+const hasVis = typeof isIsoBoxVisible === "function";
+if (hasVis && !isIsoBoxVisible(u - 6, v0 - 6, u + 10, v1 + 6, 0, 32, 80)) return;
 const pillarW = 8, pillarH = 26;
+const drawSpikes = (typeof zoom === "undefined") || zoom >= 0.65;
 for (let v = v0; v <= v1; v += 60) {
 if (v >= gateV0 && v <= gateV1) continue;
+if (hasVis && !isIsoBoxVisible(u - 5, v - 5, u + 8, v + 60, 0, 32, 60)) continue;
 isoBox(u - 1, v, u + 1, v + 56, 0, 20, "#1e293b", "#0f172a", "#020617", OUTLINE_COL, 1.2);
+if (drawSpikes) {
 for (let fv = v + 8; fv <= v + 52; fv += 10) {
 isoBox(u - 2, fv - 1, u + 2, fv + 1, 20, 25, "#ffd700", "#d4af37", "#a38218", null, 0);
+}
 }
 isoBox(u - 3, v - 3, u + pillarW - 3, v + pillarW - 3, 0, pillarH, "#94a3b8", "#64748b", "#475569", OUTLINE_COL, 1.2);
 isoBox(u - 4, v - 4, u + pillarW - 2, v + pillarW - 2, pillarH, pillarH + 4, "#cbd5e1", "#94a3b8", "#64748b", OUTLINE_COL, 1);
@@ -17943,6 +18177,7 @@ ch: viewport.clientHeight || 600,
 dpr: Math.min(window.devicePixelRatio || 1, 2.0)
 };
 pcBeginFrame();
+if (typeof prepareFrameRenderLookup === "function") prepareFrameRenderLookup(cw, ch);
 hitRegions.length = 0;
 const si = seasonIdx();
 const b = brightness();
@@ -18006,31 +18241,41 @@ ctx.restore();
 ctx.save();
 applyCamTransform();
 if (typeof drawItalianCypress === "function") {
+const hasVis = typeof isIsoBoxVisible === "function";
 for (let cv = -120; cv <= 1220; cv += 140) {
+if (!hasVis || isIsoBoxVisible(-250, cv - 25, -210, cv + 25, 0, 120, 90, cw, ch)) {
 drawItalianCypress(-230, cv, 0, 1.05, si);
 }
 }
+}
 if (typeof drawGrandMarbleFountain === "function") {
+if (typeof isIsoBoxVisible !== "function" || isIsoBoxVisible(-165, 530, -55, 640, 0, 75, 90, cw, ch)) {
 drawGrandMarbleFountain(-110, 585, 0, 1.05);
+}
 }
 const decorShKey = isNight ? 0 : Math.round(((typeof shadowIntensity === "function") ? shadowIntensity() : 1) * 4);
 const tcState = (typeof floors !== "undefined" && floors[0] && floors[0].slots && floors[0].slots[38] && floors[0].slots[38].tennisState) || "Ruin";
 drawCachedLayer("garden", `${si}|${WORLD_STATIC_CACHE_VER}|${tcState}|${decorShKey}`, () => {
-if (typeof drawResortGazebo === "function") {
+const hasVis = typeof isIsoBoxVisible === "function";
+if (typeof drawResortGazebo === "function" && (!hasVis || isIsoBoxVisible(-165, 195, -75, 285, 0, 80, 90, cw, ch))) {
 drawResortGazebo(-120, 240, 0, 1.0);
 }
-if (typeof drawResortParkingLot === "function") {
+if (typeof drawResortParkingLot === "function" && (!hasVis || isIsoBoxVisible(160, -620, 1020, -100, 0, 60, 110, cw, ch))) {
 drawResortParkingLot(si);
 }
-if (typeof drawResortTennisCourt === "function") {
+if (typeof drawResortTennisCourt === "function" && (!hasVis || isIsoBoxVisible(60, 1140, 780, 1880, 0, 80, 120, cw, ch))) {
 drawResortTennisCourt(si, -100, tcState);
 }
 drawLushLawnDetails(si);
-drawResortBush(40, -140, 0, 1.15);
-drawResortBush(-140, 40, 0, 1.15);
+if (!hasVis || isIsoBoxVisible(-20, -200, 100, -80, 0, 80, 90, cw, ch)) drawResortBush(40, -140, 0, 1.15);
+if (!hasVis || isIsoBoxVisible(-200, -20, -80, 100, 0, 80, 90, cw, ch)) drawResortBush(-140, 40, 0, 1.15);
 });
+if (typeof isIsoBoxVisible !== "function" || isIsoBoxVisible(210, -230, 350, -90, 0, 150, 90, cw, ch)) {
 drawPalmTree(280, -160, 0, 1.1, -1);
+}
+if (typeof isIsoBoxVisible !== "function" || isIsoBoxVisible(-230, 210, -90, 350, 0, 150, 90, cw, ch)) {
 drawPalmTree(-160, 280, 0, 1.1, 1);
+}
 const decorGlow = Math.round(clamp(1 - b, 0, 1) * 10) / 10;
 const decorKey = (typeof DECOR !== "undefined" ? DECOR.version : 0) + "|" + si + "|" + (isNight ? 1 : 0) + "|" + decorShKey + "|" + decorGlow;
 const backDecorItems = (typeof getKnownPlacedDecorInZones === "function") ? getKnownPlacedDecorInZones(["left", "back"]) : [];
@@ -18117,9 +18362,13 @@ ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
 if (si === 3) {
 isoQuad(swU0, -600, swU0 + 6, 1800, 0.3, "rgba(245,250,255,0.85)", null, 0);
 }
+const hasVisSt = typeof isIsoBoxVisible === "function";
+if (!hasVisSt || isIsoBoxVisible(roadU0, recCenterV - 60, roadU1, recCenterV + 60, -4, 2, 90, cw, ch)) {
 drawZebraCrossing(roadU0, roadU1, recCenterV, 96);
+}
 isoQuad(oppSwU0, -800, oppSwU1, 2000, 0, SidewalkCol[si], OUTLINE_COL, 2);
 for (let v = -750; v <= 1950; v += 90) {
+if (hasVisSt && !isIsoBoxVisible(oppSwU0, v - 90, oppSwU1, v + 5, 0, 2, 60, cw, ch)) continue;
 if ((v / 90) % 2 === 0) {
 isoQuad(oppSwU0 + 2, v - 86, oppSwU1 - 2, v - 4, 0.15, "rgba(255,255,255,0.07)", null, 0);
 }
@@ -18133,18 +18382,20 @@ isoQuad(oppSwU1 - 6, -800, oppSwU1, 2000, 0.3, "rgba(245,250,255,0.85)", null, 0
 }
 isoQuad(oppSwU0 - 4, -800, oppSwU0, 2000, -0.5, "#6b7280", OUTLINE_COL, 1.2);
 for (const lv of STREET_LAMP_VS_NEAR) {
-if (typeof drawVictorianStreetLamp === "function") {
+if (typeof drawVictorianStreetLamp === "function" && (!hasVisSt || isIsoBoxVisible(swU1 - 85, lv - 85, swU1 + 70, lv + 85, 0, 80, 90, cw, ch))) {
 drawVictorianStreetLamp(swU1 - 8, lv, 0, isNight, (1 - b));
 }
 }
 for (const pv of WORLD_GARDEN_PLANTER_VS) {
-if (typeof drawFlowerPlanterBox === "function") {
+if (typeof drawFlowerPlanterBox === "function" && (!hasVisSt || isIsoBoxVisible(swU0 - 50, pv - 40, swU0, pv + 40, 0, 30, 80, cw, ch))) {
 drawFlowerPlanterBox(swU0 - 24, pv, 0, 46, 14);
 }
 }
+if (!hasVisSt || isIsoBoxVisible(recBox.u1 - 10, recCenterV - 60, swU0 + 10, recCenterV + 60, 0, 10, 80, cw, ch)) {
 drawEntranceStonePath(recBox.u1, swU0, recCenterV - 50, recCenterV + 50);
+}
 for (const lv of STREET_LAMP_VS_FAR) {
-if (typeof drawVictorianStreetLamp === "function") {
+if (typeof drawVictorianStreetLamp === "function" && (!hasVisSt || isIsoBoxVisible(oppSwU0 - 70, lv - 85, oppSwU0 + 85, lv + 85, 0, 80, 90, cw, ch))) {
 drawVictorianStreetLamp(oppSwU0 + 8, lv, 0, isNight, (1 - b));
 }
 }
@@ -18175,7 +18426,7 @@ if (isBuilt || canB) {
 if (!isSel && typeof isParcelInViewport === "function" && !isParcelInViewport(f, idx, cw, ch)) {
 continue;
 }
-drawParcelCached(s, f, idx, canB, showBuildGrid);
+drawParcelCached(s, f, idx, canB, showBuildGrid, true);
 }
 }
 }
@@ -18183,7 +18434,9 @@ drawParcelCached(s, f, idx, canB, showBuildGrid);
 }
 for (let i = 0; i < WORLD_PALM_SPOTS.length; i++) {
 const ps = WORLD_PALM_SPOTS[i];
+if (typeof isIsoBoxVisible !== "function" || isIsoBoxVisible(ps.u - 70, ps.v - 70, ps.u + 70, ps.v + 70, 0, 150, 90, cw, ch)) {
 drawPalmTree(ps.u, ps.v, 0, ps.sc, ps.flip);
+}
 }
 const frontDecorItems = (typeof getKnownPlacedDecorInZones === "function") ? getKnownPlacedDecorInZones(["front", "right"]) : [];
 if (frontDecorItems.length > 0) {
@@ -18225,12 +18478,14 @@ if (unreadNewspaper) {
 drawIsoNewspaper();
 }
 if (typeof drawLiveCounterStaff === "function") drawLiveCounterStaff();
-const visPawns = pawns.filter(p => !p.dead && p.visible);
-const mappedPawns = visPawns.map(p => {
+const mappedPawns = [];
+for (let i = 0; i < pawns.length; i++) {
+const p = pawns[i];
+if (!p || p.dead || !p.visible) continue;
 const uvz = logicalToIsoUVZ(p.pos.x, p.pos.y, p);
-const pt = iso(uvz.u, uvz.v, uvz.z);
-return { p, uvz, pt };
-}).filter(mp => !mp.uvz.hidden);
+if (uvz.hidden) continue;
+mappedPawns.push({ p, uvz, pt: iso(uvz.u, uvz.v, uvz.z) });
+}
 if (typeof inMenu !== "undefined" && inMenu && typeof getMenuAmbientMappedPawns === "function") {
 const amb = getMenuAmbientMappedPawns();
 for (let i = 0; i < amb.length; i++) mappedPawns.push(amb[i]);
@@ -18244,7 +18499,12 @@ const dw = getAmbientDogWalkerMappedPawns();
 for (let i = 0; i < dw.length; i++) mappedPawns.push(dw[i]);
 }
 mappedPawns.sort((a, b) => a.pt.y - b.pt.y);
-for (const mp of mappedPawns) {
+const halfCw = cw * 0.5, halfCh = ch * 0.5;
+for (let i = 0; i < mappedPawns.length; i++) {
+const mp = mappedPawns[i];
+const sx = halfCw + (mp.pt.x - camCenter.x) * zoom;
+const sy = halfCh + (mp.pt.y + camCenter.y) * zoom;
+if (sx < -90 || sx > cw + 90 || sy < -60 || sy > ch + 150) continue;
 drawIsoPawn(mp.p, mp.pt, mp.uvz);
 }
 if (typeof drawLiveCounterLabels === "function") drawLiveCounterLabels();
@@ -18290,47 +18550,61 @@ if (typeof drawWroughtIronParkFence === "function") {
 drawWroughtIronParkFence(oppSwU1 + 2, -750, 1950, oppRecCenterV - 52, oppRecCenterV + 52);
 }
 });
+if (typeof isIsoBoxVisible !== "function" || isIsoBoxVisible(1800, 240, 2180, 880, 0, 50, 120, cw, ch)) {
 if (typeof drawParkLake === "function") {
 drawParkLake(si);
 }
 if (typeof drawAmbientParkDucks === "function") {
 drawAmbientParkDucks(si);
 }
+}
 const parkShKey = isNight ? 0 : Math.round(((typeof shadowIntensity === "function") ? shadowIntensity() : 1) * 4);
 drawCachedLayer("parkProps", `${si}|${isNight}|${parkShKey}|${oppRecCenterV}`, () => {
-if (typeof drawTransitShelter === "function") {
+const hasVis = typeof isIsoBoxVisible === "function";
+if (hasVis && !isIsoBoxVisible(oppSwU1 - 20, oppRecCenterV - 680, oppSwU1 + 220, oppRecCenterV + 880, 0, 180, 140, cw, ch)) return;
+if (typeof drawTransitShelter === "function" && (!hasVis || isIsoBoxVisible(oppSwU1 - 10, oppRecCenterV - 70, oppSwU1 + 70, oppRecCenterV + 70, 0, 80, 100, cw, ch))) {
 drawTransitShelter(oppSwU1 + 10, oppRecCenterV, 0, 1.0, isNight);
 }
 if (typeof drawParkBench === "function") {
-drawParkBench(oppSwU1 + 14, oppRecCenterV - 190, 0, 1.0);
-drawParkBench(oppSwU1 + 14, oppRecCenterV + 190, 0, 1.0);
-drawParkBench(oppSwU1 + 14, oppRecCenterV - 540, 0, 1.0);
-drawParkBench(oppSwU1 + 14, oppRecCenterV + 640, 0, 1.0);
+for (const bv of [oppRecCenterV - 190, oppRecCenterV + 190, oppRecCenterV - 540, oppRecCenterV + 640]) {
+if (!hasVis || isIsoBoxVisible(oppSwU1, bv - 45, oppSwU1 + 40, bv + 45, 0, 35, 80, cw, ch)) {
+drawParkBench(oppSwU1 + 14, bv, 0, 1.0);
 }
-if (typeof drawParkKiosk === "function") {
+}
+}
+if (typeof drawParkKiosk === "function" && (!hasVis || isIsoBoxVisible(oppSwU1 + 20, oppRecCenterV + 340, oppSwU1 + 110, oppRecCenterV + 420, 0, 70, 100, cw, ch))) {
 drawParkKiosk(oppSwU1 + 38, oppRecCenterV + 380, 0, 1.0);
 }
 if (typeof drawParkShadeTree === "function") {
-drawParkShadeTree(oppSwU1 + 90, oppRecCenterV - 340, 0, 1.15, si);
-drawParkShadeTree(oppSwU1 + 100, oppRecCenterV + 40, 0, 1.2, si);
-drawParkShadeTree(oppSwU1 + 90, oppRecCenterV + 560, 0, 1.15, si);
-drawParkShadeTree(oppSwU1 + 110, oppRecCenterV - 100, 0, 1.05, si);
-drawParkShadeTree(oppSwU1 + 120, oppRecCenterV - 600, 0, 1.15, si);
-drawParkShadeTree(oppSwU1 + 110, oppRecCenterV + 800, 0, 1.2, si);
+for (const [du, dv, sc] of [
+[90, -340, 1.15], [100, 40, 1.2], [90, 560, 1.15],
+[110, -100, 1.05], [120, -600, 1.15], [110, 800, 1.2]
+]) {
+const tu = oppSwU1 + du, tv = oppRecCenterV + dv;
+if (!hasVis || isIsoBoxVisible(tu - 80, tv - 80, tu + 80, tv + 80, 0, 160, 100, cw, ch)) {
+drawParkShadeTree(tu, tv, 0, sc, si);
+}
+}
 }
 if (typeof drawLushBush === "function") {
-drawLushBush(oppSwU1 + 14, oppRecCenterV - 110, 0, 1.0, "flower", si);
-drawLushBush(oppSwU1 + 14, oppRecCenterV + 110, 0, 1.0, "flower", si);
-drawLushBush(oppSwU1 + 22, oppRecCenterV - 270, 0, 0.95, "normal", si);
-drawLushBush(oppSwU1 + 22, oppRecCenterV + 270, 0, 0.95, "normal", si);
-drawLushBush(oppSwU1 + 30, oppRecCenterV + 480, 0, 1.05, "flower", si);
-drawLushBush(oppSwU1 + 20, oppRecCenterV - 450, 0, 1.0, "normal", si);
-drawLushBush(oppSwU1 + 20, oppRecCenterV + 700, 0, 1.0, "flower", si);
+for (const [du, dv, sc, typ] of [
+[14, -110, 1.0, "flower"], [14, 110, 1.0, "flower"], [22, -270, 0.95, "normal"],
+[22, 270, 0.95, "normal"], [30, 480, 1.05, "flower"], [20, -450, 1.0, "normal"], [20, 700, 1.0, "flower"]
+]) {
+const bu = oppSwU1 + du, bv = oppRecCenterV + dv;
+if (!hasVis || isIsoBoxVisible(bu - 35, bv - 35, bu + 35, bv + 35, 0, 50, 80, cw, ch)) {
+drawLushBush(bu, bv, 0, sc, typ, si);
+}
+}
 }
 });
 if (typeof drawHighwayTunnelPortal === "function") {
+if (typeof isIsoBoxVisible !== "function" || isIsoBoxVisible(1240, roadV0 - 60, 1640, roadV0 + 60, 0, 155, 110, cw, ch)) {
 drawHighwayTunnelPortal(1440, roadV0, true, si);
+}
+if (typeof isIsoBoxVisible !== "function" || isIsoBoxVisible(1240, roadV1 - 60, 1640, roadV1 + 60, 0, 155, 110, cw, ch)) {
 drawHighwayTunnelPortal(1440, roadV1, false, si);
+}
 }
 for (const g of guests) {
 if (!g.pawn || g.pawn.dead) continue;
@@ -18407,6 +18681,7 @@ ctx.fill();
 }
 }
 drawAtmosphere(cw, ch, b);
+if (typeof endFrameRenderLookup === "function") endFrameRenderLookup();
 ctx.restore();
 }
 function drawCorridorRunnerCarpet(u0, v0, u1, v1, z0, connLeft = false, connRight = false, connBack = false, connFront = false) {
@@ -18807,7 +19082,9 @@ const b = slotIsoBox(fIdx, sIdx);
 const { gu, gv, u0, v0, u1, v1, z0, z1 } = b;
 const isSel = (sel === "Slot" && selSlot === s);
 const avail = pending && s.Ready && !s.guest && !s.onFire;
-const activeCount = allSlots.filter(sl => sl.type === "Room" && sl.guest).length;
+const activeCount = (typeof _pcFrameActiveCount === "number")
+? _pcFrameActiveCount
+: allSlots.filter(sl => sl.type === "Room" && sl.guest).length;
 const fl = floors[fIdx];
 const leftSlot = slotAtGrid(fl, gu, gv - 1);
 const leftConnected = !!(leftSlot && (leftSlot.parcelBuilt || leftSlot.type !== "Empty") && isSlotStructurallyConnected(leftSlot));
@@ -18858,7 +19135,7 @@ drawParcelRoofSlab(s, fIdx, sIdx, u0, v0, u1, v1, z1);
 function drawParcelEmpty(s, fIdx, sIdx, canBuildHere, showBuildGrid, gu, gv, u0, v0, u1, v1, z0, isSel) {
 if (s.hasTree) {
 const poly = isoQuad(u0 + 6, v0 + 6, u1 - 6, v1 - 6, z0, isSel ? "rgba(255, 210, 80, 0.45)" : "rgba(34, 197, 94, 0.2)", isSel ? "#ff8c00" : "rgba(34, 197, 94, 0.4)", isSel ? 3.5 : 1.8);
-drawPalmTree((u0 + u1) * 0.5, (v0 + v1) * 0.5, z0, 1.15, sIdx === 36 ? -1 : 1);
+drawPalmTree((u0 + u1) * 0.5, (v0 + v1) * 0.5, z0, 1.15, sIdx === 36 ? -1 : 1, false);
 isoLabel("🪓 AĞACI KES", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 36, 10, "#78350f", "#fef3c7", 6, 2.5);
 addHitPoly(poly, () => {
 selectSlot(s);
