@@ -1,8 +1,8 @@
 {
-  "versionCode": 100,
-  "versionName": "1.9.92-beta",
+  "versionCode": 101,
+  "versionName": "1.9.93-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Kalabalık otel FPS ve akıcılık optimizasyonu"
+  "notes": "Üst üste asansör kuralı ve oda/yapı yıkma"
 }

@@ -2573,7 +2573,7 @@ height: 86px;
         <canvas id="menu-logo-canvas" width="240" height="240"></canvas>
         <div class="menu-title-row">
           <div class="menu-title">HoteLore</div>
-          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.92-beta</div>
+          <div class="menu-badge" id="menu-ver-badge">Sürüm v1.9.93-beta</div>
         </div>
         <div class="menu-sub">Otel İnşa &amp; Yönetim Simülasyonu</div>
       </div>
@@ -5604,6 +5604,12 @@ return "front";
 }
 function hasElevator() {
 return allSlots.some(sl => sl.type === "Elevator" && sl.floor.state === "Built");
+}
+function hasElevatorBelow(slot) {
+if (!slot || !slot.floor || slot.floor.idx <= 0) return true;
+const belowFloor = floors[slot.floor.idx - 1];
+const below = belowFloor && belowFloor.slots ? belowFloor.slots[slot.idx] : null;
+return !!(below && below.type === "Elevator");
 }
 function isCorridor(slot) {
 if (!slot) return false;
@@ -10716,10 +10722,216 @@ log("Sıradakiler otel kapanınca gitti."); syncFront();
 }
 refresh();
 }
+let _demolishConfirmSlot = null;
+const _DEMOLISH_BTN_IDX = {
+Room: ItemCount + 3,
+Cafe: 5,
+Spa: 4,
+Gym: 2,
+Toilet: 2,
+Kitchen: 2,
+Gas: 2,
+Corridor: 0,
+Elevator: 0,
+RoofTerrace: 0,
+Pool: 0,
+Park: 0
+};
+function getDemolishActionIdx(type) {
+return Object.prototype.hasOwnProperty.call(_DEMOLISH_BTN_IDX, type) ? _DEMOLISH_BTN_IDX[type] : -1;
+}
+function getDemolishSlotName(s) {
+if (!s) return "Yapı";
+if (s.type === "Room") return (s.roomNo || "?") + ". Oda";
+const names = {
+Corridor: "Koridor & Hol",
+Elevator: "Asansör",
+Gym: "Spor Odası",
+Toilet: "Genel Tuvalet",
+Spa: "Spa & Hamam",
+Cafe: "Kafe & Bar",
+Gas: "Doğalgaz Dairesi",
+Kitchen: "Restoran & Mutfak",
+Pool: "Açık Yüzme Havuzu",
+Park: "Dinlenme Parkı",
+RoofTerrace: "Çatı Terası"
+};
+return names[s.type] || s.type;
+}
+function getDemolishRefund(s) {
+if (!s || getDemolishActionIdx(s.type) < 0) return 0;
+const stepBase = Math.max(0, (typeof builtRooms === "number" ? builtRooms : 1) - 1);
+let total = 0;
+switch (s.type) {
+case "Room": {
+total = CostRoom + CostRoomStep * stepBase;
+if (s.hasDoor) total += CostDoor;
+if (s.hasBalcony) total += CostBalcony;
+if (s.hasEnsuite) total += CostEnsuite;
+const rLv = (typeof getRoomLevel === "function") ? getRoomLevel(s) : (s.level || 1);
+if (rLv >= 2) total += 120;
+if (rLv >= 3) total += 250;
+if (s.items) {
+for (let k = 0; k < s.items.length; k++) if (s.items[k]) total += (ItemCosts[k] || 0);
+}
+break;
+}
+case "Gym": {
+total = CostGym + CostRoomStep * stepBase;
+const lv = Math.max(1, s.gymLevel || 1);
+if (lv >= 2) total += 200;
+if (lv >= 3) total += 350;
+break;
+}
+case "Spa": {
+total = CostSpa + CostRoomStep * stepBase;
+const lv = Math.max(1, s.spaLevel || 1);
+if (lv >= 2) total += 300;
+if (lv >= 3) total += 500;
+break;
+}
+case "Cafe": {
+total = CostCafe + CostRoomStep * stepBase;
+const lv = Math.max(1, s.cafeLevel || 1);
+if (lv >= 2) total += 350;
+if (lv >= 3) total += 600;
+break;
+}
+case "Toilet": total = CostToilet + CostRoomStep * stepBase; break;
+case "Gas": total = CostGas + CostRoomStep * stepBase; break;
+case "Corridor": total = CostCorridor; break;
+case "Elevator": total = CostElevator; break;
+case "Kitchen": total = CostKitchen; break;
+case "Pool": total = PoolCost; break;
+case "Park": total = ParkCost; break;
+case "RoofTerrace": total = CostRoofTerrace; break;
+}
+return Math.max(0, Math.round(total * 0.5));
+}
+function canDemolishSlot(s) {
+if (!s || getDemolishActionIdx(s.type) < 0) return { ok: false, reason: "" };
+if (s.floor && s.floor.idx < FloorCount - 1) {
+const aboveFloor = floors[s.floor.idx + 1];
+const above = aboveFloor && aboveFloor.slots ? aboveFloor.slots[s.idx] : null;
+if (above && above.type !== "Empty") {
+return { ok: false, reason: "Üst Katı Yık" };
+}
+}
+if (s.onFire) return { ok: false, reason: "Yangını Söndür" };
+if (s.hasCorpse) return { ok: false, reason: "Polise Bildir" };
+if (s.type === "Room" && s.guest) return { ok: false, reason: "Misafiri Çıkar" };
+return { ok: true, reason: "" };
+}
+function demolishSlot(s) {
+const chk = canDemolishSlot(s);
+if (!chk.ok) {
+play("reject");
+if (chk.reason) log("⚠️ Bu yapı şu an yıkılamaz: " + chk.reason);
+return false;
+}
+const prevType = s.type;
+const label = getDemolishSlotName(s);
+const refund = getDemolishRefund(s);
+if (typeof guests !== "undefined" && Array.isArray(guests)) {
+for (const g of guests.slice()) {
+if (!g) continue;
+if (prevType === "Gym" && g.gym === s && typeof rescueGymGuest === "function") rescueGymGuest(g);
+else if (prevType === "Spa" && g.spa === s && typeof rescueSpaGuest === "function") rescueSpaGuest(g);
+else if (prevType === "Cafe" && g.cafe === s && typeof rescueCafeGuest === "function") rescueCafeGuest(g);
+else if (prevType === "Toilet" && g.toilet === s && typeof rescueToiletGuest === "function") rescueToiletGuest(g);
+else if (prevType === "Park" && g.kidsAtPark && typeof bringKidsBack === "function") bringKidsBack(g);
+}
+}
+if (typeof cleaners !== "undefined" && Array.isArray(cleaners)) {
+for (const c of cleaners) {
+if (c && c.target === s) {
+c.target = null; c.state = 0; c.cleanLeft = 0;
+if (c.pawn) { c.pawn.iso = null; c.pawn.isoPath = []; c.pawn.onIsoArrive = null; c.pawn.path = []; c.pawn.onArrive = null; }
+}
+}
+}
+if (prevType === "Room" || prevType === "Corridor" || prevType === "Elevator" || prevType === "Gym" ||
+prevType === "Toilet" || prevType === "Gas" || prevType === "Spa" || prevType === "Cafe") {
+builtRooms = Math.max(0, builtRooms - 1);
+}
+if (prevType === "Kitchen") {
+kitchenState = "Locked"; kitchenLeft = 0; cookLevel = 0;
+} else if (prevType === "Pool") {
+poolState = "Locked";
+} else if (prevType === "Park") {
+parkState = "Locked";
+if (typeof parkWorkers !== "undefined" && Array.isArray(parkWorkers)) {
+for (const w of parkWorkers) if (typeof destroyPawn === "function") destroyPawn(w);
+parkWorkers.length = 0;
+}
+} else if (prevType === "Gas") {
+gasOn = false; gasLeak = false; gasLeakLeft = 0;
+}
+s.type = "Empty";
+s.parcelBuilt = false;
+s.hasDoor = false;
+s.doorWall = null;
+s.hasEnsuite = false;
+s.hasBalcony = false;
+s.roomNo = 0;
+s.level = 1;
+s.maintenance = 100;
+s.broken = false;
+s.gymLevel = 1; s.gymBusy = [false, false, false];
+s.spaLevel = 1; s.spaBusy = [false, false, false];
+s.cafeLevel = 1; s.cafeBusy = [false, false, false];
+s.toiletBusy = [false, false];
+s.furnLayout = {};
+if (s.items) for (let k = 0; k < s.items.length; k++) s.items[k] = false;
+if (typeof setFurnEditMode === "function") setFurnEditMode(false);
+else furnSelectedKey = null;
+money += refund;
+if (typeof isOpen !== "undefined" && isOpen && !hasReadyRoom()) {
+isOpen = false;
+if (typeof queue !== "undefined" && queue.length > 0) {
+for (const qg of [...queue]) if (typeof startLeaving === "function") startLeaving(qg);
+queue.length = 0; pending = null;
+if (typeof syncFront === "function") syncFront();
+}
+log("⚠️ Hazır oda kalmadığı için otel kapatıldı.");
+}
+if (typeof syncStaffPawns === "function") syncStaffPawns();
+if (typeof pcInvalidateAll === "function") pcInvalidateAll();
+if (typeof invalidateLayerCache === "function") invalidateLayerCache();
+play("build");
+if (typeof floatText === "function") {
+floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🧱 Yıkıldı +" + refund + " TL", "#f59e0b");
+}
+log("🧱 " + label + " yıkıldı! Parsel boşaltıldı (+" + refund + " TL iade).");
+refresh(); saveGame();
+return true;
+}
 function onAction(i) {
 checkStartupSoftlock();
 if (sel === "Slot" && selSlot) {
 const s = selSlot;
+const demIdx = getDemolishActionIdx(s.type);
+if (i !== demIdx) _demolishConfirmSlot = null;
+if (demIdx >= 0 && i === demIdx) {
+const chk = canDemolishSlot(s);
+if (!chk.ok) {
+_demolishConfirmSlot = null;
+play("reject");
+log("⚠️ Bu yapı şu an yıkılamaz: " + chk.reason);
+refresh();
+return;
+}
+if (_demolishConfirmSlot !== s) {
+_demolishConfirmSlot = s;
+play("tap");
+log("🧱 Yıkmayı onaylamak için butona tekrar dokun (+" + getDemolishRefund(s) + " TL iade).");
+refresh();
+return;
+}
+_demolishConfirmSlot = null;
+demolishSlot(s);
+return;
+}
 if (s.type === "TennisClub") {
 const ts = s.tennisState || "Ruin";
 if (i === 0 && ts === "Ruin") {
@@ -10810,6 +11022,11 @@ refresh(); saveGame(); return;
 return;
 }
 if (i === 9) {
+if (typeof hasElevatorBelow === "function" && !hasElevatorBelow(s)) {
+play("reject");
+log("⚠️ Üst katlarda asansör yalnızca alt kattaki asansörün tam üzerine kurulabilir!");
+return;
+}
 if (!hasAdjacentCorridor(s)) {
 play("reject");
 log("⚠️ Asansör inşa edebilmek için bu parselin hemen yanına bir '🚪 Koridor & Hol' (60 TL) kurmalısın!");
@@ -11931,6 +12148,7 @@ syncBottomPanelOffset();
 function closeDrawer() {
 drawerOpen = false;
 activeDock = "";
+if (typeof _demolishConfirmSlot !== "undefined") _demolishConfirmSlot = null;
 if (typeof setFurnEditMode === "function") setFurnEditMode(false);
 else furnSelectedKey = null;
 if (sel === "Decor") {
@@ -12205,6 +12423,7 @@ refreshHud();
 }
 function selectSlot(s) {
 const prevSlot = selSlot;
+if (typeof _demolishConfirmSlot !== "undefined") _demolishConfirmSlot = null;
 if (!s || s !== prevSlot || s.type !== "Room") {
 if (typeof setFurnEditMode === "function") setFurnEditMode(false);
 else furnSelectedKey = null;
@@ -12222,6 +12441,7 @@ if (s) focusIsoSlot(s);
 refresh();
 }
 function selectFloor(f) {
+if (typeof _demolishConfirmSlot !== "undefined") _demolishConfirmSlot = null;
 play("tap");
 sel = "Floor";
 selFloor = f;
@@ -12235,6 +12455,7 @@ openDrawer("upgrade");
 refresh();
 }
 function selectMode(m) {
+if (typeof _demolishConfirmSlot !== "undefined") _demolishConfirmSlot = null;
 if (m === "Garden") m = "Decor";
 play("tap");
 sel = m;
@@ -12659,7 +12880,10 @@ const isTennisSel = (sel === "Slot" && selSlot && (selSlot.type === "TennisClub"
 if (infoText) infoText.classList.toggle("tennis-mode", !!isTennisSel);
 for (let i = 0; i < ActCount; i++) {
 setAct(i, "", false, true, false, false);
-if (actBtns[i]) actBtns[i].classList.remove("tennis-fee-btn");
+if (actBtns[i]) {
+actBtns[i].classList.remove("tennis-fee-btn");
+if (i < ActCount - 1) actBtns[i].style.background = "";
+}
 }
 actBtns[ActCount - 1].style.background = "linear-gradient(180deg, #a4f578 0%, #58c934 100%)";
 const readyOnce = hasReadyRoom();
@@ -12825,13 +13049,14 @@ return;
 }
 const anyRoomBuilt = allSlots.some(sl => sl.type === "Room" && sl.floor.state === "Built");
 const canBuildHere = isParcelBuildable(cur.floor.idx, cur.idx);
-if (cur.floor.idx === 0 && cur.idx === 26) {
+const belowElev = (typeof hasElevatorBelow === "function") ? hasElevatorBelow(cur) : true;
+if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 26) {
 infoText.textContent = "🚪 1. Koridor Yeri (Resepsiyon Arkası) • 60 TL " + coordStr +
 "\n👉 1. Adım: '🚪 1. Koridoru Kur' butonuna (60 TL) basarak inşa et!";
-} else if (cur.floor.idx === 0 && cur.idx === 25) {
+} else if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 25) {
 infoText.textContent = "🚪 2. Koridor Yeri (1. Oda Arkası) • 60 TL " + coordStr +
 "\n👉 2. Adım: '🚪 2. Koridoru Kur' butonuna (60 TL) basarak inşa et!";
-} else if (cur.floor.idx === 0 && cur.idx === 31) {
+} else if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 31) {
 const corrBuilt = floors[0].slots[25].type === "Corridor";
 infoText.textContent = corrBuilt ?
 ("🛏️ 1. Oda Temeli • 100 TL " + coordStr + "\n👉 3. Adım: '🛏️ 1. Odayı Kur' butonuna basarak odanı inşa et!") :
@@ -12844,14 +13069,16 @@ infoText.textContent = anyRoomBuilt
 : ("💡 Başlangıç Adımı: Önce 1. ve 2. Koridoru (60 TL), ardından 1. Odanı kur! " + coordStr);
 } else if (!canBuildHere) {
 infoText.textContent = "🔒 " + coordStr + "  •  Otel odası kurmak için binaya bitişik olmalıdır. Ancak Depo binası binaya yapışık olmadan bağımsız kurulabilir!";
+} else if (cur.floor.idx >= 1 && belowElev) {
+infoText.textContent = "🛗 Alt Kat Asansör Üstü " + coordStr + "  •  Asansörü bu kata uzatabilir (yanına koridor kur) veya başka bir yapı kurabilirsin.";
 } else {
 infoText.textContent = "🟢 İnşa Edilebilir Parsel " + coordStr + "  •  Bu parsel üzerine istediğin odayı veya tesisi kurabilirsin:";
 }
-if (cur.floor.idx === 0 && cur.idx === 26) {
+if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 26) {
 setAct(0, "🚪 1. Koridoru Kur\n" + CostCorridor + " TL", true, canBuildHere);
-} else if (cur.floor.idx === 0 && cur.idx === 25) {
+} else if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 25) {
 setAct(0, "🚪 2. Koridoru Kur\n" + CostCorridor + " TL", true, canBuildHere);
-} else if (cur.floor.idx === 0 && cur.idx === 31) {
+} else if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 31) {
 setAct(0, "🛏️ 1. Odayı Kur\n" + roomCost() + " TL", true, canBuildHere);
 } else {
 setAct(0, "🛏️ Oda Kur\n" + roomCost() + " TL", true, canBuildHere && (readyOnce || !anyRoomBuilt));
@@ -12886,8 +13113,10 @@ setAct(4, flLbl, true, stars() >= nextFl.idx && floors[nextFl.idx - 1].state ===
 setAct(7, "🔥 Doğalgaz Odası\n" + gasCost() + " TL", true, canBuildHere && readyOnce && !gasSlot());
 setAct(8, "🚪 Koridor & Hol\n" + CostCorridor + " TL", true, canBuildHere);
 const adjCorr = hasAdjacentCorridor(cur);
-const elevLbl = adjCorr ? ("🛗 Asansör\n" + CostElevator + " TL") : "🛗 Asansör\n(Koridor Gerekli)";
-setAct(9, elevLbl, true, canBuildHere && readyOnce && adjCorr);
+const elevLbl = !belowElev
+? "🛗 Asansör\n(Altı Asansör Olmalı)"
+: (adjCorr ? ("🛗 Asansör\n" + CostElevator + " TL") : "🛗 Asansör\n(Koridor Gerekli)");
+setAct(9, elevLbl, true, canBuildHere && readyOnce && belowElev && adjCorr);
 const spaCnt = (typeof countBuiltSpas === "function") ? countBuiltSpas() : 0;
 const spaFull = spaCnt >= SpaMaxCount;
 setAct(11, spaFull ? "✅ Spa Dolu (2/2)" : ("♨️ Spa & Hamam\n" + spaCost() + " TL"), true, canBuildHere && readyOnce && !spaFull, spaFull);
@@ -13193,6 +13422,21 @@ setAct(ItemCount + 2, "⬆️ Oda Sv." + (rLvl + 1) + "\n" + upCost + " TL", tru
 setAct(ItemCount + 2, "👑 Kral Dairesi (Sv.3)", true, false, true);
 }
 }
+const demIdx = (typeof getDemolishActionIdx === "function") ? getDemolishActionIdx(cur.type) : -1;
+if (demIdx >= 0 && demIdx < ActCount) {
+const chk = canDemolishSlot(cur);
+const refund = getDemolishRefund(cur);
+const isConfirm = (typeof _demolishConfirmSlot !== "undefined" && _demolishConfirmSlot === cur);
+if (!chk.ok) {
+setAct(demIdx, "🧱 Yık\n(" + chk.reason + ")", true, false);
+} else if (isConfirm) {
+setAct(demIdx, "⚠️ Yıkmayı Onayla\n(+" + refund + " TL)", true, true);
+if (actBtns[demIdx]) actBtns[demIdx].style.background = "#fca5a5";
+} else {
+setAct(demIdx, "🧱 Yık\n(+" + refund + " TL)", true, true);
+if (actBtns[demIdx]) actBtns[demIdx].style.background = "#fee2e2";
+}
+}
 } else {
 infoText.textContent = "👆 İşlem yapmak için oteldeki bir parsele/odaya veya alttaki 🔨 İnşa et butonuna dokunun.";
 }
@@ -13282,17 +13526,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 100;
-const APP_VERSION_NAME = "1.9.92-beta";
+const APP_VERSION_CODE = 101;
+const APP_VERSION_NAME = "1.9.93-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.93-beta",
+title: "Üst üste asansör kuralı ve oda/yapı yıkma",
+latest: true,
+notes: "• 🛗 Dikey Asansör Şaftı: Üst katlarda yeni asansörler artık yalnızca alt kattaki asansörün tam üzerine kurulabilir.\n• 🧱 Oda & Yapı Yıkımı (%50 İade): Yanlış kurulan odalar, koridorlar, asansörler ve tesisler 2 dokunuşlu onay ile yıkılıp %50 maliyeti iade alınabilir (üst katında yapı varsa veya odada misafir/yangın varsa güvenli şekilde uyarır)."
+},
+{
 ver: "v1.9.92-beta",
 title: "Kalabalık otel FPS ve akıcılık optimizasyonu",
-latest: true,
+latest: false,
 notes: "• ⚡ Kaydırmaya Dayanıklı Parsel Önbelleği: Kamera kaydırılırken tüm parsel önbelleğinin bozulması giderildi ve pan sırasında GPU/readback takılmaları kaldırıldı.\n• 🚀 O(1) Durum Kontrolü & Piyon/Çevre Kırpma: Parsellerde gereksiz komut kaydı, ağaç önbellek bozulması, zorunlu UI reflow ve ekran dışı çevre/piyon çizimleri azaltıldı; kalabalık 4 katlı otelde ~4-5 kat hız artışı sağlandı."
 },
 {
