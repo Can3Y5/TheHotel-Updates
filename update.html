@@ -2653,6 +2653,7 @@ height: 86px;
         </div>
         <div id="how-to-box">• Başlangıçta Giriş Lobisi ve 1 boş oda temeliyle başlarsın. Önce 1. ve 2. Koridoru, ardından 1. Odanı ve kapısını kurup sol alttaki 🎫 Aç/Kapat butonuyla Oteli AÇ.
 • 🔨 İnşa et ile 6×6 arsa üzerinde Odalar, Koridor/Asansör, Spa, Kafe &amp; Bar, Açık Havuz, Park, Depo ve Lojman kur; 🏪 Mağaza'dan 4×4 oda eşyalarını alıp dizebilir, bahçe süsleri 🌳 ve Tenis Kulübü ile otelini büyütebilirsin.
+• 🌡️ İklim: Klima yazın odayı serinletir; Doğalgaz kışın tüm odaları ısıtır.
 • 👥 Arkadaşlar bölümünden kodunla takipçi kazanıp başka otelleri gezebilir, 💡 Öneriler'den fikir/hata bildirebilirsin.</div>
       </div>
     </div>
@@ -3530,7 +3531,7 @@ let receptionistPawn = null;
 let securityLevel = 0, securityPawn = null;
 let reputation = 0, ratingSum = 0, ratingCount = 0;
 let isOpen = false, isNight = false, gasOn = true, gasLeak = false, gasLeakLeft = 0;
-let lastSeason = -1;
+let lastSeason = -1, winterGasWarnedYear = -1;
 const queue = [], guests = [], pawns = [], cleaners = [], floaties = [], dirts = [];
 let achs = [];
 let lastFront = null, pending = null, pendingPrice = 0;
@@ -6385,6 +6386,8 @@ cand.type = "Storage";
 cand.parcelBuilt = true;
 }
 }
+if (typeof calcBuiltRoomsFromSlots === "function") builtRooms = calcBuiltRoomsFromSlots();
+winterGasWarnedYear = -1;
 floors[0].slots[32].parcelBuilt = true;
 floors[0].slots[26].parcelBuilt = true;
 floors[0].slots[25].parcelBuilt = true;
@@ -6648,6 +6651,7 @@ isNight = false;
 gasOn = true;
 gasLeak = false;
 gasLeakLeft = 0;
+winterGasWarnedYear = -1;
 parkState = "Locked";
 parkLeft = 0;
 poolState = "Locked";
@@ -7002,12 +7006,12 @@ return false;
 }
 }
 function stars() { return reputation >= Star3 ? 3 : reputation >= Star2 ? 2 : reputation >= Star1 ? 1 : 0; }
-function roomCost() { return CostRoom + CostRoomStep * builtRooms; }
-function gymCost() { return CostGym + CostRoomStep * builtRooms; }
-function toiletCost() { return CostToilet + CostRoomStep * builtRooms; }
-function gasCost() { return CostGas + CostRoomStep * builtRooms; }
+function roomCost() { return Math.round(CostRoom + CostRoomStep * builtRooms); }
+function gymCost() { return Math.round(CostGym + CostRoomStep * builtRooms); }
+function toiletCost() { return Math.round(CostToilet + CostRoomStep * builtRooms); }
+function gasCost() { return Math.round(CostGas + CostRoomStep * builtRooms); }
 function gymUpgradeCost(lv) { return lv <= 1 ? 200 : 350; }
-function spaCost() { return CostSpa + CostRoomStep * builtRooms; }
+function spaCost() { return Math.round(CostSpa + CostRoomStep * builtRooms); }
 function spaUpgradeCost(lv) { return lv <= 1 ? 300 : 500; }
 function _countBuiltType(type) {
 return allSlots.filter(s => s.type === type && s.floor && s.floor.state === "Built").length;
@@ -7017,13 +7021,23 @@ function spaDailyCost(s) {
 if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built") return 0;
 return SpaDailyCost * Math.max(1, s.spaLevel || 1);
 }
-function cafeCost() { return CostCafe + CostRoomStep * builtRooms; }
+function cafeCost() { return Math.round(CostCafe + CostRoomStep * builtRooms); }
 function cafeUpgradeCost(lv) { return lv <= 1 ? 350 : 600; }
 function countBuiltCafes() { return _countBuiltType("Cafe"); }
 function hasBuiltCafe() { return countBuiltCafes() >= 1; }
 function cafeDailyCost(s) {
 if (!s || s.type !== "Cafe" || !s.floor || s.floor.state !== "Built") return 0;
 return CafeDailyCost * Math.max(1, s.cafeLevel || 1);
+}
+function calcBuiltRoomsFromSlots() {
+if (typeof allSlots === "undefined" || !Array.isArray(allSlots)) return 0;
+let total = 0;
+for (const s of allSlots) {
+if (!s || !s.floor || s.floor.state !== "Built") continue;
+if (s.type === "Corridor" || s.type === "Elevator") total += 0.5;
+else if (s.type === "Room" || s.type === "Gym" || s.type === "Toilet" || s.type === "Gas" || s.type === "Spa" || s.type === "Cafe") total += 1;
+}
+return total;
 }
 function maintCost(s) { return CostMaint + Math.round((100 - s.maintenance) * 0.5); }
 function getItemCost(k) {
@@ -7038,7 +7052,7 @@ function round5(v) { return Math.max(5, Math.round(v / 5) * 5); }
 function hasReception() { return allSlots.some(s => s.type === "Reception" && s.floor.state === "Built"); }
 function hasToilet() { return allSlots.some(s => s.type === "Toilet" && s.floor.state === "Built"); }
 function gasSlot() { return allSlots.find(s => s.type === "Gas" && s.floor.state === "Built") || null; }
-function heated(s) { return s.items[IKlima] || (gasSlot() !== null && gasOn); }
+function heated(s) { return gasSlot() !== null && gasOn; }
 function hasReadyRoom() { return allSlots.some(s => s.Ready); }
 function freeRoomCount() { return allSlots.filter(s => s.Ready && !s.guest && !s.onFire).length; }
 function adjacentSlots(s) {
@@ -9240,9 +9254,13 @@ function pickCleanTarget() {
 let best = null;
 for (const s of allSlots) {
 if (s.floor.state !== "Built" || s.onFire) continue;
-if (s.type !== "Room" && s.type !== "Toilet") continue;
+if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gas") continue;
 if (s.maintenance >= 85) continue;
+if (s.type !== "Gas") {
 if (!s.hasDoor || !getRoomDoorWall(s) || !getRoomCorridorSlot(s)) continue;
+} else if (s.floor.idx > 0 && !s.floor.slots.some(sl => sl.type === "Elevator")) {
+continue;
+}
 if (cleaners.some(c => c.target === s)) continue;
 if (!best || s.maintenance < best.maintenance) best = s;
 }
@@ -9320,7 +9338,8 @@ const finishedTarget = c.target;
 c.target = null;
 cleanCount++;
 if (finishedTarget && typeof floatText === "function") {
-floatText(finishedTarget.X0 + SlotW * 0.5, finishedTarget.floor.BaseY + FloorH * 0.65, "✨ Oda temizlendi", "#10b981");
+const cleanMsg = finishedTarget.type === "Gas" ? "✨ Doğalgaz bakımı tamam" : "✨ Oda temizlendi";
+floatText(finishedTarget.X0 + SlotW * 0.5, finishedTarget.floor.BaseY + FloorH * 0.65, cleanMsg, "#10b981");
 }
 p.cleanSparkleEndT = (typeof timeNow === "number" ? timeNow : 0) + 1.0;
 if (typeof checkAchievements === "function") checkAchievements();
@@ -9962,6 +9981,10 @@ if (!room) return null;
 const { gu, gv } = parcelCoords(room.idx);
 const fl = room.floor;
 if (!fl) return null;
+if (room.type === "Gas") {
+const adj = [slotAtGrid(fl, gu - 1, gv), slotAtGrid(fl, gu + 1, gv), slotAtGrid(fl, gu, gv - 1), slotAtGrid(fl, gu, gv + 1)];
+return adj.find(sl => isCorridor(sl)) || null;
+}
 const doorWall = getRoomDoorWall(room);
 if (doorWall === "back") return slotAtGrid(fl, gu - 1, gv);
 if (doorWall === "front") return slotAtGrid(fl, gu + 1, gv);
@@ -10455,6 +10478,10 @@ return _buildIsoRouteBackToRoom(gymSlot, room);
 function unlock(i) {
 if (typeof checkAchievements === "function") checkAchievements();
 }
+function needsWinterGasWarning() {
+const gs = gasSlot();
+return !gs || !gasOn;
+}
 function newDay() {
 const servedYesterday = todayServed;
 day++;
@@ -10568,9 +10595,16 @@ floatText(ElevX, floors[0].WalkY + 150, "-" + wage + " TL maaş", "#b33333");
 const prev = lastSeason;
 applySeason();
 if (lastSeason !== prev) log("Mevsim değişti: " + SeasonNames[lastSeason] + ".");
+const yearLen = SeasonDays * 4;
+const dayOfYear = ((day - 1) % yearLen) + 1;
+const curYear = Math.floor((day - 1) / yearLen);
+if (dayOfYear === 70 && winterGasWarnedYear !== curYear && needsWinterGasWarning()) {
+winterGasWarnedYear = curYear;
+log("❄️ Kış yaklaşıyor: odaları ısıtmak için doğalgaz odası gerekli.");
+floatText(waitX(), floors[0].WalkY + 150, "❄️ Kış yaklaşıyor: Doğalgaz gerekli!", "#1d4ed8");
+}
 const gs = gasSlot();
-if (gs && gasOn) {
-if (seasonIdx() === 3) {
+if (gs && gasOn && seasonIdx() === 3) {
 const rc = allSlots.filter(s => s.type === "Room" && s.floor.state === "Built").length;
 const bill = rc * GasPerRoom;
 if (bill > 0) {
@@ -10578,8 +10612,7 @@ dayStats.gas += Math.min(bill, money);
 money = Math.max(0, money - bill);
 floatText(gs.X0 + SlotW * 0.5, gs.floor.BaseY + FloorH * 0.8, "-" + bill + " TL doğalgaz", "#b33333");
 }
-}
-const lc = (0.06 + (100 - gs.maintenance) / 100 * 0.2) * (seasonIdx() === 3 ? 1.5 : 1.0);
+const lc = (0.06 + (100 - gs.maintenance) / 100 * 0.2) * 1.5;
 if (!gasLeak && Math.random() < lc) startLeak();
 }
 let fires = allSlots.filter(s => s.onFire).length;
@@ -10827,6 +10860,11 @@ h += "⭐ <b>TURİZM TAKVİMİ:</b> Mevsim <b>" + SeasonNames[seasonIdx()] + "</
 if (typeof getTennisState === "function" && getTennisState() === "Open") {
 h += "<br><b style='color:#15803d'>🎾 TENİS KULÜBÜ AÇIK:</b> Yenilenen tenis kulübü otel koridoruna bağlanarak konukların hizmetine açıldı.";
 }
+const npYearLen = SeasonDays * 4;
+const npDayOfYear = ((day - 1) % npYearLen) + 1;
+if (npDayOfYear >= 70 && npDayOfYear <= 75 && needsWinterGasWarning()) {
+h += "<br><b style='color:#1d4ed8'>❄️ KIŞ UYARISI:</b> Kış yaklaşıyor: odaları ısıtmak için doğalgaz odası gerekli.";
+}
 h += "</div></div>";
 h += "</div>";
 h += "<div class='news-financial-sheet'>";
@@ -10935,7 +10973,7 @@ total = CostRoom + CostRoomStep * stepBase;
 if (s.hasDoor) total += CostDoor;
 if (s.hasBalcony) total += CostBalcony;
 if (s.hasEnsuite) total += CostEnsuite;
-const rLv = (typeof getRoomLevel === "function") ? getRoomLevel(s) : (s.level || 1);
+const rLv = s.level || 1;
 if (rLv >= 2) total += 120;
 if (rLv >= 3) total += 250;
 if (s.items) {
@@ -11017,7 +11055,9 @@ if (c.pawn) { c.pawn.iso = null; c.pawn.isoPath = []; c.pawn.onIsoArrive = null;
 }
 }
 }
-if (prevType === "Room" || prevType === "Corridor" || prevType === "Elevator" || prevType === "Gym" ||
+if (prevType === "Corridor" || prevType === "Elevator") {
+builtRooms = Math.max(0, builtRooms - 0.5);
+} else if (prevType === "Room" || prevType === "Gym" ||
 prevType === "Toilet" || prevType === "Gas" || prevType === "Spa" || prevType === "Cafe") {
 builtRooms = Math.max(0, builtRooms - 1);
 }
@@ -11177,13 +11217,13 @@ return;
 }
 if (i === 8 || (i === 0 && s.floor.idx === 0 && (s.idx === 26 || s.idx === 25))) {
 if (pay(CostCorridor)) {
-s.type = "Corridor"; s.parcelBuilt = true; builtRooms++;
+s.type = "Corridor"; s.parcelBuilt = true; builtRooms += 0.5;
 play("build");
 if (s.floor.idx === 0 && s.idx === 26) {
 log("🎉 1. Koridor kuruldu! Şimdi yanındaki 2. Koridoru kur (60 TL).");
 selSlot = floors[0].slots[25];
 } else if (s.floor.idx === 0 && s.idx === 25) {
-log("🎉 2. Koridor da kuruldu! Şimdi 1. Odanı inşa et (100 TL).");
+log("🎉 2. Koridor da kuruldu! Şimdi 1. Odanı inşa et (" + roomCost() + " TL).");
 selSlot = floors[0].slots[31];
 } else {
 log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
@@ -11206,7 +11246,7 @@ log("⚠️ Asansör inşa edebilmek için bu parselin hemen yanına bir '🚪 K
 return;
 }
 if (pay(CostElevator)) {
-s.type = "Elevator"; s.parcelBuilt = true; builtRooms++;
+s.type = "Elevator"; s.parcelBuilt = true; builtRooms += 0.5;
 play("build");
 log("🛗 Lüks Otel Asansörü kuruldu! Katlar arası hızlı geçiş ve üst kat açılışı sağlandı.");
 refresh(); saveGame(); return;
@@ -11338,11 +11378,11 @@ refresh(); saveGame(); return;
 }
 if (i === 7 && !gasSlot() && pay(gasCost())) {
 s.type = "Gas"; s.parcelBuilt = true; s.maintenance = 100; builtRooms++;
-play("build"); log("🔥 Doğalgaz kazan dairesi seçilen parsele kuruldu.");
+play("build"); log("🔥 Doğalgaz kazan dairesi seçilen parsele kuruldu. Kışın tüm odaları ısıtır.");
 refresh(); saveGame(); return;
 }
 if (i === 8 && pay(CostCorridor)) {
-s.type = "Corridor"; s.parcelBuilt = true; builtRooms++;
+s.type = "Corridor"; s.parcelBuilt = true; builtRooms += 0.5;
 play("build"); log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
 if (typeof syncStaffPawns === "function") syncStaffPawns();
 refresh(); saveGame(); return;
@@ -11573,24 +11613,6 @@ refresh();
 return;
 }
 }
-if (i === ItemCount + 2) {
-const curLvl = (typeof getRoomLevel === "function") ? getRoomLevel(s) : (s.level || 1);
-if (curLvl < 3) {
-const upCost = curLvl === 1 ? 120 : 250;
-if (pay(upCost)) {
-s.level = curLvl + 1;
-play("build");
-if (typeof floatText === "function") {
-floatText(camCenter.x, camCenter.y, "⭐ Oda Sv." + s.level + " Yükseltildi!", "#f59e0b");
-}
-log("🌟 " + s.roomNo + ". oda Seviye " + s.level + "'e yükseltildi! Özel halı, saray tablosu, lüks perdeler ve şık yatak örtüsü eklendi.");
-saveGame();
-refresh();
-return;
-}
-}
-return;
-}
 }
 }
 onActionBase(i);
@@ -11684,7 +11706,7 @@ if (!s) return;
 if (s.type === "Empty") {
 if (i === 8) {
 if (pay(CostCorridor)) {
-s.type = "Corridor"; s.parcelBuilt = true; builtRooms++;
+s.type = "Corridor"; s.parcelBuilt = true; builtRooms += 0.5;
 play("build"); log("Koridor & Hol kuruldu."); saveGame(); refresh(); return;
 }
 return;
@@ -11712,7 +11734,7 @@ play("build"); log("Tuvalet kuruldu."); saveGame();
 s.type = "Reception"; play("build"); log("Resepsiyon kuruldu. Artık Resepsiyonist işe alabilirsin!"); syncStaffPawns(); reflowQueue(); saveGame();
 } else if (i === 4 && !gasSlot() && pay(gasCost())) {
 s.type = "Gas"; s.maintenance = 100; builtRooms++;
-play("build"); log("Doğalgaz kazan dairesi kuruldu. Kışın odaları ısıtır."); saveGame();
+play("build"); log("Doğalgaz kazan dairesi kuruldu. Kışın tüm odaları ısıtır."); saveGame();
 } else if (i === 5) {
 focusBuilding("Storage"); return;
 } else if (i === 6) {
@@ -12139,13 +12161,13 @@ if (si === 3) {
 const isWarm = heated(s);
 const tag = document.createElement("span");
 tag.className = "gb-tag " + (isWarm ? "ok" : "miss");
-tag.textContent = isWarm ? "✅ Kış Isıtması" : "❌ Oda Soğuk (Klima/Doğalgaz)";
+tag.textContent = isWarm ? "✅ Kış Isıtması" : "❌ Oda Soğuk (Doğalgaz gerekli)";
 wantsWrap.appendChild(tag);
 } else if (si === 1) {
 const isCool = !!s.items[IKlima];
 const tag = document.createElement("span");
 tag.className = "gb-tag " + (isCool ? "ok" : "miss");
-tag.textContent = isCool ? "✅ Yaz Serinliği" : "❌ Oda Sıcak (Klima Yok)";
+tag.textContent = isCool ? "✅ Yaz Serinliği" : "❌ Oda Sıcak (Klima yok)";
 wantsWrap.appendChild(tag);
 }
 if (!anyWant) {
@@ -13099,6 +13121,7 @@ if (infoText) infoText.classList.toggle("tennis-mode", !!isTennisSel);
 for (let i = 0; i < ActCount; i++) {
 setAct(i, "", false, true, false, false);
 if (actBtns[i]) {
+actBtns[i].title = "";
 actBtns[i].classList.remove("tennis-fee-btn");
 if (i < ActCount - 1) actBtns[i].style.background = "";
 }
@@ -13126,7 +13149,9 @@ furnStatusLbl.textContent = "🛋️ Eşya taşımak için Düzenle'ye bas";
 const fp = ITEM_FOOTPRINTS[furnSelectedKey];
 const sp = itemSpan(furnSelectedKey, furnRot);
 const cleanName = fp.name.replace(/\s*\(\dx\d\)/, "");
-if (furnSelectedKey === IKlima || furnSelectedKey === IKamera) {
+if (furnSelectedKey === IKlima) {
+furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + " (Yazın odayı serinletir): Üst duvara dokun • 🔄 Duvar değiştir";
+} else if (furnSelectedKey === IKamera) {
 furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + ": Üst duvara dokun • 🔄 Duvar değiştir";
 } else if (furnSelectedKey === IAmpul) {
 furnStatusLbl.textContent = "🎯 " + fp.icon + " " + cleanName + ": İstediğin yeşil kareye dokun";
@@ -13199,7 +13224,10 @@ if (trucks.some(t => t.state !== "leaving")) ship += "  🚚 Kamyon geldi!";
 const crateN = sumArr(crateItems);
 infoText.textContent = "📦 Depo Sv." + storageLevel + "  •  Kapasite: " + used + "/" + cap + "  •  %30 İndirimli Sipariş\n" +
 "Stok: " + (st || "boş") + (crateN ? "  📦 Kaldırımda " + crateN + " koli (dokun!)" : "") + ship + (sumArr(cart) ? "\n🛒 Sepet: " + sumArr(cart) + " eşya = " + cartCost() + " TL" : "");
-for (let k = 0; k < ItemCount; k++) setAct(k, ItemIcons[k] + " " + ItemNames[k] + "\n" + orderCost(k) + " TL" + (cart[k] ? " ×" + cart[k] : ""), true, used < cap);
+for (let k = 0; k < ItemCount; k++) {
+setAct(k, ItemIcons[k] + " " + ItemNames[k] + "\n" + orderCost(k) + " TL" + (cart[k] ? " ×" + cart[k] : ""), true, used < cap);
+if (k === IKlima && actBtns[k]) actBtns[k].title = "Yazın odayı serinletir";
+}
 setAct(9, "🚚 Siparişi Ver\n" + cartCost() + " TL", true, sumArr(cart) > 0 && money >= cartCost());
 if (storageLevel < 3) setAct(10, "⬆️ Depo Sv." + (storageLevel + 1) + "\n" + StorageUpCost[storageLevel + 1] + " TL", true, true);
 else setAct(10, "✅ Son Seviye", true, false, true);
@@ -13283,8 +13311,8 @@ infoText.textContent = "🚪 2. Koridor Yeri (1. Oda Arkası) • 60 TL " + coor
 } else if (cur.parcelBuilt && cur.floor.idx === 0 && cur.idx === 31) {
 const corrBuilt = floors[0].slots[25].type === "Corridor";
 infoText.textContent = corrBuilt ?
-("🛏️ 1. Oda Temeli • 100 TL " + coordStr + "\n👉 3. Adım: '🛏️ 1. Odayı Kur' butonuna basarak odanı inşa et!") :
-("🛏️ 1. Oda Temeli • 100 TL " + coordStr + "\n💡 Önce arkasındaki 2. Koridoru (60 TL) kurarak odaya kapı yolu aç!");
+("🛏️ 1. Oda Temeli • " + roomCost() + " TL " + coordStr + "\n👉 3. Adım: '🛏️ 1. Odayı Kur' butonuna basarak odanı inşa et!") :
+("🛏️ 1. Oda Temeli • " + roomCost() + " TL " + coordStr + "\n💡 Önce arkasındaki 2. Koridoru (60 TL) kurarak odaya kapı yolu aç!");
 } else if (cur.floor.idx === 0 && (cur.idx === 36 || cur.idx === 37)) {
 infoText.textContent = "🛣️ Yol Kenarı Parseli (" + (cur.idx === 36 ? "Sol" : "Sağ") + ")  •  Depo binasını doğrudan yola bağlantılı olarak buraya kurabilir veya taşıyabilirsin (kargo araçları tam buraya teslimat yapar).";
 } else if (!readyOnce) {
@@ -13477,7 +13505,7 @@ setAct(6, "🏢 " + (nextFl.idx + 1) + ". Katı Aç\n" + FloorCost[nextFl.idx] +
 setAct(7, petAdopted ? "🐾 Evcil Hayvan\n& Kulübe" : "🐾 Evcil Hayvan\nSahiplen", true, true);
 } else if (cur.type === "Gas") {
 infoText.textContent = "🔥 Doğalgaz Dairesi " + coordStr + "  •  Vana: " + (gasOn ? "AÇIK" : "KAPALI") + "  •  Bakım: %" + Math.round(cur.maintenance) +
-(gasLeak ? "\n🚨 GAZ KAÇAĞI! " + Math.ceil(gasLeakLeft) + " sn içinde vanayı kapat!" : "\nKışın odaları ısıtır (günlük " + GasPerRoom + " TL/oda).");
+(gasLeak ? "\n🚨 GAZ KAÇAĞI! " + Math.ceil(gasLeakLeft) + " sn içinde vanayı kapat!" : "\nKışın tüm odaları ısıtır (günlük " + GasPerRoom + " TL/oda; kaçak riski yalnız kışın).");
 setAct(0, gasOn ? "🔒 Vanayı Kapat" : "🔓 Vanayı Aç", true, true);
 setAct(1, maintLabel, true, cur.maintenance < 99.5);
 } else if (cur.type === "Gym") {
@@ -13641,6 +13669,7 @@ const buyLbl = stock[k] > 0
 : (ItemIcons[k] + " " + ItemNames[k] + sizeTag + "\n" + effectiveCost + " TL" + hikeTag);
 const ownedLbl = "✅ " + ItemNames[k] + sizeTag + "\n(Taşı / Seç)";
 setAct(k + 1, hasIt ? ownedLbl : buyLbl, true, readyOnce, hasIt, furnSelectedKey === k);
+if (k === IKlima && actBtns[k + 1]) actBtns[k + 1].title = "Yazın odayı serinletir";
 }
 const availWalls = getRoomAvailableDoorWalls(cur);
 if (availWalls.length > 1 && (!cur.hasDoor || cur.maintenance >= 99.5)) {
@@ -13649,13 +13678,6 @@ const nextW = availWalls[(availWalls.indexOf(curW) + 1) % availWalls.length];
 setAct(ItemCount + 1, "🔄 Kapı Yönü\n(" + getWallTrName(nextW) + " Koridor)", true, true);
 } else {
 setAct(ItemCount + 1, maintLabel, true, cur.maintenance < 99.5);
-}
-const rLvl = (typeof getRoomLevel === "function") ? getRoomLevel(cur) : (cur.level || 1);
-if (rLvl < 3) {
-const upCost = rLvl === 1 ? 120 : 250;
-setAct(ItemCount + 2, "⬆️ Oda Sv." + (rLvl + 1) + "\n" + upCost + " TL", true, cur.Ready && money >= upCost);
-} else {
-setAct(ItemCount + 2, "👑 Kral Dairesi (Sv.3)", true, false, true);
 }
 }
 const demIdx = (typeof getDemolishActionIdx === "function") ? getDemolishActionIdx(cur.type) : -1;
@@ -13764,17 +13786,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 105;
-const APP_VERSION_NAME = "1.9.97-beta";
+const APP_VERSION_CODE = 106;
+const APP_VERSION_NAME = "1.9.98-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.98-beta",
+title: "Denge: yapı fiyatları ve ısıtma/soğutma ayrımı",
+latest: true,
+notes: "• 🏗️ Adil Yapı Sayacı: Koridor ve Asansör kurulumları fiyat sayacını artık +1 değil +0,5 artırır.\n• 🌡️ Isıtma & Soğutma Ayrımı: Klima yalnızca yazın odayı serinletir; kışın ısınma artık yalnızca Doğalgaz odasına bağlıdır (temizlikçiler de doğalgaz odasına bakar, gaz kaçağı yalnızca kışın olur ve 70. günde kış uyarısı çıkar).\n• ⭐ Otomatik Oda Seviyesi: Oda seviyesi yalnızca odadaki eşya/banyo/balkon sayısına göre otomatik görsel olarak yükselir."
+},
+{
 ver: "v1.9.97-beta",
 title: "Lojman maaş indirimi kaldırıldı",
-latest: true,
+latest: false,
 notes: "• 🏠 Lojman Dengesi: Personel Lojmanı artık maaş indirimi vermez; yalnızca personel kapasitesini artırır (Sv.1: 3, Sv.2: 5, Sv.3: 7 kişi). Tüm personel tam maaşıyla ödenir."
 },
 {
