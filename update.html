@@ -9370,7 +9370,7 @@ saveGame();
 return true;
 }
 function staffCap() { return 1 + (hasDorm() ? 2 * dormLevel : 0); }
-function staffWageMult() { return hasDorm() ? 1 - 0.1 * dormLevel : 1; }
+function staffWageMult() { return 1; }
 function totalStaffCount() { return cleaners.length + (receptionistLevel > 0 ? 1 : 0) + (securityLevel > 0 ? 1 : 0) + (cookLevel > 0 ? 1 : 0) + (barmenHired ? 1 : 0); }
 function totalDailyWage() {
 const raw = cleaners.length * CleanerWage + RecWage[receptionistLevel] + SecWage[securityLevel] + CookWage[cookLevel] + (barmenHired ? BarmenWage : 0);
@@ -9686,13 +9686,13 @@ cand.parcelBuilt = true;
 }
 }
 play("done");
-log("🏠 Personel Lojmanı binası tamamlandı (kapasite " + staffCap() + " personel, maaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ")!");
+log("🏠 Personel Lojmanı binası tamamlandı (personel kapasitesi " + staffCap() + " kişi)!");
 refresh(); saveGame();
 }
 function upgradeDorm() {
 if (!hasDorm() || dormLevel >= 3) return;
 if (!pay(DormUpCost[dormLevel + 1])) return;
-dormLevel++; play("done"); log("🏠 Personel Lojmanı Seviye " + dormLevel + " oldu (kapasite " + staffCap() + ", kat yüksekliği arttı, maaşlar -%" + Math.round((1 - staffWageMult()) * 100) + ")."); refresh(); saveGame();
+dormLevel++; play("done"); log("🏠 Personel Lojmanı Seviye " + dormLevel + " oldu (personel kapasitesi " + staffCap() + " kişi, kat yüksekliği arttı)."); refresh(); saveGame();
 }
 function tryBuildKitchen() {
 if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
@@ -13221,14 +13221,14 @@ setAct(2, "👷 Personel Yönetimi", true, true);
 } else if (sel === "Dorm") {
 const dormS = allSlots.find(sl => sl.type === "Dorm");
 if (dormState === "Locked" && !dormS) {
-infoText.textContent = "🏠 Personel Lojmanı  •  Bedel: " + CostDorm + " TL\nTemizlikçi, Resepsiyonist, Güvenlik ve Aşçı için personel kapasitesini artırır ve maaşları düşürür.\nHaritada boş bir parsele dokunup 'Lojman Binası' butonuna basarak da kurabilirsin!";
+infoText.textContent = "🏠 Personel Lojmanı  •  Bedel: " + CostDorm + " TL\nPersonel kapasitesini artırır (Sv.1: 3, Sv.2: 5, Sv.3: 7 kişi).\nHaritada boş bir parsele dokunup 'Lojman Binası' butonuna basarak da kurabilirsin!";
 setAct(0, "🏗️ Lojman Binası Kur\n" + CostDorm + " TL", true, readyOnce);
 } else if (dormState === "Building") {
 infoText.textContent = "🏗️ Personel Lojmanı inşa ediliyor... Kalan: " + Math.ceil(dormLeft) + " sn";
 } else {
 const dormPosStr = dormS ? ("(" + (dormS.floor.idx + 1) + ". Kat • Parsel " + (parcelCoords(dormS.idx).gu + 1) + "," + (parcelCoords(dormS.idx).gv + 1) + ")") : "(Haritaya yerleştirilmedi)";
 infoText.textContent = "🏠 Personel Lojmanı Sv." + dormLevel + " " + dormPosStr + "  •  Kapasite: " + totalStaffCount() + "/" + staffCap() +
-"  •  Maaş İndirimi: -%" + Math.round((1 - staffWageMult()) * 100) +
+" (Sv.1: 3, Sv.2: 5, Sv.3: 7 kişi)" +
 "\n💡 İpucu: Haritada boş bir parsele dokunup '🔄 Lojmanı Buraya Taşı' butonuyla yerini serbestçe değiştirebilirsin.";
 if (dormLevel < 3) setAct(0, "⬆️ Yükselt Sv." + (dormLevel + 1) + "\n" + DormUpCost[dormLevel + 1] + " TL", true, true);
 else setAct(0, "✅ Son Seviye", true, false, true);
@@ -13435,7 +13435,7 @@ if (storageLevel < 3) setAct(1, "⬆️ Depo Sv." + (storageLevel + 1) + "\n" + 
 else setAct(1, "✅ Son Seviye", true, false, true);
 } else if (cur.type === "Dorm") {
 infoText.textContent = "🏠 Personel Lojmanı Sv." + dormLevel + " " + coordStr + "  •  Personel Kapasitesi: " + totalStaffCount() + "/" + staffCap() +
-"  •  Maaş İndirimi: -%" + Math.round((1 - staffWageMult()) * 100) +
+" (Sv.1: 3, Sv.2: 5, Sv.3: 7 kişi)" +
 "\n💡 İpucu: Lojmanı başka bir parsele taşımak için haritadaki herhangi bir boş parsele dokunup '🔄 Lojmanı Buraya Taşı' butonuna bas!";
 if (dormLevel < 3) setAct(0, "⬆️ Lojman Sv." + (dormLevel + 1) + "\n" + DormUpCost[dormLevel + 1] + " TL", true, true);
 else setAct(0, "✅ Son Seviye", true, false, true);
@@ -13764,17 +13764,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 104;
-const APP_VERSION_NAME = "1.9.96-beta";
+const APP_VERSION_CODE = 105;
+const APP_VERSION_NAME = "1.9.97-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.97-beta",
+title: "Lojman maaş indirimi kaldırıldı",
+latest: true,
+notes: "• 🏠 Lojman Dengesi: Personel Lojmanı artık maaş indirimi vermez; yalnızca personel kapasitesini artırır (Sv.1: 3, Sv.2: 5, Sv.3: 7 kişi). Tüm personel tam maaşıyla ödenir."
+},
+{
 ver: "v1.9.96-beta",
 title: "Hata düzeltmeleri ve müşteri geri bildirimi",
-latest: true,
+latest: false,
 notes: "• 📐 6×6 Komşuluk Düzeltmesi: VIP koruma ve sessiz yan oda kontrolleri artık gerçek 6×6 parsel ızgarasıyla hesaplanır.\n• 💬 Pahalı Anlaşma Geri Bildirimi: Müşteri bütçesinin %90'ının üzerinde anlaşılırsa kendi konuşma cümlesiyle fiyatı pahalı bulduğunu belirtir.\n• 📋 Şeffaf Panel & Katil Koruması: Mutfakta net (+16 TL) kâr gösterilir; Güvenlik paneli seri katil kapsamı uyarısı içerir ve Resepsiyonist Sv.3 gazetedeki katil harfiyle başlayan misafirleri otomatik yerleştirmez."
 },
 {
