@@ -2652,7 +2652,7 @@ height: 86px;
           <button id="btn-reset-save" class="m-btn">🗑️ Kaydı Sil</button>
         </div>
         <div id="how-to-box">• Başlangıçta Giriş Lobisi ve 1 boş oda temeliyle başlarsın. Önce 1. ve 2. Koridoru, ardından 1. Odanı ve kapısını kurup sol alttaki 🎫 Aç/Kapat butonuyla Oteli AÇ.
-• 🔨 İnşa et ile 6×6 arsa üzerinde Odalar, Koridor/Asansör, Spa, Kafe &amp; Bar, Açık Havuz, Park, Depo ve Lojman kur; 🏪 Mağaza'dan 4×4 oda eşyalarını alıp dizebilir, bahçe süsleri 🌳 ve Tenis Kulübü ile otelini büyütebilirsin.
+• 🔨 İnşa et ile 6×6 arsa üzerinde Odalar, Koridor/Asansör, Spa, Kafe &amp; Bar, Açık Havuz, Park, Çatı Terası, Depo ve Lojman kur; her Park/Havuz/Teras günde 5 misafire hizmet verir (+0,5★ memnuniyet); 🏪 Mağaza'dan 4×4 oda eşyalarını alıp dizebilirsin.
 • 🌡️ İklim: Klima yazın odayı serinletir; Doğalgaz kışın tüm odaları ısıtır.
 • 👥 Arkadaşlar bölümünden kodunla takipçi kazanıp başka otelleri gezebilir, 💡 Öneriler'den fikir/hata bildirebilirsin.</div>
       </div>
@@ -3119,6 +3119,12 @@ const CafeNightProbMult = 0.8;
 const BarmenHireCost = 150;
 const BarmenWage = 50;
 const BodyguardDailyPrice = 80;
+const LeisureMaxCount = 3;
+const LeisureDailyCap = 5;
+const PoolSessionSec = 10;
+const TerraceSessionSec = 8;
+const PoolDailyMaintCost = 10;
+const TerraceDailyMaintCost = 10;
 const LastNames = [
 "Acar", "Akbaba", "Aksoy", "Aktaş", "Arslan", "Aslan", "Ateş", "Avcı", "Aydın",
 "Bozkurt", "Bulut", "Çakır", "Çelik", "Çetin", "Demir", "Doğan", "Duman", "Eren",
@@ -3366,7 +3372,7 @@ hasTree: isTreeSlot,
 tennisState: isTennisClub ? "Ruin" : null,
 items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
 hasCorpse: false, corpseName: "", corpseSkin: "#fcd9b8", corpseHair: "#1a1412", corpseShirt: "#d94d4d",
-gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], cafeLevel: 1, cafeBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], level: 1,
+gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], cafeLevel: 1, cafeBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], poolBusy: [false, false, false, false, false], terraceBusy: [false, false, false, false, false], servedToday: 0, level: 1,
 onFire: false, fireLeft: 0,
 wall: pick(WallColors), picColor: pick(PictureColors),
 get X0() { return ElevW + this.idx * SlotW; },
@@ -3497,7 +3503,7 @@ const dormWorkers = [];
 let kitchenState = "Locked", kitchenLeft = 0, cookLevel = 0, cookPawn = null;
 const kitchenWorkers = [];
 let towerOrder = [];
-let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 };
+let dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, leisureCost: 0, petCare: 0 };
 let summaryOpen = false;
 let killerActiveThisWeek = false;
 let killerLetter = pick(KillerLetters), killerCaughtWeek = 0, weekMurders = 0;
@@ -5969,7 +5975,13 @@ tennisPlayed: !!g.tennisPlayed,
 spaDay: !!g.spaDay,
 spaRelaxed: !!g.spaRelaxed,
 cafeDay: !!g.cafeDay,
-cafeNight: !!g.cafeNight
+cafeNight: !!g.cafeNight,
+poolDay: !!g.poolDay,
+poolServed: !!g.poolServed,
+terraceDay: !!g.terraceDay,
+terraceServed: !!g.terraceServed,
+parkDay: !!g.parkDay,
+parkFullSeen: !!g.parkFullSeen
 })),
 floors: floors.map(fl => ({
 state: fl.state,
@@ -5997,6 +6009,7 @@ picColor: s.picColor,
 gymLevel: s.gymLevel,
 spaLevel: s.type === "Spa" ? Math.max(1, Math.min(3, Math.floor(Number(s.spaLevel) || 1))) : 1,
 cafeLevel: s.type === "Cafe" ? Math.max(1, Math.min(3, Math.floor(Number(s.cafeLevel) || 1))) : 1,
+servedToday: (s.type === "Pool" || s.type === "Park" || s.type === "RoofTerrace") ? Math.max(0, Math.floor(Number(s.servedToday) || 0)) : 0,
 level: s.level || 1,
 onFire: s.onFire,
 fireLeft: s.fireLeft,
@@ -6032,7 +6045,13 @@ tennisPlayed: !!s.guest.tennisPlayed,
 spaDay: !!s.guest.spaDay,
 spaRelaxed: !!s.guest.spaRelaxed,
 cafeDay: !!s.guest.cafeDay,
-cafeNight: !!s.guest.cafeNight
+cafeNight: !!s.guest.cafeNight,
+poolDay: !!s.guest.poolDay,
+poolServed: !!s.guest.poolServed,
+terraceDay: !!s.guest.terraceDay,
+terraceServed: !!s.guest.terraceServed,
+parkDay: !!s.guest.parkDay,
+parkFullSeen: !!s.guest.parkFullSeen
 } : null
 }))
 }))
@@ -6146,7 +6165,7 @@ weekMurders = data.weekMurders || 0;
 marketEvent = (data.marketEvent && typeof data.marketEvent === "object") ? data.marketEvent : { active: false, title: "", desc: "", itemKey: -1, itemName: "", mult: 1.0, isHike: false, daysTotal: 0, daysLeft: 0, startDay: 0 };
 unreadNewspaper = !!data.unreadNewspaper;
 if (data.dayStats && typeof data.dayStats === "object") {
-dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 }, data.dayStats);
+dayStats = Object.assign({ guests: 0, wages: 0, meals: 0, money0: money, rep0: reputation, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, leisureCost: 0, petCare: 0 }, data.dayStats);
 }
 activeEvent = (data.activeEvent && EventTypes.includes(data.activeEvent)) ? data.activeEvent : "";
 eventDaysLeft = Math.max(0, Math.floor(Number(data.eventDaysLeft) || 0));
@@ -6290,6 +6309,10 @@ s.cafeLevel = Math.max(1, Math.min(3, Math.floor(Number(sd.cafeLevel) || 1)));
 s.cafeBusy = [false, false, false];
 s.toiletBusy = [false, false];
 s.tennisCourtBusy = [false, false];
+s.poolBusy = [false, false, false, false, false];
+s.terraceBusy = [false, false, false, false, false];
+const rawServed = Number(sd.servedToday);
+s.servedToday = (Number.isFinite(rawServed) && rawServed >= 0) ? Math.floor(rawServed) : 0;
 s.level = sd.level || 1;
 s.onFire = !!sd.onFire;
 s.fireLeft = sd.fireLeft || 0;
@@ -6328,6 +6351,9 @@ spaTimer: rnd(12, 30), spaDay: !!gd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!
 cafeTimer: rnd(1, 3), cafeDay: !!gd.cafeDay, cafeNight: !!gd.cafeNight, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
 tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(gd.tennisToday) || 0)),
 tennis: null, tennisIdx: 0, tennisPlayed: !!gd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
+poolTimer: rnd(8, 22), poolDay: !!gd.poolDay, pool: null, poolIdx: 0, poolInFlow: false, poolElapsed: 0, poolServed: !!gd.poolServed,
+terraceTimer: rnd(6, 18), terraceDay: !!gd.terraceDay, terrace: null, terraceIdx: 0, terraceInFlow: false, terraceElapsed: 0, terraceServed: !!gd.terraceServed,
+parkDay: !!gd.parkDay, parkSlot: null, parkFullSeen: !!gd.parkFullSeen,
 crimeTimer: rnd(10, 18), crimeDone: !!gd.crimeDone,
 sneaky: !!gd.sneaky, sneakyDays: gd.sneakyDays || 0,
 parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petPawn: null, pawn: null,
@@ -6483,6 +6509,9 @@ spaTimer: rnd(12, 30), spaDay: !!qd.spaDay, spa: null, spaIdx: 0, spaRelaxed: !!
 cafeTimer: rnd(8, 18), cafeDay: !!qd.cafeDay, cafeNight: !!qd.cafeNight, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
 tennisTimer: rnd(10, 25), tennisToday: Math.max(0, Math.floor(Number(qd.tennisToday) || 0)),
 tennis: null, tennisIdx: 0, tennisPlayed: !!qd.tennisPlayed, tennisInFlow: false, tennisElapsed: 0,
+poolTimer: rnd(8, 22), poolDay: !!qd.poolDay, pool: null, poolIdx: 0, poolInFlow: false, poolElapsed: 0, poolServed: !!qd.poolServed,
+terraceTimer: rnd(6, 18), terraceDay: !!qd.terraceDay, terrace: null, terraceIdx: 0, terraceInFlow: false, terraceElapsed: 0, terraceServed: !!qd.terraceServed,
+parkDay: !!qd.parkDay, parkSlot: null, parkFullSeen: !!qd.parkFullSeen,
 crimeTimer: rnd(10, 18), crimeDone: !!qd.crimeDone,
 sneaky: !!qd.sneaky, sneakyDays: qd.sneakyDays || 0,
 parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petPawn: null, pawn: null,
@@ -6708,7 +6737,7 @@ cafeSessionsToday = 0;
 cafeRevenueToday = 0;
 cafeSessionsTotal = 0;
 cafeIncomeTotal = 0;
-dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 };
+dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: 0, bonus: 0, money0: StartMoney, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, leisureCost: 0, petCare: 0 };
 summaryOpen = false;
 document.getElementById("day-modal").style.display = "none";
 stock.fill(0);
@@ -6775,6 +6804,9 @@ s.cafeLevel = 1;
 s.cafeBusy = [false, false, false];
 s.toiletBusy = [false, false];
 s.tennisCourtBusy = [false, false];
+s.poolBusy = [false, false, false, false, false];
+s.terraceBusy = [false, false, false, false, false];
+s.servedToday = 0;
 s.level = 1;
 s.onFire = false;
 s.fireLeft = 0;
@@ -7025,6 +7057,11 @@ function cafeCost() { return Math.round(CostCafe + CostRoomStep * builtRooms); }
 function cafeUpgradeCost(lv) { return lv <= 1 ? 350 : 600; }
 function countBuiltCafes() { return _countBuiltType("Cafe"); }
 function hasBuiltCafe() { return countBuiltCafes() >= 1; }
+function countBuiltPools() { return _countBuiltType("Pool"); }
+function countBuiltParks() { return _countBuiltType("Park"); }
+function countBuiltRoofTerraces() { return _countBuiltType("RoofTerrace"); }
+function hasBuiltPool() { return countBuiltPools() >= 1; }
+function hasBuiltPark() { return countBuiltParks() >= 1 || (typeof parkState !== "undefined" && parkState === "Built"); }
 function cafeDailyCost(s) {
 if (!s || s.type !== "Cafe" || !s.floor || s.floor.state !== "Built") return 0;
 return CafeDailyCost * Math.max(1, s.cafeLevel || 1);
@@ -7220,6 +7257,9 @@ gymTimer: rnd(8, 20), toiletTimer: rnd(10, 25), parkTimer: rnd(8, 20),
 spaTimer: rnd(12, 30), spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
 cafeTimer: rnd(1, 3), cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
 tennisTimer: rnd(10, 25), tennisToday: 0, tennis: null, tennisIdx: 0, tennisPlayed: false, tennisInFlow: false, tennisElapsed: 0,
+poolTimer: rnd(8, 22), poolDay: false, pool: null, poolIdx: 0, poolInFlow: false, poolElapsed: 0, poolServed: false,
+terraceTimer: rnd(6, 18), terraceDay: false, terrace: null, terraceIdx: 0, terraceInFlow: false, terraceElapsed: 0, terraceServed: false,
+parkDay: false, parkSlot: null, parkFullSeen: false,
 crimeTimer: rnd(10, 18), crimeDone: false,
 parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petType: "", petName: "", petPawn: null, pawn: null,
 hasBubble: true, bubbleLines: ["", ""]
@@ -7588,11 +7628,18 @@ if (typeof freeToiletSlot === "function") freeToiletSlot(g);
 else if (g.toilet) { g.toilet.toiletBusy[g.toiletIdx] = false; g.toilet = null; }
 g._returnGymSlot = null;
 g._returnToiletSlot = null;
+g._returnPoolSlot = null;
+g._returnTerraceSlot = null;
+g.parkSlot = null;
 if (typeof freeSpaSlot === "function") freeSpaSlot(g);
 if (typeof freeCafeSlot === "function") freeCafeSlot(g);
 const wasTennis = !!(g.tennis || g.tennisInFlow || g.state === "ToTennis" || g.state === "PlayingTennis" || (p && p.iso && p.iso.v >= 1150));
 const wasSpa = !!(g.spa || g.spaInFlow || g.state === "ToSpa" || g.state === "InSpa");
 const wasCafe = !!(g.cafe || g.cafeInFlow || g.state === "ToCafe" || g.state === "InCafe");
+const wasPool = !!(g.pool || g.poolInFlow || g.state === "ToPool" || g.state === "InPool");
+const wasTerrace = !!(g.terrace || g.terraceInFlow || g.state === "ToTerrace" || g.state === "InTerrace");
+if (typeof freePoolSlot === "function") freePoolSlot(g);
+if (typeof freeTerraceSlot === "function") freeTerraceSlot(g);
 if (typeof freeTennisSlot === "function") freeTennisSlot(g);
 for (const kid of g.kidPawns) {
 kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = p;
@@ -7602,7 +7649,7 @@ g.petPawn.wander = false; g.petPawn.path = []; g.petPawn.onArrive = null; g.petP
 }
 g.kidsAtPark = false;
 p.wander = false; p.exercise = false; p.tennis = false; p.spa = false; p.spaIdx = 0; p.cafe = false; p.cafeIdx = 0; p.speed = 110; p.path = []; p.isoPath = []; p.onIsoArrive = null;
-if ((wasTennis || wasSpa || wasCafe || wasGym || wasToilet) && leaveRoom) p.iso = null;
+if ((wasTennis || wasSpa || wasCafe || wasPool || wasTerrace || wasGym || wasToilet) && leaveRoom) p.iso = null;
 const exitPath = [];
 if (leaveRoom) {
 const doorPts = getRoomDoorPoints(leaveRoom);
@@ -7897,7 +7944,9 @@ reasons.push("düğün bahşişi +40 TL");
 reputation += 12;
 reasons.push("festival balkon bonusu +12 İtibar");
 }
-if (g.kids > 0 && parkState !== "Built") { r -= 1; reasons.push("park yoktu"); }
+const hasPark = (typeof hasBuiltPark === "function") ? hasBuiltPark() : (parkState === "Built");
+if (g.kids > 0 && !hasPark) { r -= 1; reasons.push("park yoktu"); }
+else if (g.kids > 0 && g.parkFullSeen) { r -= 0.5; reasons.push("park doluydu"); }
 if (g.petType) {
 const petOk = (typeof hasPetFriendlyAmenity === "function") && hasPetFriendlyAmenity();
 if (petOk) {
@@ -7921,6 +7970,18 @@ if (season === 1 && !s.items[IKlima]) { r -= 1; reasons.push("oda sıcaktı"); }
 if (dirts.length >= 5) { r -= 1; reasons.push("otelin dışı kirliydi"); }
 if (g.overstay >= 2) { r -= 1; reasons.push("çıkışı geciktirildi"); }
 if (g.fed && r < 5) { r += 1; reasons.push("yemekten memnun kaldı"); }
+let leisureBonus = 0;
+if (g.poolServed) {
+leisureBonus += 0.5;
+reasons.push("havuz keyfi");
+}
+if (g.terraceServed) {
+leisureBonus += 0.5;
+reasons.push("teras manzarası");
+}
+if (leisureBonus > 0) {
+r = Math.min(5, r + Math.min(1, leisureBonus));
+}
 let st = clamp(Math.round(r), 1, 5);
 if (g.spaRelaxed && (st === 3 || st === 4)) {
 st = Math.min(5, st + 1);
@@ -7981,6 +8042,10 @@ g.toiletInFlow = false;
 g.toiletElapsed = 0;
 g.gymInFlow = false;
 g.gymElapsed = 0;
+g.poolInFlow = false;
+g.poolElapsed = 0;
+g.terraceInFlow = false;
+g.terraceElapsed = 0;
 }
 function _reconcileFacilityBusy(type, busyKey, guestKey, idxKey, sTo, sIn, capMax) {
 for (const s of allSlots) {
@@ -8098,15 +8163,21 @@ const fromSpaSlot = g._returnSpaSlot || (g.spaInFlow ? g.spa : null);
 const fromCafeSlot = g._returnCafeSlot || (g.cafeInFlow ? g.cafe : null);
 const fromToiletSlot = g._returnToiletSlot || (g.toiletInFlow ? g.toilet : null);
 const fromGymSlot = g._returnGymSlot || (g.gymInFlow ? g.gym : null);
+const fromPoolSlot = g._returnPoolSlot || (g.poolInFlow ? g.pool : null);
+const fromTerraceSlot = g._returnTerraceSlot || (g.terraceInFlow ? g.terrace : null);
 g._returnSpaSlot = null;
 g._returnCafeSlot = null;
 g._returnToiletSlot = null;
 g._returnGymSlot = null;
+g._returnPoolSlot = null;
+g._returnTerraceSlot = null;
 if (g.spa) freeSpaSlot(g);
 if (g.cafe) freeCafeSlot(g);
 if (g.toilet) freeToiletSlot(g);
 if (g.gym) freeGymSlot(g);
-const fromTennis = !fromSpaSlot && !fromCafeSlot && !fromToiletSlot && !fromGymSlot && p.iso.v >= 1150;
+if (g.pool) freePoolSlot(g);
+if (g.terrace) freeTerraceSlot(g);
+const fromTennis = !fromSpaSlot && !fromCafeSlot && !fromToiletSlot && !fromGymSlot && !fromPoolSlot && !fromTerraceSlot && p.iso.v >= 1150;
 let rRoute = null;
 let connOk = false;
 if (fromTennis) {
@@ -8124,6 +8195,12 @@ connOk = typeof isToiletConnected === "function" && isToiletConnected(fromToilet
 } else if (fromGymSlot) {
 rRoute = typeof buildIsoRouteFromGymToRoom === "function" ? buildIsoRouteFromGymToRoom(fromGymSlot, g.room) : null;
 connOk = typeof isGymConnected === "function" && isGymConnected(fromGymSlot);
+} else if (fromPoolSlot) {
+rRoute = typeof buildIsoRouteFromPoolToRoom === "function" ? buildIsoRouteFromPoolToRoom(fromPoolSlot, g.room) : null;
+connOk = typeof isPoolConnected === "function" && isPoolConnected(fromPoolSlot);
+} else if (fromTerraceSlot) {
+rRoute = typeof buildIsoRouteFromTerraceToRoom === "function" ? buildIsoRouteFromTerraceToRoom(fromTerraceSlot, g.room) : null;
+connOk = typeof isTerraceConnected === "function" && isTerraceConnected(fromTerraceSlot);
 }
 if (rRoute && rRoute.length > 0 && connOk) {
 g.state = "ToRoom";
@@ -8132,6 +8209,8 @@ if (fromSpaSlot) g.spaInFlow = true;
 if (fromCafeSlot) g.cafeInFlow = true;
 if (fromToiletSlot) g.toiletInFlow = true;
 if (fromGymSlot) g.gymInFlow = true;
+if (fromPoolSlot) g.poolInFlow = true;
+if (fromTerraceSlot) g.terraceInFlow = true;
 p.path = [];
 p.onArrive = null;
 p.visible = true;
@@ -8364,7 +8443,18 @@ _refreshPanelIfFacilityOpen("Toilet");
 returnToRoom(g);
 }
 function sendKidsToPark(g) {
-if (parkState !== "Built") return;
+if (!g || g.parkDay || (g.kids || 0) <= 0) return false;
+const parks = allSlots.filter(s => s && s.type === "Park" && s.floor && s.floor.state === "Built" && !s.onFire);
+if (parks.length === 0) return false;
+const freePark = parks.find(s => Math.max(0, Math.floor(Number(s.servedToday) || 0)) < LeisureDailyCap);
+if (!freePark) {
+g.parkFullSeen = true;
+return false;
+}
+freePark.servedToday = Math.min(LeisureDailyCap, Math.max(0, Math.floor(Number(freePark.servedToday) || 0)) + 1);
+g.parkDay = true;
+g.parkFullSeen = false;
+g.parkSlot = freePark;
 g.kidsAtPark = true; g.parkLeft = rnd(10, 18);
 for (const kid of g.kidPawns) {
 kid.follow = null; kid.path = [];
@@ -8374,9 +8464,13 @@ kid.wander = true; kid.speed = 70;
 kid.wMinX = ParkX + 60; kid.wMaxX = ParkX + ParkW - 60; kid.wTimer = 0.3;
 };
 }
+_refreshPanelIfFacilityOpen("Park");
+return true;
 }
 function bringKidsBack(g) {
+if (!g) return;
 g.kidsAtPark = false;
+g.parkSlot = null;
 for (const kid of g.kidPawns) {
 kid.wander = false; kid.path = []; kid.onArrive = null; kid.follow = g.pawn;
 }
@@ -8685,6 +8779,197 @@ g.cafeInFlow = false;
 if (typeof startWander === "function") startWander(g);
 _refreshPanelIfCafeOpen();
 }
+function isPoolOpenNow() {
+const si = (typeof seasonIdx === "function") ? seasonIdx() : 0;
+if (si !== 0 && si !== 1) return false;
+if (typeof isNight !== "undefined" && isNight) return false;
+const h = (typeof getGameHour === "function") ? getGameHour() : 12;
+return h >= 6 && h < 18;
+}
+function isTerraceOpenNow() {
+const si = (typeof seasonIdx === "function") ? seasonIdx() : 0;
+if (si === 3) return false;
+const h = (typeof getGameHour === "function") ? getGameHour() : 19;
+return h >= 17 && h < 23;
+}
+function _getLeisureStatus(s, type, connFn, openFn) {
+const cap = LeisureDailyCap;
+const served = Math.max(0, Math.floor(Number(s && s.servedToday) || 0));
+if (!s || s.type !== type || !s.floor || s.floor.state !== "Built") {
+return { open: false, reason: "Kapalı: mevsim/saat", served, cap };
+}
+if (connFn && !connFn(s)) {
+return { open: false, reason: "Koridora bağlı değil", served, cap };
+}
+if (openFn && !openFn()) {
+return { open: false, reason: "Kapalı: mevsim/saat", served, cap };
+}
+if (served >= cap) {
+return { open: false, reason: "Dolu", served, cap };
+}
+return { open: true, reason: "Açık", served, cap };
+}
+function getPoolStatus(s) {
+return _getLeisureStatus(s, "Pool", typeof isPoolConnected === "function" ? isPoolConnected : null, isPoolOpenNow);
+}
+function getTerraceStatus(s) {
+return _getLeisureStatus(s, "RoofTerrace", typeof isTerraceConnected === "function" ? isTerraceConnected : null, isTerraceOpenNow);
+}
+function getParkStatus(s) {
+return _getLeisureStatus(s, "Park", null, null);
+}
+function _isGuestLeisureEligible(g, dayKey) {
+return !!(g && g.type === "Normal" && (g.role || "None") === "None" && (g.kids || 0) === 0 && !g[dayKey] && g.room && !g.expired && !g.sneaky);
+}
+function isGuestPoolEligible(g) { return _isGuestLeisureEligible(g, "poolDay"); }
+function isGuestTerraceEligible(g) { return _isGuestLeisureEligible(g, "terraceDay"); }
+const _POOL_CFG = {
+type: "Pool",
+busyKey: "poolBusy",
+guestKey: "pool",
+idxKey: "poolIdx",
+flowKey: "poolInFlow",
+elapsedKey: "poolElapsed",
+returnKey: "_returnPoolSlot",
+dayKey: "poolDay",
+servedKey: "poolServed",
+sTo: "ToPool",
+sIn: "InPool",
+sessionSec: PoolSessionSec,
+joinProb: 0.60
+};
+const _TERRACE_CFG = {
+type: "RoofTerrace",
+busyKey: "terraceBusy",
+guestKey: "terrace",
+idxKey: "terraceIdx",
+flowKey: "terraceInFlow",
+elapsedKey: "terraceElapsed",
+returnKey: "_returnTerraceSlot",
+dayKey: "terraceDay",
+servedKey: "terraceServed",
+sTo: "ToTerrace",
+sIn: "InTerrace",
+sessionSec: TerraceSessionSec,
+joinProb: 0.75
+};
+function _freeLeisureSlot(g, cfg) {
+if (!g) return;
+const s = g[cfg.guestKey];
+if (s && Array.isArray(s[cfg.busyKey])) {
+s[cfg.busyKey][g[cfg.idxKey]] = false;
+}
+g[cfg.guestKey] = null;
+g[cfg.idxKey] = 0;
+g[cfg.flowKey] = false;
+g[cfg.elapsedKey] = 0;
+}
+function freePoolSlot(g) { _freeLeisureSlot(g, _POOL_CFG); }
+function freeTerraceSlot(g) { _freeLeisureSlot(g, _TERRACE_CFG); }
+function reconcilePoolBusy() {
+_reconcileFacilityBusy("Pool", "poolBusy", "pool", "poolIdx", "ToPool", "InPool", LeisureDailyCap);
+}
+function reconcileTerraceBusy() {
+_reconcileFacilityBusy("RoofTerrace", "terraceBusy", "terrace", "terraceIdx", "ToTerrace", "InTerrace", LeisureDailyCap);
+}
+function rescuePoolGuest(g) {
+_rescueFacilityPawn(g, freePoolSlot, "_returnPoolSlot", "poolInFlow", "poolElapsed", "Pool");
+}
+function rescueTerraceGuest(g) {
+_rescueFacilityPawn(g, freeTerraceSlot, "_returnTerraceSlot", "terraceInFlow", "terraceElapsed", "RoofTerrace");
+}
+function _tryLeisureFacility(g, cfg, openFn, connFn, routeFn, stationFn, rescueFn, probOverride) {
+if (!openFn() || !_isGuestLeisureEligible(g, cfg.dayKey)) return false;
+const prob = (typeof probOverride === "number") ? probOverride : cfg.joinProb;
+if (Math.random() > prob) return false;
+_reconcileFacilityBusy(cfg.type, cfg.busyKey, cfg.guestKey, cfg.idxKey, cfg.sTo, cfg.sIn, LeisureDailyCap);
+for (const s of allSlots) {
+if (!s || s.type !== cfg.type || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (connFn && !connFn(s)) continue;
+const served = Math.max(0, Math.floor(Number(s.servedToday) || 0));
+if (served >= LeisureDailyCap) continue;
+const inFlight = guests.filter(x => x && x[cfg.guestKey] === s && (x.state === cfg.sTo || x.state === cfg.sIn)).length;
+if (served + inFlight >= LeisureDailyCap) continue;
+if (!Array.isArray(s[cfg.busyKey]) || s[cfg.busyKey].length < LeisureDailyCap) {
+s[cfg.busyKey] = new Array(LeisureDailyCap).fill(false);
+}
+let freeK = -1;
+for (let k = 0; k < LeisureDailyCap; k++) {
+if (!s[cfg.busyKey][k]) { freeK = k; break; }
+}
+if (freeK < 0) continue;
+const route = routeFn ? routeFn(g.room, s, freeK) : null;
+if (!route || route.length === 0) continue;
+const stationIso = stationFn ? stationFn(s, freeK) : route[route.length - 1];
+s[cfg.busyKey][freeK] = true;
+g[cfg.guestKey] = s;
+g[cfg.idxKey] = freeK;
+g.state = cfg.sTo;
+g[cfg.flowKey] = true;
+g[cfg.elapsedKey] = 0;
+const p = _prepareIsoFacilityWalk(g, route);
+p.onIsoArrive = () => {
+if (g.state !== cfg.sTo) return;
+const curServed = Math.max(0, Math.floor(Number(s.servedToday) || 0));
+if (s.type !== cfg.type || s.onFire || !openFn() || (connFn && !connFn(s)) || curServed >= LeisureDailyCap) {
+rescueFn(g);
+return;
+}
+g.state = cfg.sIn;
+g.exLeft = cfg.sessionSec;
+p.visible = true;
+p.wander = false;
+p.sleeping = false;
+p.iso = { u: stationIso.u, v: stationIso.v, z: stationIso.z };
+_refreshPanelIfFacilityOpen(cfg.type);
+};
+_refreshPanelIfFacilityOpen(cfg.type);
+return true;
+}
+return false;
+}
+function _endLeisureFacility(g, cfg) {
+if (!g || g.state !== cfg.sIn) return;
+const s = g[cfg.guestKey];
+if (s && s.type === cfg.type) {
+s.servedToday = Math.min(LeisureDailyCap, Math.max(0, Math.floor(Number(s.servedToday) || 0)) + 1);
+}
+g[cfg.dayKey] = true;
+g[cfg.servedKey] = true;
+_freeLeisureSlot(g, cfg);
+g[cfg.returnKey] = s;
+g[cfg.flowKey] = true;
+_refreshPanelIfFacilityOpen(cfg.type);
+returnToRoom(g);
+}
+function tryPool(g, probOverride) {
+if (!g || g.state !== "InRoom") return false;
+return _tryLeisureFacility(
+g,
+_POOL_CFG,
+isPoolOpenNow,
+typeof isPoolConnected === "function" ? isPoolConnected : null,
+typeof buildIsoRouteToPool === "function" ? buildIsoRouteToPool : null,
+typeof getPoolStationIso === "function" ? getPoolStationIso : null,
+rescuePoolGuest,
+probOverride
+);
+}
+function endPool(g) { _endLeisureFacility(g, _POOL_CFG); }
+function tryTerrace(g, probOverride) {
+if (!g || (g.state !== "InRoom" && g.state !== "Sleeping")) return false;
+return _tryLeisureFacility(
+g,
+_TERRACE_CFG,
+isTerraceOpenNow,
+typeof isTerraceConnected === "function" ? isTerraceConnected : null,
+typeof buildIsoRouteToTerrace === "function" ? buildIsoRouteToTerrace : null,
+typeof getTerraceStationIso === "function" ? getTerraceStationIso : null,
+rescueTerraceGuest,
+probOverride
+);
+}
+function endTerrace(g) { _endLeisureFacility(g, _TERRACE_CFG); }
 function threatDamage(g) {
 const idx = queue.indexOf(g);
 if (idx >= 0) queue.splice(idx, 1);
@@ -9000,10 +9285,12 @@ play("alarm");
 log(s.roomNo + ". odada YANGIN çıktı! Odayı seçip söndür.");
 floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.6, "YANGIN!", "#d91a1a");
 const g = s.guest;
-if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis" || g.state === "ToSpa" || g.state === "InSpa" || g.state === "ToCafe" || g.state === "InCafe" || g.state === "ToGym" || g.state === "Exercising" || g.state === "ToToilet" || g.state === "UsingToilet")) {
+if (g && (g.state === "InRoom" || g.state === "ToRoom" || g.state === "Sleeping" || g.state === "ToBed" || g.state === "ToTennis" || g.state === "PlayingTennis" || g.state === "ToSpa" || g.state === "InSpa" || g.state === "ToCafe" || g.state === "InCafe" || g.state === "ToPool" || g.state === "InPool" || g.state === "ToTerrace" || g.state === "InTerrace" || g.state === "ToGym" || g.state === "Exercising" || g.state === "ToToilet" || g.state === "UsingToilet")) {
 if (typeof freeTennisSlot === "function") freeTennisSlot(g);
 if (typeof freeSpaSlot === "function") freeSpaSlot(g);
 if (typeof freeCafeSlot === "function") freeCafeSlot(g);
+if (typeof freePoolSlot === "function") freePoolSlot(g);
+if (typeof freeTerraceSlot === "function") freeTerraceSlot(g);
 if (typeof freeGymSlot === "function") freeGymSlot(g);
 if (typeof freeToiletSlot === "function") freeToiletSlot(g);
 const p = g.pawn;
@@ -9174,6 +9461,9 @@ room: bgRoom, gym: null, toilet: null, gymIdx: 0, toiletIdx: 0, gymInFlow: false
 gymTimer: 999, toiletTimer: 999, parkTimer: 999, spaTimer: 999, cafeTimer: 999,
 spaDay: false, spa: null, spaIdx: 0, spaRelaxed: false, spaInFlow: false, spaElapsed: 0,
 cafeDay: false, cafeNight: false, cafe: null, cafeIdx: 0, cafePeriod: "", cafeInFlow: false, cafeElapsed: 0,
+poolTimer: 999, poolDay: false, pool: null, poolIdx: 0, poolInFlow: false, poolElapsed: 0, poolServed: false,
+terraceTimer: 999, terraceDay: false, terrace: null, terraceIdx: 0, terraceInFlow: false, terraceElapsed: 0, terraceServed: false,
+parkDay: false, parkSlot: null, parkFullSeen: false,
 crimeTimer: 999, crimeDone: true,
 parkLeft: 0, exLeft: 0, zTimer: 0, kidsAtPark: false, kidPawns: [], petType: "", petName: "", petPawn: null, pawn: null,
 hasBubble: false, bubbleLines: ["", ""]
@@ -9976,6 +10266,37 @@ function getSlotCenterIso(fIdx, sIdx) {
 const b = slotIsoBox(fIdx, sIdx);
 return { u: (b.u0 + b.u1) * 0.5, v: (b.v0 + b.v1) * 0.5, z: b.z0 + 8 };
 }
+function getOpenFacilityEntryWall(slot) {
+if (!slot || !slot.floor) return null;
+const { gu, gv } = parcelCoords(slot.idx);
+const fl = slot.floor;
+const dirs = [
+["front", slotAtGrid(fl, gu + 1, gv)],
+["left", slotAtGrid(fl, gu, gv - 1)],
+["right", slotAtGrid(fl, gu, gv + 1)],
+["back", slotAtGrid(fl, gu - 1, gv)]
+];
+const fIdx = fl.idx;
+let firstCorrWall = null;
+for (let i = 0; i < dirs.length; i++) {
+const [w, nbr] = dirs[i];
+if (!isCorridor(nbr)) continue;
+if (!firstCorrWall) firstCorrWall = w;
+if (fIdx === 0) {
+if (_checkCorridorConnection(0, 32, nbr.idx)) return w;
+} else {
+const elev0List = (floors[0] && floors[0].slots) ? floors[0].slots.filter(sl => sl.type === "Elevator") : [];
+const elevFList = fl.slots ? fl.slots.filter(sl => sl.type === "Elevator") : [];
+for (let ei = 0; ei < elev0List.length; ei++) {
+if (!_pickConnectedElevatorCorridor(elev0List[ei], 32)) continue;
+for (let ej = 0; ej < elevFList.length; ej++) {
+if (_pickConnectedElevatorCorridor(elevFList[ej], nbr.idx)) return w;
+}
+}
+}
+}
+return firstCorrWall;
+}
 function getRoomCorridorSlot(room) {
 if (!room) return null;
 const { gu, gv } = parcelCoords(room.idx);
@@ -9985,7 +10306,9 @@ if (room.type === "Gas") {
 const adj = [slotAtGrid(fl, gu - 1, gv), slotAtGrid(fl, gu + 1, gv), slotAtGrid(fl, gu, gv - 1), slotAtGrid(fl, gu, gv + 1)];
 return adj.find(sl => isCorridor(sl)) || null;
 }
-const doorWall = getRoomDoorWall(room);
+const doorWall = (room.type === "Pool" || room.type === "RoofTerrace")
+? getOpenFacilityEntryWall(room)
+: getRoomDoorWall(room);
 if (doorWall === "back") return slotAtGrid(fl, gu - 1, gv);
 if (doorWall === "front") return slotAtGrid(fl, gu + 1, gv);
 if (doorWall === "left") return slotAtGrid(fl, gu, gv - 1);
@@ -10006,7 +10329,9 @@ return null;
 }
 function getRoomDoorPoints(room) {
 const rIso = slotIsoBox(room.floor.idx, room.idx);
-const doorWall = getRoomDoorWall(room);
+const doorWall = (room.type === "Pool" || room.type === "RoofTerrace")
+? getOpenFacilityEntryWall(room)
+: getRoomDoorWall(room);
 const roomTarget = { u: rIso.u0 + 105, v: rIso.v0 + 105, z: rIso.z0 + 8 };
 let outside, inside;
 if (doorWall === "back") {
@@ -10366,6 +10691,12 @@ return isDoorFacilityConnected(s, "Toilet");
 function isGymConnected(s) {
 return isDoorFacilityConnected(s, "Gym");
 }
+function isPoolConnected(s) {
+return isDoorFacilityConnected(s, "Pool");
+}
+function isTerraceConnected(s) {
+return isDoorFacilityConnected(s, "RoofTerrace");
+}
 function getSpaStationIso(spaSlot, stationIdx = 0) {
 const b = slotIsoBox(spaSlot.floor.idx, spaSlot.idx);
 if (stationIdx === 1) return { u: b.u0 + 160, v: b.v0 + 153, z: b.z0 + 8 };
@@ -10387,6 +10718,28 @@ function getGymStationIso(gymSlot, stationIdx = 0) {
 const b = slotIsoBox(gymSlot.floor.idx, gymSlot.idx);
 const k = Math.max(0, Math.min(2, stationIdx || 0));
 return { u: b.u0 + 50 + k * 56, v: b.v0 + 130, z: b.z0 + 8 };
+}
+function getPoolStationIso(poolSlot, stationIdx = 0) {
+const b = slotIsoBox(poolSlot.floor.idx, poolSlot.idx);
+const pts = [
+{ u: b.u0 + 78, v: b.v0 + 108, z: b.z0 + 4 },
+{ u: b.u0 + 132, v: b.v0 + 136, z: b.z0 + 4 },
+{ u: b.u0 + 130, v: b.v0 + 46, z: b.z0 + 6 },
+{ u: b.u0 + 82, v: b.v0 + 152, z: b.z0 + 4 },
+{ u: b.u0 + 150, v: b.v0 + 96, z: b.z0 + 4 }
+];
+return pts[Math.max(0, Math.min(pts.length - 1, stationIdx || 0))];
+}
+function getTerraceStationIso(terraceSlot, stationIdx = 0) {
+const b = slotIsoBox(terraceSlot.floor.idx, terraceSlot.idx);
+const pts = [
+{ u: b.u0 + 96, v: b.v0 + 82, z: b.z0 + 6 },
+{ u: b.u0 + 148, v: b.v0 + 62, z: b.z0 + 6 },
+{ u: b.u0 + 148, v: b.v0 + 152, z: b.z0 + 6 },
+{ u: b.u0 + 64, v: b.v0 + 148, z: b.z0 + 6 },
+{ u: b.u0 + 112, v: b.v0 + 118, z: b.z0 + 6 }
+];
+return pts[Math.max(0, Math.min(pts.length - 1, stationIdx || 0))];
 }
 function _appendDoorSlotCorridorRoute(path, fromF, fromCorrIdx, toF, toCorrIdx) {
 if (fromF === toF) {
@@ -10475,6 +10828,20 @@ return buildIsoRouteBetweenDoorSlots(room, gymSlot, getGymStationIso(gymSlot, st
 function buildIsoRouteFromGymToRoom(gymSlot, room) {
 return _buildIsoRouteBackToRoom(gymSlot, room);
 }
+function buildIsoRouteToPool(room, poolSlot, stationIdx = 0) {
+if (!isPoolConnected(poolSlot)) return null;
+return buildIsoRouteBetweenDoorSlots(room, poolSlot, getPoolStationIso(poolSlot, stationIdx));
+}
+function buildIsoRouteFromPoolToRoom(poolSlot, room) {
+return _buildIsoRouteBackToRoom(poolSlot, room);
+}
+function buildIsoRouteToTerrace(room, terraceSlot, stationIdx = 0) {
+if (!isTerraceConnected(terraceSlot)) return null;
+return buildIsoRouteBetweenDoorSlots(room, terraceSlot, getTerraceStationIso(terraceSlot, stationIdx));
+}
+function buildIsoRouteFromTerraceToRoom(terraceSlot, room) {
+return _buildIsoRouteBackToRoom(terraceSlot, room);
+}
 function unlock(i) {
 if (typeof checkAchievements === "function") checkAchievements();
 }
@@ -10528,6 +10895,21 @@ log("☕ Kafe: " + (cafeSessionsToday || 0) + " seans, +" + (cafeRevenueToday ||
 }
 cafeSessionsToday = 0;
 cafeRevenueToday = 0;
+let leisureMaintDue = 0;
+for (const s of allSlots) {
+if (!s) continue;
+s.servedToday = 0;
+if (s.floor && s.floor.state === "Built") {
+if (s.type === "Pool") leisureMaintDue += PoolDailyMaintCost;
+else if (s.type === "RoofTerrace") leisureMaintDue += TerraceDailyMaintCost;
+}
+}
+const leisurePaid = leisureMaintDue > 0 ? Math.min(leisureMaintDue, money) : 0;
+if (leisurePaid > 0) {
+money = Math.max(0, money - leisurePaid);
+dayStats.leisureCost = (dayStats.leisureCost || 0) + leisurePaid;
+log("🏊 Havuz & Teras günlük bakım gideri: -" + leisurePaid + " TL");
+}
 const petCareDue = (typeof getHotelPetDailyCareCost === "function") ? getHotelPetDailyCareCost() : 0;
 if (petCareDue > 0) {
 const petPaid = Math.min(petCareDue, money);
@@ -10545,6 +10927,11 @@ g.spaDay = false;
 g.cafeDay = false;
 g.cafeNight = false;
 g.cafeTimer = Math.min(g.cafeTimer || 2, rnd(0.2, 1.5));
+g.poolDay = false;
+g.terraceDay = false;
+g.parkDay = false;
+g.poolTimer = Math.min(g.poolTimer || 6, rnd(1.5, 5));
+g.terraceTimer = Math.min(g.terraceTimer || 4, rnd(1, 3.5));
 }
 let paid = false;
 let mealsLeft = (hasKitchen() && cookLevel > 0) ? CookMeals[cookLevel] : 0;
@@ -10802,7 +11189,7 @@ if (notif) notif.style.display = "none";
 const weekNo = Math.max(1, Math.floor((day - 1) / 7) + (isWeekEnd ? 0 : 1));
 const st = dayStats;
 const net = money - (st.money0 !== undefined ? st.money0 : money);
-const known = st.income + st.meals - st.mealCost - st.wage - st.gas - (st.spaCost || 0) - (st.cafeCost || 0) - (st.petCare || 0) - st.spent;
+const known = st.income + st.meals - st.mealCost - st.wage - st.gas - (st.spaCost || 0) - (st.cafeCost || 0) - (st.leisureCost || 0) - (st.petCare || 0) - st.spent;
 const other = net - known;
 const avg = st.rCnt > 0 ? (st.rSum / st.rCnt).toFixed(1) : "-";
 const repD = reputation - st.rep0;
@@ -10874,6 +11261,7 @@ if (st.meals > 0) h += row("🍳 Yemek geliri (net)", sg(st.meals - st.mealCost)
 if (st.wage > 0) h += row("👷 Personel maaşları", "-" + st.wage + " TL", "#991b1b");
 if ((st.spaCost || 0) > 0) h += row("♨️ Spa işletme gideri", "-" + st.spaCost + " TL", "#991b1b");
 if ((st.cafeCost || 0) > 0) h += row("☕ Kafe işletme gideri", "-" + st.cafeCost + " TL", "#991b1b");
+if ((st.leisureCost || 0) > 0) h += row("🏊 Havuz/Teras bakım", "-" + st.leisureCost + " TL", "#991b1b");
 if ((st.petCare || 0) > 0) h += row("🐾 Evcil hayvan bakımı", "-" + st.petCare + " TL", "#991b1b");
 if (st.gas > 0) h += row("🔥 Doğalgaz faturası", "-" + st.gas + " TL", "#991b1b");
 if (st.orders > 0) h += row("📦 Depo siparişleri", "-" + st.orders + " TL", "#991b1b");
@@ -10895,7 +11283,7 @@ document.getElementById("day-modal").style.display = "flex";
 summaryOpen = true;
 if (isWeekEnd) {
 weekMurders = 0;
-dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: reputation, bonus: 0, money0: money, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, petCare: 0 };
+dayStats = { income: 0, meals: 0, mealCost: 0, wage: 0, gas: 0, orders: 0, spent: 0, served: 0, rSum: 0, rCnt: 0, rep0: reputation, bonus: 0, money0: money, tennisSessions: 0, tennisIncome: 0, spaSessions: 0, spaIncome: 0, spaCost: 0, cafeSessions: 0, cafeIncome: 0, cafeCost: 0, leisureCost: 0, petCare: 0 };
 }
 }
 function closeDaySummary() {
@@ -11044,7 +11432,9 @@ if (prevType === "Gym" && g.gym === s && typeof rescueGymGuest === "function") r
 else if (prevType === "Spa" && g.spa === s && typeof rescueSpaGuest === "function") rescueSpaGuest(g);
 else if (prevType === "Cafe" && g.cafe === s && typeof rescueCafeGuest === "function") rescueCafeGuest(g);
 else if (prevType === "Toilet" && g.toilet === s && typeof rescueToiletGuest === "function") rescueToiletGuest(g);
-else if (prevType === "Park" && g.kidsAtPark && typeof bringKidsBack === "function") bringKidsBack(g);
+else if (prevType === "Pool" && g.pool === s && typeof rescuePoolGuest === "function") rescuePoolGuest(g);
+else if (prevType === "RoofTerrace" && g.terrace === s && typeof rescueTerraceGuest === "function") rescueTerraceGuest(g);
+else if (prevType === "Park" && g.kidsAtPark && (!g.parkSlot || g.parkSlot === s) && typeof bringKidsBack === "function") bringKidsBack(g);
 }
 }
 if (typeof cleaners !== "undefined" && Array.isArray(cleaners)) {
@@ -11064,10 +11454,12 @@ builtRooms = Math.max(0, builtRooms - 1);
 if (prevType === "Kitchen") {
 kitchenState = "Locked"; kitchenLeft = 0; cookLevel = 0;
 } else if (prevType === "Pool") {
-poolState = "Locked";
+const anyLeft = allSlots.some(sl => sl !== s && sl.type === "Pool" && sl.floor && sl.floor.state === "Built");
+poolState = anyLeft ? "Built" : "Locked";
 } else if (prevType === "Park") {
-parkState = "Locked";
-if (typeof parkWorkers !== "undefined" && Array.isArray(parkWorkers)) {
+const anyLeft = allSlots.some(sl => sl !== s && sl.type === "Park" && sl.floor && sl.floor.state === "Built");
+parkState = anyLeft ? "Built" : "Locked";
+if (!anyLeft && typeof parkWorkers !== "undefined" && Array.isArray(parkWorkers)) {
 for (const w of parkWorkers) if (typeof destroyPawn === "function") destroyPawn(w);
 parkWorkers.length = 0;
 }
@@ -11089,6 +11481,9 @@ s.gymLevel = 1; s.gymBusy = [false, false, false];
 s.spaLevel = 1; s.spaBusy = [false, false, false];
 s.cafeLevel = 1; s.cafeBusy = [false, false, false];
 s.toiletBusy = [false, false];
+s.poolBusy = [false, false, false, false, false];
+s.terraceBusy = [false, false, false, false, false];
+s.servedToday = 0;
 s.furnLayout = {};
 if (s.items) for (let k = 0; k < s.items.length; k++) s.items[k] = false;
 if (typeof setFurnEditMode === "function") setFurnEditMode(false);
@@ -11290,15 +11685,27 @@ if (typeof syncStaffPawns === "function") syncStaffPawns();
 play("done"); log("🍳 Restoran & Mutfak seçtiğin parsele kuruldu! Artık Aşçı işe alabilirsin.");
 refresh(); saveGame(); return;
 }
-if (i === 4 && poolState === "Locked" && pay(PoolCost)) {
-s.type = "Pool"; s.parcelBuilt = true; poolState = "Built";
-play("done"); log("🏊 Açık Yüzme Havuzu seçtiğin parsele kuruldu! Konuklar burada yüzüp şezlonglarda dinlenecek.");
+if (i === 4) {
+const poolCnt = (typeof countBuiltPools === "function") ? countBuiltPools() : (poolState === "Built" ? 1 : 0);
+if (poolCnt >= LeisureMaxCount) {
+play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Açık Yüzme Havuzu kurabilirsin."); refresh(); return;
+}
+if (pay(PoolCost)) {
+s.type = "Pool"; s.parcelBuilt = true; s.servedToday = 0; s.poolBusy = new Array(LeisureDailyCap).fill(false); poolState = "Built";
+play("done"); log("🏊 Açık Yüzme Havuzu seçtiğin parsele kuruldu! İlkbahar ve yaz gündüz günde 5 misafir ağırlayabilir.");
 refresh(); saveGame(); return;
 }
-if (i === 10 && parkState === "Locked" && pay(ParkCost)) {
-s.type = "Park"; s.parcelBuilt = true; parkState = "Built";
-play("done"); log("🌳 Dinlenme Parkı & Çocuk Bahçesi seçtiğin parsele kuruldu! Aileler ve çocuklar burada vakit geçirecek.");
+}
+if (i === 10) {
+const parkCnt = (typeof countBuiltParks === "function") ? countBuiltParks() : (parkState === "Built" ? 1 : 0);
+if (parkCnt >= LeisureMaxCount) {
+play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Dinlenme Parkı kurabilirsin."); refresh(); return;
+}
+if (pay(ParkCost)) {
+s.type = "Park"; s.parcelBuilt = true; s.servedToday = 0; parkState = "Built";
+play("done"); log("🌳 Dinlenme Parkı & Çocuk Bahçesi seçtiğin parsele kuruldu! Günde en fazla 5 çocuklu aile ağırlayabilir.");
 refresh(); saveGame(); return;
+}
 }
 if (i === 5) {
 const { gu } = parcelCoords(s.idx);
@@ -11365,10 +11772,16 @@ refresh(); saveGame(); return;
 }
 }
 } else {
-if (i === 3 && pay(CostRoofTerrace)) {
-s.type = "RoofTerrace"; s.parcelBuilt = true;
-play("done"); log("🏖️ Çatı Terası, Şezlonglar & Çatı Barı üst kata kuruldu!");
+if (i === 3) {
+const terCnt = (typeof countBuiltRoofTerraces === "function") ? countBuiltRoofTerraces() : 0;
+if (terCnt >= LeisureMaxCount) {
+play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Çatı Terası kurabilirsin."); refresh(); return;
+}
+if (pay(CostRoofTerrace)) {
+s.type = "RoofTerrace"; s.parcelBuilt = true; s.servedToday = 0; s.terraceBusy = new Array(LeisureDailyCap).fill(false);
+play("done"); log("🏖️ Çatı Terası üst kata kuruldu! Akşamları (17–23, kış hariç) günde 5 misafir ağırlayabilir.");
 refresh(); saveGame(); return;
+}
 }
 if (i === 4) {
 const nextFl = floors.find(f => f.state === "Locked");
@@ -12053,7 +12466,7 @@ function renderGuestBook() {
 gbContent.innerHTML = "";
 const si = seasonIdx();
 const toiletAvail = hasToilet();
-const parkAvail = parkState === "Built";
+const parkAvail = (typeof hasBuiltPark === "function") ? hasBuiltPark() : (parkState === "Built");
 const occupiedSlots = allSlots.filter(s => s.type === "Room" && s.guest);
 const secStay = document.createElement("div");
 secStay.className = "gb-section-title";
@@ -13268,11 +13681,12 @@ renderAchPanel();
 } else if (sel === "Decor") {
 renderDecorPanel();
 } else if (sel === "Park") {
-if (parkState === "Locked") {
-infoText.textContent = "🏊 Açık Havuz & Park Terası  •  Bedel: " + ParkCost + " TL\nÇocuklu aileler ve tatilciler için açık yüzme havuzu ve güneşlenme terası.";
-setAct(0, "🏗️ Havuz & Park Kur\n" + ParkCost + " TL", true, readyOnce);
-} else if (parkState === "Building") infoText.textContent = "🏗️ Havuz & Park alanı inşa ediliyor... Kalan: " + Math.ceil(parkLeft) + " sn";
-else infoText.textContent = "🏊 Açık Havuz & Şezlong Terası hazır! Misafirler ve çocuklar burada yüzüp güneşlenir.";
+const pCnt = (typeof countBuiltParks === "function") ? countBuiltParks() : 0;
+if (pCnt === 0 && parkState === "Locked") {
+infoText.textContent = "🌳 Dinlenme Parkı (" + pCnt + "/" + LeisureMaxCount + ")  •  Bedel: " + ParkCost + " TL  •  0 TL bakım\nGünde en fazla 5 çocuklu aile ağırlayabilir (evcil hayvan bahşişini de açar).";
+setAct(0, "🏗️ Park Kur\n" + ParkCost + " TL", true, readyOnce);
+} else if (parkState === "Building") infoText.textContent = "🏗️ Park alanı inşa ediliyor... Kalan: " + Math.ceil(parkLeft) + " sn";
+else infoText.textContent = "🌳 Dinlenme Parkı hazır (" + pCnt + "/" + LeisureMaxCount + ")! Günde tesis başına 5 çocuklu aile ağırlanır.";
 } else if (sel === "Floor" && selFloor) {
 const fl = selFloor, n = fl.idx;
 if (fl.state === "Locked") {
@@ -13341,7 +13755,9 @@ setAct(1, "🏋️ Spor Odası\n" + gymCost() + " TL", true, canBuildHere && rea
 setAct(2, "🚽 Genel Tuvalet\n" + toiletCost() + " TL", true, canBuildHere && readyOnce);
 if (cur.floor.idx === 0) {
 setAct(3, hasKitchen() ? "✅ Restoran Var" : ("🍳 Restoran & Mutfak\n" + CostKitchen + " TL"), true, canBuildHere && readyOnce && !hasKitchen(), hasKitchen());
-setAct(4, poolState === "Built" ? "✅ Havuz Var" : ("🏊 Açık Havuz\n" + PoolCost + " TL"), true, canBuildHere && readyOnce && poolState === "Locked", poolState === "Built");
+const poolCnt = (typeof countBuiltPools === "function") ? countBuiltPools() : (poolState === "Built" ? 1 : 0);
+const poolFullCap = poolCnt >= LeisureMaxCount;
+setAct(4, poolFullCap ? ("✅ Havuz (" + poolCnt + "/" + LeisureMaxCount + ")") : ("🏊 Açık Havuz (" + poolCnt + "/" + LeisureMaxCount + ")\n" + PoolCost + " TL"), true, canBuildHere && readyOnce && !poolFullCap, poolFullCap);
 const { gu } = parcelCoords(cur.idx);
 const isRoadFront = (gu === 5);
 const existingStorage = allSlots.find(sl => sl.type === "Storage");
@@ -13354,9 +13770,13 @@ setAct(5, "⚠️ Depo Yola Bakmalı\n(1. Sıra)", false, false);
 const existingDorm = allSlots.find(sl => sl.type === "Dorm");
 const dormLbl = existingDorm ? "🔄 Lojmanı Buraya Taşı\n(Ücretsiz)" : (dormState === "Built" ? "📍 Lojmanı Buraya Kur\n(Ücretsiz)" : ("🏠 Lojman Binası\n" + CostDorm + " TL"));
 setAct(6, dormLbl, true, canBuildHere && readyOnce);
-setAct(10, parkState === "Built" ? "✅ Park Var" : ("🌳 Dinlenme Parkı\n" + ParkCost + " TL"), true, canBuildHere && readyOnce && parkState === "Locked", parkState === "Built");
+const parkCnt = (typeof countBuiltParks === "function") ? countBuiltParks() : (parkState === "Built" ? 1 : 0);
+const parkFullCap = parkCnt >= LeisureMaxCount;
+setAct(10, parkFullCap ? ("✅ Park (" + parkCnt + "/" + LeisureMaxCount + ")") : ("🌳 Dinlenme Parkı (" + parkCnt + "/" + LeisureMaxCount + ")\n" + ParkCost + " TL"), true, canBuildHere && readyOnce && !parkFullCap, parkFullCap);
 } else {
-setAct(3, "🏖️ Çatı Terası & Bar\n" + CostRoofTerrace + " TL", true, canBuildHere && readyOnce);
+const terCnt = (typeof countBuiltRoofTerraces === "function") ? countBuiltRoofTerraces() : 0;
+const terFullCap = terCnt >= LeisureMaxCount;
+setAct(3, terFullCap ? ("✅ Teras (" + terCnt + "/" + LeisureMaxCount + ")") : ("🏖️ Çatı Terası (" + terCnt + "/" + LeisureMaxCount + ")\n" + CostRoofTerrace + " TL"), true, canBuildHere && readyOnce && !terFullCap, terFullCap);
 const nextFl = floors.find(f => f.state === "Locked");
 if (nextFl) {
 const elevOk = hasElevator();
@@ -13384,7 +13804,10 @@ infoText.textContent = "🛗 Lüks Otel Asansörü " + coordStr +
 infoText.textContent = "🚪 Koridor & Lüks Kat Holü " + coordStr +
 "\nOdaları, asansörü ve tesisleri birbirine bağlar. Konukların ve personelin rahatça dolaşmasını sağlar.";
 } else if (cur.type === "RoofTerrace") {
-infoText.textContent = "🏖️ Çatı Terası, Şezlong & Çatı Barı " + coordStr + "\nOtelde konaklayan müşteriler burada güneşlenir ve içecek alır, otel memnuniyetini artırır.";
+const tSt = (typeof getTerraceStatus === "function") ? getTerraceStatus(cur) : { open: true, reason: "Açık", served: Math.max(0, cur.servedToday || 0), cap: LeisureDailyCap };
+const tBadge = tSt.open ? "🟢 Açık" : ((tSt.reason === "Koridora bağlı değil" ? "⚠️ " : tSt.reason === "Dolu" ? "🟠 " : "🔒 ") + tSt.reason);
+infoText.textContent = "🏖️ Çatı Terası " + coordStr + "  •  17:00–23:00 açık (kış hariç) • +0,5★ • Gider: " + TerraceDailyMaintCost + " TL/gün\n" +
+tBadge + " • Bugün: " + tSt.served + "/" + tSt.cap + " hizmet";
 } else if (cur.type === "TennisClub") {
 const tState = cur.tennisState || "Ruin";
 const rk = (tennisKit && tennisKit.raket) || 0;
@@ -13453,9 +13876,15 @@ if (cookLevel < 3) setAct(0, (cookLevel === 0 ? "🍳 Aşçı Al\n" : "⬆️ A�
 else setAct(0, "✅ Aşçı Sv.3", true, false, true);
 setAct(1, "👋 Aşçıyı Çıkar", true, cookLevel > 0);
 } else if (cur.type === "Pool") {
-infoText.textContent = "🏊 Açık Yüzme Havuzu & Güneşlenme Terası " + coordStr + "\nKonaklayan misafirler burada yüzüp şezlonglarda güneşlenir.";
+const pSt = (typeof getPoolStatus === "function") ? getPoolStatus(cur) : { open: true, reason: "Açık", served: Math.max(0, cur.servedToday || 0), cap: LeisureDailyCap };
+const pBadge = pSt.open ? "🟢 Açık" : ((pSt.reason === "Koridora bağlı değil" ? "⚠️ " : pSt.reason === "Dolu" ? "🟠 " : "🔒 ") + pSt.reason);
+infoText.textContent = "🏊 Açık Yüzme Havuzu " + coordStr + "  •  İlkbahar/Yaz gündüz 06:00–18:00 • +0,5★ • Gider: " + PoolDailyMaintCost + " TL/gün\n" +
+pBadge + " • Bugün: " + pSt.served + "/" + pSt.cap + " hizmet";
 } else if (cur.type === "Park") {
-infoText.textContent = "🌳 Dinlenme Bahçesi & Çocuk Parkı " + coordStr + "\nÇocuklu aileler ve konuklar doğanın tadını çıkarıp salıncakta oynar.";
+const pkSt = (typeof getParkStatus === "function") ? getParkStatus(cur) : { open: true, reason: "Açık", served: Math.max(0, cur.servedToday || 0), cap: LeisureDailyCap };
+const pkBadge = pkSt.open ? "🟢 Açık" : ("🟠 " + pkSt.reason);
+infoText.textContent = "🌳 Dinlenme Parkı & Çocuk Bahçesi " + coordStr + "  •  5 çocuklu aile/gün • 0 TL bakım\n" +
+pkBadge + " • Bugün: " + pkSt.served + "/" + pkSt.cap + " hizmet";
 } else if (cur.type === "Storage") {
 infoText.textContent = "📦 Depo Binası Sv." + storageLevel + " " + coordStr + "  •  Stok: " + storageUsed() + "/" + storageCap();
 setAct(0, "🛒 Sipariş Ekranını Aç", true, true);
@@ -13786,17 +14215,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 106;
-const APP_VERSION_NAME = "1.9.98-beta";
+const APP_VERSION_CODE = 107;
+const APP_VERSION_NAME = "1.9.99-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.99-beta",
+title: "Park, Havuz ve Teras hizmet kapasitesi",
+latest: true,
+notes: "• 🏊 Açık Havuz, Dinlenme Parkı ve Çatı Terası artık en fazla 3 adet kurulabilir ve her tesis günde en fazla 5 misafir/aile ağırlar.\n• ⭐ Açık Havuz (İlkbahar/Yaz gündüz 06–18) ve Çatı Terası (17–23, kış hariç) hizmet alan misafirlere çıkışta +0,5★ memnuniyet verir (en fazla +1★; günlük 10 TL bakım gideri).\n• 🌳 Park kapasitesi 5/5 dolu kaldığı için alınmayan aileler çıkışta -0,5★ verir (0 Park varsa mevcut -1★ korunur)."
+},
+{
 ver: "v1.9.98-beta",
 title: "Denge: yapı fiyatları ve ısıtma/soğutma ayrımı",
-latest: true,
+latest: false,
 notes: "• 🏗️ Adil Yapı Sayacı: Koridor ve Asansör kurulumları fiyat sayacını artık +1 değil +0,5 artırır.\n• 🌡️ Isıtma & Soğutma Ayrımı: Klima yalnızca yazın odayı serinletir; kışın ısınma artık yalnızca Doğalgaz odasına bağlıdır (temizlikçiler de doğalgaz odasına bakar, gaz kaçağı yalnızca kışın olur ve 70. günde kış uyarısı çıkar).\n• ⭐ Otomatik Oda Seviyesi: Oda seviyesi yalnızca odadaki eşya/banyo/balkon sayısına göre otomatik görsel olarak yükselir."
 },
 {
@@ -15159,7 +15594,10 @@ z: b.z0 + 8,
 inPool: false
 };
 }
-const parkSlot = _frameMapsReady ? _frameParkSlot : allSlots.find(s => s.type === "Park" && s.floor.state === "Built");
+const fallbackParkSlot = _frameMapsReady ? _frameParkSlot : allSlots.find(s => s.type === "Park" && s.floor.state === "Built");
+const parkSlot = (guestObj && guestObj.parkSlot && guestObj.parkSlot.type === "Park" && guestObj.parkSlot.floor && guestObj.parkSlot.floor.state === "Built")
+? guestObj.parkSlot
+: fallbackParkSlot;
 if (parkSlot && (wx >= ParkX - 80 || (guestObj && guestObj.kidsAtPark))) {
 const pb = slotIsoBox(parkSlot.floor.idx, parkSlot.idx);
 const t = clamp((wx - ParkX) / Math.max(1, ParkW), 0.1, 0.9);
@@ -16429,6 +16867,15 @@ extra = "|f" + (s.gymLevel || 1) + ":" + (s.spaLevel || 1) + ":" + (s.cafeLevel 
 (typeof barmenHired !== "undefined" && barmenHired ? 1 : 0) + ":" +
 _pcBusyMask(s.gymBusy) + ":" + _pcBusyMask(s.spaBusy) + ":" + _pcBusyMask(s.cafeBusy) + ":" +
 _pcBusyMask(s.toiletBusy) + ":" + _pcBusyMask(s.tennisCourtBusy);
+} else if (st === "Pool" || st === "Park" || st === "RoofTerrace") {
+const si = (typeof seasonIdx === "function") ? seasonIdx() : 0;
+const hr = (typeof getGameHour === "function") ? Math.floor(getGameHour()) : 12;
+const openNow = (st === "Pool" && typeof isPoolOpenNow === "function") ? (isPoolOpenNow() ? 1 : 0) :
+(st === "RoofTerrace" && typeof isTerraceOpenNow === "function") ? (isTerraceOpenNow() ? 1 : 0) : 1;
+const conn = (st === "Pool" && typeof isPoolConnected === "function") ? (isPoolConnected(s) ? 1 : 0) :
+(st === "RoofTerrace" && typeof isTerraceConnected === "function") ? (isTerraceConnected(s) ? 1 : 0) : 1;
+extra = "|l" + (s.servedToday || 0) + ":" + openNow + ":" + conn + ":" + si + ":" + hr + ":" +
+_pcBusyMask(s.poolBusy) + ":" + _pcBusyMask(s.terraceBusy);
 }
 const tVer = (typeof THEME !== "undefined" && THEME) ? THEME.version : 0;
 const balBlock = (typeof getParcelBalconyBlocker === "function" && getParcelBalconyBlocker(fIdx, sIdx)) ? 1 : 0;
@@ -19972,7 +20419,16 @@ isoBox(u0 + 76, v0 + 18, u0 + 88, v0 + 30, z0 + 1, z0 + 12, "#ffffff", "#e2e8f0"
 isoBox(u0 + 80, v0 + 22, u0 + 84, v0 + 26, z0 + 12, z0 + 18, "#ef4444", "#f87171", "#b91c1c", null, 0);
 isoBox(u1 - 12, v0 + 30, u1 - 8, v0 + 34, z0 + 1, z0 + 35, "#ffffff", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1);
 isoBox(u1 - 14, v0 + 28, u1 - 6, v0 + 36, z0 + 22, z0 + 32, "#ef4444", "#ffffff", "#dc2626", OUTLINE_COL, 1);
-isoLabel("🏊 AÇIK YÜZME HAVUZU", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 11, "#0284c7", "#f0f9ff", 6, 2.5);
+const pSt = (typeof getPoolStatus === "function") ? getPoolStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: 5 };
+if (pSt.reason === "Koridora bağlı değil") {
+isoLabel("⚠️ HAVUZ (Bağlı değil)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 10.5, "#991b1b", "#fef2f2", 6, 2.5);
+} else if (pSt.reason === "Dolu") {
+isoLabel("🟠 HAVUZ (" + pSt.served + "/" + pSt.cap + " Dolu)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 10.5, "#9a3412", "#fff7ed", 6, 2.5);
+} else if (!pSt.open) {
+isoLabel("🔒 HAVUZ (Kapalı · " + pSt.served + "/" + pSt.cap + ")", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 10.5, "#475569", "#f1f5f9", 6, 2.5);
+} else {
+isoLabel("🏊 AÇIK HAVUZ (" + pSt.served + "/" + pSt.cap + ")", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 11, "#0284c7", "#f0f9ff", 6, 2.5);
+}
 addHitPoly(poly, () => {
 selectSlot(s);
 if (queue.length > 0) {
@@ -20009,7 +20465,12 @@ drawLushBush(u0 + 25, v1 - 35, z0, 0.9, "normal", 0);
 drawLushBush(u0 + 45, v1 - 25, z0, 0.85, "flower", 0);
 drawLushBush(u0 + 160, v0 + 110, z0, 0.85, "flower", 0);
 }
-isoLabel("🌳 DİNLENME PARKI", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 11, "#15803d", "#f0fdf4", 6, 2.5);
+const pkSt = (typeof getParkStatus === "function") ? getParkStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: 5 };
+if (pkSt.reason === "Dolu") {
+isoLabel("🟠 PARK (" + pkSt.served + "/" + pkSt.cap + " Dolu)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 10.5, "#9a3412", "#fff7ed", 6, 2.5);
+} else {
+isoLabel("🌳 DİNLENME PARKI (" + pkSt.served + "/" + pkSt.cap + ")", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 11, "#15803d", "#f0fdf4", 6, 2.5);
+}
 addHitPoly(poly, () => {
 selectSlot(s);
 if (queue.length > 0) {
@@ -20122,7 +20583,16 @@ drawSunLounger(u0 + 110, v0 + 35, z0, isOpen && activeCount >= 1, towel1, "#e6b8
 drawSunLounger(u0 + 110, v0 + 125, z0, isOpen && activeCount >= 2, towel2, "#59331a");
 drawIsoUmbrella(u0 + 135, v0 + 90, z0, umbCol, 0.9);
 drawPottedPlant(u0 + 28, v1 - 28, z0, 0.85);
-isoLabel("🏖️ ÇATI TERASI & BAR", u0 + 52, v0 + 52, z0 + 80, 10.5, "#0f4c81", "#e0f2fe", 6, 2);
+const tSt = (typeof getTerraceStatus === "function") ? getTerraceStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: 5 };
+if (tSt.reason === "Koridora bağlı değil") {
+isoLabel("⚠️ TERAS (Bağlı değil)", u0 + 52, v0 + 52, z0 + 80, 10.5, "#991b1b", "#fef2f2", 6, 2);
+} else if (tSt.reason === "Dolu") {
+isoLabel("🟠 TERAS (" + tSt.served + "/" + tSt.cap + " Dolu)", u0 + 52, v0 + 52, z0 + 80, 10.5, "#9a3412", "#fff7ed", 6, 2);
+} else if (!tSt.open) {
+isoLabel("🔒 TERAS (Kapalı · " + tSt.served + "/" + tSt.cap + ")", u0 + 52, v0 + 52, z0 + 80, 10.5, "#475569", "#f1f5f9", 6, 2);
+} else {
+isoLabel("🏖️ ÇATI TERASI (" + tSt.served + "/" + tSt.cap + ")", u0 + 52, v0 + 52, z0 + 80, 10.5, "#0f4c81", "#e0f2fe", 6, 2);
+}
 addHitPoly(poly, () => {
 selectSlot(s);
 if (queue.length > 0) {
@@ -23905,7 +24375,7 @@ return petP;
 }
 function hasPetFriendlyAmenity() {
 if (hasActiveHotelPet()) return true;
-if (typeof parkState !== "undefined" && parkState === "Built") return true;
+if (typeof hasBuiltPark === "function" ? hasBuiltPark() : (typeof parkState !== "undefined" && parkState === "Built")) return true;
 if (typeof hasPetDecor === "function" && hasPetDecor()) return true;
 return false;
 }
@@ -27758,6 +28228,20 @@ if (typeof tryCafe === "function") tryCafe(g);
 g.cafeTimer = rnd(1, 3);
 }
 }
+if (g.state === "InRoom") {
+g.poolTimer = (g.poolTimer || 0) - dt;
+if (g.poolTimer <= 0) {
+if (typeof tryPool === "function") tryPool(g);
+g.poolTimer = rnd(4, 9);
+}
+}
+if (g.state === "InRoom") {
+g.terraceTimer = (g.terraceTimer || 0) - dt;
+if (g.terraceTimer <= 0) {
+if (typeof tryTerrace === "function") tryTerrace(g);
+g.terraceTimer = rnd(2, 5);
+}
+}
 if (g.state === "InRoom" && g.kids > 0 && !g.kidsAtPark) {
 g.parkTimer -= dt;
 if (g.parkTimer <= 0) { g.parkTimer = rnd(15, 30); sendKidsToPark(g); }
@@ -27812,6 +28296,12 @@ if (g.gymElapsed > 90 && typeof rescueGymGuest === "function") rescueGymGuest(g)
 } else if (g.state === "ToRoom" && g.toiletInFlow) {
 g.toiletElapsed = (g.toiletElapsed || 0) + dt;
 if (g.toiletElapsed > 90 && typeof rescueToiletGuest === "function") rescueToiletGuest(g);
+} else if (g.state === "ToRoom" && g.poolInFlow) {
+g.poolElapsed = (g.poolElapsed || 0) + dt;
+if (g.poolElapsed > 90 && typeof rescuePoolGuest === "function") rescuePoolGuest(g);
+} else if (g.state === "ToRoom" && g.terraceInFlow) {
+g.terraceElapsed = (g.terraceElapsed || 0) + dt;
+if (g.terraceElapsed > 90 && typeof rescueTerraceGuest === "function") rescueTerraceGuest(g);
 } else if (g.state === "ToGym" || g.state === "Exercising") {
 g.gymElapsed = (g.gymElapsed || 0) + dt;
 if (g.gymElapsed > 90) {
@@ -27832,6 +28322,26 @@ if (typeof rescueToiletGuest === "function") rescueToiletGuest(g);
 g.exLeft -= dt;
 if (g.exLeft <= 0) endToilet(g);
 }
+} else if (g.state === "ToPool" || g.state === "InPool") {
+g.poolElapsed = (g.poolElapsed || 0) + dt;
+if (g.poolElapsed > 90) {
+if (typeof rescuePoolGuest === "function") rescuePoolGuest(g);
+} else if (!g.pool || g.pool.type !== "Pool" || !g.pool.floor || g.pool.floor.state !== "Built" || g.pool.onFire || (typeof isPoolOpenNow === "function" && !isPoolOpenNow()) || (typeof isPoolConnected === "function" && !isPoolConnected(g.pool))) {
+if (typeof rescuePoolGuest === "function") rescuePoolGuest(g);
+} else if (g.state === "InPool") {
+g.exLeft -= dt;
+if (g.exLeft <= 0 && typeof endPool === "function") endPool(g);
+}
+} else if (g.state === "ToTerrace" || g.state === "InTerrace") {
+g.terraceElapsed = (g.terraceElapsed || 0) + dt;
+if (g.terraceElapsed > 90) {
+if (typeof rescueTerraceGuest === "function") rescueTerraceGuest(g);
+} else if (!g.terrace || g.terrace.type !== "RoofTerrace" || !g.terrace.floor || g.terrace.floor.state !== "Built" || g.terrace.onFire || (typeof isTerraceOpenNow === "function" && !isTerraceOpenNow()) || (typeof isTerraceConnected === "function" && !isTerraceConnected(g.terrace))) {
+if (typeof rescueTerraceGuest === "function") rescueTerraceGuest(g);
+} else if (g.state === "InTerrace") {
+g.exLeft -= dt;
+if (g.exLeft <= 0 && typeof endTerrace === "function") endTerrace(g);
+}
 } else if (g.state === "Attacking") {
 g.attackTimer = (g.attackTimer || 0) + dt;
 if (g.attackTimer > 90 || !g.pawn || g.pawn.dead) {
@@ -27849,6 +28359,13 @@ g.cafeTimer -= dt;
 if (g.cafeTimer <= 0) {
 if (typeof tryCafe === "function") tryCafe(g);
 g.cafeTimer = rnd(1, 3);
+}
+}
+if (typeof isTerraceOpenNow === "function" && isTerraceOpenNow()) {
+g.terraceTimer = (g.terraceTimer || 0) - dt;
+if (g.terraceTimer <= 0) {
+if (typeof tryTerrace === "function") tryTerrace(g);
+g.terraceTimer = rnd(2, 5);
 }
 }
 g.zTimer -= dt;
@@ -27872,8 +28389,12 @@ triggerKillerHunt(g);
 }
 }
 if (g.kidsAtPark) {
+if (g.parkSlot && (g.parkSlot.type !== "Park" || !g.parkSlot.floor || g.parkSlot.floor.state !== "Built" || g.parkSlot.onFire)) {
+bringKidsBack(g);
+} else {
 g.parkLeft -= dt;
 if (g.parkLeft <= 0) bringKidsBack(g);
+}
 }
 }
 for (const fl of floors) {
