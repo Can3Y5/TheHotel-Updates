@@ -3153,6 +3153,18 @@ const ThreatStories = [
 "Hey, beni bedavaya al yoksa oteline zarar veririm!",
 "Bedava oda ver, yoksa burayı birbirine katarım!"
 ];
+const ExpensiveAcceptLines = [
+"Biraz pahalı ama tamam.",
+"Bu fiyat bana fazla geldi…",
+"Pahalı… ama razıyım.",
+"Bütçemi zorluyor ama kabul."
+];
+const ExpensiveAcceptCnLines = [
+"有点贵，但好吧。",
+"这个价格有点高…",
+"有点贵…但行吧。",
+"超出预算了，好吧。"
+];
 const SlotW = 380, FloorH = 300, ElevW = 170, SlabH = 22;
 const TotalW = ElevW + 4 * SlotW;
 const ElevX = ElevW / 2;
@@ -7030,10 +7042,11 @@ function heated(s) { return s.items[IKlima] || (gasSlot() !== null && gasOn); }
 function hasReadyRoom() { return allSlots.some(s => s.Ready); }
 function freeRoomCount() { return allSlots.filter(s => s.Ready && !s.guest && !s.onFire).length; }
 function adjacentSlots(s) {
-if (!s || !s.floor) return [];
-const gu = Math.floor(s.idx / 5), gv = s.idx % 5;
+if (!s || !s.floor || !Array.isArray(s.floor.slots)) return [];
+const { gu, gv } = parcelCoords(s.idx);
 return s.floor.slots.filter(sl => {
-const su = Math.floor(sl.idx / 5), sv = sl.idx % 5;
+if (!sl || sl === s) return false;
+const { gu: su, gv: sv } = parcelCoords(sl.idx);
 return Math.abs(su - gu) + Math.abs(sv - gv) === 1;
 });
 }
@@ -7123,6 +7136,17 @@ lastFront = f;
 if (f) curPrice = f.offer;
 }
 }
+function pickExpensiveAcceptLine(g) {
+if (!g) return "";
+const idx = Math.floor(Math.random() * ExpensiveAcceptLines.length);
+g._acceptLineIdx = idx;
+return (g.chinese && !canTranslate()) ? ExpensiveAcceptCnLines[idx] : ExpensiveAcceptLines[idx];
+}
+function getExpensiveAcceptLine(g) {
+if (!g || typeof g._acceptLineIdx !== "number" || g._acceptLineIdx < 0) return "";
+const idx = g._acceptLineIdx % ExpensiveAcceptLines.length;
+return (g.chinese && !canTranslate()) ? ExpensiveAcceptCnLines[idx] : ExpensiveAcceptLines[idx];
+}
 function setBubbleText(g, index) {
 if (index !== 0) {
 if (g.type === "Threat") {
@@ -7135,6 +7159,8 @@ g.bubbleLines = ["", ""];
 return;
 }
 g.hasBubble = true;
+const expLine = getExpensiveAcceptLine(g);
+if (pending === g && expLine) { g.bubbleLines = [g.name, expLine]; return; }
 if (g.type === "Needy" || g.type === "Freebie") g.bubbleLines = [g.name, "Bedava?"];
 else if (g.type === "Threat") g.bubbleLines = [g.name, "!!!"];
 else if (g.chinese) g.bubbleLines = [g.name, g.offer + " ¥"];
@@ -7496,7 +7522,17 @@ return;
 }
 play("place");
 pending = g; pendingPrice = price;
+const isExp = (g.type === "Normal" && g.role !== "Bodyguard" && g.budget > 0 && price > g.budget * 0.9);
+if (isExp) {
+const line = pickExpensiveAcceptLine(g);
+g.hasBubble = true;
+g.bubbleLines = [g.name, line];
+if (g.pawn && g.pawn.pos) floatText(g.pawn.pos.x, g.pawn.pos.y + 145, '"' + line + '"', "#3a281f");
+log(g.name + ': "' + line + '" (' + price + " TL). Şimdi bir oda seç ve Yerleştir'e bas.");
+} else {
+g._acceptLineIdx = -1;
 log(g.name + " anlaştı (" + price + " TL). Şimdi bir oda seç ve Yerleştir'e bas.");
+}
 refresh();
 }
 function onReject() {
@@ -7614,8 +7650,14 @@ reputation += 10;
 floatText(room.X0 + SlotW * 0.5, room.floor.BaseY + FloorH * 0.65, "+10 İtibar (Misafir)", "#1a8c26");
 log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " ücretsiz misafir olarak " + room.roomNo + ". odaya alındı! (+10 İtibar)");
 } else {
-log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " " + room.roomNo + ". odaya yerleştirildi (" + g.days + " gün, günlük " + g.price + " TL).");
+let autoQuote = "";
+if (byAuto && g.type === "Normal" && g.role !== "Bodyguard" && g.budget > 0 && price > g.budget * 0.9) {
+autoQuote = (typeof pickExpensiveAcceptLine === "function") ? pickExpensiveAcceptLine(g) : "";
+if (autoQuote) floatText(room.X0 + SlotW * 0.5, room.floor.BaseY + FloorH * 0.65, '"' + autoQuote + '"', "#3a281f");
 }
+log((byAuto ? "🛎️ Resepsiyonist: " : "") + g.name + " " + room.roomNo + ". odaya yerleştirildi (" + g.days + " gün, günlük " + g.price + " TL)" + (autoQuote ? (' — "' + autoQuote + '"') : "."));
+}
+g._acceptLineIdx = -1;
 if (g.isVip && g.vipRule === "Bodyguard") {
 const adjFree = adjacentSlots(room).find(sl => sl.Ready && !sl.guest && !sl.onFire);
 if (adjFree) {
@@ -7661,6 +7703,12 @@ if (sc > bestScore) { bestScore = sc; best = s; }
 }
 return best;
 }
+function isKillerInitialBlocked(g) {
+if (!g || !killerActiveThisWeek || killerCaughtWeek !== 0 || !killerLetter) return false;
+const nm = String(g.name || "").trim();
+if (!nm) return false;
+return nm.toLocaleUpperCase("tr-TR").startsWith(String(killerLetter).toLocaleUpperCase("tr-TR"));
+}
 function updateReceptionistAuto(dt) {
 if (!isOpen || receptionistLevel < 3 || !recAutoPlace || pending) {
 recAutoTimer = 0;
@@ -7669,6 +7717,14 @@ return;
 const g = front();
 if (!g || g.type === "Threat") {
 recAutoTimer = 0;
+return;
+}
+if (isKillerInitialBlocked(g)) {
+recAutoTimer = 0;
+if (!g._recKillerHoldLogged) {
+g._recKillerHoldLogged = true;
+log("🛎️ Resepsiyonist: " + g.name + " gazetedeki katil harfiyle ('" + killerLetter + "') başladığı için otomatik yerleştirilmedi; karar senin.");
+}
 return;
 }
 const room = bestAutoRoom(g);
@@ -9463,7 +9519,7 @@ syncStaffPawns();
 play("done");
 if (receptionistLevel === 1) log("🛎️ Resepsiyonist işe alındı (Sv.1)! Çince çeviri ve müşteri filtreleri (Çocuk/Alt Fiyat) açıldı.");
 else if (receptionistLevel === 2) log("🛎️ Resepsiyonist Seviye 2 oldu! Müşteri bütçe ve tekliflerine +%15 pazarlık bonusu eklendi.");
-else log("🛎️ Resepsiyonist Seviye 3 oldu! +%25 pazarlık bonusu ve Otomatik Kabul & Oda Yerleştirme açıldı!");
+else log("🛎️ Resepsiyonist Seviye 3 oldu! +%25 pazarlık bonusu ve Otomatik Kabul & Oda Yerleştirme açıldı! Gazetedeki katil harfiyle başlayan misafirleri otomatik yerleştirmez.");
 refresh(); saveGame();
 }
 function fireReceptionist() {
@@ -9487,9 +9543,9 @@ if (!pay(cost)) return;
 securityLevel++;
 syncStaffPawns();
 play("done");
-if (securityLevel === 1) log("🛡️ Güvenlik Görevlisi işe alındı (Sv.1)! Tehdit edenleri kapıda engeller ve kaçak kalanları yakalar.");
-else if (securityLevel === 2) log("🛡️ Güvenlik Seviye 2 oldu! Gizli Hırsızları tespit eder ve gece kamerasız odalarda bile yakalar.");
-else log("🛡️ Güvenlik Seviye 3 oldu! Gizli Vampirleri tespit eder ve gece saldırılarını engeller!");
+if (securityLevel === 1) log("🛡️ Güvenlik Görevlisi işe alındı (Sv.1)! Tehdit edenleri kapıda engeller ve kaçak kalanları yakalar. Seri katile karşı etkisizdir; katili gazetedeki harften tanıyıp polise ihbar et.");
+else if (securityLevel === 2) log("🛡️ Güvenlik Seviye 2 oldu! Gizli Hırsızları tespit eder ve gece kamerasız odalarda bile yakalar. Seri katile karşı etkisizdir; katili gazetedeki harften tanıyıp polise ihbar et.");
+else log("🛡️ Güvenlik Seviye 3 oldu! Gizli Vampirleri tespit eder ve gece saldırılarını engeller! Seri katile karşı etkisizdir; katili gazetedeki harften tanıyıp polise ihbar et.");
 refresh(); saveGame();
 }
 function fireSecurity() {
@@ -13086,8 +13142,13 @@ if (sel === "Staff") {
 const recStr = receptionistLevel > 0 ? ("Sv." + receptionistLevel) : "Yok";
 const secStr = securityLevel > 0 ? ("Sv." + securityLevel) : "Yok";
 const cookStr = cookLevel > 0 ? ("Sv." + cookLevel) : "Yok";
+const secDesc = securityLevel === 1 ? "Sv.1 • Tehdit & kaçak" :
+securityLevel === 2 ? "Sv.2 • Tehdit, kaçak & hırsız" :
+securityLevel >= 3  ? "Sv.3 • Tehdit, kaçak, hırsız & vampir" :
+"Sv.1–3";
 infoText.textContent = "👷 Personel & Alet  •  Kapasite: " + totalStaffCount() + "/" + staffCap() + (hasDorm() ? (" (Lojman Sv." + dormLevel + ")") : " (Lojman yok: kapasite 1)") +
-"\n🧹 Temizlikçi: " + cleaners.length + "  •  🛎️ Resepsiyonist: " + recStr + "  •  🛡️ Güvenlik: " + secStr + "  •  🍳 Aşçı: " + cookStr + "  •  💰 Maaş: " + totalDailyWage() + " TL/gün";
+"\n🧹 Temizlikçi: " + cleaners.length + "  •  🛎️ Resepsiyonist: " + recStr + "  •  🛡️ Güvenlik: " + secStr + "  •  🍳 Aşçı: " + cookStr + "  •  💰 Maaş: " + totalDailyWage() + " TL/gün" +
+"\n🛡️ Güvenlik (" + secDesc + "): Seri katile karşı etkisizdir; katili gazetedeki harften tanıyıp polise ihbar et.";
 const canHireMore = totalStaffCount() < staffCap();
 setAct(0, "👷 Temizlikçi Al\n" + CleanerHire + " TL", true, readyOnce && cleaners.length < MaxCleaners && canHireMore);
 setAct(1, "👋 Temizlikçi Çıkar", true, cleaners.length > 0);
@@ -13151,7 +13212,7 @@ setAct(0, "🏗️ Restoran & Mutfak Kur\n" + CostKitchen + " TL", true, readyOn
 infoText.textContent = "🏗️ Restoran & Mutfak inşa ediliyor... Kalan: " + Math.ceil(kitchenLeft) + " sn";
 } else {
 infoText.textContent = "🍳 Restoran & Mutfak  •  Aşçı: " + (cookLevel > 0 ? ("Sv." + cookLevel) : "Yok") + "  •  Günlük porsiyon: " + CookMeals[cookLevel] +
-"\nHer porsiyon +" + MealPrice + " TL (malzeme " + MealCost + " TL) getirir ve müşteri memnuniyetini artırır.";
+"\nPorsiyon başı +" + MealPrice + " TL gelir, -" + MealCost + " TL malzeme = +" + (MealPrice - MealCost) + " TL net; müşteri memnuniyetini artırır.";
 if (cookLevel < 3) setAct(0, (cookLevel === 0 ? "🍳 Aşçı Al\n" : "⬆️ Aşçı Sv." + (cookLevel + 1) + "\n") + CookHireCost[cookLevel + 1] + " TL", true, readyOnce && (cookLevel > 0 || totalStaffCount() < staffCap()));
 else setAct(0, "✅ Aşçı Sv.3", true, false, true);
 setAct(1, "👋 Aşçıyı Çıkar", true, cookLevel > 0);
@@ -13359,7 +13420,7 @@ if (actBtns[1]) actBtns[1].classList.add("tennis-fee-btn");
 }
 } else if (cur.type === "Kitchen") {
 infoText.textContent = "🍳 Restoran & Mutfak " + coordStr + "  •  Aşçı: " + (cookLevel > 0 ? ("Sv." + cookLevel) : "Yok") + "  •  Günlük porsiyon: " + CookMeals[cookLevel] +
-"\nHer porsiyon +" + MealPrice + " TL gelir getirir.";
+"\nPorsiyon başı +" + MealPrice + " TL gelir, -" + MealCost + " TL malzeme = +" + (MealPrice - MealCost) + " TL net.";
 if (cookLevel < 3) setAct(0, (cookLevel === 0 ? "🍳 Aşçı Al\n" : "⬆️ Aşçı Sv." + (cookLevel + 1) + "\n") + CookHireCost[cookLevel + 1] + " TL", true, readyOnce && (cookLevel > 0 || totalStaffCount() < staffCap()));
 else setAct(0, "✅ Aşçı Sv.3", true, false, true);
 setAct(1, "👋 Aşçıyı Çıkar", true, cookLevel > 0);
@@ -13395,7 +13456,8 @@ const mLbl = !petAdopted
 ? ((hotelPet.name || "Pati") + " (" + getMascotLabel(hotelPet.type) + ", " + petCare + " TL/gün)")
 : ((hotelPet.name || "Pati") + " (Dinleniyor)"));
 infoText.textContent = "🛎️ Giriş Lobisi & Resepsiyon " + coordStr + "  •  " + bonusTxt + "  •  Evcil Hayvan: " + mLbl +
-(rLv >= 1 ? ("\nFiltreler: Çocuklu=" + (recNoKids ? "REDDET" : "KABUL") + " | Alt Sınır=" + (recMinPrice > 0 ? recMinPrice + " TL" : "YOK") + " | Ücretsiz=" + (recAllowFree ? "KABUL" : "REDDET") + (rLv >= 3 ? (" | Oto-Yerleştir=" + (recAutoPlace ? "AÇIK" : "KAPALI")) : "")) : "");
+(rLv >= 1 ? ("\nFiltreler: Çocuklu=" + (recNoKids ? "REDDET" : "KABUL") + " | Alt Sınır=" + (recMinPrice > 0 ? recMinPrice + " TL" : "YOK") + " | Ücretsiz=" + (recAllowFree ? "KABUL" : "REDDET") + (rLv >= 3 ? (" | Oto-Yerleştir=" + (recAutoPlace ? "AÇIK" : "KAPALI")) : "")) : "") +
+(rLv >= 3 ? "\n🤖 Gazetedeki katil harfiyle başlayan misafirleri otomatik yerleştirmez." : "");
 if (rLv < 3) {
 const rCost = RecHireCost[rLv + 1];
 const canHire = rLv > 0 || totalStaffCount() < staffCap();
@@ -13673,10 +13735,12 @@ if (g.role === "Thief" && securityLevel >= 2) secWarn = "\n🚨 GÜVENLİK: Bu k
 else if (g.role === "Vampire" && securityLevel >= 3) secWarn = "\n🚨 GÜVENLİK: Bu kişi VAMPİR! (Reddet!)";
 const hintLine = (g.hint ? ('\n💬 "' + g.hint + '"') : "") + secWarn;
 if (pending === g) {
+const expLine = (typeof getExpensiveAcceptLine === "function") ? getExpensiveAcceptLine(g) : "";
+const acceptQuote = expLine ? ('\n"' + expLine + '"') : "";
 if (g.chinese) {
-guestText.textContent = "✅ " + g.name + " · " + pendingPrice + " 元 成交！\n👉 Yeşil çerçeveli boş odaya dokunup '✅ Yerleştir'e bas. (" + wantList(g, !canTranslate()) + ")";
+guestText.textContent = "✅ " + g.name + " · " + pendingPrice + " 元 成交！" + acceptQuote + "\n👉 Yeşil çerçeveli boş odaya dokunup '✅ Yerleştir'e bas. (" + wantList(g, !canTranslate()) + ")";
 } else {
-guestText.textContent = "✅ " + g.name + " (" + pendingPrice + " TL/gün) ile anlaşıldı!\n👉 Yeşil çerçeveli boş odaya dokunup '✅ Yerleştir' butonuna bas. (" + wantList(g, false) + ")";
+guestText.textContent = "✅ " + g.name + " (" + pendingPrice + " TL/gün) ile anlaşıldı!" + acceptQuote + "\n👉 Yeşil çerçeveli boş odaya dokunup '✅ Yerleştir' butonuna bas. (" + wantList(g, false) + ")";
 }
 } else if (g.type === "Needy") {
 guestText.textContent = "🆘 " + g.name + " (Depremzede • +20 İtibar) • " + g.days + " gün" + kidTr + '\n💬 "' + g.story + '"\n📌 İstek: ' + wantList(g, false) + "  |  " + status;
@@ -13700,17 +13764,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 103;
-const APP_VERSION_NAME = "1.9.95-beta";
+const APP_VERSION_CODE = 104;
+const APP_VERSION_NAME = "1.9.96-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.96-beta",
+title: "Hata düzeltmeleri ve müşteri geri bildirimi",
+latest: true,
+notes: "• 📐 6×6 Komşuluk Düzeltmesi: VIP koruma ve sessiz yan oda kontrolleri artık gerçek 6×6 parsel ızgarasıyla hesaplanır.\n• 💬 Pahalı Anlaşma Geri Bildirimi: Müşteri bütçesinin %90'ının üzerinde anlaşılırsa kendi konuşma cümlesiyle fiyatı pahalı bulduğunu belirtir.\n• 📋 Şeffaf Panel & Katil Koruması: Mutfakta net (+16 TL) kâr gösterilir; Güvenlik paneli seri katil kapsamı uyarısı içerir ve Resepsiyonist Sv.3 gazetedeki katil harfiyle başlayan misafirleri otomatik yerleştirmez."
+},
+{
 ver: "v1.9.95-beta",
 title: "Otomatik cephe seçen balkonlar ve balkon alanı koruması",
-latest: true,
+latest: false,
 notes: "• 🌿 Otomatik Dış Cephe Balkonu: Balkon artık yalnızca sağ kenara çizilmez; odanın açık olan dış cephesine (ön, sağ, sol veya arka) cam korkuluklu, saksılı ve balkon kapılı şekilde otomatik yerleşir.\n• 🧱 Balkon Parseli Koruması: Bir odanın balkonunun uzandığı bitişik boş parsele sonradan başka bir oda veya yapı kurulamaz (balkonlu oda yıkılırsa alan tekrar açılır)."
 },
 {
