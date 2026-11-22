@@ -2652,7 +2652,7 @@ height: 86px;
           <button id="btn-reset-save" class="m-btn">🗑️ Kaydı Sil</button>
         </div>
         <div id="how-to-box">• Başlangıçta Giriş Lobisi ve 1 boş oda temeliyle başlarsın. Önce 1. ve 2. Koridoru, ardından 1. Odanı ve kapısını kurup sol alttaki 🎫 Aç/Kapat butonuyla Oteli AÇ.
-• 🔨 İnşa et ile 6×6 arsa üzerinde Odalar, Koridor/Asansör, Spa, Kafe &amp; Bar, Açık Havuz, Park, Çatı Terası, Depo ve Lojman kur; her Park/Havuz/Teras günde 5 misafire hizmet verir (+0,5★ memnuniyet); 🏪 Mağaza'dan 4×4 oda eşyalarını alıp dizebilirsin.
+• 🔨 İnşa et ile 6×6 arsa üzerinde Odalar, Koridor/Asansör, Spa, Kafe &amp; Bar, Açık Havuz, Park, Çatı Terası, Depo ve Lojman kur; her Park/Havuz/Teras günde 10 misafire hizmet verir (+0,5★ memnuniyet); 🏪 Mağaza'dan 4×4 oda eşyalarını alıp dizebilirsin.
 • 🌡️ İklim: Klima yazın odayı serinletir; Doğalgaz kışın tüm odaları ısıtır.
 • 👥 Arkadaşlar bölümünden kodunla takipçi kazanıp başka otelleri gezebilir, 💡 Öneriler'den fikir/hata bildirebilirsin.</div>
       </div>
@@ -2886,7 +2886,7 @@ height: 86px;
 <script>
 const GRID_SIZE = 6;
 const SlotCountPerFloor = 36;
-const StartMoney = 600, DayLength = 60, SeasonDays = 25;
+const StartMoney = 600, DayLength = 60, DayLengthMid = 90, DayLengthLong = 120, SeasonDays = 25;
 const Star1 = 250, Star2 = 500, Star3 = 750;
 const CostRoom = 100, CostRoomStep = 25, CostGym = 150, CostToilet = 120, CostGas = 250;
 const CostReception = 200, CostDoor = 50, CostMaint = 20, CostBalcony = 140;
@@ -3120,7 +3120,7 @@ const BarmenHireCost = 150;
 const BarmenWage = 50;
 const BodyguardDailyPrice = 80;
 const LeisureMaxCount = 3;
-const LeisureDailyCap = 5;
+const LeisureDailyCap = 10;
 const PoolSessionSec = 10;
 const TerraceSessionSec = 8;
 const PoolDailyMaintCost = 10;
@@ -3372,7 +3372,7 @@ hasTree: isTreeSlot,
 tennisState: isTennisClub ? "Ruin" : null,
 items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
 hasCorpse: false, corpseName: "", corpseSkin: "#fcd9b8", corpseHair: "#1a1412", corpseShirt: "#d94d4d",
-gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], cafeLevel: 1, cafeBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], poolBusy: [false, false, false, false, false], terraceBusy: [false, false, false, false, false], servedToday: 0, level: 1,
+gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], cafeLevel: 1, cafeBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], poolBusy: new Array(LeisureDailyCap).fill(false), terraceBusy: new Array(LeisureDailyCap).fill(false), servedToday: 0, level: 1,
 onFire: false, fireLeft: 0,
 wall: pick(WallColors), picColor: pick(PictureColors),
 get X0() { return ElevW + this.idx * SlotW; },
@@ -3639,7 +3639,8 @@ return (tc && tc.type === "TennisClub" && tc.tennisState) ? tc.tennisState : "Ru
 }
 function getTennisRepairStep() {
 if (getTennisState() !== "Repairing") return 0;
-const total = Math.max(1, TennisRepairDays * DayLength);
+const dayLen = (typeof getDayLength === "function") ? getDayLength() : DayLength;
+const total = Math.max(1, TennisRepairDays * dayLen, tennisRepairLeft || 0);
 const frac = clamp(1 - (tennisRepairLeft / total), 0, 0.999);
 return Math.min(3, Math.max(0, Math.floor(frac * 4)));
 }
@@ -4893,13 +4894,31 @@ rows
 };
 };
 }
+let activeDayLength = DayLength;
+function calcDayLength(d, effStars) {
+const curDay = (typeof d === "number" && isFinite(d)) ? d : ((typeof day === "number" && isFinite(day)) ? day : 1);
+if (curDay <= 10) return DayLength;
+const st = (typeof effStars === "number" && isFinite(effStars))
+? effStars
+: ((typeof stars === "function") ? stars() : (typeof reputation === "number" && reputation >= Star1 ? 1 : 0));
+return st >= 1 ? DayLengthLong : DayLengthMid;
+}
+function syncDayLength() {
+activeDayLength = calcDayLength();
+return activeDayLength;
+}
+function getDayLength() {
+return (typeof activeDayLength === "number" && isFinite(activeDayLength) && activeDayLength > 0) ? activeDayLength : DayLength;
+}
 function seasonIdx() { return Math.floor((day - 1) / SeasonDays) % 4; }
 function brightness() {
-const t = dayTimer / DayLength;
+const len = getDayLength();
+const t = dayTimer / len;
 return clamp(Math.sin(t * 2 * Math.PI) * 1.6 + 0.4, 0, 1);
 }
 function getGameHour() {
-const t = (typeof dayTimer === "number" && typeof DayLength === "number" && DayLength > 0) ? (dayTimer / DayLength) : 0;
+const len = getDayLength();
+const t = (typeof dayTimer === "number" && len > 0) ? (dayTimer / len) : 0;
 return (6 + t * 24) % 24;
 }
 function getCafeTimePeriod() {
@@ -6137,6 +6156,9 @@ day = data.dayCount || 1;
 roomCounter = data.roomCounter || 0; builtRooms = data.builtRooms || 0;
 ratingSum = data.ratingSum || 0; ratingCount = data.ratingCount || 0; cleanCount = data.cleanCount || 0;
 dayTimer = data.dayTimer || 0;
+if (typeof syncDayLength === "function") syncDayLength();
+const _curDayLen = (typeof getDayLength === "function") ? getDayLength() : DayLength;
+dayTimer = Math.max(0, Math.min(Number(dayTimer) || 0, _curDayLen));
 isOpen = !!data.isOpen;
 gasOn = data.gasOn !== undefined ? !!data.gasOn : true;
 gasLeak = !!data.gasLeak;
@@ -6310,8 +6332,8 @@ s.cafeLevel = Math.max(1, Math.min(3, Math.floor(Number(sd.cafeLevel) || 1)));
 s.cafeBusy = [false, false, false];
 s.toiletBusy = [false, false];
 s.tennisCourtBusy = [false, false];
-s.poolBusy = [false, false, false, false, false];
-s.terraceBusy = [false, false, false, false, false];
+s.poolBusy = new Array(LeisureDailyCap).fill(false);
+s.terraceBusy = new Array(LeisureDailyCap).fill(false);
 const rawServed = Number(sd.servedToday);
 s.servedToday = (Number.isFinite(rawServed) && rawServed >= 0) ? Math.floor(rawServed) : 0;
 s.level = sd.level || 1;
@@ -6429,7 +6451,7 @@ tc.hasTree = false;
 tc.tennisCourtBusy = [false, false];
 tc.tennisState = sanitizeTennisState(rawTS);
 if (tc.tennisState === "Repairing") {
-if (tennisRepairLeft <= 0) tennisRepairLeft = TennisRepairDays * DayLength;
+if (tennisRepairLeft <= 0) tennisRepairLeft = TennisRepairDays * ((typeof getDayLength === "function") ? getDayLength() : DayLength);
 } else {
 tennisRepairLeft = 0;
 }
@@ -6671,6 +6693,7 @@ ratingCount = 0;
 tools = 1;
 day = 1;
 dayTimer = 0;
+if (typeof syncDayLength === "function") syncDayLength();
 roomCounter = 0;
 builtRooms = 0;
 cleanCount = 0;
@@ -6806,8 +6829,8 @@ s.cafeLevel = 1;
 s.cafeBusy = [false, false, false];
 s.toiletBusy = [false, false];
 s.tennisCourtBusy = [false, false];
-s.poolBusy = [false, false, false, false, false];
-s.terraceBusy = [false, false, false, false, false];
+s.poolBusy = new Array(LeisureDailyCap).fill(false);
+s.terraceBusy = new Array(LeisureDailyCap).fill(false);
 s.servedToday = 0;
 s.level = 1;
 s.onFire = false;
@@ -10093,10 +10116,12 @@ return false;
 }
 if (!pay(TennisRepairCost)) return false;
 tc.tennisState = "Repairing";
-tennisRepairLeft = TennisRepairDays * DayLength;
+const dayLen = (typeof getDayLength === "function") ? getDayLength() : DayLength;
+const repairDur = TennisRepairDays * dayLen;
+tennisRepairLeft = repairDur;
 tennisRepairTickedDt = false;
 play("build");
-log("🔨 Tenis kulübü binası onarımı başladı (" + TennisRepairDays + " gün / " + Math.round(TennisRepairDays * DayLength) + " sn).");
+log("🔨 Tenis kulübü binası onarımı başladı (" + TennisRepairDays + " gün / " + Math.round(repairDur) + " sn).");
 if (typeof floatText === "function") {
 floatText(tc.X0 + SlotW * 0.5, tc.floor.WalkY, "🔨 Onarım Başladı", "#f59e0b");
 }
@@ -10730,7 +10755,9 @@ const pts = [
 { u: b.u0 + 82, v: b.v0 + 152, z: b.z0 + 4 },
 { u: b.u0 + 150, v: b.v0 + 96, z: b.z0 + 4 }
 ];
-return pts[Math.max(0, Math.min(pts.length - 1, stationIdx || 0))];
+const idx = Math.max(0, Math.floor(Number(stationIdx) || 0));
+const base = pts[idx % pts.length];
+return idx >= pts.length ? { u: base.u - 8, v: base.v + 8, z: base.z } : base;
 }
 function getTerraceStationIso(terraceSlot, stationIdx = 0) {
 const b = slotIsoBox(terraceSlot.floor.idx, terraceSlot.idx);
@@ -10741,7 +10768,9 @@ const pts = [
 { u: b.u0 + 64, v: b.v0 + 148, z: b.z0 + 6 },
 { u: b.u0 + 112, v: b.v0 + 118, z: b.z0 + 6 }
 ];
-return pts[Math.max(0, Math.min(pts.length - 1, stationIdx || 0))];
+const idx = Math.max(0, Math.floor(Number(stationIdx) || 0));
+const base = pts[idx % pts.length];
+return idx >= pts.length ? { u: base.u - 8, v: base.v + 8, z: base.z } : base;
 }
 function _appendDoorSlotCorridorRoute(path, fromF, fromCorrIdx, toF, toCorrIdx) {
 if (fromF === toF) {
@@ -10852,8 +10881,10 @@ const gs = gasSlot();
 return !gs || !gasOn;
 }
 function newDay() {
+const prevDayLen = (typeof getDayLength === "function") ? getDayLength() : DayLength;
 const servedYesterday = todayServed;
 day++;
+if (typeof syncDayLength === "function") syncDayLength();
 todayServed = 0;
 if (typeof tennisSessionsToday === "number" && tennisSessionsToday > 0) {
 log("🎾 Tenis: " + tennisSessionsToday + " seans, +" + (tennisRevenueToday || 0) + " TL");
@@ -11013,7 +11044,7 @@ if (Math.random() < ch) { startFire(s); fires++; }
 }
 if (typeof getTennisState === "function" && getTennisState() === "Repairing") {
 if (!tennisRepairTickedDt) {
-tennisRepairLeft = Math.max(0, tennisRepairLeft - DayLength);
+tennisRepairLeft = Math.max(0, tennisRepairLeft - prevDayLen);
 }
 tennisRepairTickedDt = false;
 if (tennisRepairLeft <= 1.0 && typeof finishTennisRepair === "function") {
@@ -11483,8 +11514,8 @@ s.gymLevel = 1; s.gymBusy = [false, false, false];
 s.spaLevel = 1; s.spaBusy = [false, false, false];
 s.cafeLevel = 1; s.cafeBusy = [false, false, false];
 s.toiletBusy = [false, false];
-s.poolBusy = [false, false, false, false, false];
-s.terraceBusy = [false, false, false, false, false];
+s.poolBusy = new Array(LeisureDailyCap).fill(false);
+s.terraceBusy = new Array(LeisureDailyCap).fill(false);
 s.servedToday = 0;
 s.furnLayout = {};
 if (s.items) for (let k = 0; k < s.items.length; k++) s.items[k] = false;
@@ -11694,7 +11725,7 @@ play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Açık Yüzme Havuz
 }
 if (pay(PoolCost)) {
 s.type = "Pool"; s.parcelBuilt = true; s.servedToday = 0; s.poolBusy = new Array(LeisureDailyCap).fill(false); poolState = "Built";
-play("done"); log("🏊 Açık Yüzme Havuzu seçtiğin parsele kuruldu! İlkbahar ve yaz gündüz günde 5 misafir ağırlayabilir.");
+play("done"); log("🏊 Açık Yüzme Havuzu seçtiğin parsele kuruldu! İlkbahar ve yaz gündüz günde " + LeisureDailyCap + " misafir ağırlayabilir.");
 refresh(); saveGame(); return;
 }
 }
@@ -11705,7 +11736,7 @@ play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Dinlenme Parkı kur
 }
 if (pay(ParkCost)) {
 s.type = "Park"; s.parcelBuilt = true; s.servedToday = 0; parkState = "Built";
-play("done"); log("🌳 Dinlenme Parkı & Çocuk Bahçesi seçtiğin parsele kuruldu! Günde en fazla 5 çocuklu aile ağırlayabilir.");
+play("done"); log("🌳 Dinlenme Parkı & Çocuk Bahçesi seçtiğin parsele kuruldu! Günde en fazla " + LeisureDailyCap + " çocuklu aile ağırlayabilir.");
 refresh(); saveGame(); return;
 }
 }
@@ -11781,7 +11812,7 @@ play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Çatı Terası kura
 }
 if (pay(CostRoofTerrace)) {
 s.type = "RoofTerrace"; s.parcelBuilt = true; s.servedToday = 0; s.terraceBusy = new Array(LeisureDailyCap).fill(false);
-play("done"); log("🏖️ Çatı Terası üst kata kuruldu! Akşamları (17–23, kış hariç) günde 5 misafir ağırlayabilir.");
+play("done"); log("🏖️ Çatı Terası üst kata kuruldu! Akşamları (17–23, kış hariç) günde " + LeisureDailyCap + " misafir ağırlayabilir.");
 refresh(); saveGame(); return;
 }
 }
@@ -13685,10 +13716,10 @@ renderDecorPanel();
 } else if (sel === "Park") {
 const pCnt = (typeof countBuiltParks === "function") ? countBuiltParks() : 0;
 if (pCnt === 0 && parkState === "Locked") {
-infoText.textContent = "🌳 Dinlenme Parkı (" + pCnt + "/" + LeisureMaxCount + ")  •  Bedel: " + ParkCost + " TL  •  0 TL bakım\nGünde en fazla 5 çocuklu aile ağırlayabilir (evcil hayvan bahşişini de açar).";
+infoText.textContent = "🌳 Dinlenme Parkı (" + pCnt + "/" + LeisureMaxCount + ")  •  Bedel: " + ParkCost + " TL  •  0 TL bakım\nGünde en fazla " + LeisureDailyCap + " çocuklu aile ağırlayabilir (evcil hayvan bahşişini de açar).";
 setAct(0, "🏗️ Park Kur\n" + ParkCost + " TL", true, readyOnce);
 } else if (parkState === "Building") infoText.textContent = "🏗️ Park alanı inşa ediliyor... Kalan: " + Math.ceil(parkLeft) + " sn";
-else infoText.textContent = "🌳 Dinlenme Parkı hazır (" + pCnt + "/" + LeisureMaxCount + ")! Günde tesis başına 5 çocuklu aile ağırlanır.";
+else infoText.textContent = "🌳 Dinlenme Parkı hazır (" + pCnt + "/" + LeisureMaxCount + ")! Günde tesis başına " + LeisureDailyCap + " çocuklu aile ağırlanır.";
 } else if (sel === "Floor" && selFloor) {
 const fl = selFloor, n = fl.idx;
 if (fl.state === "Locked") {
@@ -13842,7 +13873,8 @@ setAct(0, "🔨 Binayı Onar (" + TennisRepairCost + " TL)\n(Eksik: " + (TennisR
 setAct(0, "🔨 Binayı Onar\n" + TennisRepairCost + " TL", true, true);
 }
 } else if (tState === "Repairing") {
-const totalSec = Math.max(1, TennisRepairDays * DayLength);
+const dayLen = (typeof getDayLength === "function") ? getDayLength() : DayLength;
+const totalSec = Math.max(1, TennisRepairDays * dayLen, tennisRepairLeft || 0);
 const remSec = Math.max(1, Math.ceil(tennisRepairLeft || totalSec));
 const pct = Math.min(99, Math.max(0, Math.round((1 - (tennisRepairLeft / totalSec)) * 100)));
 infoText.textContent = "🔧 Tenis Kulübü Onarılıyor (%" + pct + ")\n" + progLine + "\nKalan: ~" + remSec + " sn (1 gün) · İskele ve çatı kuruluyor.";
@@ -13885,7 +13917,7 @@ pBadge + " • Bugün: " + pSt.served + "/" + pSt.cap + " hizmet";
 } else if (cur.type === "Park") {
 const pkSt = (typeof getParkStatus === "function") ? getParkStatus(cur) : { open: true, reason: "Açık", served: Math.max(0, cur.servedToday || 0), cap: LeisureDailyCap };
 const pkBadge = pkSt.open ? "🟢 Açık" : ("🟠 " + pkSt.reason);
-infoText.textContent = "🌳 Dinlenme Parkı & Çocuk Bahçesi " + coordStr + "  •  5 çocuklu aile/gün • 0 TL bakım\n" +
+infoText.textContent = "🌳 Dinlenme Parkı & Çocuk Bahçesi " + coordStr + "  •  " + LeisureDailyCap + " çocuklu aile/gün • 0 TL bakım\n" +
 pkBadge + " • Bugün: " + pkSt.served + "/" + pkSt.cap + " hizmet";
 } else if (cur.type === "Storage") {
 infoText.textContent = "📦 Depo Binası Sv." + storageLevel + " " + coordStr + "  •  Stok: " + storageUsed() + "/" + storageCap();
@@ -14217,17 +14249,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 110;
-const APP_VERSION_NAME = "1.9.102-beta";
+const APP_VERSION_CODE = 111;
+const APP_VERSION_NAME = "1.9.103-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.103-beta",
+title: "Gün süresi uzadı (60/90/120 sn)",
+latest: true,
+notes: "• ⏳ Dinamik Gün Süresi: Gün 1–10 arası günler 60 sn, 11. günden itibaren 90 sn, 1★ alınmışsa 11. günden itibaren 120 sn sürer (yalnızca yeni gün başlarken güncellenir).\n• 🏊 Park / Havuz / Teras Kapasitesi: Uzayan günlere uyum olarak günlük hizmet sınırı tesis başına 5'ten 10'a çıkarıldı."
+},
+{
 ver: "v1.9.102-beta",
 title: "Doğalgaz bedeli günlük 50 TL/oda",
-latest: true,
+latest: false,
 notes: "• 🔥 Doğalgaz Dengesi: Kışın doğalgaz ısıtma faturası oda başına günlük 50 TL olarak güncellendi."
 },
 {
@@ -16617,7 +16655,8 @@ return out;
 let _lastVgCw = 0, _lastVgCh = 0, _vgGrad = null, _lastVgA = -1;
 function drawAtmosphere(cw, ch, b) {
 const n = clamp(1 - b, 0, 1);
-const t = dayTimer / DayLength;
+const dayLen = (typeof getDayLength === "function") ? getDayLength() : DayLength;
+const t = dayTimer / dayLen;
 const rising = (t > 0.75 || t < 0.25);
 if (n > 0.02) {
 const warm = rising ? _PINK_RGB : _ORANGE_RGB;
@@ -20534,7 +20573,7 @@ isoBox(u0 + 76, v0 + 18, u0 + 88, v0 + 30, z0 + 1, z0 + 12, "#ffffff", "#e2e8f0"
 isoBox(u0 + 80, v0 + 22, u0 + 84, v0 + 26, z0 + 12, z0 + 18, "#ef4444", "#f87171", "#b91c1c", null, 0);
 isoBox(u1 - 12, v0 + 30, u1 - 8, v0 + 34, z0 + 1, z0 + 35, "#ffffff", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1);
 isoBox(u1 - 14, v0 + 28, u1 - 6, v0 + 36, z0 + 22, z0 + 32, "#ef4444", "#ffffff", "#dc2626", OUTLINE_COL, 1);
-const pSt = (typeof getPoolStatus === "function") ? getPoolStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: 5 };
+const pSt = (typeof getPoolStatus === "function") ? getPoolStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: LeisureDailyCap };
 if (pSt.reason === "Koridora bağlı değil") {
 isoLabel("⚠️ HAVUZ (Bağlı değil)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 10.5, "#991b1b", "#fef2f2", 6, 2.5);
 } else if (pSt.reason === "Dolu") {
@@ -20580,7 +20619,7 @@ drawLushBush(u0 + 25, v1 - 35, z0, 0.9, "normal", 0);
 drawLushBush(u0 + 45, v1 - 25, z0, 0.85, "flower", 0);
 drawLushBush(u0 + 160, v0 + 110, z0, 0.85, "flower", 0);
 }
-const pkSt = (typeof getParkStatus === "function") ? getParkStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: 5 };
+const pkSt = (typeof getParkStatus === "function") ? getParkStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: LeisureDailyCap };
 if (pkSt.reason === "Dolu") {
 isoLabel("🟠 PARK (" + pkSt.served + "/" + pkSt.cap + " Dolu)", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 54, 10.5, "#9a3412", "#fff7ed", 6, 2.5);
 } else {
@@ -20698,7 +20737,7 @@ drawSunLounger(u0 + 110, v0 + 35, z0, isOpen && activeCount >= 1, towel1, "#e6b8
 drawSunLounger(u0 + 110, v0 + 125, z0, isOpen && activeCount >= 2, towel2, "#59331a");
 drawIsoUmbrella(u0 + 135, v0 + 90, z0, umbCol, 0.9);
 drawPottedPlant(u0 + 28, v1 - 28, z0, 0.85);
-const tSt = (typeof getTerraceStatus === "function") ? getTerraceStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: 5 };
+const tSt = (typeof getTerraceStatus === "function") ? getTerraceStatus(s) : { open: true, reason: "Açık", served: Math.max(0, s.servedToday || 0), cap: LeisureDailyCap };
 if (tSt.reason === "Koridora bağlı değil") {
 isoLabel("⚠️ TERAS (Bağlı değil)", u0 + 52, v0 + 52, z0 + 80, 10.5, "#991b1b", "#fef2f2", 6, 2);
 } else if (tSt.reason === "Dolu") {
@@ -28415,7 +28454,8 @@ if (summaryOpen) { drawWorld(); requestAnimationFrame(loop); return; }
 syncTowerPawns();
 updateBgm(dt);
 dayTimer += dt;
-if (dayTimer >= DayLength) { dayTimer = 0; newDay(); }
+const curDayLen = (typeof getDayLength === "function") ? getDayLength() : DayLength;
+if (dayTimer >= curDayLen) { dayTimer = 0; newDay(); }
 updateDayNight();
 updateParticles(dt);
 if (isOpen) {
@@ -28878,6 +28918,7 @@ document.addEventListener("pause", () => {
 saveGame();
 if (typeof triggerCloudSyncNow === "function") triggerCloudSyncNow("android_pause");
 });
+if (typeof syncDayLength === "function") syncDayLength();
 applySeason();
 updateDayNight();
 resetSpawn();
