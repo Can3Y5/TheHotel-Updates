@@ -2890,13 +2890,13 @@ const StartMoney = 600, DayLength = 60, DayLengthMid = 90, DayLengthLong = 120, 
 const Star1 = 250, Star2 = 500, Star3 = 750;
 const CostRoom = 100, CostRoomStep = 25, CostGym = 150, CostToilet = 120, CostGas = 250;
 const CostReception = 200, CostDoor = 50, CostMaint = 20, CostBalcony = 140;
-const ParkCost = 200, ParkSec = 20, PoolCost = 250, PoolSec = 22, TreeCost = 40;
+const ParkCost = 200, ParkSec = 30, PoolCost = 250, PoolSec = 22, TreeCost = 40;
 const CleanerHire = 150, CleanerWage = 15, MaxCleaners = 5;
-const CostStorage = 220, StorageSec = 18, CostDorm = 260, DormSec = 20;
+const CostStorage = 220, StorageSec = 30, CostDorm = 260, DormSec = 30;
 const StorageCap = [0, 6, 12, 20];
 const StorageUpCost = [0, 0, 300, 500];
 const DormUpCost = [0, 0, 250, 400];
-const CostKitchen = 300, KitchenSec = 22;
+const CostKitchen = 300, KitchenSec = 30;
 const CookHireCost = [0, 200, 300, 420], CookWage = [0, 22, 30, 42];
 const CookMeals = [0, 3, 5, 8];
 const MealPrice = 22, MealCost = 6;
@@ -3121,6 +3121,23 @@ const BarmenWage = 50;
 const BodyguardDailyPrice = 80;
 const LeisureMaxCount = 3;
 const LeisureDailyCap = 10;
+const INSTANT_BUILD_THRESHOLD = 3;
+const BUILD_DURATIONS = {
+Room: 20,
+Corridor: 10,
+Elevator: 20,
+Toilet: 20,
+Gym: 30,
+Gas: 30,
+Kitchen: 30,
+Storage: 30,
+Dorm: 30,
+Park: 30,
+RoofTerrace: 30,
+Pool: 45,
+Spa: 45,
+Cafe: 45
+};
 const PoolSessionSec = 10;
 const TerraceSessionSec = 8;
 const PoolDailyMaintCost = 10;
@@ -3374,9 +3391,10 @@ items: new Array(ItemCount).fill(false), maintenance: 100, guest: null,
 hasCorpse: false, corpseName: "", corpseSkin: "#fcd9b8", corpseHair: "#1a1412", corpseShirt: "#d94d4d",
 gymLevel: 1, gymBusy: [false, false, false], spaLevel: 1, spaBusy: [false, false, false], cafeLevel: 1, cafeBusy: [false, false, false], toiletBusy: [false, false], tennisCourtBusy: [false, false], poolBusy: new Array(LeisureDailyCap).fill(false), terraceBusy: new Array(LeisureDailyCap).fill(false), servedToday: 0, level: 1,
 onFire: false, fireLeft: 0,
+buildLeft: 0, buildTotal: 0,
 wall: pick(WallColors), picColor: pick(PictureColors),
 get X0() { return ElevW + this.idx * SlotW; },
-get Ready() { return this.type === "Room" && this.hasDoor && !!getRoomDoorWall(this) && !this.hasCorpse && this.floor.state === "Built"; }
+get Ready() { return this.type === "Room" && !(this.buildLeft > 0) && this.hasDoor && !!getRoomDoorWall(this) && !this.hasCorpse && this.floor.state === "Built"; }
 };
 fl.slots.push(s);
 allSlots.push(s);
@@ -3630,6 +3648,9 @@ if ((Number(tennisKit && tennisKit[k]) || 0) < TennisKitNeeds[k]) return false;
 }
 return true;
 }
+function isSlotBuilding(s) {
+return !!(s && typeof s.buildLeft === "number" && s.buildLeft > 0);
+}
 function getTennisClubSlot() {
 return (typeof floors !== "undefined" && floors[0] && floors[0].slots && floors[0].slots[38]) ? floors[0].slots[38] : null;
 }
@@ -3713,14 +3734,14 @@ function countBuiltRooms() {
 let c = 0;
 for (let i = 0; i < allSlots.length; i++) {
 const s = allSlots[i];
-if (s.type === "Room" && s.floor && s.floor.state === "Built") c++;
+if (s.type === "Room" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built") c++;
 }
 return c;
 }
 function hasBuiltParcel(type) {
 for (let i = 0; i < allSlots.length; i++) {
 const s = allSlots[i];
-if (s.type === type && s.floor && s.floor.state === "Built") return true;
+if (s.type === type && !isSlotBuilding(s) && s.floor && s.floor.state === "Built") return true;
 }
 return false;
 }
@@ -3728,7 +3749,7 @@ function maxBuiltRoomLevel() {
 let maxLv = 0;
 for (let i = 0; i < allSlots.length; i++) {
 const s = allSlots[i];
-if (s.type === "Room" && s.floor && s.floor.state === "Built") {
+if (s.type === "Room" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built") {
 const lv = (typeof getRoomLevel === "function") ? getRoomLevel(s) : (s.level || 1);
 if (lv > maxLv) maxLv = lv;
 }
@@ -3854,11 +3875,11 @@ progress: null
 {
 id: "spa_lvl3", group: "Tesisler", title: "Tam Teşekküllü Hamam", desc: "Bir Spa & Hamam'ı Sv.3'e yükselt",
 gems: 10, tl: 0, done: false,
-check: () => allSlots.some(s => s.type === "Spa" && s.floor && s.floor.state === "Built" && (s.spaLevel || 1) >= 3),
+check: () => allSlots.some(s => s.type === "Spa" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built" && (s.spaLevel || 1) >= 3),
 progress: () => {
 let maxLv = 0;
 for (const s of allSlots) {
-if (s.type === "Spa" && s.floor && s.floor.state === "Built") maxLv = Math.max(maxLv, s.spaLevel || 1);
+if (s.type === "Spa" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built") maxLv = Math.max(maxLv, s.spaLevel || 1);
 }
 return { cur: Math.min(3, maxLv), max: 3 };
 }
@@ -3878,11 +3899,11 @@ progress: null
 {
 id: "cafe_lvl3", group: "Tesisler", title: "Gece Kulübü Havası", desc: "Kafe & Bar'ı Sv.3'e yükselt",
 gems: 10, tl: 0, done: false,
-check: () => allSlots.some(s => s.type === "Cafe" && s.floor && s.floor.state === "Built" && (s.cafeLevel || 1) >= 3),
+check: () => allSlots.some(s => s.type === "Cafe" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built" && (s.cafeLevel || 1) >= 3),
 progress: () => {
 let maxLv = 0;
 for (const s of allSlots) {
-if (s.type === "Cafe" && s.floor && s.floor.state === "Built") maxLv = Math.max(maxLv, s.cafeLevel || 1);
+if (s.type === "Cafe" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built") maxLv = Math.max(maxLv, s.cafeLevel || 1);
 }
 return { cur: Math.min(3, maxLv), max: 3 };
 }
@@ -5624,7 +5645,7 @@ type === "Spa" || type === "Cafe" || type === "Toilet" || type === "Gas" ||
 type === "Corridor" || type === "Elevator" || type === "TennisClub";
 }
 function isSlotStructurallyConnected(s) {
-if (!s || !isRoofedStructure(s.type)) return false;
+if (!s || isSlotBuilding(s) || !isRoofedStructure(s.type)) return false;
 if (s.type === "TennisClub") {
 const ts = s.tennisState || "Ruin";
 if (ts === "Ruin" || ts === "Repairing") return false;
@@ -5658,20 +5679,20 @@ if (isCorridor(back)) return "back";
 return "front";
 }
 function hasElevator() {
-return allSlots.some(sl => sl.type === "Elevator" && sl.floor.state === "Built");
+return allSlots.some(sl => sl.type === "Elevator" && sl.floor.state === "Built" && !isSlotBuilding(sl));
 }
 function hasElevatorBelow(slot) {
 if (!slot || !slot.floor || slot.floor.idx <= 0) return true;
 const belowFloor = floors[slot.floor.idx - 1];
 const below = belowFloor && belowFloor.slots ? belowFloor.slots[slot.idx] : null;
-return !!(below && below.type === "Elevator");
+return !!(below && below.type === "Elevator" && !isSlotBuilding(below));
 }
 function isCorridor(slot) {
-if (!slot) return false;
+if (!slot || isSlotBuilding(slot)) return false;
 return slot.type === "Corridor";
 }
 function getRoomAvailableDoorWalls(s) {
-if (!s || !s.floor) return [];
+if (!s || !s.floor || isSlotBuilding(s)) return [];
 if (s.type === "TennisClub") {
 if (!isSlotStructurallyConnected(s)) return [];
 const { gu, gv } = parcelCoords(s.idx);
@@ -5828,6 +5849,7 @@ if (fIdx === 0) {
 if ((idx === 36 || idx === 37) && !s.hasTree) return true;
 const { gu, gv } = parcelCoords(idx);
 return fl.slots.some(other => {
+if (isSlotBuilding(other)) return false;
 if (other.type === "TennisClub" && !isSlotStructurallyConnected(other)) return false;
 if (!other.parcelBuilt && other.type === "Empty") return false;
 const oc = parcelCoords(other.idx);
@@ -5835,7 +5857,7 @@ return Math.abs(oc.gu - gu) + Math.abs(oc.gv - gv) === 1;
 });
 } else {
 const below = floors[fIdx - 1].slots[idx];
-return below && isRoofedStructure(below.type);
+return !!(below && isRoofedStructure(below.type) && !isSlotBuilding(below));
 }
 }
 const SAVE_KEY = "thehotel_save_v200";
@@ -6032,6 +6054,8 @@ servedToday: (s.type === "Pool" || s.type === "Park" || s.type === "RoofTerrace"
 level: s.level || 1,
 onFire: s.onFire,
 fireLeft: s.fireLeft,
+buildLeft: (typeof s.buildLeft === "number" && isFinite(s.buildLeft) && s.buildLeft > 0) ? Math.round(s.buildLeft * 10) / 10 : 0,
+buildTotal: (typeof s.buildTotal === "number" && isFinite(s.buildTotal) && s.buildTotal > 0) ? Math.round(s.buildTotal * 10) / 10 : 0,
 guest: (s.guest && s.guest.state !== "Leaving") ? {
 name: s.guest.name,
 type: s.guest.type,
@@ -6296,12 +6320,16 @@ s.hasTree = true;
 } else {
 s.hasTree = false;
 }
+const rawBL = Number(sd.buildLeft);
+s.buildLeft = (Number.isFinite(rawBL) && rawBL > 0) ? rawBL : 0;
+const rawBT = Number(sd.buildTotal);
+s.buildTotal = (s.buildLeft > 0 && Number.isFinite(rawBT) && rawBT > 0) ? rawBT : (s.buildLeft > 0 ? s.buildLeft : 0);
 if (sd.type === "Storage") {
-storageState = "Built";
+if (!(s.buildLeft > 0)) storageState = "Built";
 storageLevel = Math.max(storageLevel, sd.level || 1);
 s.type = "Storage";
 } else if (sd.type === "Dorm") {
-dormState = "Built";
+if (!(s.buildLeft > 0)) dormState = "Built";
 dormLevel = Math.max(dormLevel, sd.level || 1);
 s.type = "Dorm";
 } else {
@@ -6835,6 +6863,8 @@ s.servedToday = 0;
 s.level = 1;
 s.onFire = false;
 s.fireLeft = 0;
+s.buildLeft = 0;
+s.buildTotal = 0;
 s.wall = pick(WallColors);
 s.picColor = pick(PictureColors);
 }
@@ -6918,6 +6948,10 @@ if (s.gymLevel > 1) c.gl = s.gymLevel;
 if (s.type === "Spa" && s.spaLevel > 1) c.sl = Math.max(1, Math.min(3, Math.floor(Number(s.spaLevel) || 1)));
 if (s.type === "Cafe" && s.cafeLevel > 1) c.cl = Math.max(1, Math.min(3, Math.floor(Number(s.cafeLevel) || 1)));
 if (s.level > 1) c.lv = s.level;
+if (s.buildLeft > 0) {
+c.bl = Math.round(s.buildLeft * 10) / 10;
+c.bt = Math.round((s.buildTotal || s.buildLeft) * 10) / 10;
+}
 return c;
 })
 }))
@@ -7009,6 +7043,8 @@ s.hasCorpse = false;
 s.corpseName = "";
 s.onFire = false;
 s.fireLeft = 0;
+s.buildLeft = 0;
+s.buildTotal = 0;
 s.maintenance = 100;
 s.gymBusy = [false, false, false];
 s.spaBusy = [false, false, false];
@@ -7052,6 +7088,8 @@ s.gymLevel = sd.gl || 1;
 s.spaLevel = sd.sl || 1;
 s.cafeLevel = sd.cl || 1;
 s.level = sd.lv || 1;
+s.buildLeft = (typeof sd.bl === "number" && isFinite(sd.bl) && sd.bl > 0) ? sd.bl : 0;
+s.buildTotal = (s.buildLeft > 0 && typeof sd.bt === "number" && isFinite(sd.bt) && sd.bt > 0) ? sd.bt : s.buildLeft;
 }
 }
 viewFloor = 0;
@@ -7071,11 +7109,17 @@ function gymUpgradeCost(lv) { return lv <= 1 ? 200 : 350; }
 function spaCost() { return Math.round(CostSpa + CostRoomStep * builtRooms); }
 function spaUpgradeCost(lv) { return lv <= 1 ? 300 : 500; }
 function _countBuiltType(type) {
+return allSlots.filter(s => s.type === type && s.floor && s.floor.state === "Built" && !isSlotBuilding(s)).length;
+}
+function countTotalType(type) {
 return allSlots.filter(s => s.type === type && s.floor && s.floor.state === "Built").length;
+}
+function hasAnySlotOfType(type) {
+return allSlots.some(s => s.type === type && s.floor && s.floor.state === "Built");
 }
 function countBuiltSpas() { return _countBuiltType("Spa"); }
 function spaDailyCost(s) {
-if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built") return 0;
+if (!s || s.type !== "Spa" || !s.floor || s.floor.state !== "Built" || isSlotBuilding(s)) return 0;
 return SpaDailyCost * Math.max(1, s.spaLevel || 1);
 }
 function cafeCost() { return Math.round(CostCafe + CostRoomStep * builtRooms); }
@@ -7088,7 +7132,7 @@ function countBuiltRoofTerraces() { return _countBuiltType("RoofTerrace"); }
 function hasBuiltPool() { return countBuiltPools() >= 1; }
 function hasBuiltPark() { return countBuiltParks() >= 1 || (typeof parkState !== "undefined" && parkState === "Built"); }
 function cafeDailyCost(s) {
-if (!s || s.type !== "Cafe" || !s.floor || s.floor.state !== "Built") return 0;
+if (!s || s.type !== "Cafe" || !s.floor || s.floor.state !== "Built" || isSlotBuilding(s)) return 0;
 return CafeDailyCost * Math.max(1, s.cafeLevel || 1);
 }
 function calcBuiltRoomsFromSlots() {
@@ -7112,8 +7156,8 @@ return base;
 }
 function round5(v) { return Math.max(5, Math.round(v / 5) * 5); }
 function hasReception() { return allSlots.some(s => s.type === "Reception" && s.floor.state === "Built"); }
-function hasToilet() { return allSlots.some(s => s.type === "Toilet" && s.floor.state === "Built"); }
-function gasSlot() { return allSlots.find(s => s.type === "Gas" && s.floor.state === "Built") || null; }
+function hasToilet() { return allSlots.some(s => s.type === "Toilet" && s.floor.state === "Built" && !isSlotBuilding(s)); }
+function gasSlot() { return allSlots.find(s => s.type === "Gas" && s.floor.state === "Built" && !isSlotBuilding(s)) || null; }
 function heated(s) { return gasSlot() !== null && gasOn; }
 function hasReadyRoom() { return allSlots.some(s => s.Ready); }
 function freeRoomCount() { return allSlots.filter(s => s.Ready && !s.guest && !s.onFire).length; }
@@ -7127,7 +7171,7 @@ return Math.abs(su - gu) + Math.abs(sv - gv) === 1;
 });
 }
 function isAdjacentNoisy(s) {
-return adjacentSlots(s).some(sl => sl.type === "Gym" || sl.type === "Toilet" || (sl.guest && sl.guest.kids > 0));
+return adjacentSlots(s).some(sl => !isSlotBuilding(sl) && (sl.type === "Gym" || sl.type === "Toilet" || (sl.guest && sl.guest.kids > 0)));
 }
 function floorOf(y) { return clamp(Math.round((y - SlabH) / FloorH), 0, FloorCount - 1); }
 const sumArr = a => a.reduce((x, y) => x + y, 0);
@@ -8130,7 +8174,7 @@ if (!g || !g.room || !g.pawn) return false;
 if (Math.random() > 0.7) return false;
 reconcileGymBusy();
 for (const s of allSlots) {
-if (s.type !== "Gym" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (s.type !== "Gym" || isSlotBuilding(s) || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
 if (typeof isGymConnected === "function" && !isGymConnected(s)) continue;
 const cap = Math.max(1, Math.min(3, s.gymLevel || 1));
 let freeK = -1;
@@ -8423,7 +8467,7 @@ if (!g || !g.room || !g.pawn) return false;
 if (Math.random() > 0.6) return false;
 reconcileToiletBusy();
 for (const s of allSlots) {
-if (s.type !== "Toilet" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (s.type !== "Toilet" || isSlotBuilding(s) || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
 if (typeof isToiletConnected === "function" && !isToiletConnected(s)) continue;
 let freeK = -1;
 for (let k = 0; k < 2; k++) {
@@ -8469,7 +8513,7 @@ returnToRoom(g);
 }
 function sendKidsToPark(g) {
 if (!g || g.parkDay || (g.kids || 0) <= 0) return false;
-const parks = allSlots.filter(s => s && s.type === "Park" && s.floor && s.floor.state === "Built" && !s.onFire);
+const parks = allSlots.filter(s => s && s.type === "Park" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built" && !s.onFire);
 if (parks.length === 0) return false;
 const freePark = parks.find(s => Math.max(0, Math.floor(Number(s.servedToday) || 0)) < LeisureDailyCap);
 if (!freePark) {
@@ -8541,7 +8585,7 @@ if (!isGuestSpaEligible(g) || g.state !== "InRoom") return false;
 if (Math.random() > getSpaJoinProb()) return false;
 reconcileSpaBusy();
 for (const s of allSlots) {
-if (s.type !== "Spa" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (s.type !== "Spa" || isSlotBuilding(s) || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
 if (typeof isSpaConnected === "function" && !isSpaConnected(s)) continue;
 const cap = Math.max(1, Math.min(3, s.spaLevel || 1));
 let freeK = -1;
@@ -8698,7 +8742,7 @@ if (!isGuestCafeEligible(g, period) || !allowFromState) return false;
 if (Math.random() > getCafeJoinProb(cafeFee, period)) return false;
 reconcileCafeBusy();
 for (const s of allSlots) {
-if (s.type !== "Cafe" || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (s.type !== "Cafe" || isSlotBuilding(s) || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
 if (typeof isCafeConnected === "function" && !isCafeConnected(s)) continue;
 const cap = Math.max(1, Math.min(3, s.cafeLevel || 1));
 let freeK = -1;
@@ -8823,6 +8867,9 @@ const served = Math.max(0, Math.floor(Number(s && s.servedToday) || 0));
 if (!s || s.type !== type || !s.floor || s.floor.state !== "Built") {
 return { open: false, reason: "Kapalı: mevsim/saat", served, cap };
 }
+if (isSlotBuilding(s)) {
+return { open: false, reason: "İnşaatta", served, cap };
+}
 if (connFn && !connFn(s)) {
 return { open: false, reason: "Koridora bağlı değil", served, cap };
 }
@@ -8909,7 +8956,7 @@ const prob = (typeof probOverride === "number") ? probOverride : cfg.joinProb;
 if (Math.random() > prob) return false;
 _reconcileFacilityBusy(cfg.type, cfg.busyKey, cfg.guestKey, cfg.idxKey, cfg.sTo, cfg.sIn, LeisureDailyCap);
 for (const s of allSlots) {
-if (!s || s.type !== cfg.type || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
+if (!s || s.type !== cfg.type || isSlotBuilding(s) || !s.floor || s.floor.state !== "Built" || s.onFire) continue;
 if (connFn && !connFn(s)) continue;
 const served = Math.max(0, Math.floor(Number(s.servedToday) || 0));
 if (served >= LeisureDailyCap) continue;
@@ -9003,7 +9050,7 @@ reflowQueue();
 const p = g.pawn;
 const startIso = (p && p.iso) ? p.iso : { u: 940, v: 505, z: 8 };
 const cand = allSlots.filter(s => {
-if (!s || !s.floor || s.floor.state !== "Built") return false;
+if (!s || isSlotBuilding(s) || !s.floor || s.floor.state !== "Built") return false;
 if (s.type !== "Room" && s.type !== "Toilet") return false;
 if (typeof isDoorFacilityConnected === "function" && !isDoorFacilityConnected(s, s.type)) return false;
 const r = (typeof buildIsoRouteToRoom === "function") ? buildIsoRouteToRoom(startIso, s) : [];
@@ -9115,8 +9162,8 @@ path.push(getSlotCenterIso(fFrom, sIdx));
 }
 }
 } else {
-const elevFrom = floors[fFrom].slots.find(s => s.type === "Elevator");
-const elevTo = floors[fTo].slots.find(s => s.type === "Elevator");
+const elevFrom = floors[fFrom].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
+const elevTo = floors[fTo].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 if (elevFrom && elevTo && typeof findCorridorSlotPath === "function") {
 const p1 = findCorridorSlotPath(fFrom, fromCorr.idx, elevFrom.idx);
 for (const sIdx of p1) path.push(getSlotCenterIso(fFrom, sIdx));
@@ -9405,7 +9452,7 @@ if (gs) {
 gs.maintenance = 0;
 floatText(gs.X0 + SlotW * 0.5, gs.floor.BaseY + FloorH * 0.6, "PATLAMA!", "#d91a1a");
 }
-const cand = allSlots.filter(s => s.type === "Room" && s.floor.state === "Built" && !s.onFire);
+const cand = allSlots.filter(s => s.type === "Room" && !isSlotBuilding(s) && s.floor.state === "Built" && !s.onFire);
 for (let n = 0; n < 2 && cand.length > 0; n++) {
 const idx = rndInt(0, cand.length);
 startFire(cand[idx]);
@@ -9514,6 +9561,7 @@ if (adjFree) spawnBodyguardInRoom(g, adjFree);
 }
 }
 function installItem(s, k) {
+if (!s || isSlotBuilding(s)) { play("reject"); log("🔨 İnşaat sürüyor."); return false; }
 if (s.items[k]) return false;
 let spot = null;
 if (typeof findFirstFreeFurnSpot === "function") {
@@ -9568,12 +9616,12 @@ let lastCleanerNoToolLog = -999;
 function pickCleanTarget() {
 let best = null;
 for (const s of allSlots) {
-if (s.floor.state !== "Built" || s.onFire) continue;
+if (s.floor.state !== "Built" || s.onFire || isSlotBuilding(s)) continue;
 if (s.type !== "Room" && s.type !== "Toilet" && s.type !== "Gas") continue;
 if (s.maintenance >= 85) continue;
 if (s.type !== "Gas") {
 if (!s.hasDoor || !getRoomDoorWall(s) || !getRoomCorridorSlot(s)) continue;
-} else if (s.floor.idx > 0 && !s.floor.slots.some(sl => sl.type === "Elevator")) {
+} else if (s.floor.idx > 0 && !s.floor.slots.some(sl => sl.type === "Elevator" && !isSlotBuilding(sl))) {
 continue;
 }
 if (cleaners.some(c => c.target === s)) continue;
@@ -9681,6 +9729,7 @@ refresh();
 saveGame();
 }
 function doMaint(s) {
+if (!s || isSlotBuilding(s)) { play("reject"); log("🔨 İnşaat sürüyor."); return false; }
 if (s.maintenance >= 99.5) return false;
 const cost = maintCost(s);
 if (tools < 1) {
@@ -9785,7 +9834,7 @@ cookPawn.wTimer = 1.0;
 destroyPawn(cookPawn);
 cookPawn = null;
 }
-const cafeSlot = allSlots.find(s => s.type === "Cafe" && s.floor && s.floor.state === "Built");
+const cafeSlot = allSlots.find(s => s.type === "Cafe" && !isSlotBuilding(s) && s.floor && s.floor.state === "Built");
 const cafeConn = !!(cafeSlot && (typeof isCafeConnected !== "function" || isCafeConnected(cafeSlot)));
 if (barmenHired && cafeSlot && cafeConn) {
 if (!barmenPawn || barmenPawn.dead) {
@@ -9967,9 +10016,80 @@ for (const t of L.order) if (wy >= L[t].y && wy <= L[t].y + L[t].h + (L[t].top ?
 return null;
 }
 function startTower(type) { if (!towerOrder.includes(type)) towerOrder.push(type); }
+function getSlotBuildName(s) {
+if (!s) return "Yapı";
+if (s.type === "Room") return (s.roomNo || "?") + ". Oda";
+const names = {
+Corridor: "Koridor & Hol",
+Elevator: "Asansör",
+Toilet: "Genel Tuvalet",
+Gym: "Spor Odası",
+Gas: "Doğalgaz Dairesi",
+Kitchen: "Restoran & Mutfak",
+Storage: "Depo Binası",
+Dorm: "Personel Lojmanı",
+Park: "Dinlenme Parkı",
+RoofTerrace: "Çatı Terası",
+Pool: "Açık Yüzme Havuzu",
+Spa: "Spa & Hamam",
+Cafe: "Kafe & Bar"
+};
+return names[s.type] || s.type;
+}
+function getSlotBuildDuration(type) {
+const base = (typeof BUILD_DURATIONS === "object" && BUILD_DURATIONS && BUILD_DURATIONS[type]) ? BUILD_DURATIONS[type] : 0;
+if (!base) return 0;
+const br = (typeof builtRooms === "number" && isFinite(builtRooms)) ? builtRooms : 0;
+const thresh = (typeof INSTANT_BUILD_THRESHOLD === "number") ? INSTANT_BUILD_THRESHOLD : 3;
+return br <= thresh ? 0 : base;
+}
+function startSlotBuild(s, opts = {}) {
+if (!s) return false;
+const dur = (opts && opts.instant) ? 0 : getSlotBuildDuration(s.type);
+if (dur <= 0) {
+s.buildLeft = 0;
+s.buildTotal = 0;
+return false;
+}
+s.buildTotal = dur;
+s.buildLeft = dur;
+play("build");
+log("🔨 " + getSlotBuildName(s) + " inşaatı başladı (" + Math.round(dur) + " sn).");
+if (typeof pcInvalidateAll === "function") pcInvalidateAll();
+if (typeof invalidateLayerCache === "function") invalidateLayerCache();
+refresh();
+saveGame();
+return true;
+}
+function finishSlotBuild(s) {
+if (!s || s.type === "Empty" || !(s.buildTotal > 0 || s.buildLeft > 0)) return false;
+s.buildLeft = 0;
+s.buildTotal = 0;
+if (s.type === "Kitchen") kitchenState = "Built";
+else if (s.type === "Storage") storageState = "Built";
+else if (s.type === "Dorm") dormState = "Built";
+else if (s.type === "Pool") poolState = "Built";
+else if (s.type === "Park") parkState = "Built";
+const name = getSlotBuildName(s);
+if (s.type === "Corridor" && typeof checkTennisClubAutoOpen === "function") {
+checkTennisClubAutoOpen(false);
+}
+if (typeof syncStaffPawns === "function") syncStaffPawns();
+if (typeof pcInvalidateAll === "function") pcInvalidateAll();
+if (typeof invalidateLayerCache === "function") invalidateLayerCache();
+play("done");
+log("🔨 " + name + " tamamlandı!");
+if (typeof floatText === "function" && s.floor) {
+floatText(s.X0 + SlotW * 0.5, s.floor.BaseY + FloorH * 0.65, "🔨 " + name + " tamamlandı", "#10b981");
+}
+if (typeof checkAchievements === "function") checkAchievements();
+refresh();
+saveGame();
+return true;
+}
 function tryBuildStorage() {
 if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
-if (storageState !== "Locked" || !pay(CostStorage)) return;
+if (storageState !== "Locked" || (typeof hasAnySlotOfType === "function" && hasAnySlotOfType("Storage")) || !pay(CostStorage)) return;
 storageState = "Building"; storageLeft = StorageSec;
 for (let i = 0; i < 2; i++) {
 const w = makePawn({ x: rnd(StorageX + 50, StorageX + StorageW - 50), y: floors[0].WalkY }, pick(Skins), "#ffd91a", "#f2801a");
@@ -9997,7 +10117,7 @@ refresh(); saveGame();
 }
 function tryBuildDorm() {
 if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
-if (dormState !== "Locked" || !pay(CostDorm)) return;
+if (dormState !== "Locked" || (typeof hasAnySlotOfType === "function" && hasAnySlotOfType("Dorm")) || !pay(CostDorm)) return;
 dormState = "Building"; dormLeft = DormSec; startTower("Dorm");
 for (let i = 0; i < 2; i++) {
 const w = makePawn({ x: rnd(DormX + 50, DormX + DormW - 50), y: towerLayout().Dorm.y + (floors[0].WalkY - SlabH) }, pick(Skins), "#ffd91a", "#f2801a");
@@ -10030,7 +10150,7 @@ dormLevel++; play("done"); log("🏠 Personel Lojmanı Seviye " + dormLevel + " 
 }
 function tryBuildKitchen() {
 if (!hasReadyRoom()) { play("reject"); log("Önce ilk odanı ve kapısını kur!"); return; }
-if (kitchenState !== "Locked" || !pay(CostKitchen)) return;
+if (kitchenState !== "Locked" || (typeof hasAnySlotOfType === "function" && hasAnySlotOfType("Kitchen")) || !pay(CostKitchen)) return;
 kitchenState = "Building"; kitchenLeft = KitchenSec; startTower("Kitchen");
 for (let i = 0; i < 2; i++) {
 const w = makePawn({ x: rnd(DormX + 50, DormX + DormW - 50), y: kitchenWalkY() }, pick(Skins), "#ffd91a", "#f2801a");
@@ -10055,7 +10175,7 @@ if (typeof focusIsoTarget === "function") focusIsoTarget(mode);
 applyCam();
 }
 function tryBuildPark() {
-if (parkState !== "Locked" || !pay(ParkCost)) return;
+if (parkState !== "Locked" || (typeof hasAnySlotOfType === "function" && hasAnySlotOfType("Park")) || !pay(ParkCost)) return;
 parkState = "Building"; parkLeft = ParkSec;
 for (let i = 0; i < 2; i++) {
 const w = makePawn({ x: rnd(ParkX + 60, ParkX + ParkW - 60), y: floors[0].WalkY }, pick(Skins), "#ffd91a", "#f2801a");
@@ -10312,8 +10432,8 @@ if (!firstCorrWall) firstCorrWall = w;
 if (fIdx === 0) {
 if (_checkCorridorConnection(0, 32, nbr.idx)) return w;
 } else {
-const elev0List = (floors[0] && floors[0].slots) ? floors[0].slots.filter(sl => sl.type === "Elevator") : [];
-const elevFList = fl.slots ? fl.slots.filter(sl => sl.type === "Elevator") : [];
+const elev0List = (floors[0] && floors[0].slots) ? floors[0].slots.filter(sl => sl.type === "Elevator" && !isSlotBuilding(sl)) : [];
+const elevFList = fl.slots ? fl.slots.filter(sl => sl.type === "Elevator" && !isSlotBuilding(sl)) : [];
 for (let ei = 0; ei < elev0List.length; ei++) {
 if (!_pickConnectedElevatorCorridor(elev0List[ei], 32)) continue;
 for (let ej = 0; ej < elevFList.length; ej++) {
@@ -10381,9 +10501,9 @@ if (fromSlotIdx === toSlotIdx) return [fromSlotIdx];
 const fl = floors[fIdx];
 if (!fl) return [];
 const isWalkable = (idx) => {
-if (idx === fromSlotIdx || idx === toSlotIdx) return true;
 const s = fl.slots[idx];
-if (!s) return false;
+if (!s || isSlotBuilding(s)) return false;
+if (idx === fromSlotIdx || idx === toSlotIdx) return true;
 if (s.type === "Corridor" || s.type === "Elevator") return true;
 if (fIdx === 0 && idx === 32) return true;
 return false;
@@ -10422,15 +10542,10 @@ function isTennisClubConnected() {
 if (typeof floors === "undefined" || !floors[0] || floors[0].state !== "Built") return false;
 const s26 = floors[0].slots[26];
 const s29 = floors[0].slots[29];
-if (!s26 || s26.type !== "Corridor") return false;
-if (!s29 || s29.type !== "Corridor") return false;
+if (!isCorridor(s26)) return false;
+if (!isCorridor(s29)) return false;
 const path = findCorridorSlotPath(0, 26, 29);
-if (!Array.isArray(path) || path.length < 2) return false;
-for (let i = 0; i < path.length - 1; i++) {
-const a = parcelCoords(path[i]);
-const b = parcelCoords(path[i + 1]);
-if (Math.abs(a.gu - b.gu) + Math.abs(a.gv - b.gv) !== 1) return false;
-}
+if (!isSlotCorridorPathValid(0, path) || path.length < 2) return false;
 return true;
 }
 function getTennisClubMissingCorridorHint() {
@@ -10444,7 +10559,7 @@ const directChain = [
 const missing = [];
 for (const item of directChain) {
 const sl = floors[0].slots[item.idx];
-if (!sl || sl.type !== "Corridor") missing.push("Parsel " + item.label);
+if (!sl || !isCorridor(sl)) missing.push("Parsel " + item.label);
 }
 if (missing.length > 0) {
 return "Eksik koridor: " + missing.join(" · ");
@@ -10470,7 +10585,7 @@ toRoomPath.push(doorPts.outside);
 toRoomPath.push(doorPts.inside);
 toRoomPath.push(doorPts.roomTarget);
 } else {
-const elev0 = floors[0].slots.find(s => s.type === "Elevator");
+const elev0 = floors[0].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 const elevCorr0 = getElevatorCorridorSlot(elev0);
 if (elevCorr0) {
 const toElevPath = findCorridorSlotPath(0, 26, elevCorr0.idx);
@@ -10485,7 +10600,7 @@ const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) *
 toRoomPath.push(elevPt0);
 toRoomPath.push(elevPtF);
 }
-const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator");
+const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 const elevCorrF = getElevatorCorridorSlot(elevF);
 if (elevCorrF && corrSlot) {
 const fPath = findCorridorSlotPath(room.floor.idx, elevCorrF.idx, corrSlot.idx);
@@ -10517,7 +10632,7 @@ exitPath.push(getSlotCenterIso(0, sIdx));
 exitPath.push({ u: 975, v: 505, z: 8 });
 exitPath.push({ u: 940, v: 505, z: 8 });
 } else {
-const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator");
+const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 const elevCorrF = getElevatorCorridorSlot(elevF);
 if (corrSlot && elevCorrF) {
 const toElevPath = findCorridorSlotPath(room.floor.idx, corrSlot.idx, elevCorrF.idx);
@@ -10525,7 +10640,7 @@ for (const sIdx of toElevPath) {
 exitPath.push(getSlotCenterIso(room.floor.idx, sIdx));
 }
 }
-const elev0 = floors[0].slots.find(s => s.type === "Elevator");
+const elev0 = floors[0].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 if (elev0) {
 const elevB0 = slotIsoBox(0, elev0.idx);
 const elevPtF = { u: (elevB0.u0 + elevB0.u1) * 0.5, v: (elevB0.v0 + elevB0.v1) * 0.5, z: getSlotCenterIso(room.floor.idx, 0).z };
@@ -10560,9 +10675,10 @@ if (!Array.isArray(path) || path.length === 0) return false;
 const fl = floors[fIdx];
 if (!fl || fl.state !== "Built") return false;
 for (let i = 0; i < path.length; i++) {
-if (i > 0 && i < path.length - 1) {
 const sl = fl.slots[path[i]];
-if (!sl || (sl.type !== "Corridor" && sl.type !== "Elevator" && !(fIdx === 0 && path[i] === 32))) return false;
+if (!sl || isSlotBuilding(sl)) return false;
+if (i > 0 && i < path.length - 1) {
+if (sl.type !== "Corridor" && sl.type !== "Elevator" && !(fIdx === 0 && path[i] === 32)) return false;
 }
 if (i > 0) {
 const a = parcelCoords(path[i - 1]);
@@ -10587,9 +10703,9 @@ const slotPath = findCorridorSlotPath(0, corrSlot.idx, 29);
 if (!isSlotCorridorPathValid(0, slotPath)) return null;
 for (const sIdx of slotPath) path.push(getSlotCenterIso(0, sIdx));
 } else {
-const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator");
+const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 const elevCorrF = getElevatorCorridorSlot(elevF);
-const elev0 = floors[0].slots.find(s => s.type === "Elevator");
+const elev0 = floors[0].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 const elevCorr0 = getElevatorCorridorSlot(elev0);
 if (!elevF || !elevCorrF || !elev0 || !elevCorr0) return null;
 const toElevPath = findCorridorSlotPath(room.floor.idx, corrSlot.idx, elevCorrF.idx);
@@ -10638,9 +10754,9 @@ const revPath = findCorridorSlotPath(0, 29, corrSlot.idx);
 if (!isSlotCorridorPathValid(0, revPath)) return null;
 for (const sIdx of revPath) path.push(getSlotCenterIso(0, sIdx));
 } else {
-const elev0 = floors[0].slots.find(s => s.type === "Elevator");
+const elev0 = floors[0].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 const elevCorr0 = getElevatorCorridorSlot(elev0);
-const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator");
+const elevF = floors[room.floor.idx].slots.find(s => s.type === "Elevator" && !isSlotBuilding(s));
 const elevCorrF = getElevatorCorridorSlot(elevF);
 if (!elev0 || !elevCorr0 || !elevF || !elevCorrF) return null;
 const toElevPath = findCorridorSlotPath(0, 29, elevCorr0.idx);
@@ -10662,7 +10778,7 @@ function _checkCorridorConnection(fIdx, fromCorrIdx, toCorrIdx) {
 if (fromCorrIdx === toCorrIdx) {
 const fl = floors[fIdx];
 const sl = fl && fl.slots[fromCorrIdx];
-return !!(sl && (sl.type === "Corridor" || sl.type === "Elevator"));
+return !!(sl && !isSlotBuilding(sl) && (sl.type === "Corridor" || sl.type === "Elevator"));
 }
 const slotPath = findCorridorSlotPath(fIdx, fromCorrIdx, toCorrIdx);
 return isSlotCorridorPathValid(fIdx, slotPath);
@@ -10689,13 +10805,13 @@ if (_checkCorridorConnection(fIdx, adj[i].idx, targetIdx)) return adj[i];
 return null;
 }
 function isDoorFacilityConnected(s, expectedType) {
-if (!s || s.type !== expectedType || !s.floor || s.floor.state !== "Built") return false;
+if (!s || isSlotBuilding(s) || s.type !== expectedType || !s.floor || s.floor.state !== "Built") return false;
 const corrSlot = getRoomCorridorSlot(s);
-if (!corrSlot || corrSlot.type !== "Corridor") return false;
+if (!corrSlot || !isCorridor(corrSlot)) return false;
 const fIdx = s.floor.idx;
 if (fIdx === 0) return _checkCorridorConnection(0, 32, corrSlot.idx);
-const elev0List = (floors[0] && floors[0].slots) ? floors[0].slots.filter(sl => sl.type === "Elevator") : [];
-const elevFList = s.floor.slots ? s.floor.slots.filter(sl => sl.type === "Elevator") : [];
+const elev0List = (floors[0] && floors[0].slots) ? floors[0].slots.filter(sl => sl.type === "Elevator" && !isSlotBuilding(sl)) : [];
+const elevFList = s.floor.slots ? s.floor.slots.filter(sl => sl.type === "Elevator" && !isSlotBuilding(sl)) : [];
 for (let i = 0; i < elev0List.length; i++) {
 const ec0 = _pickConnectedElevatorCorridor(elev0List[i], 32);
 if (!ec0) continue;
@@ -10779,8 +10895,8 @@ if (!isSlotCorridorPathValid(fromF, slotPath)) return false;
 for (const sIdx of slotPath) path.push(getSlotCenterIso(fromF, sIdx));
 return true;
 }
-const elevFromList = (floors[fromF] && floors[fromF].slots) ? floors[fromF].slots.filter(sl => sl.type === "Elevator") : [];
-const elevToList = (floors[toF] && floors[toF].slots) ? floors[toF].slots.filter(sl => sl.type === "Elevator") : [];
+const elevFromList = (floors[fromF] && floors[fromF].slots) ? floors[fromF].slots.filter(sl => sl.type === "Elevator" && !isSlotBuilding(sl)) : [];
+const elevToList = (floors[toF] && floors[toF].slots) ? floors[toF].slots.filter(sl => sl.type === "Elevator" && !isSlotBuilding(sl)) : [];
 let elevFrom = null, ecFrom = null, elevTo = null, ecTo = null;
 for (let i = 0; i < elevFromList.length && !elevFrom; i++) {
 const cFrom = _pickConnectedElevatorCorridor(elevFromList[i], fromCorrIdx);
@@ -10815,8 +10931,7 @@ const fromDoor = getRoomDoorPoints(fromSlot);
 const toDoor = getRoomDoorPoints(toSlot);
 const fromCorr = getRoomCorridorSlot(fromSlot);
 const toCorr = getRoomCorridorSlot(toSlot);
-if (!fromDoor || !toDoor || !fromCorr || !toCorr) return null;
-if (fromCorr.type !== "Corridor" || toCorr.type !== "Corridor") return null;
+if (!fromDoor || !toDoor || !fromCorr || !toCorr || !isCorridor(fromCorr) || !isCorridor(toCorr)) return null;
 const path = [fromDoor.inside, fromDoor.outside];
 if (!_appendDoorSlotCorridorRoute(path, fromSlot.floor.idx, fromCorr.idx, toSlot.floor.idx, toCorr.idx)) {
 return null;
@@ -10893,7 +11008,7 @@ tennisSessionsToday = 0;
 tennisRevenueToday = 0;
 let spaOpCostTotal = 0;
 for (const s of allSlots) {
-if (s.type === "Spa" && s.floor.state === "Built") {
+if (s.type === "Spa" && !isSlotBuilding(s) && s.floor.state === "Built") {
 spaOpCostTotal += SpaDailyCost * Math.max(1, s.spaLevel || 1);
 }
 }
@@ -10910,7 +11025,7 @@ spaRevenueToday = 0;
 spaDailyCostToday = 0;
 let cafeOpCostTotal = 0;
 for (const s of allSlots) {
-if (s.type === "Cafe" && s.floor.state === "Built") {
+if (s.type === "Cafe" && !isSlotBuilding(s) && s.floor.state === "Built") {
 cafeOpCostTotal += CafeDailyCost * Math.max(1, s.cafeLevel || 1);
 }
 }
@@ -10932,7 +11047,7 @@ let leisureMaintDue = 0;
 for (const s of allSlots) {
 if (!s) continue;
 s.servedToday = 0;
-if (s.floor && s.floor.state === "Built") {
+if (s.floor && s.floor.state === "Built" && !isSlotBuilding(s)) {
 if (s.type === "Pool") leisureMaintDue += PoolDailyMaintCost;
 else if (s.type === "RoofTerrace") leisureMaintDue += TerraceDailyMaintCost;
 }
@@ -10970,7 +11085,7 @@ let paid = false;
 let mealsLeft = (hasKitchen() && cookLevel > 0) ? CookMeals[cookLevel] : 0;
 for (const s of allSlots) {
 if (s.floor.state !== "Built") continue;
-if (s.type === "Gas") s.maintenance = Math.max(0, s.maintenance - 3);
+if (s.type === "Gas" && !isSlotBuilding(s)) s.maintenance = Math.max(0, s.maintenance - 3);
 if (!s.guest) continue;
 const g = s.guest;
 s.maintenance = Math.max(0, s.maintenance - (g.petType ? 13 : 10));
@@ -11025,7 +11140,7 @@ floatText(waitX(), floors[0].WalkY + 150, "❄️ Kış yaklaşıyor: Doğalgaz 
 }
 const gs = gasSlot();
 if (gs && gasOn && seasonIdx() === 3) {
-const rc = allSlots.filter(s => s.type === "Room" && s.floor.state === "Built").length;
+const rc = allSlots.filter(s => s.type === "Room" && !isSlotBuilding(s) && s.floor.state === "Built").length;
 const bill = rc * GasPerRoom;
 if (bill > 0) {
 dayStats.gas += Math.min(bill, money);
@@ -11038,7 +11153,7 @@ if (!gasLeak && Math.random() < lc) startLeak();
 let fires = allSlots.filter(s => s.onFire).length;
 for (const s of allSlots) {
 if (fires >= 2) break;
-if (s.type !== "Room" || s.floor.state !== "Built" || s.onFire) continue;
+if (s.type !== "Room" || isSlotBuilding(s) || s.floor.state !== "Built" || s.onFire) continue;
 const ch = 0.012 + (100 - s.maintenance) / 100 * 0.05;
 if (Math.random() < ch) { startFire(s); fires++; }
 }
@@ -11436,6 +11551,7 @@ return Math.max(0, Math.round(total * 0.5));
 }
 function canDemolishSlot(s) {
 if (!s || getDemolishActionIdx(s.type) < 0) return { ok: false, reason: "" };
+if (isSlotBuilding(s)) return { ok: false, reason: "İnşaat bitmeden yıkılamaz" };
 if (s.floor && s.floor.idx < FloorCount - 1) {
 const aboveFloor = floors[s.floor.idx + 1];
 const above = aboveFloor && aboveFloor.slots ? aboveFloor.slots[s.idx] : null;
@@ -11487,10 +11603,10 @@ builtRooms = Math.max(0, builtRooms - 1);
 if (prevType === "Kitchen") {
 kitchenState = "Locked"; kitchenLeft = 0; cookLevel = 0;
 } else if (prevType === "Pool") {
-const anyLeft = allSlots.some(sl => sl !== s && sl.type === "Pool" && sl.floor && sl.floor.state === "Built");
+const anyLeft = allSlots.some(sl => sl !== s && sl.type === "Pool" && !isSlotBuilding(sl) && sl.floor && sl.floor.state === "Built");
 poolState = anyLeft ? "Built" : "Locked";
 } else if (prevType === "Park") {
-const anyLeft = allSlots.some(sl => sl !== s && sl.type === "Park" && sl.floor && sl.floor.state === "Built");
+const anyLeft = allSlots.some(sl => sl !== s && sl.type === "Park" && !isSlotBuilding(sl) && sl.floor && sl.floor.state === "Built");
 parkState = anyLeft ? "Built" : "Locked";
 if (!anyLeft && typeof parkWorkers !== "undefined" && Array.isArray(parkWorkers)) {
 for (const w of parkWorkers) if (typeof destroyPawn === "function") destroyPawn(w);
@@ -11568,6 +11684,12 @@ _demolishConfirmSlot = null;
 demolishSlot(s);
 return;
 }
+if (s.type !== "Empty" && s.type !== "TennisClub" && isSlotBuilding(s)) {
+play("reject");
+log("🔨 İnşaat sürüyor (" + Math.ceil(s.buildLeft) + " sn kaldı).");
+refresh();
+return;
+}
 if (s.type === "TennisClub") {
 const ts = s.tennisState || "Ruin";
 if (i === 0 && ts === "Ruin") {
@@ -11606,30 +11728,45 @@ return;
 }
 const existingStorage = allSlots.find(sl => sl.type === "Storage");
 if (existingStorage) {
+if (isSlotBuilding(existingStorage)) {
+play("reject"); log("🔨 Depo inşaatı sürüyor, taşınamaz."); refresh(); return;
+}
 existingStorage.type = "Empty";
 existingStorage.parcelBuilt = false;
+existingStorage.buildLeft = 0; existingStorage.buildTotal = 0;
 s.type = "Storage";
 s.parcelBuilt = true;
+s.buildLeft = 0; s.buildTotal = 0;
 storageState = "Built";
 play("done");
 log("📦 Depo Binası yola bakan yeni parsele taşındı! Kargo araçları doğrudan buraya yanaşacak.");
 selectSlot(s);
 refresh(); saveGame(); return;
+} else if (storageState === "Building") {
+play("reject"); log("🔨 Depo inşaatı zaten sürüyor."); refresh(); return;
 } else if (storageState === "Built") {
 s.type = "Storage";
 s.parcelBuilt = true;
+s.buildLeft = 0; s.buildTotal = 0;
 play("done");
 log("📦 Depo Binası yola bakan bu parsele yerleştirildi! Kargo araçları doğrudan buraya yanaşacak.");
 selectSlot(s);
 refresh(); saveGame(); return;
-} else if (pay(CostStorage)) {
+} else {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(CostStorage)) {
 s.type = "Storage";
 s.parcelBuilt = true;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 storageState = "Built";
 play("done");
 log("📦 Depo Binası ön cepheye kuruldu! Yoldan gelen kargo kamyonu siparişleri doğrudan buraya teslim edecek.");
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
 selectSlot(s);
-refresh(); saveGame(); return;
+return;
+}
 }
 return;
 }
@@ -11644,8 +11781,10 @@ log("Önce bu parselin yanındaki (veya altındaki) parsele bina kurmalısın!")
 return;
 }
 if (i === 8 || (i === 0 && s.floor.idx === 0 && (s.idx === 26 || s.idx === 25))) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(CostCorridor)) {
 s.type = "Corridor"; s.parcelBuilt = true; builtRooms += 0.5;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build");
 if (s.floor.idx === 0 && s.idx === 26) {
 log("🎉 1. Koridor kuruldu! Şimdi yanındaki 2. Koridoru kur (60 TL).");
@@ -11658,7 +11797,9 @@ log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
 }
 if (typeof checkTennisClubAutoOpen === "function") checkTennisClubAutoOpen(false);
 if (typeof syncStaffPawns === "function") syncStaffPawns();
-refresh(); saveGame(); return;
+refresh(); saveGame();
+}
+return;
 }
 return;
 }
@@ -11673,26 +11814,35 @@ play("reject");
 log("⚠️ Asansör inşa edebilmek için bu parselin hemen yanına bir '🚪 Koridor & Hol' (60 TL) kurmalısın!");
 return;
 }
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(CostElevator)) {
 s.type = "Elevator"; s.parcelBuilt = true; builtRooms += 0.5;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build");
 log("🛗 Lüks Otel Asansörü kuruldu! Katlar arası hızlı geçiş ve üst kat açılışı sağlandı.");
-refresh(); saveGame(); return;
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
+return;
 }
 return;
 }
 if (i === 0) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(roomCost())) {
 s.type = "Room"; s.parcelBuilt = true; s.roomNo = ++roomCounter; builtRooms++;
 autoArrangeRoom(s);
 furnSelectedKey = null;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build");
 if (getRoomDoorWall(s)) {
 log("🛏️ " + s.roomNo + ". Oda kuruldu! Şimdi Kapı al (50 TL) ve 4x4 ızgaraya eşya diz.");
 } else {
 log("🛏️ " + s.roomNo + ". Oda kuruldu! Odayı açmak için hemen yanına bir '🚪 Koridor & Hol' (60 TL) inşa et.");
 }
+if (typeof checkAchievements === "function") checkAchievements();
 refresh(); saveGame();
+}
 }
 return;
 }
@@ -11701,43 +11851,79 @@ play("reject");
 log("Önce en az 1 odayı ve koridorunu tamamlayıp kapısını almalısın!");
 refresh(); return;
 }
-if (i === 1 && pay(gymCost())) {
+if (i === 1) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(gymCost())) {
 s.type = "Gym"; s.parcelBuilt = true; s.gymLevel = 1; builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build"); log("🏋️ Spor odası seçilen parsele kuruldu!");
-refresh(); saveGame(); return;
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
 }
-if (i === 2 && pay(toiletCost())) {
+return;
+}
+}
+if (i === 2) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(toiletCost())) {
 s.type = "Toilet"; s.parcelBuilt = true; s.maintenance = 100; builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build"); log("🚽 Genel Tuvalet & Banyo seçilen parsele kuruldu!");
-refresh(); saveGame(); return;
+refresh(); saveGame();
+}
+return;
+}
 }
 if (s.floor.idx === 0) {
-if (i === 3 && !hasKitchen() && pay(CostKitchen)) {
-s.type = "Kitchen"; s.parcelBuilt = true; kitchenState = "Built";
+if (i === 3 && !hasKitchen() && !hasAnySlotOfType("Kitchen") && kitchenState !== "Building") {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(CostKitchen)) {
+s.type = "Kitchen"; s.parcelBuilt = true;
+if (!startSlotBuild(s, { instant: instantBuild })) {
+kitchenState = "Built";
 if (typeof syncStaffPawns === "function") syncStaffPawns();
 play("done"); log("🍳 Restoran & Mutfak seçtiğin parsele kuruldu! Artık Aşçı işe alabilirsin.");
-refresh(); saveGame(); return;
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
+return;
+}
 }
 if (i === 4) {
-const poolCnt = (typeof countBuiltPools === "function") ? countBuiltPools() : (poolState === "Built" ? 1 : 0);
+const poolCnt = (typeof countTotalType === "function") ? countTotalType("Pool") : (poolState === "Built" ? 1 : 0);
 if (poolCnt >= LeisureMaxCount) {
 play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Açık Yüzme Havuzu kurabilirsin."); refresh(); return;
 }
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(PoolCost)) {
-s.type = "Pool"; s.parcelBuilt = true; s.servedToday = 0; s.poolBusy = new Array(LeisureDailyCap).fill(false); poolState = "Built";
+s.type = "Pool"; s.parcelBuilt = true; s.servedToday = 0; s.poolBusy = new Array(LeisureDailyCap).fill(false);
+if (!startSlotBuild(s, { instant: instantBuild })) {
+poolState = "Built";
 play("done"); log("🏊 Açık Yüzme Havuzu seçtiğin parsele kuruldu! İlkbahar ve yaz gündüz günde " + LeisureDailyCap + " misafir ağırlayabilir.");
-refresh(); saveGame(); return;
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
+return;
 }
 }
 if (i === 10) {
-const parkCnt = (typeof countBuiltParks === "function") ? countBuiltParks() : (parkState === "Built" ? 1 : 0);
+const parkCnt = (typeof countTotalType === "function") ? countTotalType("Park") : (parkState === "Built" ? 1 : 0);
 if (parkCnt >= LeisureMaxCount) {
 play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Dinlenme Parkı kurabilirsin."); refresh(); return;
 }
+if (parkState === "Building") {
+play("reject"); log("🔨 Park inşaatı zaten sürüyor."); refresh(); return;
+}
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(ParkCost)) {
-s.type = "Park"; s.parcelBuilt = true; s.servedToday = 0; parkState = "Built";
+s.type = "Park"; s.parcelBuilt = true; s.servedToday = 0;
+if (!startSlotBuild(s, { instant: instantBuild })) {
+parkState = "Built";
 play("done"); log("🌳 Dinlenme Parkı & Çocuk Bahçesi seçtiğin parsele kuruldu! Günde en fazla " + LeisureDailyCap + " çocuklu aile ağırlayabilir.");
-refresh(); saveGame(); return;
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
+return;
 }
 }
 if (i === 5) {
@@ -11749,71 +11935,106 @@ return;
 }
 const existingStorage = allSlots.find(sl => sl.type === "Storage");
 if (existingStorage) {
+if (isSlotBuilding(existingStorage)) {
+play("reject"); log("🔨 Depo inşaatı sürüyor, taşınamaz."); refresh(); return;
+}
 existingStorage.type = "Empty";
 existingStorage.parcelBuilt = false;
+existingStorage.buildLeft = 0; existingStorage.buildTotal = 0;
 s.type = "Storage";
 s.parcelBuilt = true;
+s.buildLeft = 0; s.buildTotal = 0;
 storageState = "Built";
 play("done");
 log("📦 Depo Binası yola bakan yeni parsele taşındı!");
 selectSlot(s);
 refresh(); saveGame(); return;
+} else if (storageState === "Building") {
+play("reject"); log("🔨 Depo inşaatı zaten sürüyor."); refresh(); return;
 } else if (storageState === "Built") {
 s.type = "Storage";
 s.parcelBuilt = true;
+s.buildLeft = 0; s.buildTotal = 0;
 play("done");
 log("📦 Depo Binası yola bakan bu parsele yerleştirildi!");
 selectSlot(s);
 refresh(); saveGame(); return;
-} else if (pay(CostStorage)) {
+} else {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(CostStorage)) {
 s.type = "Storage";
 s.parcelBuilt = true;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 storageState = "Built";
 play("done");
 log("📦 Depo Binası ön cepheye kuruldu!");
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
 selectSlot(s);
-refresh(); saveGame(); return;
+return;
+}
 }
 }
 if (i === 6) {
 const existingDorm = allSlots.find(sl => sl.type === "Dorm");
 if (existingDorm) {
+if (isSlotBuilding(existingDorm)) {
+play("reject"); log("🔨 Lojman inşaatı sürüyor, taşınamaz."); refresh(); return;
+}
 existingDorm.type = "Empty";
 existingDorm.parcelBuilt = false;
+existingDorm.buildLeft = 0; existingDorm.buildTotal = 0;
 s.type = "Dorm";
 s.parcelBuilt = true;
+s.buildLeft = 0; s.buildTotal = 0;
 dormState = "Built";
 play("done");
 log("🏠 Personel Lojmanı yeni parsele taşındı!");
 selectSlot(s);
 refresh(); saveGame(); return;
+} else if (dormState === "Building") {
+play("reject"); log("🔨 Lojman inşaatı zaten sürüyor."); refresh(); return;
 } else if (dormState === "Built") {
 s.type = "Dorm";
 s.parcelBuilt = true;
+s.buildLeft = 0; s.buildTotal = 0;
 play("done");
 log("🏠 Personel Lojmanı bu parsele yerleştirildi!");
 selectSlot(s);
 refresh(); saveGame(); return;
-} else if (pay(CostDorm)) {
+} else {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(CostDorm)) {
 s.type = "Dorm";
 s.parcelBuilt = true;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 dormState = "Built";
 play("done");
 log("🏠 Personel Lojmanı seçtiğin parsele kuruldu!");
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
 selectSlot(s);
-refresh(); saveGame(); return;
+return;
+}
 }
 }
 } else {
 if (i === 3) {
-const terCnt = (typeof countBuiltRoofTerraces === "function") ? countBuiltRoofTerraces() : 0;
+const terCnt = (typeof countTotalType === "function") ? countTotalType("RoofTerrace") : 0;
 if (terCnt >= LeisureMaxCount) {
 play("reject"); log("⚠️ En fazla " + LeisureMaxCount + " Çatı Terası kurabilirsin."); refresh(); return;
 }
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(CostRoofTerrace)) {
 s.type = "RoofTerrace"; s.parcelBuilt = true; s.servedToday = 0; s.terraceBusy = new Array(LeisureDailyCap).fill(false);
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("done"); log("🏖️ Çatı Terası üst kata kuruldu! Akşamları (17–23, kış hariç) günde " + LeisureDailyCap + " misafir ağırlayabilir.");
-refresh(); saveGame(); return;
+if (typeof checkAchievements === "function") checkAchievements();
+refresh(); saveGame();
+}
+return;
 }
 }
 if (i === 4) {
@@ -11822,29 +12043,44 @@ if (nextFl) tryBuildFloor(nextFl);
 refresh(); saveGame(); return;
 }
 }
-if (i === 7 && !gasSlot() && pay(gasCost())) {
+if (i === 7 && !hasAnySlotOfType("Gas")) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(gasCost())) {
 s.type = "Gas"; s.parcelBuilt = true; s.maintenance = 100; builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build"); log("🔥 Doğalgaz kazan dairesi seçilen parsele kuruldu. Kışın tüm odaları ısıtır.");
-refresh(); saveGame(); return;
+refresh(); saveGame();
 }
-if (i === 8 && pay(CostCorridor)) {
+return;
+}
+}
+if (i === 8) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(CostCorridor)) {
 s.type = "Corridor"; s.parcelBuilt = true; builtRooms += 0.5;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build"); log("🚪 Koridor & Hol seçilen parsele kuruldu! Odaları birbirine bağlar.");
 if (typeof syncStaffPawns === "function") syncStaffPawns();
-refresh(); saveGame(); return;
+refresh(); saveGame();
+}
+return;
+}
 }
 if (i === 11) {
-if (countBuiltSpas() >= SpaMaxCount) {
+const spaTot = (typeof countTotalType === "function") ? countTotalType("Spa") : countBuiltSpas();
+if (spaTot >= SpaMaxCount) {
 play("reject");
 log("⚠️ Otelde en fazla " + SpaMaxCount + " Spa & Hamam kurulabilir!");
 return;
 }
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(spaCost())) {
 s.type = "Spa";
 s.parcelBuilt = true;
 s.spaLevel = 1;
 s.spaBusy = [false, false, false];
 builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build");
 const conn = (typeof isSpaConnected === "function") ? isSpaConnected(s) : true;
 log(conn
@@ -11853,20 +12089,24 @@ log(conn
 if (typeof checkAchievements === "function") checkAchievements();
 refresh(); saveGame();
 }
+}
 return;
 }
 if (i === 12) {
-if (countBuiltCafes() >= CafeMaxCount) {
+const cafeTot = (typeof countTotalType === "function") ? countTotalType("Cafe") : countBuiltCafes();
+if (cafeTot >= CafeMaxCount) {
 play("reject");
 log("⚠️ Otelde en fazla " + CafeMaxCount + " Kafe & Bar kurulabilir!");
 return;
 }
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(cafeCost())) {
 s.type = "Cafe";
 s.parcelBuilt = true;
 s.cafeLevel = 1;
 s.cafeBusy = [false, false, false];
 builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build");
 const conn = (typeof isCafeConnected === "function") ? isCafeConnected(s) : true;
 log(conn
@@ -11875,6 +12115,7 @@ log(conn
 if (typeof checkAchievements === "function") checkAchievements();
 if (typeof syncStaffPawns === "function") syncStaffPawns();
 refresh(); saveGame();
+}
 }
 return;
 }
@@ -12149,19 +12390,34 @@ if (sel === "Floor") { if (i === 0 && selFloor) tryBuildFloor(selFloor); refresh
 if (sel === "Ach") return;
 const s = selSlot;
 if (!s) return;
+if (s.type !== "Empty" && s.type !== "TennisClub" && isSlotBuilding(s)) {
+play("reject");
+log("🔨 İnşaat sürüyor (" + Math.ceil(s.buildLeft) + " sn kaldı).");
+refresh();
+return;
+}
 if (s.type === "Empty") {
 if (i === 8) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(CostCorridor)) {
 s.type = "Corridor"; s.parcelBuilt = true; builtRooms += 0.5;
-play("build"); log("Koridor & Hol kuruldu."); saveGame(); refresh(); return;
+if (!startSlotBuild(s, { instant: instantBuild })) {
+play("build"); log("Koridor & Hol kuruldu."); saveGame(); refresh();
+}
+return;
 }
 return;
 }
 if (i === 0) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
 if (pay(roomCost())) {
-s.type = "Room"; s.roomNo = ++roomCounter; builtRooms++;
+s.type = "Room"; s.parcelBuilt = true; s.roomNo = ++roomCounter; builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build"); log(s.roomNo + ". oda kuruldu. Şimdi kapısını al (50 TL)!");
-saveGame(); refresh(); return;
+if (typeof checkAchievements === "function") checkAchievements();
+saveGame(); refresh();
+}
+return;
 }
 return;
 } else {
@@ -12170,17 +12426,34 @@ play("reject");
 log("Önce en az 1 odayı ve koridorunu tamamlayıp kapısını almalısın!");
 refresh(); return;
 }
-if (i === 1 && pay(gymCost())) {
-s.type = "Gym"; s.gymLevel = 1; builtRooms++;
-play("build"); log("Spor odası kuruldu (seviye 1)."); saveGame();
-} else if (i === 2 && pay(toiletCost())) {
-s.type = "Toilet"; s.maintenance = 100; builtRooms++;
+if (i === 1) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(gymCost())) {
+s.type = "Gym"; s.parcelBuilt = true; s.gymLevel = 1; builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
+play("build"); log("Spor odası kuruldu (seviye 1).");
+if (typeof checkAchievements === "function") checkAchievements();
+saveGame();
+}
+}
+} else if (i === 2) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(toiletCost())) {
+s.type = "Toilet"; s.parcelBuilt = true; s.maintenance = 100; builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build"); log("Tuvalet kuruldu."); saveGame();
+}
+}
 } else if (i === 3 && s.floor.idx === 0 && pay(CostReception)) {
 s.type = "Reception"; play("build"); log("Resepsiyon kuruldu. Artık Resepsiyonist işe alabilirsin!"); syncStaffPawns(); reflowQueue(); saveGame();
-} else if (i === 4 && !gasSlot() && pay(gasCost())) {
-s.type = "Gas"; s.maintenance = 100; builtRooms++;
+} else if (i === 4 && !hasAnySlotOfType("Gas")) {
+const instantBuild = builtRooms <= INSTANT_BUILD_THRESHOLD;
+if (pay(gasCost())) {
+s.type = "Gas"; s.parcelBuilt = true; s.maintenance = 100; builtRooms++;
+if (!startSlotBuild(s, { instant: instantBuild })) {
 play("build"); log("Doğalgaz kazan dairesi kuruldu. Kışın tüm odaları ısıtır."); saveGame();
+}
+}
 } else if (i === 5) {
 focusBuilding("Storage"); return;
 } else if (i === 6) {
@@ -12228,7 +12501,7 @@ doMaint(s);
 refresh();
 }
 function buildBalconyOnRoom(s) {
-if (!s || s.type !== "Room" || !s.floor || s.floor.idx < 1 || s.hasBalcony) return false;
+if (!s || isSlotBuilding(s) || s.type !== "Room" || !s.floor || s.floor.idx < 1 || s.hasBalcony) return false;
 const avail = (typeof getRoomAvailableBalconyWalls === "function") ? getRoomAvailableBalconyWalls(s) : ["front"];
 if (!avail.length) {
 play("reject");
@@ -13655,11 +13928,14 @@ if (securityLevel > 0 || receptionistLevel > 0) {
 setAct(10, securityLevel > 0 ? "👋 Güvenliği Çıkar" : "👋 Resepsiyonisti Çıkar", true, true);
 }
 } else if (sel === "Storage") {
-if (storageState === "Locked") {
-infoText.textContent = "📦 Depo Binası  •  Bedel: " + CostStorage + " TL\nOda eşyalarını %30 indirimli sipariş edip stoklamanı sağlar. (İnşa et menüsünden istediğiniz parsele de kurabilirsiniz!)";
-setAct(0, "🏗️ Depo Binası Kur\n" + CostStorage + " TL", true, readyOnce);
+const bStor = allSlots.find(sl => sl && sl.type === "Storage" && isSlotBuilding(sl));
+if (bStor) {
+infoText.textContent = "🔨 Depo binası inşa ediliyor... Kalan: " + Math.ceil(bStor.buildLeft) + " sn";
 } else if (storageState === "Building") {
 infoText.textContent = "🏗️ Depo binası inşa ediliyor... Kalan: " + Math.ceil(storageLeft) + " sn";
+} else if (storageState === "Locked") {
+infoText.textContent = "📦 Depo Binası  •  Bedel: " + CostStorage + " TL\nOda eşyalarını %30 indirimli sipariş edip stoklamanı sağlar. (İnşa et menüsünden istediğiniz parsele de kurabilirsiniz!)";
+setAct(0, "🏗️ Depo Binası Kur\n" + CostStorage + " TL", true, readyOnce);
 } else {
 const used = storageUsed(), cap = storageCap();
 let st = "";
@@ -13679,11 +13955,14 @@ if (storageLevel < 3) setAct(10, "⬆️ Depo Sv." + (storageLevel + 1) + "\n" +
 else setAct(10, "✅ Son Seviye", true, false, true);
 }
 } else if (sel === "Kitchen") {
-if (kitchenState === "Locked") {
-infoText.textContent = "🍳 Restoran & Mutfak  •  Bedel: " + CostKitchen + " TL\nAşçı işe alarak oteldeki müşterilere sıcak yemek servisi yapmanı sağlar.";
-setAct(0, "🏗️ Restoran & Mutfak Kur\n" + CostKitchen + " TL", true, readyOnce);
+const bKit = allSlots.find(sl => sl && sl.type === "Kitchen" && isSlotBuilding(sl));
+if (bKit) {
+infoText.textContent = "🔨 Restoran & Mutfak inşa ediliyor... Kalan: " + Math.ceil(bKit.buildLeft) + " sn";
 } else if (kitchenState === "Building") {
 infoText.textContent = "🏗️ Restoran & Mutfak inşa ediliyor... Kalan: " + Math.ceil(kitchenLeft) + " sn";
+} else if (kitchenState === "Locked") {
+infoText.textContent = "🍳 Restoran & Mutfak  •  Bedel: " + CostKitchen + " TL\nAşçı işe alarak oteldeki müşterilere sıcak yemek servisi yapmanı sağlar.";
+setAct(0, "🏗️ Restoran & Mutfak Kur\n" + CostKitchen + " TL", true, readyOnce);
 } else {
 infoText.textContent = "🍳 Restoran & Mutfak  •  Aşçı: " + (cookLevel > 0 ? ("Sv." + cookLevel) : "Yok") + "  •  Günlük porsiyon: " + CookMeals[cookLevel] +
 "\nPorsiyon başı +" + MealPrice + " TL gelir, -" + MealCost + " TL malzeme = +" + (MealPrice - MealCost) + " TL net; müşteri memnuniyetini artırır.";
@@ -13694,11 +13973,13 @@ setAct(2, "👷 Personel Yönetimi", true, true);
 }
 } else if (sel === "Dorm") {
 const dormS = allSlots.find(sl => sl.type === "Dorm");
-if (dormState === "Locked" && !dormS) {
-infoText.textContent = "🏠 Personel Lojmanı  •  Bedel: " + CostDorm + " TL\nPersonel kapasitesini artırır (Sv.1: 3, Sv.2: 5, Sv.3: 7 kişi).\nHaritada boş bir parsele dokunup 'Lojman Binası' butonuna basarak da kurabilirsin!";
-setAct(0, "🏗️ Lojman Binası Kur\n" + CostDorm + " TL", true, readyOnce);
+if (dormS && isSlotBuilding(dormS)) {
+infoText.textContent = "🔨 Personel Lojmanı inşa ediliyor... Kalan: " + Math.ceil(dormS.buildLeft) + " sn";
 } else if (dormState === "Building") {
 infoText.textContent = "🏗️ Personel Lojmanı inşa ediliyor... Kalan: " + Math.ceil(dormLeft) + " sn";
+} else if (dormState === "Locked" && !dormS) {
+infoText.textContent = "🏠 Personel Lojmanı  •  Bedel: " + CostDorm + " TL\nPersonel kapasitesini artırır (Sv.1: 3, Sv.2: 5, Sv.3: 7 kişi).\nHaritada boş bir parsele dokunup 'Lojman Binası' butonuna basarak da kurabilirsin!";
+setAct(0, "🏗️ Lojman Binası Kur\n" + CostDorm + " TL", true, readyOnce);
 } else {
 const dormPosStr = dormS ? ("(" + (dormS.floor.idx + 1) + ". Kat • Parsel " + (parcelCoords(dormS.idx).gu + 1) + "," + (parcelCoords(dormS.idx).gv + 1) + ")") : "(Haritaya yerleştirilmedi)";
 infoText.textContent = "🏠 Personel Lojmanı Sv." + dormLevel + " " + dormPosStr + "  •  Kapasite: " + totalStaffCount() + "/" + staffCap() +
@@ -13715,7 +13996,9 @@ renderAchPanel();
 renderDecorPanel();
 } else if (sel === "Park") {
 const pCnt = (typeof countBuiltParks === "function") ? countBuiltParks() : 0;
-if (pCnt === 0 && parkState === "Locked") {
+const bPark = allSlots.find(sl => sl && sl.type === "Park" && isSlotBuilding(sl));
+if (bPark) infoText.textContent = "🔨 Park alanı inşa ediliyor... Kalan: " + Math.ceil(bPark.buildLeft) + " sn";
+else if (pCnt === 0 && parkState === "Locked") {
 infoText.textContent = "🌳 Dinlenme Parkı (" + pCnt + "/" + LeisureMaxCount + ")  •  Bedel: " + ParkCost + " TL  •  0 TL bakım\nGünde en fazla " + LeisureDailyCap + " çocuklu aile ağırlayabilir (evcil hayvan bahşişini de açar).";
 setAct(0, "🏗️ Park Kur\n" + ParkCost + " TL", true, readyOnce);
 } else if (parkState === "Building") infoText.textContent = "🏗️ Park alanı inşa ediliyor... Kalan: " + Math.ceil(parkLeft) + " sn";
@@ -13735,6 +14018,19 @@ const mCost = maintCost(cur);
 const maintLabel = "🧹 Bakım Yap\n" + mCost + " TL + 1 Alet";
 const { gu, gv } = parcelCoords(cur.idx);
 const coordStr = "(" + (cur.floor.idx + 1) + ". Kat • Parsel " + (gu + 1) + "," + (gv + 1) + ")";
+if (cur.type !== "Empty" && cur.type !== "TennisClub" && isSlotBuilding(cur)) {
+const bName = (typeof getSlotBuildName === "function") ? getSlotBuildName(cur) : cur.type;
+const tot = Math.max(1, Number(cur.buildTotal) || Number(cur.buildLeft) || 1);
+const remSec = Math.max(1, Math.ceil(cur.buildLeft));
+const pct = Math.min(99, Math.max(0, Math.round((1 - (cur.buildLeft / tot)) * 100)));
+infoText.textContent = "🔨 " + bName + " " + coordStr + "\nİnşaatta... Kalan: " + remSec + " sn (%" + pct + ")";
+const demIdx = (typeof getDemolishActionIdx === "function") ? getDemolishActionIdx(cur.type) : -1;
+if (demIdx >= 0 && demIdx < ActCount) {
+setAct(demIdx, "🧱 Yık\n(İnşaat bitmeden yıkılamaz)", true, false);
+}
+if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
+return;
+}
 if (cur.type === "Empty") {
 if (cur.hasTree) {
 infoText.textContent = "🌴 Ağaçlı Yol Kenarı Parseli  •  Üzerindeki palmiye ağacını keserek parseli Depo veya tesis inşaatına açabilirsin (+1 Alet kazanırsın).";
@@ -13787,27 +14083,30 @@ setAct(0, "🛏️ Oda Kur\n" + roomCost() + " TL", true, canBuildHere && (ready
 setAct(1, "🏋️ Spor Odası\n" + gymCost() + " TL", true, canBuildHere && readyOnce);
 setAct(2, "🚽 Genel Tuvalet\n" + toiletCost() + " TL", true, canBuildHere && readyOnce);
 if (cur.floor.idx === 0) {
-setAct(3, hasKitchen() ? "✅ Restoran Var" : ("🍳 Restoran & Mutfak\n" + CostKitchen + " TL"), true, canBuildHere && readyOnce && !hasKitchen(), hasKitchen());
-const poolCnt = (typeof countBuiltPools === "function") ? countBuiltPools() : (poolState === "Built" ? 1 : 0);
+const kBuilding = (typeof hasAnySlotOfType === "function") && hasAnySlotOfType("Kitchen") && !hasKitchen();
+setAct(3, hasKitchen() ? "✅ Restoran Var" : (kBuilding ? "🔨 Restoran İnşaatta" : ("🍳 Restoran & Mutfak\n" + CostKitchen + " TL")), true, canBuildHere && readyOnce && !hasKitchen() && !kBuilding, hasKitchen());
+const poolCnt = (typeof countTotalType === "function") ? countTotalType("Pool") : (poolState === "Built" ? 1 : 0);
 const poolFullCap = poolCnt >= LeisureMaxCount;
 setAct(4, poolFullCap ? ("✅ Havuz (" + poolCnt + "/" + LeisureMaxCount + ")") : ("🏊 Açık Havuz (" + poolCnt + "/" + LeisureMaxCount + ")\n" + PoolCost + " TL"), true, canBuildHere && readyOnce && !poolFullCap, poolFullCap);
 const { gu } = parcelCoords(cur.idx);
 const isRoadFront = (gu === 5);
 const existingStorage = allSlots.find(sl => sl.type === "Storage");
 if (isRoadFront) {
-const storageLbl = existingStorage ? "🔄 Depoyu Buraya Taşı\n(Ücretsiz)" : (storageState === "Built" ? "📍 Depoyu Buraya Kur\n(Ücretsiz)" : ("📦 Depo Binası\n" + CostStorage + " TL"));
-setAct(5, storageLbl, true, readyOnce && !cur.hasTree);
+const storageBuilding = !!(existingStorage && isSlotBuilding(existingStorage)) || storageState === "Building";
+const storageLbl = storageBuilding ? "🔨 Depo İnşaatta" : (existingStorage ? "🔄 Depoyu Buraya Taşı\n(Ücretsiz)" : (storageState === "Built" ? "📍 Depoyu Buraya Kur\n(Ücretsiz)" : ("📦 Depo Binası\n" + CostStorage + " TL")));
+setAct(5, storageLbl, true, readyOnce && !cur.hasTree && !storageBuilding);
 } else {
 setAct(5, "⚠️ Depo Yola Bakmalı\n(1. Sıra)", false, false);
 }
 const existingDorm = allSlots.find(sl => sl.type === "Dorm");
-const dormLbl = existingDorm ? "🔄 Lojmanı Buraya Taşı\n(Ücretsiz)" : (dormState === "Built" ? "📍 Lojmanı Buraya Kur\n(Ücretsiz)" : ("🏠 Lojman Binası\n" + CostDorm + " TL"));
-setAct(6, dormLbl, true, canBuildHere && readyOnce);
-const parkCnt = (typeof countBuiltParks === "function") ? countBuiltParks() : (parkState === "Built" ? 1 : 0);
+const dormBuilding = !!(existingDorm && isSlotBuilding(existingDorm)) || dormState === "Building";
+const dormLbl = dormBuilding ? "🔨 Lojman İnşaatta" : (existingDorm ? "🔄 Lojmanı Buraya Taşı\n(Ücretsiz)" : (dormState === "Built" ? "📍 Lojmanı Buraya Kur\n(Ücretsiz)" : ("🏠 Lojman Binası\n" + CostDorm + " TL")));
+setAct(6, dormLbl, true, canBuildHere && readyOnce && !dormBuilding);
+const parkCnt = (typeof countTotalType === "function") ? countTotalType("Park") : (parkState === "Built" ? 1 : 0);
 const parkFullCap = parkCnt >= LeisureMaxCount;
 setAct(10, parkFullCap ? ("✅ Park (" + parkCnt + "/" + LeisureMaxCount + ")") : ("🌳 Dinlenme Parkı (" + parkCnt + "/" + LeisureMaxCount + ")\n" + ParkCost + " TL"), true, canBuildHere && readyOnce && !parkFullCap, parkFullCap);
 } else {
-const terCnt = (typeof countBuiltRoofTerraces === "function") ? countBuiltRoofTerraces() : 0;
+const terCnt = (typeof countTotalType === "function") ? countTotalType("RoofTerrace") : 0;
 const terFullCap = terCnt >= LeisureMaxCount;
 setAct(3, terFullCap ? ("✅ Teras (" + terCnt + "/" + LeisureMaxCount + ")") : ("🏖️ Çatı Terası (" + terCnt + "/" + LeisureMaxCount + ")\n" + CostRoofTerrace + " TL"), true, canBuildHere && readyOnce && !terFullCap, terFullCap);
 const nextFl = floors.find(f => f.state === "Locked");
@@ -13817,17 +14116,19 @@ const flLbl = elevOk ? ("🏢 " + (nextFl.idx + 1) + ". Katı Aç\n" + FloorCost
 setAct(4, flLbl, true, stars() >= nextFl.idx && floors[nextFl.idx - 1].state === "Built" && elevOk);
 }
 }
-setAct(7, "🔥 Doğalgaz Odası\n" + gasCost() + " TL", true, canBuildHere && readyOnce && !gasSlot());
+const gasAny = (typeof hasAnySlotOfType === "function") ? hasAnySlotOfType("Gas") : !!gasSlot();
+const gasBuilding = gasAny && !gasSlot();
+setAct(7, gasBuilding ? "🔨 Doğalgaz İnşaatta" : ("🔥 Doğalgaz Odası\n" + gasCost() + " TL"), true, canBuildHere && readyOnce && !gasAny);
 setAct(8, "🚪 Koridor & Hol\n" + CostCorridor + " TL", true, canBuildHere);
 const adjCorr = hasAdjacentCorridor(cur);
 const elevLbl = !belowElev
 ? "🛗 Asansör\n(Altı Asansör Olmalı)"
 : (adjCorr ? ("🛗 Asansör\n" + CostElevator + " TL") : "🛗 Asansör\n(Koridor Gerekli)");
 setAct(9, elevLbl, true, canBuildHere && readyOnce && belowElev && adjCorr);
-const spaCnt = (typeof countBuiltSpas === "function") ? countBuiltSpas() : 0;
+const spaCnt = (typeof countTotalType === "function") ? countTotalType("Spa") : 0;
 const spaFull = spaCnt >= SpaMaxCount;
 setAct(11, spaFull ? "✅ Spa Dolu (2/2)" : ("♨️ Spa & Hamam\n" + spaCost() + " TL"), true, canBuildHere && readyOnce && !spaFull, spaFull);
-const cafeCnt = (typeof countBuiltCafes === "function") ? countBuiltCafes() : 0;
+const cafeCnt = (typeof countTotalType === "function") ? countTotalType("Cafe") : 0;
 const cafeFull = cafeCnt >= CafeMaxCount;
 setAct(12, cafeFull ? "✅ Kafe Var (1/1)" : ("☕ Kafe & Bar\n" + cafeCost() + " TL"), true, canBuildHere && readyOnce && !cafeFull, cafeFull);
 } else if (cur.type === "Elevator") {
@@ -14249,17 +14550,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 111;
-const APP_VERSION_NAME = "1.9.103-beta";
+const APP_VERSION_CODE = 112;
+const APP_VERSION_NAME = "1.9.104-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.104-beta",
+title: "Oda ve tesis inşaat süresi",
+latest: true,
+notes: "• 🔨 İnşaat Süreleri: İlk 3 yapı anında tamamlanmaya devam eder; sonrasındaki oda ve tesisler atlanamaz gerçek saniye inşaat süresiyle yapılır (Koridor 10 sn, Oda/Asansör/WC 20 sn, Spor/Doğalgaz/Mutfak/Depo/Lojman/Park/Teras 30 sn, Havuz/Spa/Kafe 45 sn).\n• 📊 Şantiye Görünümü: İnşaat süresince parsel üzerinde ilerleme çubuğu ve kalan saniye gösterilir; bitene kadar kullanılamaz ve yıkılamaz, tamamlanınca ödül ve başarımlar açılır."
+},
+{
 ver: "v1.9.103-beta",
 title: "Gün süresi uzadı (60/90/120 sn)",
-latest: true,
+latest: false,
 notes: "• ⏳ Dinamik Gün Süresi: Gün 1–10 arası günler 60 sn, 11. günden itibaren 90 sn, 1★ alınmışsa 11. günden itibaren 120 sn sürer (yalnızca yeni gün başlarken güncellenir).\n• 🏊 Park / Havuz / Teras Kapasitesi: Uzayan günlere uyum olarak günlük hizmet sınırı tesis başına 5'ten 10'a çıkarıldı."
 },
 {
@@ -16997,7 +17304,7 @@ return m;
 function _pcSlotNbrTag(fl, gu, gv) {
 const n = slotAtGrid(fl, gu, gv);
 if (!n) return "-";
-return n.type + (n.parcelBuilt ? "1" : "0") + (n.tennisState || "");
+return n.type + (n.parcelBuilt ? "1" : "0") + (n.tennisState || "") + (typeof isSlotBuilding === "function" && isSlotBuilding(n) ? "B" : "");
 }
 function _pcParcelQuickSig(s, fIdx, sIdx, canBuildHere, showBuildGrid, isSel) {
 let itemMask = 0;
@@ -17121,7 +17428,8 @@ if (!skipCull && !isSel && typeof isParcelInViewport === "function") {
 if (!isParcelInViewport(fIdx, sIdx)) return;
 }
 const wallDropping = s && s.type === "Corridor" && typeof isCorridorWallDropping === "function" && isCorridorWallDropping(s);
-if (!PARCEL_CACHE_ON || wallDropping || ctx === PC_REC) { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); return; }
+const isBuildingSlot = !!(s && s.type !== "Empty" && typeof isSlotBuilding === "function" && isSlotBuilding(s));
+if (!PARCEL_CACHE_ON || wallDropping || isBuildingSlot || ctx === PC_REC) { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); return; }
 const real = ctx;
 const m = real.getTransform();
 const zoomKey = canvas.width + "x" + canvas.height + "|" + m.a + "," + m.d;
@@ -20204,7 +20512,7 @@ if (typeof drawReceptionDeskFront === "function") drawReceptionDeskFront(b.u0, b
 }
 }
 if (typeof barmenHired !== "undefined" && barmenHired && floors[viewFloor] && floors[viewFloor].state === "Built") {
-const cafeSlot = floors[viewFloor].slots.find(s => s.type === "Cafe");
+const cafeSlot = floors[viewFloor].slots.find(s => s.type === "Cafe" && !(typeof isSlotBuilding === "function" && isSlotBuilding(s)));
 const conn = !!(cafeSlot && (typeof isCafeConnected !== "function" || isCafeConnected(cafeSlot)));
 if (cafeSlot && conn) {
 const b = slotIsoBox(cafeSlot.floor.idx, cafeSlot.idx);
@@ -20229,17 +20537,69 @@ for (let f = 0; f <= viewFloor; f++) {
 const fl = floors[f];
 if (!fl || fl.state !== "Built") continue;
 for (const s of fl.slots) {
-if (s && s.type === "Cafe" && isParcelInViewport(f, s.idx) && typeof drawCafeParcelLabel === "function") {
+if (s && s.type === "Cafe" && !(typeof isSlotBuilding === "function" && isSlotBuilding(s)) && isParcelInViewport(f, s.idx) && typeof drawCafeParcelLabel === "function") {
 drawCafeParcelLabel(s, slotIsoBox(f, s.idx));
 }
 }
 }
 }
 }
+function drawParcelUnderConstruction(s, fIdx, u0, v0, u1, v1, z0, z1, isSel) {
+const pal = (typeof getRoomPalette === "function") ? getRoomPalette() : THEME.room;
+const total = Math.max(1, Number(s.buildTotal) || Number(s.buildLeft) || 1);
+const frac = clamp(1 - (s.buildLeft / total), 0, 0.999);
+const step = Math.min(3, Math.max(0, Math.floor(frac * 4)));
+const wallH = [22, 36, 50, 64][step];
+const zWallTop = z0 + wallH;
+const wL = pal.wallFrontL || pal.wallL;
+const wR = pal.wallFrontR || pal.wallR;
+const wTop = pal.wallTop;
+const wU0 = u0 + 8, wU1 = u1 - 8, wV0 = v0 + 8, wV1 = v1 - 8;
+addHitPoly(isoBoxSilhouette(u0, v0, u1, v1, z0, zWallTop + 14), () => {
+if (typeof selectSlot === "function") selectSlot(s);
+if (queue.length > 0) { syncFront(); refreshGuest(); }
+});
+isoBox(u0, v0, u1, v1, Math.max(0, z0 - (fIdx >= 1 ? 14 : 4)), z0, pal.roofSlabTop, pal.roofSlabL, pal.roofSlabR, isSel ? "#ff8c00" : OUTLINE_COL, isSel ? 4 : 2.2);
+isoQuad(u0 + 6, v0 + 6, u1 - 6, v1 - 6, z0 + 0.3, pal.ruinFloorA || "#cbd5e1", "rgba(70,58,48,0.28)", 0.8);
+const palU = wU0 + 22, palV = wV0 + 24;
+isoBox(palU, palV, palU + 38, palV + 34, z0 + 0.4, z0 + 5, "#c98b56", "#8c5830", "#6b3e1b", OUTLINE_COL, 1.0);
+isoBox(palU + 3, palV + 3, palU + 19, palV + 18, z0 + 5, z0 + 19, "#c2410c", "#9a3412", "#7c2d12", OUTLINE_COL, 1.0);
+isoBox(palU + 20, palV + 4, palU + 35, palV + 30, z0 + 5, z0 + 16, "#e2e8f0", "#cbd5e1", "#94a3b8", OUTLINE_COL, 1.0);
+isoBox(wU0, wV0, wU0 + 9, wV1, z0, zWallTop, wTop, wL, wR, OUTLINE_COL, 1.4);
+isoBox(wU0 + 9, wV0, wU1, wV0 + 9, z0, zWallTop, wTop, wL, wR, OUTLINE_COL, 1.4);
+if (step >= 2) {
+isoBox(wU1 - 9, wV0 + 9, wU1, wV1, z0, Math.min(zWallTop, z0 + 30), wTop, wL, wR, OUTLINE_COL, 1.2);
+}
+if (typeof _drawHazardTapeSegment === "function") {
+const pU0 = u0 + 4, pU1 = u1 - 4, pV0 = v0 + 4, pV1 = v1 - 4;
+_drawHazardTapeSegment(pU0, pV0, pU1, pV0, z0 + 10);
+_drawHazardTapeSegment(pU0, pV0, pU0, pV1, z0 + 10);
+_drawHazardTapeSegment(pU0, pV1, pU1, pV1, z0 + 10);
+_drawHazardTapeSegment(pU1, pV0, pU1, pV1, z0 + 10);
+}
+const cu = (u0 + u1) * 0.5, cv = (v0 + v1) * 0.5, zLabel = zWallTop + 26;
+const remSec = Math.max(1, Math.ceil(s.buildLeft));
+isoLabel("🔨 " + remSec + " sn", cu, cv, zLabel, 10.5, "#78350f", "#fef3c7", 6, 2.5);
+const pt = iso(cu, cv, zLabel);
+const barW = 54, barH = 6, bx = pt.x - barW * 0.5, by = pt.y + 11;
+ctx.save();
+ctx.fillStyle = "rgba(15, 23, 42, 0.78)";
+ctx.fillRect(bx, by, barW, barH);
+ctx.fillStyle = "#f59e0b";
+ctx.fillRect(bx + 1, by + 1, Math.max(2, Math.round((barW - 2) * frac)), barH - 2);
+ctx.strokeStyle = "#fef3c7";
+ctx.lineWidth = 1;
+ctx.strokeRect(bx, by, barW, barH);
+ctx.restore();
+}
 function drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid) {
 const b = slotIsoBox(fIdx, sIdx);
 const { gu, gv, u0, v0, u1, v1, z0, z1 } = b;
 const isSel = (sel === "Slot" && selSlot === s);
+if (s.type !== "Empty" && s.type !== "TennisClub" && typeof isSlotBuilding === "function" && isSlotBuilding(s)) {
+drawParcelUnderConstruction(s, fIdx, u0, v0, u1, v1, z0, z1, isSel);
+return;
+}
 const avail = pending && s.Ready && !s.guest && !s.onFire;
 const activeCount = (typeof _pcFrameActiveCount === "number")
 ? _pcFrameActiveCount
@@ -21636,7 +21996,7 @@ if ((panelActive || editActive) && typeof sel === "string" && sel === "Slot" && 
 targetRoom = selSlot;
 }
 }
-if (!targetRoom || !targetRoom.floor || targetRoom.floor.state !== "Built") return -1;
+if (!targetRoom || !targetRoom.floor || targetRoom.floor.state !== "Built" || (typeof isSlotBuilding === "function" && isSlotBuilding(targetRoom))) return -1;
 if (targetRoom.floor.idx !== viewFloor || !_isPeekRoomType(targetRoom.type)) return -1;
 const { gu, gv } = parcelCoords(targetRoom.idx);
 const frontCorr = slotAtGrid(targetRoom.floor, gu + 1, gv);
@@ -21742,18 +22102,19 @@ isoQuad(u0 + iu * du, v0 + iv * dv, u0 + (iu + 1) * du, v0 + (iv + 1) * dv, z0, 
 }
 }
 if (typeof drawRoomFloorAO === "function") drawRoomFloorAO(u0, v0, u1, v1, z0);
-const leftCorr = !!(leftSlot && (leftSlot.type === "Corridor" || leftSlot.type === "Elevator" || leftSlot.type === "Pool" || leftSlot.type === "Park"));
-const rightCorr = !!(rightSlot && (rightSlot.type === "Corridor" || rightSlot.type === "Elevator" || rightSlot.type === "Pool" || rightSlot.type === "Park"));
-const rightRunnerCorr = rightCorr || !!(rightSlot && rightSlot.type === "TennisClub" && isSlotStructurallyConnected(rightSlot));
-const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe" || backSlot.type === "Pool" || backSlot.type === "Park"));
-const frontCorr = !!(frontSlot && (frontSlot.type === "Corridor" || frontSlot.type === "Elevator" || (fIdx === 0 && frontSlot.type === "Reception") || frontSlot.type === "Pool" || frontSlot.type === "Park"));
+const _okNbr = (sl) => !!(sl && !(typeof isSlotBuilding === "function" && isSlotBuilding(sl)));
+const leftCorr = !!(_okNbr(leftSlot) && (leftSlot.type === "Corridor" || leftSlot.type === "Elevator" || leftSlot.type === "Pool" || leftSlot.type === "Park"));
+const rightCorr = !!(_okNbr(rightSlot) && (rightSlot.type === "Corridor" || rightSlot.type === "Elevator" || rightSlot.type === "Pool" || rightSlot.type === "Park"));
+const rightRunnerCorr = rightCorr || !!(_okNbr(rightSlot) && rightSlot.type === "TennisClub" && isSlotStructurallyConnected(rightSlot));
+const backCorr = !!(_okNbr(backSlot) && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe" || backSlot.type === "Pool" || backSlot.type === "Park"));
+const frontCorr = !!(_okNbr(frontSlot) && (frontSlot.type === "Corridor" || frontSlot.type === "Elevator" || (fIdx === 0 && frontSlot.type === "Reception") || frontSlot.type === "Pool" || frontSlot.type === "Park"));
 drawCorridorRunnerCarpet(u0, v0, u1, v1, z0, leftCorr, rightRunnerCorr, backCorr, frontCorr);
-const rawBackDrop = (backSlot && _isPeekRoomType(backSlot.type)) ? getCorridorBackWallDrop(s) : 0;
+const rawBackDrop = (_okNbr(backSlot) && _isPeekRoomType(backSlot.type)) ? getCorridorBackWallDrop(s) : 0;
 const backDrop = rawBackDrop > 0 ? (rawBackDrop * rawBackDrop * (3 - 2 * rawBackDrop)) : 0;
 const backWallTopZ = backDrop > 0 ? (z1 - (z1 - (z0 + WALL_PEEK_Z)) * backDrop) : z1;
-const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe") && getRoomDoorWall(backSlot) === "front");
-const backIsOutdoorAmenity = !!(backSlot && (backSlot.type === "Pool" || backSlot.type === "Park"));
-if (backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
+const backHasDoorToCorr = !!(_okNbr(backSlot) && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe") && getRoomDoorWall(backSlot) === "front");
+const backIsOutdoorAmenity = !!(_okNbr(backSlot) && (backSlot.type === "Pool" || backSlot.type === "Park"));
+if (_okNbr(backSlot) && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
 } else if (backIsOutdoorAmenity) {
 isoBox(u0, v0, u0 + 12, v0 + 24, z0, z1, tpTop, tpL, tpR, OUTLINE_COL, 1.8);
 isoBox(u0, v1 - 24, u0 + 12, v1, z0, z1, tpTop, tpL, tpR, OUTLINE_COL, 1.8);
@@ -21832,10 +22193,10 @@ isoBox(u0 + 10, v0 + 42, u0 + 15, v0 + 50, z0 + 50, z0 + 60, gTop, gL, gR, OUTLI
 isoBox(u0 + 10, v0 + 145, u0 + 15, v0 + 153, z0 + 50, z0 + 60, gTop, gL, gR, OUTLINE_COL, 1);
 }
 }
-const leftIsElev = leftSlot && leftSlot.type === "Elevator";
-const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym" || leftSlot.type === "Spa" || leftSlot.type === "Cafe") && getRoomDoorWall(leftSlot) === "right");
-const leftIsOutdoorAmenity = !!(leftSlot && (leftSlot.type === "Pool" || leftSlot.type === "Park"));
-if (leftSlot && leftSlot.type === "Corridor") {
+const leftIsElev = _okNbr(leftSlot) && leftSlot.type === "Elevator";
+const leftHasDoorToCorr = !!(_okNbr(leftSlot) && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym" || leftSlot.type === "Spa" || leftSlot.type === "Cafe") && getRoomDoorWall(leftSlot) === "right");
+const leftIsOutdoorAmenity = !!(_okNbr(leftSlot) && (leftSlot.type === "Pool" || leftSlot.type === "Park"));
+if (_okNbr(leftSlot) && leftSlot.type === "Corridor") {
 } else if (leftIsOutdoorAmenity) {
 isoBox(u0, v0, u0 + 24, v0 + 12, z0, z1, tpTop, tpR, tpL, OUTLINE_COL, 1.8);
 isoBox(u1 - 24, v0, u1, v0 + 12, z0, z1, tpTop, tpR, tpL, OUTLINE_COL, 1.8);
@@ -21864,12 +22225,12 @@ isoBox(u0, v0, u1, v0 + 10, z0, z0 + 14, wTop, wL, wR, OUTLINE_COL, 1.2);
 isoBox(u0, v0 + 9, u1, v0 + 12, z0 + 12, z0 + 15, tTop, tL, tR, null, 0);
 }
 drawPottedPlant(u0 + 25, v0 + 155, z0, 0.95);
-const rightIsElev = rightSlot && rightSlot.type === "Elevator";
-const rightHasDoorToCorr = !!(rightSlot && (
+const rightIsElev = _okNbr(rightSlot) && rightSlot.type === "Elevator";
+const rightHasDoorToCorr = !!(_okNbr(rightSlot) && (
 ((rightSlot.type === "Toilet" || rightSlot.type === "Room" || rightSlot.type === "Gym" || rightSlot.type === "Spa" || rightSlot.type === "Cafe") && getRoomDoorWall(rightSlot) === "left") ||
 (rightSlot.type === "TennisClub" && isSlotStructurallyConnected(rightSlot))
 ));
-const rightIsOutdoorAmenity = !!(rightSlot && (rightSlot.type === "Pool" || rightSlot.type === "Park"));
+const rightIsOutdoorAmenity = !!(_okNbr(rightSlot) && (rightSlot.type === "Pool" || rightSlot.type === "Park"));
 if (rightCorr) {
 } else if (rightIsOutdoorAmenity) {
 isoBox(u0, v1 - 12, u0 + 24, v1, z0, z1, tpTop, tpR, tpL, OUTLINE_COL, 1.8);
@@ -23054,7 +23415,7 @@ isoLabel("★ RESEPSİYON ★", u1 + 10.5, (v0 + v1) * 0.5, z0 + 57.5, 8.2, pal.
 }
 function drawParcelLowerFloorFacade(s, fIdx, sIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, rightSlot, backSlot, frontSlot) {
 if (typeof viewFloor !== "number" || viewFloor <= fIdx) return;
-if (!s || (!s.parcelBuilt && s.type === "Empty") || typeof isRoofedStructure !== "function" || !isRoofedStructure(s.type)) return;
+if (!s || (typeof isSlotBuilding === "function" && isSlotBuilding(s)) || (!s.parcelBuilt && s.type === "Empty") || typeof isRoofedStructure !== "function" || !isRoofedStructure(s.type)) return;
 if (s.type === "TennisClub" && (typeof isSlotStructurallyConnected === "function" ? !isSlotStructurallyConnected(s) : (s.tennisState || "Ruin") === "Ruin")) return;
 let effRight = rightSlot;
 if (fIdx === 0 && sIdx === 35 && typeof floors !== "undefined" && floors[0] && floors[0].slots[37]) {
@@ -28673,6 +29034,11 @@ if (fl.state !== "Building") continue;
 fl.buildLeft -= dt;
 if (fl.buildLeft <= 0) finishFloor(fl);
 }
+for (const sl of allSlots) {
+if (!sl || !(sl.buildLeft > 0)) continue;
+sl.buildLeft -= dt;
+if (sl.buildLeft <= 0 && typeof finishSlotBuild === "function") finishSlotBuild(sl);
+}
 if (parkState === "Building") {
 parkLeft -= dt;
 if (parkLeft <= 0) finishPark();
@@ -28869,11 +29235,15 @@ refreshHud();
 refreshGuest();
 const cleaning = cleaners.some(c => c.state === 2 && c.target);
 const burning = allSlots.some(s => s.onFire);
+const slotBuildingSel = (sel === "Slot" && selSlot && typeof isSlotBuilding === "function" && isSlotBuilding(selSlot)) ||
+((sel === "Park" || sel === "Storage" || sel === "Dorm" || sel === "Kitchen") &&
+allSlots.some(sl => sl && sl.type === sel && isSlotBuilding(sl)));
 const buildingSel = (sel === "Floor" && selFloor && selFloor.state === "Building") ||
 (sel === "Park" && parkState === "Building") ||
 (sel === "Storage" && (storageState === "Building" || shipments.length > 0 || trucks.length > 0)) ||
 (sel === "Dorm" && dormState === "Building") ||
 (sel === "Kitchen" && kitchenState === "Building") ||
+slotBuildingSel ||
 (cleaning && sel === "Slot") ||
 (burning && sel === "Slot") ||
 (gasLeak && sel === "Slot");
