@@ -6123,6 +6123,7 @@ cookPawn = null;
 paperboyPawn = null;
 pending = null;
 lastFront = null;
+if (typeof resetWallPeekDrops === "function") resetWallPeekDrops();
 for (const fl of floors) fl.workers.length = 0;
 achPopupQueue = [];
 achTimer = 0;
@@ -6760,6 +6761,7 @@ securityPawn = null;
 cookPawn = null;
 pending = null;
 lastFront = null;
+if (typeof resetWallPeekDrops === "function") resetWallPeekDrops();
 if (typeof resetHotelPetState === "function") resetHotelPetState(null);
 else hotelMascot = "none";
 guestsSincePet = 3;
@@ -14215,17 +14217,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 108;
-const APP_VERSION_NAME = "1.9.100-beta";
+const APP_VERSION_CODE = 109;
+const APP_VERSION_NAME = "1.9.101-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.101-beta",
+title: "Seçili odada duvar alçalması",
+latest: true,
+notes: "• 🪟 Akıllı Kesit Görünümü: Üst taraftaki (koridorun arkasındaki) bir oda seçiliyken veya eşya düzenleme modundayken, koridorun kameraya bakan tam boy duvarı ~0.25 sn'de yumuşakça alçalarak oda ön sırasını görünür kılar; seçim kalkınca eski boyuna döner."
+},
+{
 ver: "v1.9.100-beta",
 title: "Mobil dokunma ve harita kaydırma takılma düzeltmesi",
-latest: true,
+latest: false,
 notes: "• 📱 Harita Kaydırma Düzeltmesi: Telefondayken iptal edilen veya takılan dokunuşlar (`pointercancel` / odak kaybı) yüzünden ekranın yalnızca yakınlaştırma-uzaklaştırmada (zoom) takılı kalıp sağa-sola kaymaması sorunu düzeltildi; tek parmak ve iki parmak geçişleri pürüzsüzleştirildi."
 },
 {
@@ -15837,7 +15845,10 @@ if (intersect) inside = !inside;
 return inside;
 }
 function handleWorldTap(appX, appY) {
-if (typeof window !== "undefined" && window.visitMode) return;
+if (typeof window !== "undefined" && window.visitMode) {
+if (typeof handleVisitRoomPeekTap === "function") handleVisitRoomPeekTap(appX, appY);
+return;
+}
 const cw = viewport.clientWidth, ch = viewport.clientHeight;
 const ix = camCenter.x + (appX - cw * 0.5) / zoom;
 const iy = -camCenter.y + (appY - ch * 0.5) / zoom;
@@ -16962,6 +16973,8 @@ extra = "|f" + (s.gymLevel || 1) + ":" + (s.spaLevel || 1) + ":" + (s.cafeLevel 
 (typeof barmenHired !== "undefined" && barmenHired ? 1 : 0) + ":" +
 _pcBusyMask(s.gymBusy) + ":" + _pcBusyMask(s.spaBusy) + ":" + _pcBusyMask(s.cafeBusy) + ":" +
 _pcBusyMask(s.toiletBusy) + ":" + _pcBusyMask(s.tennisCourtBusy);
+} else if (st === "Corridor") {
+if (typeof getCorridorBackWallDrop === "function" && getCorridorBackWallDrop(s) >= 1) extra = "|w1";
 } else if (st === "Pool" || st === "Park" || st === "RoofTerrace") {
 const si = (typeof seasonIdx === "function") ? seasonIdx() : 0;
 const hr = (typeof getGameHour === "function") ? Math.floor(getGameHour()) : 12;
@@ -17062,7 +17075,8 @@ const isSel = (typeof sel === "string" && sel === "Slot" && selSlot === s);
 if (!skipCull && !isSel && typeof isParcelInViewport === "function") {
 if (!isParcelInViewport(fIdx, sIdx)) return;
 }
-if (!PARCEL_CACHE_ON || ctx === PC_REC) { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); return; }
+const wallDropping = s && s.type === "Corridor" && typeof isCorridorWallDropping === "function" && isCorridorWallDropping(s);
+if (!PARCEL_CACHE_ON || wallDropping || ctx === PC_REC) { drawIsoModularParcel(s, fIdx, sIdx, canBuildHere, showBuildGrid); return; }
 const real = ctx;
 const m = real.getTransform();
 const zoomKey = canvas.width + "x" + canvas.height + "|" + m.a + "," + m.d;
@@ -21556,6 +21570,95 @@ ctx.fill();
 ctx.restore();
 }
 }
+const WALL_PEEK_Z = 14;
+const WALL_PEEK_SEC = 0.25;
+const _wallDropMap = new Map();
+let _visitPeekSlot = null;
+function _isPeekRoomType(type) {
+return type === "Room" || type === "Toilet" || type === "Gym" || type === "Spa" || type === "Cafe";
+}
+function _getActivePeekCorridorKey() {
+if (typeof inMenu !== "undefined" && inMenu) return -1;
+if (typeof viewFloor !== "number" || typeof floors === "undefined") return -1;
+const isVisit = typeof window !== "undefined" && !!window.visitMode;
+let targetRoom = null;
+if (isVisit) {
+targetRoom = _visitPeekSlot;
+} else {
+const editActive = typeof furnEditMode !== "undefined" && !!furnEditMode;
+const panelActive = typeof drawerOpen !== "undefined" && !!drawerOpen;
+if ((panelActive || editActive) && typeof sel === "string" && sel === "Slot" && typeof selSlot !== "undefined") {
+targetRoom = selSlot;
+}
+}
+if (!targetRoom || !targetRoom.floor || targetRoom.floor.state !== "Built") return -1;
+if (targetRoom.floor.idx !== viewFloor || !_isPeekRoomType(targetRoom.type)) return -1;
+const { gu, gv } = parcelCoords(targetRoom.idx);
+const frontCorr = slotAtGrid(targetRoom.floor, gu + 1, gv);
+if (!frontCorr || frontCorr.type !== "Corridor") return -1;
+return targetRoom.floor.idx * 64 + frontCorr.idx;
+}
+function updateWallPeekDrops(dt) {
+const activeKey = _getActivePeekCorridorKey();
+if (activeKey < 0 && _wallDropMap.size === 0) return;
+const step = Math.max(0, dt || 0) / WALL_PEEK_SEC;
+const curVf = (typeof viewFloor === "number") ? viewFloor : 0;
+for (const [k, v] of _wallDropMap) {
+const kFloor = Math.floor(k / 64);
+if (kFloor !== curVf) {
+_wallDropMap.delete(k);
+continue;
+}
+if (k === activeKey) continue;
+const nv = v - step;
+if (nv <= 0) _wallDropMap.delete(k);
+else _wallDropMap.set(k, nv);
+}
+if (activeKey >= 0) {
+const cur = _wallDropMap.get(activeKey) || 0;
+if (cur < 1) {
+_wallDropMap.set(activeKey, Math.min(1, cur + step));
+}
+}
+}
+function getCorridorBackWallDrop(s) {
+if (!s || s.type !== "Corridor" || !s.floor || typeof viewFloor !== "number" || s.floor.idx !== viewFloor) return 0;
+return _wallDropMap.get(s.floor.idx * 64 + s.idx) || 0;
+}
+function isCorridorWallDropping(s) {
+const d = getCorridorBackWallDrop(s);
+return d > 0 && d < 1;
+}
+function resetWallPeekDrops() {
+_wallDropMap.clear();
+_visitPeekSlot = null;
+}
+function handleVisitRoomPeekTap(appX, appY) {
+if (typeof floors === "undefined" || typeof viewFloor !== "number") return;
+const fl = floors[viewFloor];
+if (!fl || fl.state !== "Built" || !Array.isArray(fl.slots)) return;
+const cw = viewport.clientWidth, ch = viewport.clientHeight;
+const ix = camCenter.x + (appX - cw * 0.5) / zoom;
+const iy = -camCenter.y + (appY - ch * 0.5) / zoom;
+let picked = null;
+for (let sum = 10; sum >= 0 && !picked; sum--) {
+for (let gu = 5; gu >= 0 && !picked; gu--) {
+const gv = sum - gu;
+if (gv < 0 || gv >= 6) continue;
+const s = fl.slots[gu * 6 + gv];
+if (!s || !_isPeekRoomType(s.type)) continue;
+const b = slotIsoBox(viewFloor, s.idx);
+const quad = [
+iso(b.u0, b.v0, b.z0),
+iso(b.u0, b.v1, b.z0),
+iso(b.u1, b.v1, b.z0),
+iso(b.u1, b.v0, b.z0)
+];
+if (pointInPoly(ix, iy, quad)) picked = s;
+}
+}
+_visitPeekSlot = (picked && _visitPeekSlot !== picked) ? picked : null;
+}
 function drawParcelCorridor(s, fIdx, u0, v0, u1, v1, z0, z1, isSel, leftSlot, leftConnected, rightSlot, rightConnected, backSlot, frontSlot) {
 const P = THEME.room;
 const fMarb = P.floorMarble, fMarbAlt = P.floorMarbleAlt, fEdgeL = P.floorMarbleEdgeL, fEdgeR = P.floorMarbleEdgeR;
@@ -21600,6 +21703,9 @@ const rightRunnerCorr = rightCorr || !!(rightSlot && rightSlot.type === "TennisC
 const backCorr = !!(backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator" || backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe" || backSlot.type === "Pool" || backSlot.type === "Park"));
 const frontCorr = !!(frontSlot && (frontSlot.type === "Corridor" || frontSlot.type === "Elevator" || (fIdx === 0 && frontSlot.type === "Reception") || frontSlot.type === "Pool" || frontSlot.type === "Park"));
 drawCorridorRunnerCarpet(u0, v0, u1, v1, z0, leftCorr, rightRunnerCorr, backCorr, frontCorr);
+const rawBackDrop = (backSlot && _isPeekRoomType(backSlot.type)) ? getCorridorBackWallDrop(s) : 0;
+const backDrop = rawBackDrop > 0 ? (rawBackDrop * rawBackDrop * (3 - 2 * rawBackDrop)) : 0;
+const backWallTopZ = backDrop > 0 ? (z1 - (z1 - (z0 + WALL_PEEK_Z)) * backDrop) : z1;
 const backHasDoorToCorr = !!(backSlot && (backSlot.type === "Toilet" || backSlot.type === "Room" || backSlot.type === "Gym" || backSlot.type === "Spa" || backSlot.type === "Cafe") && getRoomDoorWall(backSlot) === "front");
 const backIsOutdoorAmenity = !!(backSlot && (backSlot.type === "Pool" || backSlot.type === "Park"));
 if (backSlot && (backSlot.type === "Corridor" || backSlot.type === "Elevator")) {
@@ -21613,24 +21719,29 @@ isoBox(u0 + 10, v0 + 10, u0 + 15, v0 + 18, z0 + 44, z0 + 56, lpGlow, lpL, lpR, O
 isoBox(u0 + 10, v1 - 18, u0 + 15, v1 - 10, z0 + 44, z0 + 56, lpGlow, lpL, lpR, OUTLINE_COL, 1);
 } else if (backHasDoorToCorr) {
 const vd0 = v0 + 95, vd1 = v0 + 135;
-isoBox(u0, v0, u0 + 10, vd0, z0, z1, waTop, waL, waR, OUTLINE_COL, 2);
+isoBox(u0, v0, u0 + 10, vd0, z0, backWallTopZ, waTop, waL, waR, OUTLINE_COL, 2);
 isoBox(u0 + 9, v0, u0 + 12, vd0, z0, z0 + 7, taTop, taL, taR, OUTLINE_COL, 1.1);
-isoBox(u0 + 9, v0, u0 + 12, vd0, z0 + 40, z0 + 43, rTop, rL, rR, null, 0);
-isoBox(u0 + 10, v0 + 32, u0 + 15, v0 + 40, z0 + 50, z0 + 60, gTop, gL, gR, OUTLINE_COL, 1);
-isoBox(u0, vd1, u0 + 10, v1, z0, z1, waTop, waL, waR, OUTLINE_COL, 2);
+if (backWallTopZ >= z0 + 44) isoBox(u0 + 9, v0, u0 + 12, vd0, z0 + 40, z0 + 43, rTop, rL, rR, null, 0);
+if (backWallTopZ >= z0 + 62) isoBox(u0 + 10, v0 + 32, u0 + 15, v0 + 40, z0 + 50, z0 + 60, gTop, gL, gR, OUTLINE_COL, 1);
+isoBox(u0, vd1, u0 + 10, v1, z0, backWallTopZ, waTop, waL, waR, OUTLINE_COL, 2);
 isoBox(u0 + 9, vd1, u0 + 12, v1, z0, z0 + 7, taTop, taL, taR, OUTLINE_COL, 1.1);
-isoBox(u0 + 9, vd1, u0 + 12, v1, z0 + 40, z0 + 43, rTop, rL, rR, null, 0);
-isoBox(u0 + 10, v1 - 40, u0 + 15, v1 - 32, z0 + 50, z0 + 60, gTop, gL, gR, OUTLINE_COL, 1);
-isoBox(u0, vd0, u0 + 10, vd1, z0 + 64, z1, waTop, waL, waR, OUTLINE_COL, 1.6);
+if (backWallTopZ >= z0 + 44) isoBox(u0 + 9, vd1, u0 + 12, v1, z0 + 40, z0 + 43, rTop, rL, rR, null, 0);
+if (backWallTopZ >= z0 + 62) isoBox(u0 + 10, v1 - 40, u0 + 15, v1 - 32, z0 + 50, z0 + 60, gTop, gL, gR, OUTLINE_COL, 1);
+if (backWallTopZ > z0 + 67) {
+isoBox(u0, vd0, u0 + 10, vd1, z0 + 64, backWallTopZ, waTop, waL, waR, OUTLINE_COL, 1.6);
 isoBox(u0 - 1, vd0 - 2, u0 + 11, vd1 + 2, z0 + 63, z0 + 67, tTop, tL, tR, OUTLINE_COL, 1.1);
+}
 isoBox(u0 - 0.5, vd0 - 1.5, u0 + 10.5, vd0 + 1.5, z0, z0 + 64, tTop, tL, tR, OUTLINE_COL, 1.1);
 isoBox(u0 - 0.5, vd1 - 1.5, u0 + 10.5, vd1 + 1.5, z0, z0 + 64, tTop, tL, tR, OUTLINE_COL, 1.1);
 isoQuad(u0 - 1.5, vd0, u0 + 11.5, vd1, z0 + 0.25, thr, thrL, 1);
+const showDoorPlaque = backWallTopZ >= z0 + 78;
 if (backSlot.type === "Toilet") {
 isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, tdTop, tdL, tdR, OUTLINE_COL, 1.3);
 isoBox(u0 - 10, vd0 + 4, u0 - 7, vd0 + 7, z0 + 30, z0 + 33, thTop, thL, thR, null, 0);
+if (showDoorPlaque) {
 isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, "#2563eb", "#1d4ed8", "#1e40af", OUTLINE_COL, 1);
 isoLabel("WC 🚻", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#ffffff", null, 0, 0);
+}
 } else if (backSlot.type === "Room") {
 if (!backSlot.hasDoor) {
 isoQuad(u0 + 5, vd0 + 4, u0 + 5, vd1 - 4, z0 + 28, "#fbbf24", "#d97706", 1.8);
@@ -21638,31 +21749,43 @@ isoLabel("🚪 Kapı Al!", u0 + 9, (vd0 + vd1) * 0.5, z0 + 32, 7.5, "#995200", "
 } else {
 isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, dTop, dL, dR, OUTLINE_COL, 1.3);
 isoBox(u0 - 10, vd0 + 4, u0 - 7, vd0 + 7, z0 + 30, z0 + 33, gTop, gL, gR, null, 0);
+if (showDoorPlaque) {
 isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 8, u0 + 11.5, (vd0 + vd1) * 0.5 + 8, z0 + 68, z0 + 76, gaTop, gaL, gaR, OUTLINE_COL, 1);
 isoLabel(String(backSlot.roomNo || 101), u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#3a281f", null, 0, 0);
 }
+}
 } else if (backSlot.type === "Gym") {
 isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, gsTop, gsL, gsR, OUTLINE_COL, 1.3);
+if (showDoorPlaque) {
 isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, "#dc2626", "#b91c1c", "#991b1b", OUTLINE_COL, 1);
 isoLabel("GYM 🏋️", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#ffffff", null, 0, 0);
+}
 } else if (backSlot.type === "Spa") {
 isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, P.spaWoodTop || gsTop, P.spaWoodL || gsL, P.spaWoodR || gsR, OUTLINE_COL, 1.3);
+if (showDoorPlaque) {
 isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 14, u0 + 11.5, (vd0 + vd1) * 0.5 + 14, z0 + 68, z0 + 76, P.spaTileTop || "#14b8a6", P.spaSignBg || "#0f766e", P.spaTileR || "#115e59", OUTLINE_COL, 1);
 isoLabel("SPA ♨️", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.5, "#ffffff", null, 0, 0);
+}
 } else if (backSlot.type === "Cafe") {
 const cBar = (typeof getCafeTimePeriod === "function" && getCafeTimePeriod() === "bar");
 isoBox(u0 - 12, vd0 + 2, u0 + 2, vd0 + 6, z0, z0 + 63, P.cafeWoodTop || dTop, P.cafeWoodL || dL, P.cafeWoodR || dR, OUTLINE_COL, 1.3);
+if (showDoorPlaque) {
 isoBox(u0 + 9.5, (vd0 + vd1) * 0.5 - 16, u0 + 11.5, (vd0 + vd1) * 0.5 + 16, z0 + 68, z0 + 76, cBar ? "#4c0519" : (P.cafeAwningA || "#b91c1c"), P.cafeCounterTop || "#78350f", P.cafeCounterR || "#451a03", OUTLINE_COL, 1);
 isoLabel(cBar ? "BAR 🍸" : "KAFE ☕", u0 + 11, (vd0 + vd1) * 0.5, z0 + 72, 7.2, cBar ? (P.cafeNeon || "#fde047") : "#fffbeb", null, 0, 0);
 }
+}
 } else {
-isoBox(u0, v0, u0 + 10, v1, z0, z1, waTop, waL, waR, OUTLINE_COL, 2);
+isoBox(u0, v0, u0 + 10, v1, z0, backWallTopZ, waTop, waL, waR, OUTLINE_COL, 2);
 isoBox(u0 + 9, v0, u0 + 12, v1, z0, z0 + 7, taTop, taL, taR, OUTLINE_COL, 1.2);
-isoBox(u0 + 9, v0, u0 + 12, v1, z0 + 40, z0 + 43, rTop, rL, rR, null, 0);
+if (backWallTopZ >= z0 + 44) isoBox(u0 + 9, v0, u0 + 12, v1, z0 + 40, z0 + 43, rTop, rL, rR, null, 0);
+if (backWallTopZ >= z0 + 74) {
 isoBox(u0 + 10, v0 + 72, u0 + 13, v0 + 122, z0 + 48, z0 + 72, brTop, brL, brR, OUTLINE_COL, 1.3);
 isoQuad(u0 + 13.2, v0 + 76, u0 + 13.2, v0 + 118, z0 + 52, "#38bdf8", null, 0);
+}
+if (backWallTopZ >= z0 + 62) {
 isoBox(u0 + 10, v0 + 42, u0 + 15, v0 + 50, z0 + 50, z0 + 60, gTop, gL, gR, OUTLINE_COL, 1);
 isoBox(u0 + 10, v0 + 145, u0 + 15, v0 + 153, z0 + 50, z0 + 60, gTop, gL, gR, OUTLINE_COL, 1);
+}
 }
 const leftIsElev = leftSlot && leftSlot.type === "Elevator";
 const leftHasDoorToCorr = !!(leftSlot && (leftSlot.type === "Toilet" || leftSlot.type === "Room" || leftSlot.type === "Gym" || leftSlot.type === "Spa" || leftSlot.type === "Cafe") && getRoomDoorWall(leftSlot) === "right");
@@ -21743,7 +21866,10 @@ isoBox(u0 + 41, v0 + 70, u0 + 44, v0 + 73, z0, z0 + 4, gaTop, gaL, gaR, null, 0)
 }
 isoBox(u0 + 94, v0 + 94, u0 + 101, v0 + 101, z1 - 18, z1, gaTop, gaL, gaR, null, 0);
 isoBox(u0 + 88, v0 + 88, u0 + 107, v0 + 107, z1 - 28, z1 - 18, lpCapGlow, lpL, lpR, OUTLINE_COL, 1.2);
-addHitPoly(poly, () => {
+const hitPoly = (rawBackDrop > 0.05)
+? [iso(u0 + 12, v0, z0), iso(u0 + 12, v1, z0), iso(u1, v1, z0), iso(u1, v0, z0)]
+: poly;
+addHitPoly(hitPoly, () => {
 selectSlot(s);
 if (queue.length > 0) {
 syncFront();
@@ -27563,6 +27689,7 @@ _visitBackupCam = backupCam;
 window.visitMode = true;
 window.saveLocked = true;
 window.visitMeta = prof;
+if (typeof resetWallPeekDrops === "function") resetWallPeekDrops();
 const applied = await applyShowcaseString(prof.showcase);
 if (!applied) {
 exitVisitMode();
@@ -27586,6 +27713,7 @@ if (!window.visitMode) return;
 window.visitMode = false;
 window.saveLocked = false;
 window.visitMeta = null;
+if (typeof resetWallPeekDrops === "function") resetWallPeekDrops();
 if (document.body) document.body.classList.remove("is-visiting-mode");
 if (_visitBackupRaw && typeof applySaveRaw === "function") {
 applySaveRaw(_visitBackupRaw);
@@ -27613,6 +27741,7 @@ function switchVisitFloor(fIdx) {
 if (!window.visitMode) return;
 if (typeof floors === "undefined" || !floors[fIdx] || floors[fIdx].state !== "Built") return;
 viewFloor = fIdx;
+if (typeof resetWallPeekDrops === "function") resetWallPeekDrops();
 if (typeof updateVisitBanner === "function") updateVisitBanner(window.visitMeta);
 }
 const friendsModal = document.getElementById("friends-modal");
@@ -28264,6 +28393,7 @@ if (!camInit && viewport.clientWidth > 10) { camInit = true; fitView(); }
 updateCarsAndBirds(dt);
 if (typeof updateHotelMascot === "function") updateHotelMascot(dt);
 if (typeof updateAmbientAnimals === "function") updateAmbientAnimals(dt);
+if (typeof updateWallPeekDrops === "function") updateWallPeekDrops(dt);
 if (inMenu || (typeof window !== "undefined" && window.visitMode)) {
 if (inMenu && typeof updateMenuAmbient === "function") updateMenuAmbient(dt);
 updateParticles(dt);
