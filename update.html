@@ -2907,7 +2907,7 @@ const RecHireCost = [0, 180, 260, 380], RecWage = [0, 18, 26, 36];
 const SecHireCost = [0, 200, 300, 420], SecWage = [0, 20, 28, 38];
 const RecMinPriceOpts = [0, 50, 75, 100, 125];
 const MaxQueue = 4, LeaveRating = 1, GymPoints = 2, ExerciseSec = 8;
-const FireCost = 60, FireSec = 25, GasPerRoom = 6, GasLeakSec = 25;
+const FireCost = 60, FireSec = 25, GasPerRoom = 50, GasLeakSec = 25;
 const MaxDirt = 8, GiftChance = 0.18, Ach1Reward = 250, Ach2Reward = 400;
 const ChanceThreat = 0.08, ChanceNeedy = 0.12, ChanceFamily = 0.22, ChanceChinese = 0.07;
 const ChancePetGuest = 0.14, PetGuestCooldown = 3;
@@ -14217,17 +14217,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 109;
-const APP_VERSION_NAME = "1.9.101-beta";
+const APP_VERSION_CODE = 110;
+const APP_VERSION_NAME = "1.9.102-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.9.102-beta",
+title: "Doğalgaz bedeli günlük 50 TL/oda",
+latest: true,
+notes: "• 🔥 Doğalgaz Dengesi: Kışın doğalgaz ısıtma faturası oda başına günlük 50 TL olarak güncellendi."
+},
+{
 ver: "v1.9.101-beta",
 title: "Seçili odada duvar alçalması",
-latest: true,
+latest: false,
 notes: "• 🪟 Akıllı Kesit Görünümü: Üst taraftaki (koridorun arkasındaki) bir oda seçiliyken veya eşya düzenleme modundayken, koridorun kameraya bakan tam boy duvarı ~0.25 sn'de yumuşakça alçalarak oda ön sırasını görünür kılar; seçim kalkınca eski boyuna döner."
 },
 {
