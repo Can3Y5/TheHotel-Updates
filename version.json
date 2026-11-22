@@ -1,8 +1,8 @@
 {
-  "versionCode": 112,
-  "versionName": "1.9.104-beta",
+  "versionCode": 113,
+  "versionName": "1.10.0-beta",
   "updateUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "htmlUrl": "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/update.html",
   "apkUrl": "https://github.com/Can3Y5/TheHotel-Updates/releases/latest/download/OtelOyunu-Android.apk",
-  "notes": "Oda ve tesis inşaat süresi"
+  "notes": "Uzakta tabelalar gizlenir"
 }

@@ -14550,17 +14550,23 @@ offerBtn.textContent = "💬 Teklif Ver";
 }
 if (typeof syncBottomPanelOffset === "function") syncBottomPanelOffset();
 }
-const APP_VERSION_CODE = 112;
-const APP_VERSION_NAME = "1.9.104-beta";
+const APP_VERSION_CODE = 113;
+const APP_VERSION_NAME = "1.10.0-beta";
 const UPDATE_MANIFEST_URLS = [
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json",
 "https://raw.githubusercontent.com/Can3Y5/TheHotel-Updates/main/version.json"
 ];
 const CHANGELOG_HISTORY = [
 {
+ver: "v1.10.0-beta",
+title: "Uzakta tabelalar gizlenir",
+latest: true,
+notes: "• 🔍 Akıllı Tabela Görünürlüğü: Haritadaki cephe, tesis, oda ve yön tabelaları uzaklaşıldığında (ekrandaki yazı boyutu 9 px altına indiğinde) yumuşakça solar, 6 px altında gizlenerek haritayı okunaklı kılar; oda içi misafir etiketleri aynen korunur."
+},
+{
 ver: "v1.9.104-beta",
 title: "Oda ve tesis inşaat süresi",
-latest: true,
+latest: false,
 notes: "• 🔨 İnşaat Süreleri: İlk 3 yapı anında tamamlanmaya devam eder; sonrasındaki oda ve tesisler atlanamaz gerçek saniye inşaat süresiyle yapılır (Koridor 10 sn, Oda/Asansör/WC 20 sn, Spor/Doğalgaz/Mutfak/Depo/Lojman/Park/Teras 30 sn, Havuz/Spa/Kafe 45 sn).\n• 📊 Şantiye Görünümü: İnşaat süresince parsel üzerinde ilerleme çubuğu ve kalan saniye gösterilir; bitene kadar kullanılamaz ve yıkılamaz, tamamlanınca ödül ve başarımlar açılır."
 },
 {
@@ -16269,10 +16275,22 @@ iso(u1, v0, z0),
 iso(u1, v0, z1)
 ];
 }
-function isoLabel(txt, u, v, z, fontSize = 14, fg = "#3a281f", bg = "#fffdf5", padX = 7, padY = 3.5) {
+const LABEL_FADE_START_PX = 9;
+const LABEL_HIDE_PX = 6;
+function getLabelZoomAlpha(fontSize) {
+const z = (typeof zoom === "number" && isFinite(zoom)) ? zoom : 1;
+const eff = fontSize * z;
+if (eff >= LABEL_FADE_START_PX) return 1;
+if (eff <= LABEL_HIDE_PX) return 0;
+return (eff - LABEL_HIDE_PX) / (LABEL_FADE_START_PX - LABEL_HIDE_PX);
+}
+function isoLabel(txt, u, v, z, fontSize = 14, fg = "#3a281f", bg = "#fffdf5", padX = 7, padY = 3.5, zoomFade = true) {
 if (((typeof inMenu !== "undefined" && inMenu) || (typeof window !== "undefined" && window.visitMode)) && bg !== null) return [];
+const zAlpha = zoomFade ? getLabelZoomAlpha(fontSize) : 1;
+if (zAlpha <= 0) return [];
 const p = iso(u, v, z);
 ctx.save();
+if (zAlpha < 1) ctx.globalAlpha *= zAlpha;
 ctx.font = "900 " + fontSize + "px 'Segoe UI', Roboto, Arial, sans-serif";
 const lines = String(txt).split("\n");
 let maxW = 0;
@@ -18086,8 +18104,14 @@ ctx.fillStyle = "#facc15"; ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.8;
 ctx.beginPath(); ctx.arc(0, -52, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 ctx.fillStyle = "#1e3a8a";
 ctx.beginPath(); ctx.arc(0, -52, 7, 0, Math.PI * 2); ctx.fill();
+const busAlpha = (typeof getLabelZoomAlpha === "function") ? getLabelZoomAlpha(9 * scale) : 1;
+if (busAlpha > 0) {
+ctx.save();
+if (busAlpha < 1) ctx.globalAlpha *= busAlpha;
 ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
 ctx.fillText("🚏", 0, -52);
+ctx.restore();
+}
 ctx.restore();
 }
 function drawParkKiosk(u, v, z, scale = 1.0) {
@@ -18202,20 +18226,26 @@ ctx.fillStyle = "#15803d";
 ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2.2;
 ctx.beginPath(); ctx.roundRect(-signW * 0.5, -signH - 6, signW, signH, 4); ctx.fill(); ctx.stroke();
 ctx.strokeStyle = OUTLINE_COL; ctx.lineWidth = 1.2; ctx.stroke();
-ctx.fillStyle = "#ffffff";
+const a11 = (typeof getLabelZoomAlpha === "function") ? getLabelZoomAlpha(11) : 1;
+const a10 = (typeof getLabelZoomAlpha === "function") ? getLabelZoomAlpha(10) : 1;
+if (a11 > 0 || a10 > 0) {
+ctx.save();
+const baseA = ctx.globalAlpha;
 ctx.textAlign = "center";
 ctx.textBaseline = "middle";
+if (a11 > 0) {
+ctx.globalAlpha = baseA * a11;
+ctx.fillStyle = "#ffffff";
 ctx.font = "900 11px 'Segoe UI', Arial, sans-serif";
-if (isNorth) {
-ctx.fillText("✈️ HAVALİMANI / ŞEHİR ➔", 0, -signH * 0.5 - 13);
+ctx.fillText(isNorth ? "✈️ HAVALİMANI / ŞEHİR ➔" : "🏖️ SAHİL & MARİNA ➔", 0, -signH * 0.5 - 13);
+}
+if (a10 > 0) {
+ctx.globalAlpha = baseA * a10;
 ctx.fillStyle = "#fef08a";
 ctx.font = "900 10px 'Segoe UI', Arial, sans-serif";
-ctx.fillText("🏨 GRAND HOTEL RESORT", 0, -signH * 0.5 + 1);
-} else {
-ctx.fillText("🏖️ SAHİL & MARİNA ➔", 0, -signH * 0.5 - 13);
-ctx.fillStyle = "#fef08a";
-ctx.font = "900 10px 'Segoe UI', Arial, sans-serif";
-ctx.fillText("⛰️ MANZARA TEPESİ", 0, -signH * 0.5 + 1);
+ctx.fillText(isNorth ? "🏨 GRAND HOTEL RESORT" : "⛰️ MANZARA TEPESİ", 0, -signH * 0.5 + 1);
+}
+ctx.restore();
 }
 const flash = Math.sin((timeNow || 0) * 4) > 0;
 ctx.fillStyle = flash ? "#facc15" : "#713f12";
@@ -20077,10 +20107,10 @@ if (!g.pawn || g.pawn.dead) continue;
 const uvz = logicalToIsoUVZ(g.pawn.pos.x, g.pawn.pos.y, g.pawn);
 if (!uvz || uvz.hidden) continue;
 if (g.expired) {
-const poly = isoLabel("⏰ Süre doldu!\nTıkla: Gönder", uvz.u, uvz.v, uvz.z + 78, 12.5, "#3a281f", "#ffe875", 9, 5);
+const poly = isoLabel("⏰ Süre doldu!\nTıkla: Gönder", uvz.u, uvz.v, uvz.z + 78, 12.5, "#3a281f", "#ffe875", 9, 5, false);
 addHitPoly(poly, () => sendOff(g));
 } else if (g.hasBubble && g.state !== 'Sleeping') {
-isoLabel((g.bubbleLines || []).join("\n"), uvz.u, uvz.v, uvz.z + 72, 11.5, "#3a281f", "#ffffff", 7, 4);
+isoLabel((g.bubbleLines || []).join("\n"), uvz.u, uvz.v, uvz.z + 72, 11.5, "#3a281f", "#ffffff", 7, 4, false);
 }
 }
 for (const f of floaties) {
@@ -20309,7 +20339,7 @@ ctx.fill();
 isoBox(u - 10, v - 16, u + 10, v + 16, z + 2, 8, "#fdfcf7", "#eae5d8", "#d3ccbe", OUTLINE_COL, 1.8);
 isoBox(u - 8, v - 13, u + 8, v - 8, z + 10, 1, "#261f18", "#261f18", "#261f18", OUTLINE_COL, 0.8);
 isoBox(u - 11, v - 3, u + 11, v + 3, z + 1, 9, "#c0392b", "#a93226", "#922b21", OUTLINE_COL, 1.5);
-const poly = isoLabel("📰 GAZETE GELDİ\n(Dokun Oku!)", u, v, z + 28 + bob, 11, "#2b2118", "#ffe875", 6, 3);
+const poly = isoLabel("📰 GAZETE GELDİ\n(Dokun Oku!)", u, v, z + 28 + bob, 11, "#2b2118", "#ffe875", 6, 3, false);
 addHitPoly(poly, () => {
 play("tap");
 showWeeklyNewspaper(false);
@@ -21239,14 +21269,15 @@ const dx = pR.x - pL.x, dy = pR.y - pL.y;
 const span = Math.hypot(dx, dy);
 const ang = Math.atan2(dy, dx);
 ctx.save();
-ctx.translate((pL.x + pR.x) * 0.5, (pL.y + pR.y) * 0.5);
-ctx.rotate(ang);
 ctx.font = "900 " + basePx + "px 'Segoe UI', Roboto, Arial, sans-serif";
 const tw = ctx.measureText(txt).width || 1;
-if (tw > span * 0.86) {
-const sc = (span * 0.86) / tw;
-ctx.scale(sc, sc);
-}
+const sc = tw > span * 0.86 ? (span * 0.86) / tw : 1;
+const zAlpha = (typeof getLabelZoomAlpha === "function") ? getLabelZoomAlpha(basePx * sc) : 1;
+if (zAlpha <= 0) { ctx.restore(); return; }
+if (zAlpha < 1) ctx.globalAlpha *= zAlpha;
+ctx.translate((pL.x + pR.x) * 0.5, (pL.y + pR.y) * 0.5);
+ctx.rotate(ang);
+if (sc !== 1) ctx.scale(sc, sc);
 ctx.fillStyle = fgCol;
 ctx.textAlign = "center";
 ctx.textBaseline = "middle";
@@ -21530,7 +21561,10 @@ const spTR = iso(sU, sV1, z0 + 24);
 const spBR = iso(sU, sV1, z0 + 13);
 const spBL = iso(sU, sV0, z0 + 18);
 drawPoly2D([spTL, spTR, spBR, spBL], "#35533c", "#78716c", 1.3);
+const tAlpha = (typeof getLabelZoomAlpha === "function") ? getLabelZoomAlpha(5.5) : 1;
+if (tAlpha > 0) {
 ctx.save();
+if (tAlpha < 1) ctx.globalAlpha *= tAlpha;
 const sMid = iso(sU, (sV0 + sV1) * 0.5, z0 + 21.0);
 const sAng = Math.atan2(spTR.y - spTL.y, spTR.x - spTL.x);
 ctx.translate(sMid.x, sMid.y);
@@ -21541,6 +21575,7 @@ ctx.textAlign = "center";
 ctx.textBaseline = "middle";
 ctx.fillText("TENİS KULÜBÜ", 0, 0);
 ctx.restore();
+}
 const pU0 = u0 + 5, pU1 = u1 - 5, pV0 = v0 + 5, pV1 = v1 - 5;
 const posts = [
 [pU0, pV0], [pU1, pV0], [pU1, pV1], [pU0, pV1],
@@ -22975,14 +23010,14 @@ const cellU = PARCEL_SIZE / 4;
 const cellV = PARCEL_SIZE / 4;
 if (pending && s.Ready && !s.guest && !s.onFire) {
 isoQuad(u0 + 2, v0 + 2, u1 - 2, v1 - 2, z0 + 1, "rgba(46, 204, 64, 0.28)", "#2ecc40", 3.5);
-isoLabel("📍 Buraya Yerleştir", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 26, 11.5, "#ffffff", "#1e7e34", 8, 4);
+isoLabel("📍 Buraya Yerleştir", (u0 + u1) * 0.5, (v0 + v1) * 0.5, z0 + 26, 11.5, "#ffffff", "#1e7e34", 8, 4, false);
 addHitPoly(roomPoly, () => {
 selSlot = s;
 placeGuestIntoRoom(pending, s, pendingPrice, false);
 refresh();
 });
 } else if (isSel && furnEditMode) {
-isoLabel("Eşyayı seç → yeşil kareye dokun", (u0 + u1) * 0.45, (v0 + v1) * 0.45, z1 + 14, 9.2, "#3a281f", "#fff8dc", 6, 2);
+isoLabel("Eşyayı seç → yeşil kareye dokun", (u0 + u1) * 0.45, (v0 + v1) * 0.45, z1 + 14, 9.2, "#3a281f", "#fff8dc", 6, 2, false);
 addHitPoly(roomPoly, () => {
 if (furnSelectedKey !== null) {
 furnSelectedKey = null;
@@ -23058,7 +23093,7 @@ badgeTxt = fullName
 : (s.guest.sleeping ? "💤 " : "👤 ") + s.guest.daysLeft + "g";
 badgeBg = "#e8f5e9"; badgeFg = "#1b5e20";
 }
-const lblPoly = isoLabel(badgeTxt, u0 + 44, v0 + 44, z0 + 90, 10.5, badgeFg, badgeBg, 6, 2.5);
+const lblPoly = isoLabel(badgeTxt, u0 + 44, v0 + 44, z0 + 90, 10.5, badgeFg, badgeBg, 6, 2.5, !(s.guest || s.onFire || s.hasCorpse));
 if (!isSel) addHitPoly(lblPoly, () => selectSlot(s));
 } else if (s.type === "Gym") {
 for (let k = 0; k < s.gymLevel; k++) {
@@ -24086,7 +24121,7 @@ const driftY = tAnim * 16;
 const alpha = 0.5 + 0.5 * Math.sin((tAnim / 3) * Math.PI);
 ctx.save();
 ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-isoLabel("z z Z 💤", uvz.u + 4, uvz.v + 4, uvz.z + 24 + driftY * 0.8, 11, "#2b3c4e", "rgba(255,255,255,0.92)", 5, 2.5);
+isoLabel("z z Z 💤", uvz.u + 4, uvz.v + 4, uvz.z + 24 + driftY * 0.8, 11, "#2b3c4e", "rgba(255,255,255,0.92)", 5, 2.5, false);
 ctx.restore();
 }
 function drawIsoPawn(p, pt, uvz) {
@@ -24552,7 +24587,7 @@ const u = dPos.crateU, v = dPos.crateV - 30;
 for (let i = 0; i < Math.min(4, n); i++) {
 isoBox(u - 18, v + i * 26, u + 12, v + 22 + i * 26, 0, 20, "#e0ad63", "#c98f42", "#a8732d", OUTLINE_COL, 1.8);
 }
-const poly = isoLabel("📦 " + n + " Koli\n(Dokun Al!)", u - 8, v + 32, 46, 12, "#3a281f", "#ffe875");
+const poly = isoLabel("📦 " + n + " Koli\n(Dokun Al!)", u - 8, v + 32, 46, 12, "#3a281f", "#ffe875", 7, 3.5, false);
 addHitPoly(poly, () => collectCrate());
 }
 function drawIsoCar(car) {
@@ -25181,7 +25216,7 @@ if (uvz && typeof isoLabel === "function") {
 const dr = ((t * 0.7 + animT) % 2.4) * 7;
 g.save();
 g.globalAlpha = 0.72;
-isoLabel("z Z", uvz.u, uvz.v, (uvz.z || 0) + 14 + dr, 9.5, "#334155", "rgba(255,255,255,0.88)", 3.5, 1.5);
+isoLabel("z Z", uvz.u, uvz.v, (uvz.z || 0) + 14 + dr, 9.5, "#334155", "rgba(255,255,255,0.88)", 3.5, 1.5, false);
 g.restore();
 }
 return;
